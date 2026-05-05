@@ -1,0 +1,34 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+    "exactOptionalPropertyTypes": true,
+    "noFallthroughCasesInSwitch": true,
+    "forceConsistentCasingInFileNames": true,
+    "isolatedModules": true,
+    "verbatimModuleSyntax": true,
+    "skipLibCheck": true,
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "paths": {
+      "@core/db": ["./core/db/src/index.ts"],
+      "@core/db/*": ["./core/db/src/*"],
+      "@core/design-system": ["./core/design-system/src/index.ts"],
+      "@core/design-system/*": ["./core/design-system/src/*"],
+      "@core/errors": ["./core/errors/src/index.ts"],
+      "@core/errors/*": ["./core/errors/src/*"],
+      "@core/storage": ["./core/storage/src/index.ts"],
+      "@core/storage/*": ["./core/storage/src/*"],
+      "@core/types": ["./core/types/src/index.ts"],
+      "@core/types/*": ["./core/types/src/*"],
+      "@modules/*": ["./modules/*/src/index.ts"]
+    }
+  },
+  "exclude": ["node_modules", "dist", ".turbo"]
+}
