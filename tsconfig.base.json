@@ -12,6 +12,7 @@
     "forceConsistentCasingInFileNames": true,
     "isolatedModules": true,
     "verbatimModuleSyntax": true,
+    "resolveJsonModule": true,
     "skipLibCheck": true,
     "declaration": true,
     "declarationMap": true,
