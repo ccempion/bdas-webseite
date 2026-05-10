@@ -10,7 +10,7 @@ export const metadata: Metadata = {
     default: "BDAS",
     template: "%s · BDAS",
   },
-  description: "Bund Deutscher Alevitischer Studierender — digitale Plattform.",
+  description: "Bund der Alevitischen Studierenden — digitale Plattform.",
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
