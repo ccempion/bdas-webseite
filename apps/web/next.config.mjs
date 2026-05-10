@@ -7,9 +7,6 @@ const monorepoRoot = path.resolve(__dirname, "../..");
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  // Trace from the monorepo root so hoisted deps (e.g. @node-rs/argon2)
-  // get included in the deployed function bundle.
-  outputFileTracingRoot: monorepoRoot,
   // Workspace packages are TS source — let Next compile them via SWC.
   transpilePackages: [
     "@bdas/design-system",
@@ -26,12 +23,9 @@ const nextConfig = {
   experimental: {
     typedRoutes: true,
     serverComponentsExternalPackages: ["@node-rs/argon2"],
-    outputFileTracingIncludes: {
-      "**/*": [
-        "../../node_modules/.pnpm/@node-rs+argon2*/**/*",
-        "../../node_modules/@node-rs/**/*",
-      ],
-    },
+    // Trace from the monorepo root so hoisted deps get included
+    // in the deployed function bundle (pnpm + Vercel monorepo support).
+    outputFileTracingRoot: monorepoRoot,
   },
   webpack: (config, { isServer }) => {
     if (isServer) {
