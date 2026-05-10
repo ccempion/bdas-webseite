@@ -16,6 +16,7 @@ const nextConfig = {
   ],
   experimental: {
     typedRoutes: true,
+    serverComponentsExternalPackages: ["@node-rs/argon2"],
   },
 };
 
