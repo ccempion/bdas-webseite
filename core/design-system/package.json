@@ -1,0 +1,13 @@
+{
+  "name": "@bdas/design-system",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./tailwind-preset": "./src/tailwind-preset.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  }
+}
