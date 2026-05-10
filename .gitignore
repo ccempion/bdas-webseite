@@ -2,6 +2,13 @@
 node_modules
 dist
 .turbo
+.next
+.vercel
+.vitest
+coverage
+*.tsbuildinfo
+*.log
 *.local
 .env
 .env.*
+!.env.example
