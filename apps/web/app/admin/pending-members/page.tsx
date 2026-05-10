@@ -5,10 +5,10 @@ import { Alert, Card } from "@bdas/design-system";
 import { listGroups } from "@bdas/groups";
 import { getCurrentMember, listPendingMembers, requireFederalBoard } from "@bdas/members";
 
-import { requireAuthFlag } from "../../_auth/flag.js";
-import { requireMembersFlag } from "../../_members/flag.js";
-import { readSessionCookie } from "../../../lib/auth-cookie.js";
-import { RowActions } from "./RowActions.js";
+import { requireAuthFlag } from "../../_auth/flag";
+import { requireMembersFlag } from "../../_members/flag";
+import { readSessionCookie } from "../../../lib/auth-cookie";
+import { RowActions } from "./RowActions";
 
 export const metadata = { title: "Pending-Mitglieder" };
 

@@ -4,7 +4,7 @@ import { listGroups } from "@bdas/groups";
 import { getDb } from "@bdas/db";
 import { Alert, Card } from "@bdas/design-system";
 
-import { requireGroupsFlag } from "../_groups/flag.js";
+import { requireGroupsFlag } from "../_groups/flag";
 
 export const metadata = { title: "Hochschulgruppen" };
 

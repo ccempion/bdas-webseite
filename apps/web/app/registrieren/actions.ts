@@ -8,7 +8,7 @@ import { getDb } from "@bdas/db";
 import { isAppError, ValidationError } from "@bdas/errors";
 import { requireFlag } from "@bdas/feature-flags";
 
-import { bootAuth } from "../../lib/auth-bootstrap.js";
+import { bootAuth } from "../../lib/auth-bootstrap";
 
 export type RegisterFormState = {
   readonly error?: string;

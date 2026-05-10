@@ -7,7 +7,7 @@ import { isAppError } from "@bdas/errors";
 import { requireFlag } from "@bdas/feature-flags";
 import { createProfile, getCurrentMember, updateProfile } from "@bdas/members";
 
-import { readSessionCookie } from "../../lib/auth-cookie.js";
+import { readSessionCookie } from "../../lib/auth-cookie";
 
 export type ProfileFormState = {
   readonly error?: string;

@@ -8,8 +8,8 @@ import { getDb } from "@bdas/db";
 import { isAppError } from "@bdas/errors";
 import { requireFlag } from "@bdas/feature-flags";
 
-import { bootAuth } from "../../lib/auth-bootstrap.js";
-import { setSessionCookie } from "../../lib/auth-cookie.js";
+import { bootAuth } from "../../lib/auth-bootstrap";
+import { setSessionCookie } from "../../lib/auth-cookie";
 
 export type LoginFormState = {
   readonly error?: string;

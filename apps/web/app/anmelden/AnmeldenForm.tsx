@@ -5,7 +5,7 @@ import { useFormState, useFormStatus } from "react-dom";
 
 import { Alert, Button, Field, Form, Input } from "@bdas/design-system";
 
-import { loginAction, type LoginFormState } from "./actions.js";
+import { loginAction, type LoginFormState } from "./actions";
 
 const initial: LoginFormState = {};
 

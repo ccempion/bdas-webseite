@@ -4,7 +4,7 @@ import { useFormState, useFormStatus } from "react-dom";
 
 import { Alert, Button, Field, Form, Input } from "@bdas/design-system";
 
-import { registerAction, type RegisterFormState } from "./actions.js";
+import { registerAction, type RegisterFormState } from "./actions";
 
 const initial: RegisterFormState = {};
 

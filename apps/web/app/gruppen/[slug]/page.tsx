@@ -5,7 +5,7 @@ import { getDb } from "@bdas/db";
 import { Alert, Card } from "@bdas/design-system";
 import { getGroupBySlug } from "@bdas/groups";
 
-import { requireGroupsFlag } from "../../_groups/flag.js";
+import { requireGroupsFlag } from "../../_groups/flag";
 
 export async function generateMetadata({
   params,

@@ -6,10 +6,10 @@ import { Alert, Button, Card } from "@bdas/design-system";
 import { listGroups } from "@bdas/groups";
 import { getCurrentMember } from "@bdas/members";
 
-import { requireAuthFlag } from "../_auth/flag.js";
-import { requireMembersFlag } from "../_members/flag.js";
-import { readSessionCookie } from "../../lib/auth-cookie.js";
-import { ProfileForm } from "./ProfileForm.js";
+import { requireAuthFlag } from "../_auth/flag";
+import { requireMembersFlag } from "../_members/flag";
+import { readSessionCookie } from "../../lib/auth-cookie";
+import { ProfileForm } from "./ProfileForm";
 
 export const metadata = { title: "Mein Konto" };
 

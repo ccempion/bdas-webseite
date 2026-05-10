@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { getCurrentUser, logout } from "@bdas/auth";
 import { getDb } from "@bdas/db";
 
-import { clearSessionCookie, readSessionCookie } from "../../lib/auth-cookie.js";
+import { clearSessionCookie, readSessionCookie } from "../../lib/auth-cookie";
 
 /** POST /abmelden — revoke the current session and clear the cookie. */
 export async function POST(): Promise<NextResponse> {

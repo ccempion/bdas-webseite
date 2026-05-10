@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import type { Metadata } from "next";
 
-import { SiteHeader } from "../components/SiteHeader.js";
+import { SiteHeader } from "../components/SiteHeader";
 
 import "./globals.css";
 

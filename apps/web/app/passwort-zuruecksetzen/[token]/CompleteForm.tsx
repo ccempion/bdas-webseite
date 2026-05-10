@@ -4,7 +4,7 @@ import { useFormState, useFormStatus } from "react-dom";
 
 import { Alert, Button, Field, Form, Input } from "@bdas/design-system";
 
-import { completeResetAction, type CompleteResetState } from "../actions.js";
+import { completeResetAction, type CompleteResetState } from "../actions";
 
 const initial: CompleteResetState = {};
 

@@ -2,8 +2,8 @@ import Link from "next/link";
 
 import { Card } from "@bdas/design-system";
 
-import { requireAuthFlag } from "../_auth/flag.js";
-import { RequestResetForm } from "./RequestForm.js";
+import { requireAuthFlag } from "../_auth/flag";
+import { RequestResetForm } from "./RequestForm";
 
 export const metadata = { title: "Passwort zurücksetzen" };
 

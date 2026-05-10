@@ -12,7 +12,7 @@ import {
   transitionStatus,
 } from "@bdas/members";
 
-import { readSessionCookie } from "../../../lib/auth-cookie.js";
+import { readSessionCookie } from "../../../lib/auth-cookie";
 
 export type AdminActionState = { readonly error?: string };
 

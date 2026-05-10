@@ -2,8 +2,8 @@ import Link from "next/link";
 
 import { Card } from "@bdas/design-system";
 
-import { requireAuthFlag } from "../_auth/flag.js";
-import { RegistrierenForm } from "./RegistrierenForm.js";
+import { requireAuthFlag } from "../_auth/flag";
+import { RegistrierenForm } from "./RegistrierenForm";
 
 export const metadata = { title: "Registrieren" };
 

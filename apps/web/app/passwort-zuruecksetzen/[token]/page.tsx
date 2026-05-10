@@ -1,7 +1,7 @@
 import { Card } from "@bdas/design-system";
 
-import { requireAuthFlag } from "../../_auth/flag.js";
-import { CompleteResetForm } from "./CompleteForm.js";
+import { requireAuthFlag } from "../../_auth/flag";
+import { CompleteResetForm } from "./CompleteForm";
 
 export const metadata = { title: "Neues Passwort vergeben" };
 

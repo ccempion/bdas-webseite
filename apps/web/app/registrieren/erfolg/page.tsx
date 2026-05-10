@@ -2,7 +2,7 @@ import Link from "next/link";
 
 import { Alert } from "@bdas/design-system";
 
-import { requireAuthFlag } from "../../_auth/flag.js";
+import { requireAuthFlag } from "../../_auth/flag";
 
 export const metadata = { title: "Bitte E-Mail bestätigen" };
 

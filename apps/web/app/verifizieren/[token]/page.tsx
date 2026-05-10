@@ -5,7 +5,7 @@ import { getDb } from "@bdas/db";
 import { Alert } from "@bdas/design-system";
 import { isAppError } from "@bdas/errors";
 
-import { requireAuthFlag } from "../../_auth/flag.js";
+import { requireAuthFlag } from "../../_auth/flag";
 
 export const metadata = { title: "E-Mail bestätigen" };
 

@@ -4,7 +4,7 @@ import { useFormState, useFormStatus } from "react-dom";
 
 import { Alert, Button } from "@bdas/design-system";
 
-import { approveAction, declineAction, type AdminActionState } from "./actions.js";
+import { approveAction, declineAction, type AdminActionState } from "./actions";
 
 const initial: AdminActionState = {};
 

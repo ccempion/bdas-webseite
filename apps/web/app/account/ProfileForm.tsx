@@ -4,7 +4,7 @@ import { useFormState, useFormStatus } from "react-dom";
 
 import { Alert, Button, Field, Form, Input } from "@bdas/design-system";
 
-import { saveProfileAction, type ProfileFormState } from "./actions.js";
+import { saveProfileAction, type ProfileFormState } from "./actions";
 
 export type ProfileFormProps = {
   initial: {
