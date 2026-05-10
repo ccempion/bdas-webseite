@@ -1,8 +1,8 @@
 import { eq } from "drizzle-orm";
 import type { PostgresJsDatabase } from "drizzle-orm/postgres-js";
 
-import { groups } from "../schema.js";
-import type { Group, GroupStatus } from "../types.js";
+import { groups } from "../schema";
+import type { Group, GroupStatus } from "../types";
 
 export type Db = PostgresJsDatabase<Record<string, never>>;
 

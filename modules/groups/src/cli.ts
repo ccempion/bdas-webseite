@@ -11,7 +11,7 @@ import { config as loadEnv } from "dotenv";
 
 import { closeDb, getDb } from "@bdas/db";
 
-import { upsertGroupBySlug } from "./services/upsert.js";
+import { upsertGroupBySlug } from "./services/upsert";
 
 async function findRepoRoot(start: string): Promise<string> {
   let dir = start;

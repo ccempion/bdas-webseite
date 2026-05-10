@@ -7,9 +7,9 @@ import type { PostgresJsDatabase } from "drizzle-orm/postgres-js";
 
 import { createId } from "@bdas/id";
 
-import { authSessions, authUsers } from "./schema.js";
-import type { AuthSession, AuthUser } from "./schema.js";
-import { COOKIE_MAX_AGE_SECONDS } from "./sso.js";
+import { authSessions, authUsers } from "./schema";
+import type { AuthSession, AuthUser } from "./schema";
+import { COOKIE_MAX_AGE_SECONDS } from "./sso";
 
 export type Db = PostgresJsDatabase<Record<string, never>>;
 

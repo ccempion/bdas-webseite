@@ -1,7 +1,7 @@
 import { forwardRef } from "react";
 import type { InputHTMLAttributes } from "react";
 
-import { cx } from "../cx.js";
+import { cx } from "../cx";
 
 export type InputProps = InputHTMLAttributes<HTMLInputElement> & {
   invalid?: boolean;

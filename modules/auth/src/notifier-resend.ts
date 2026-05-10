@@ -4,7 +4,7 @@
  */
 import { Resend } from "resend";
 
-import type { AuthMessage, Notifier } from "./notifier.js";
+import type { AuthMessage, Notifier } from "./notifier";
 
 export type ResendNotifierOptions = {
   readonly apiKey: string;

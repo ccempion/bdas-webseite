@@ -1,4 +1,4 @@
-import type { JoinPolicy } from "../types.js";
+import type { JoinPolicy } from "../types";
 
 /**
  * Phase 1 stub per build plan §3 Sprint 2 — every group has no join fee

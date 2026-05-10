@@ -16,7 +16,7 @@ import { promises as fs } from "node:fs";
 import path from "node:path";
 import postgres, { type Sql } from "postgres";
 
-import { MIGRATION_MANIFEST } from "./manifest.js";
+import { MIGRATION_MANIFEST } from "./manifest";
 
 export type DiscoveredMigration = {
   readonly module: string;
@@ -152,4 +152,4 @@ function isNoEnt(err: unknown): boolean {
   );
 }
 
-export { MIGRATION_MANIFEST } from "./manifest.js";
+export { MIGRATION_MANIFEST } from "./manifest";

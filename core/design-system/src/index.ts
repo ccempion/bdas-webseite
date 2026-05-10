@@ -19,19 +19,19 @@ export {
   type Shadows,
   type Motion,
   type Typography,
-} from "./tokens.js";
+} from "./tokens";
 
-export { tailwindPreset } from "./tailwind-preset.js";
+export { tailwindPreset } from "./tailwind-preset";
 
-export { cx } from "./cx.js";
+export { cx } from "./cx";
 
 export {
   Button,
   type ButtonProps,
   type ButtonVariant,
   type ButtonSize,
-} from "./components/Button.js";
-export { Input, type InputProps } from "./components/Input.js";
-export { Card, type CardProps } from "./components/Card.js";
-export { Alert, type AlertProps, type AlertVariant } from "./components/Alert.js";
-export { Form, Label, Field, type LabelProps, type FieldProps } from "./components/Form.js";
+} from "./components/Button";
+export { Input, type InputProps } from "./components/Input";
+export { Card, type CardProps } from "./components/Card";
+export { Alert, type AlertProps, type AlertVariant } from "./components/Alert";
+export { Form, Label, Field, type LabelProps, type FieldProps } from "./components/Form";

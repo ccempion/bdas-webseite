@@ -3,8 +3,8 @@ import type { PostgresJsDatabase } from "drizzle-orm/postgres-js";
 
 import type { Role } from "@bdas/auth";
 
-import { members, type MemberRow } from "../schema.js";
-import type { Member, MemberStatus } from "../types.js";
+import { members, type MemberRow } from "../schema";
+import type { Member, MemberStatus } from "../types";
 
 export type Db = PostgresJsDatabase<Record<string, never>>;
 

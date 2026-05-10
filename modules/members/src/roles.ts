@@ -1,6 +1,6 @@
 import type { Role } from "@bdas/auth";
 
-import type { Member, MemberStatus } from "./types.js";
+import type { Member, MemberStatus } from "./types";
 
 const ALL_ROLES: ReadonlyArray<Role> = ["member", "local_board", "federal_board", "alumnus"];
 

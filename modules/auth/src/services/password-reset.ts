@@ -13,11 +13,11 @@ import { z } from "zod";
 import { NotFoundError, ValidationError } from "@bdas/errors";
 import { getEventBus } from "@bdas/events";
 
-import type { PasswordReset as PasswordResetEvent } from "../events.js";
-import { hashPassword, PASSWORD_ALGORITHM, PASSWORD_MIN_LENGTH } from "../password.js";
-import { rateLimit } from "../rate-limit.js";
-import { authCredentials, authPasswordResets, authSessions, authUsers } from "../schema.js";
-import { randomToken } from "../tokens.js";
+import type { PasswordReset as PasswordResetEvent } from "../events";
+import { hashPassword, PASSWORD_ALGORITHM, PASSWORD_MIN_LENGTH } from "../password";
+import { rateLimit } from "../rate-limit";
+import { authCredentials, authPasswordResets, authSessions, authUsers } from "../schema";
+import { randomToken } from "../tokens";
 
 export type Db = PostgresJsDatabase<Record<string, never>>;
 

@@ -1,6 +1,6 @@
 import type { FormHTMLAttributes, LabelHTMLAttributes, ReactNode } from "react";
 
-import { cx } from "../cx.js";
+import { cx } from "../cx";
 
 export function Form({ className, ...rest }: FormHTMLAttributes<HTMLFormElement>) {
   return <form className={cx("flex flex-col gap-5", className)} {...rest} />;

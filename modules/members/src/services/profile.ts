@@ -15,11 +15,11 @@ import { ConflictError, NotFoundError, ValidationError } from "@bdas/errors";
 import { getEventBus } from "@bdas/events";
 import { createId } from "@bdas/id";
 
-import type { ProfileCreated, ProfileUpdated } from "../events.js";
-import { members } from "../schema.js";
-import type { Member } from "../types.js";
+import type { ProfileCreated, ProfileUpdated } from "../events";
+import { members } from "../schema";
+import type { Member } from "../types";
 
-import { row2member } from "./get.js";
+import { row2member } from "./get";
 
 export type Db = PostgresJsDatabase<Record<string, never>>;
 

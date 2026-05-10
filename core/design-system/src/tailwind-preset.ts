@@ -5,7 +5,7 @@
  * The local TailwindPreset type avoids depending on tailwindcss until
  * Sprint 1 installs it; apps will retype this against `Config['theme']`.
  */
-import { colors, keyframes, motion, radii, shadows, typography } from "./tokens.js";
+import { colors, keyframes, motion, radii, shadows, typography } from "./tokens";
 
 type TailwindPreset = {
   theme?: {

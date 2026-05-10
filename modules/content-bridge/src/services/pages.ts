@@ -1,5 +1,5 @@
-import { getWpClient } from "../client.js";
-import type { Page } from "../types.js";
+import { getWpClient } from "../client";
+import type { Page } from "../types";
 
 type RawPage = {
   id?: number;

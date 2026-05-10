@@ -11,18 +11,18 @@ export {
   RegisterInput,
   buildVerifyUrl,
   type RegisterResult,
-} from "./services/register.js";
-export { verifyEmail, type VerifyResult } from "./services/verify.js";
-export { login, LoginInput, type LoginResult, type LoginContext } from "./services/login.js";
-export { logout } from "./services/logout.js";
+} from "./services/register";
+export { verifyEmail, type VerifyResult } from "./services/verify";
+export { login, LoginInput, type LoginResult, type LoginContext } from "./services/login";
+export { logout } from "./services/logout";
 export {
   requestPasswordReset,
   completePasswordReset,
   buildResetUrl,
   ResetRequestInput,
   ResetCompleteInput,
-} from "./services/password-reset.js";
-export { getCurrentUser, requireRole, type CurrentUser } from "./services/me.js";
+} from "./services/password-reset";
+export { getCurrentUser, requireRole, type CurrentUser } from "./services/me";
 
 // SSO + cookie
 export {
@@ -31,7 +31,7 @@ export {
   TOKEN_VERSION,
   type Role,
   type SsoClaims,
-} from "./sso.js";
+} from "./sso";
 
 // Notifier (composition root in apps/web wires the driver).
 export {
@@ -40,8 +40,8 @@ export {
   getNotifier,
   setNotifier,
   consoleNotifier,
-} from "./notifier.js";
-export { createResendNotifier } from "./notifier-resend.js";
+} from "./notifier";
+export { createResendNotifier } from "./notifier-resend";
 
 // Events
 export type {
@@ -51,4 +51,4 @@ export type {
   UserLoggedIn,
   UserLoggedOut,
   PasswordReset,
-} from "./events.js";
+} from "./events";

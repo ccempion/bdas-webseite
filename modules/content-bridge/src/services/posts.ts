@@ -3,8 +3,8 @@
  *
  * Returns [] (never throws) on WP outage — see ADR 0004.
  */
-import { getWpClient } from "../client.js";
-import type { Post } from "../types.js";
+import { getWpClient } from "../client";
+import type { Post } from "../types";
 
 type RawPost = {
   id?: number;

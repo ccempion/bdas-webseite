@@ -10,16 +10,16 @@ export {
   updateProfile,
   CreateProfileInput,
   UpdateProfileInput,
-} from "./services/profile.js";
-export { transitionStatus, approveMember, type Actor } from "./services/status.js";
-export { grantRole, revokeRole } from "./services/roles.js";
-export { getMember, getMemberByUserId } from "./services/get.js";
-export { listPendingMembers } from "./services/list-pending.js";
-export { getCurrentMember, requireFederalBoard, type CurrentMember } from "./services/me.js";
+} from "./services/profile";
+export { transitionStatus, approveMember, type Actor } from "./services/status";
+export { grantRole, revokeRole } from "./services/roles";
+export { getMember, getMemberByUserId } from "./services/get";
+export { listPendingMembers } from "./services/list-pending";
+export { getCurrentMember, requireFederalBoard, type CurrentMember } from "./services/me";
 
-export { canTransition, effectiveRoles, isRole } from "./roles.js";
+export { canTransition, effectiveRoles, isRole } from "./roles";
 
-export type { Member, MemberStatus, PendingMember } from "./types.js";
+export type { Member, MemberStatus, PendingMember } from "./types";
 export type {
   MembersEvent,
   ProfileCreated,
@@ -27,4 +27,4 @@ export type {
   StatusChanged,
   RoleGranted,
   RoleRevoked,
-} from "./events.js";
+} from "./events";

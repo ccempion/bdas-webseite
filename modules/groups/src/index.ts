@@ -5,10 +5,10 @@
  * other workspaces. Internal files are not importable.
  */
 
-export { listGroups, type ListOpts } from "./services/list.js";
-export { getGroup, getGroupBySlug } from "./services/get.js";
-export { getJoinPolicy } from "./services/join-policy.js";
-export { upsertGroupBySlug, UpsertGroupInput, type UpsertResult } from "./services/upsert.js";
+export { listGroups, type ListOpts } from "./services/list";
+export { getGroup, getGroupBySlug } from "./services/get";
+export { getJoinPolicy } from "./services/join-policy";
+export { upsertGroupBySlug, UpsertGroupInput, type UpsertResult } from "./services/upsert";
 
-export type { Group, GroupSummary, GroupStatus, JoinPolicy } from "./types.js";
-export type { GroupEvent, GroupCreated, GroupUpdated } from "./events.js";
+export type { Group, GroupSummary, GroupStatus, JoinPolicy } from "./types";
+export type { GroupEvent, GroupCreated, GroupUpdated } from "./events";

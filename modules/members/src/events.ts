@@ -1,6 +1,6 @@
 import type { Role } from "@bdas/auth";
 
-import type { MemberStatus } from "./types.js";
+import type { MemberStatus } from "./types";
 
 export type ProfileCreated = {
   readonly type: "members.profile.created";

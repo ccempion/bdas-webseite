@@ -3,11 +3,11 @@ import type { PostgresJsDatabase } from "drizzle-orm/postgres-js";
 
 import { ForbiddenError } from "@bdas/errors";
 
-import { members } from "../schema.js";
-import type { Member } from "../types.js";
+import { members } from "../schema";
+import type { Member } from "../types";
 
-import { row2member } from "./get.js";
-import type { Actor } from "./status.js";
+import { row2member } from "./get";
+import type { Actor } from "./status";
 
 export type Db = PostgresJsDatabase<Record<string, never>>;
 

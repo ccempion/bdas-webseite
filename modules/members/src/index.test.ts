@@ -13,11 +13,11 @@ import { afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { createTestDb, type TestDb } from "@bdas/db/test";
 import { resetEventBus } from "@bdas/events";
 
-import { createProfile } from "./services/profile.js";
-import { approveMember, transitionStatus } from "./services/status.js";
-import { grantRole, revokeRole } from "./services/roles.js";
-import { listPendingMembers } from "./services/list-pending.js";
-import { getMemberByUserId } from "./services/get.js";
+import { createProfile } from "./services/profile";
+import { approveMember, transitionStatus } from "./services/status";
+import { grantRole, revokeRole } from "./services/roles";
+import { listPendingMembers } from "./services/list-pending";
+import { getMemberByUserId } from "./services/get";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DEFAULT_URL = "postgres://bdas:bdas@localhost:5432/bdas";

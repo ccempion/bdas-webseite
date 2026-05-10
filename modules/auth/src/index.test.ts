@@ -18,12 +18,12 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 import { createTestDb, type TestDb } from "@bdas/db/test";
 import { resetEventBus } from "@bdas/events";
 
-import { register } from "./services/register.js";
-import { verifyEmail } from "./services/verify.js";
-import { login } from "./services/login.js";
-import { logout } from "./services/logout.js";
-import { completePasswordReset, requestPasswordReset } from "./services/password-reset.js";
-import { getCurrentUser } from "./services/me.js";
+import { register } from "./services/register";
+import { verifyEmail } from "./services/verify";
+import { login } from "./services/login";
+import { logout } from "./services/logout";
+import { completePasswordReset, requestPasswordReset } from "./services/password-reset";
+import { getCurrentUser } from "./services/me";
 
 const DEFAULT_URL = "postgres://bdas:bdas@localhost:5432/bdas";
 

@@ -12,8 +12,8 @@ export {
   resetWpClient,
   type Fetcher,
   type WpClientOptions,
-} from "./client.js";
-export { getMenu } from "./services/menu.js";
-export { listPosts, getPost } from "./services/posts.js";
-export { getPage } from "./services/pages.js";
-export type { Menu, MenuItem, Post, Page } from "./types.js";
+} from "./client";
+export { getMenu } from "./services/menu";
+export { listPosts, getPost } from "./services/posts";
+export { getPage } from "./services/pages";
+export type { Menu, MenuItem, Post, Page } from "./types";

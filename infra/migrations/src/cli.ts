@@ -9,7 +9,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { config as loadEnv } from "dotenv";
 
-import { run } from "./index.js";
+import { run } from "./index";
 
 async function findRepoRoot(start: string): Promise<string> {
   let dir = start;

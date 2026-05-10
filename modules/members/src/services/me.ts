@@ -12,10 +12,10 @@ import type { PostgresJsDatabase } from "drizzle-orm/postgres-js";
 import { getCurrentUser, type CurrentUser, type Role } from "@bdas/auth";
 import { ForbiddenError } from "@bdas/errors";
 
-import { effectiveRoles as computeEffectiveRoles } from "../roles.js";
-import type { Member } from "../types.js";
+import { effectiveRoles as computeEffectiveRoles } from "../roles";
+import type { Member } from "../types";
 
-import { getMemberByUserId } from "./get.js";
+import { getMemberByUserId } from "./get";
 
 export type Db = PostgresJsDatabase<Record<string, never>>;
 

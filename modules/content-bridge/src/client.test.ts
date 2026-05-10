@@ -1,8 +1,8 @@
 import { afterEach, describe, expect, it } from "vitest";
 
-import { resetWpClient, setWpClient, WpClient, type Fetcher } from "./client.js";
-import { getMenu } from "./services/menu.js";
-import { getPost, listPosts } from "./services/posts.js";
+import { resetWpClient, setWpClient, WpClient, type Fetcher } from "./client";
+import { getMenu } from "./services/menu";
+import { getPost, listPosts } from "./services/posts";
 
 function jsonResponse(body: unknown, init: { status?: number } = {}): Response {
   return new Response(JSON.stringify(body), {

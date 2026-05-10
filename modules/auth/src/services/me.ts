@@ -10,9 +10,9 @@
  */
 import { ForbiddenError } from "@bdas/errors";
 
-import { getSession } from "../sessions.js";
-import type { Db } from "../sessions.js";
-import { verifyToken, type Role } from "../sso.js";
+import { getSession } from "../sessions";
+import type { Db } from "../sessions";
+import { verifyToken, type Role } from "../sso";
 
 export type CurrentUser = {
   readonly id: string;

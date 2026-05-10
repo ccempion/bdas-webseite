@@ -18,12 +18,12 @@ import { UnauthorizedError, ValidationError } from "@bdas/errors";
 import { getEventBus } from "@bdas/events";
 import { isFederalBoardEmail } from "@bdas/feature-flags";
 
-import type { UserLoggedIn } from "../events.js";
-import { verifyPassword } from "../password.js";
-import { rateLimit } from "../rate-limit.js";
-import { authCredentials, authUsers } from "../schema.js";
-import { createSession } from "../sessions.js";
-import { COOKIE_MAX_AGE_SECONDS, issueToken, type Role } from "../sso.js";
+import type { UserLoggedIn } from "../events";
+import { verifyPassword } from "../password";
+import { rateLimit } from "../rate-limit";
+import { authCredentials, authUsers } from "../schema";
+import { createSession } from "../sessions";
+import { COOKIE_MAX_AGE_SECONDS, issueToken, type Role } from "../sso";
 
 export type Db = PostgresJsDatabase<Record<string, never>>;
 

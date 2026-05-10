@@ -3,7 +3,7 @@ import path from "node:path";
 import os from "node:os";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
-import { discover, run } from "./index.js";
+import { discover, run } from "./index";
 
 let tmpRoot: string;
 

@@ -11,9 +11,9 @@ import { ValidationError } from "@bdas/errors";
 import { getEventBus } from "@bdas/events";
 import { createId } from "@bdas/id";
 
-import type { GroupCreated, GroupUpdated } from "../events.js";
-import { groups } from "../schema.js";
-import type { Group, GroupStatus } from "../types.js";
+import type { GroupCreated, GroupUpdated } from "../events";
+import { groups } from "../schema";
+import type { Group, GroupStatus } from "../types";
 
 export type Db = PostgresJsDatabase<Record<string, never>>;
 

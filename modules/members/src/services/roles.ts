@@ -8,13 +8,13 @@ import type { Role } from "@bdas/auth";
 import { ForbiddenError, NotFoundError, ValidationError } from "@bdas/errors";
 import { getEventBus } from "@bdas/events";
 
-import type { RoleGranted, RoleRevoked } from "../events.js";
-import { isRole } from "../roles.js";
-import { members } from "../schema.js";
-import type { Member } from "../types.js";
+import type { RoleGranted, RoleRevoked } from "../events";
+import { isRole } from "../roles";
+import { members } from "../schema";
+import type { Member } from "../types";
 
-import { row2member } from "./get.js";
-import type { Actor } from "./status.js";
+import { row2member } from "./get";
+import type { Actor } from "./status";
 
 export type Db = PostgresJsDatabase<Record<string, never>>;
 

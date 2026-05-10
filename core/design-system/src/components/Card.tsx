@@ -1,6 +1,6 @@
 import type { HTMLAttributes } from "react";
 
-import { cx } from "../cx.js";
+import { cx } from "../cx";
 
 export type CardProps = HTMLAttributes<HTMLDivElement> & {
   /** When true, applies the pronounced hero-card hover (-5px, big shadow). */

@@ -15,7 +15,7 @@ import type { PostgresJsDatabase } from "drizzle-orm/postgres-js";
 
 import { RateLimitError } from "@bdas/errors";
 
-import { authRateLimits } from "./schema.js";
+import { authRateLimits } from "./schema";
 
 export type Db = PostgresJsDatabase<Record<string, never>>;
 

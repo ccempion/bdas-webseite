@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { federalBoardEmailAllowlist, isFederalBoardEmail, isFlagOn, requireFlag } from "./index.js";
+import { federalBoardEmailAllowlist, isFederalBoardEmail, isFlagOn, requireFlag } from "./index";
 
 const original = { ...process.env };
 

@@ -8,12 +8,12 @@ import type { PostgresJsDatabase } from "drizzle-orm/postgres-js";
 import { ConflictError, ForbiddenError, NotFoundError } from "@bdas/errors";
 import { getEventBus } from "@bdas/events";
 
-import type { StatusChanged } from "../events.js";
-import { canTransition } from "../roles.js";
-import { members } from "../schema.js";
-import type { Member, MemberStatus } from "../types.js";
+import type { StatusChanged } from "../events";
+import { canTransition } from "../roles";
+import { members } from "../schema";
+import type { Member, MemberStatus } from "../types";
 
-import { row2member } from "./get.js";
+import { row2member } from "./get";
 
 export type Db = PostgresJsDatabase<Record<string, never>>;
 

@@ -18,11 +18,11 @@ import { ConflictError, ValidationError } from "@bdas/errors";
 import { getEventBus } from "@bdas/events";
 import { createId } from "@bdas/id";
 
-import type { UserRegistered } from "../events.js";
-import { hashPassword, PASSWORD_ALGORITHM, PASSWORD_MIN_LENGTH } from "../password.js";
-import { rateLimit } from "../rate-limit.js";
-import { authCredentials, authEmailVerifications, authUsers } from "../schema.js";
-import { randomToken } from "../tokens.js";
+import type { UserRegistered } from "../events";
+import { hashPassword, PASSWORD_ALGORITHM, PASSWORD_MIN_LENGTH } from "../password";
+import { rateLimit } from "../rate-limit";
+import { authCredentials, authEmailVerifications, authUsers } from "../schema";
+import { randomToken } from "../tokens";
 
 export type Db = PostgresJsDatabase<Record<string, never>>;
 

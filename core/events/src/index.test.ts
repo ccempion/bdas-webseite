@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { getEventBus, resetEventBus } from "./index.js";
+import { getEventBus, resetEventBus } from "./index";
 
 type FooEvent = { type: "foo.happened"; payload: { id: string } };
 type BarEvent = { type: "bar.happened"; n: number };

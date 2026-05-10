@@ -4,8 +4,8 @@
  * when the endpoint is missing or WP is down — the dashboard must still
  * render.
  */
-import { getWpClient } from "../client.js";
-import type { Menu, MenuItem } from "../types.js";
+import { getWpClient } from "../client";
+import type { Menu, MenuItem } from "../types";
 
 type RawMenuItem = {
   id?: number;

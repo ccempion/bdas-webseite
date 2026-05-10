@@ -11,10 +11,10 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { createTestDb, type TestDb } from "@bdas/db/test";
 import { resetEventBus } from "@bdas/events";
 
-import { getGroupBySlug } from "./services/get.js";
-import { getJoinPolicy } from "./services/join-policy.js";
-import { listGroups } from "./services/list.js";
-import { upsertGroupBySlug } from "./services/upsert.js";
+import { getGroupBySlug } from "./services/get";
+import { getJoinPolicy } from "./services/join-policy";
+import { listGroups } from "./services/list";
+import { upsertGroupBySlug } from "./services/upsert";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DEFAULT_URL = "postgres://bdas:bdas@localhost:5432/bdas";

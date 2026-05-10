@@ -8,8 +8,8 @@ import type { PostgresJsDatabase } from "drizzle-orm/postgres-js";
 import { NotFoundError } from "@bdas/errors";
 import { getEventBus } from "@bdas/events";
 
-import type { UserVerified } from "../events.js";
-import { authEmailVerifications, authUsers } from "../schema.js";
+import type { UserVerified } from "../events";
+import { authEmailVerifications, authUsers } from "../schema";
 
 export type Db = PostgresJsDatabase<Record<string, never>>;
 

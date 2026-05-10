@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createId, hasPrefix } from "./index.js";
+import { createId, hasPrefix } from "./index";
 
 describe("createId", () => {
   it("produces an id with the requested prefix", () => {

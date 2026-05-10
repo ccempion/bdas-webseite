@@ -2,8 +2,8 @@ import type { PostgresJsDatabase } from "drizzle-orm/postgres-js";
 
 import { getEventBus } from "@bdas/events";
 
-import type { UserLoggedOut } from "../events.js";
-import { revokeSession } from "../sessions.js";
+import type { UserLoggedOut } from "../events";
+import { revokeSession } from "../sessions";
 
 export type Db = PostgresJsDatabase<Record<string, never>>;
 
