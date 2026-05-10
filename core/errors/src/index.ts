@@ -55,10 +55,7 @@ export class ConflictError extends AppError {
 
 export class ValidationError extends AppError {
   readonly fields: Record<string, string> | undefined;
-  constructor(
-    message: string,
-    opts?: { fields?: Record<string, string>; cause?: unknown },
-  ) {
+  constructor(message: string, opts?: { fields?: Record<string, string>; cause?: unknown }) {
     super({ code: "VALIDATION", message, statusCode: 400, cause: opts?.cause });
     this.fields = opts?.fields;
   }

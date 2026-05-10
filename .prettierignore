@@ -1,0 +1,9 @@
+node_modules
+dist
+.next
+.turbo
+coverage
+.drizzle-noop
+pnpm-lock.yaml
+docs/bdas-platform-spec.md
+docs/wordpress-context.md

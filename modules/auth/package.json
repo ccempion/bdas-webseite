@@ -1,0 +1,26 @@
+{
+  "name": "@bdas/auth",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run --dir src"
+  },
+  "dependencies": {
+    "@bdas/db": "workspace:*",
+    "@bdas/errors": "workspace:*",
+    "@bdas/events": "workspace:*",
+    "@bdas/feature-flags": "workspace:*",
+    "@bdas/id": "workspace:*",
+    "@node-rs/argon2": "^2.0.2",
+    "drizzle-orm": "^0.36.0",
+    "jose": "^5.9.6",
+    "postgres": "^3.4.5",
+    "resend": "^4.0.1",
+    "zod": "^3.23.8"
+  }
+}

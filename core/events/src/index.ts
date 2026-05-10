@@ -13,27 +13,19 @@
 
 export type AnyEvent = { readonly type: string };
 
-export type EventHandler<E extends AnyEvent> = (
-  event: E,
-) => void | Promise<void>;
+export type EventHandler<E extends AnyEvent> = (event: E) => void | Promise<void>;
 
 export type Subscription = { readonly unsubscribe: () => void };
 
 export interface EventBus {
   publish<E extends AnyEvent>(event: E): Promise<void>;
-  subscribe<E extends AnyEvent>(
-    type: E["type"],
-    handler: EventHandler<E>,
-  ): Subscription;
+  subscribe<E extends AnyEvent>(type: E["type"], handler: EventHandler<E>): Subscription;
 }
 
 class InProcessEventBus implements EventBus {
   private readonly handlers = new Map<string, Set<EventHandler<AnyEvent>>>();
 
-  subscribe<E extends AnyEvent>(
-    type: E["type"],
-    handler: EventHandler<E>,
-  ): Subscription {
+  subscribe<E extends AnyEvent>(type: E["type"], handler: EventHandler<E>): Subscription {
     let set = this.handlers.get(type);
     if (!set) {
       set = new Set();

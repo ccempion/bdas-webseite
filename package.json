@@ -21,7 +21,8 @@
     "db:down": "docker compose down",
     "db:logs": "docker compose logs -f postgres",
     "db:migrate": "pnpm --filter @bdas/migrations run migrate",
-    "db:migrate:dry": "pnpm --filter @bdas/migrations run migrate -- --dry-run"
+    "db:migrate:dry": "pnpm --filter @bdas/migrations run migrate -- --dry-run",
+    "groups:seed": "pnpm --filter @bdas/groups run seed"
   },
   "devDependencies": {
     "@types/node": "^22.7.0",

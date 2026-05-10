@@ -1,10 +1,5 @@
 import { afterEach, describe, expect, it } from "vitest";
-import {
-  federalBoardEmailAllowlist,
-  isFederalBoardEmail,
-  isFlagOn,
-  requireFlag,
-} from "./index.js";
+import { federalBoardEmailAllowlist, isFederalBoardEmail, isFlagOn, requireFlag } from "./index.js";
 
 const original = { ...process.env };
 
@@ -28,7 +23,7 @@ describe("isFlagOn", () => {
     expect(isFlagOn("auth")).toBe(true);
   });
 
-  it('returns false for any other value', () => {
+  it("returns false for any other value", () => {
     process.env["BDAS_FLAG_AUTH"] = "yes";
     expect(isFlagOn("auth")).toBe(false);
   });
@@ -53,8 +48,7 @@ describe("federalBoardEmailAllowlist", () => {
   });
 
   it("parses comma-separated list, lowercase, trimmed", () => {
-    process.env["BDAS_FEDERAL_BOARD_EMAILS"] =
-      "Alice@bdas.de, bob@bdas.de ,CHARLIE@bdas.de";
+    process.env["BDAS_FEDERAL_BOARD_EMAILS"] = "Alice@bdas.de, bob@bdas.de ,CHARLIE@bdas.de";
     const set = federalBoardEmailAllowlist();
     expect(set.has("alice@bdas.de")).toBe(true);
     expect(set.has("bob@bdas.de")).toBe(true);

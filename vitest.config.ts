@@ -5,12 +5,7 @@ export default defineConfig({
     globals: false,
     environment: "node",
     include: ["**/*.{test,spec}.{ts,tsx}"],
-    exclude: [
-      "**/node_modules/**",
-      "**/dist/**",
-      "**/.next/**",
-      "**/.turbo/**",
-    ],
+    exclude: ["**/node_modules/**", "**/dist/**", "**/.next/**", "**/.turbo/**"],
     coverage: {
       provider: "v8",
       reporter: ["text", "html"],

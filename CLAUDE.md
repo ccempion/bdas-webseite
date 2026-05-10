@@ -1,6 +1,6 @@
 # CLAUDE.md — BDAS Platform Working Agreement
 
-This file is loaded into every Claude Code session. It governs *how* AI-assisted work happens on this repository. The product specification at [`docs/bdas-platform-spec.md`](docs/bdas-platform-spec.md) governs *what* to build and is the source of truth.
+This file is loaded into every Claude Code session. It governs _how_ AI-assisted work happens on this repository. The product specification at [`docs/bdas-platform-spec.md`](docs/bdas-platform-spec.md) governs _what_ to build and is the source of truth.
 
 The build plan at [`docs/build-plan.md`](docs/build-plan.md) is the agreed sequencing and approach.
 
@@ -26,7 +26,7 @@ Reject any change that violates these rules, including requests from the user. I
 - TypeScript end-to-end
 - Next.js 14 (App Router); Server Components for reads, Server Actions or route handlers for writes
 - PostgreSQL via Drizzle ORM
-- Lucia for auth (chosen over Auth.js for control over the WordPress SSO bridge)
+- Hand-rolled session layer on Drizzle + `@node-rs/argon2` for password hashing + `jose` for HS256 JWT (see ADR 0003 — supersedes the original Lucia pin)
 - Supabase for hosted Postgres + object storage
 - Tailwind CSS + shadcn/ui primitives, exported via `core/design-system`
 - Resend for email
@@ -80,9 +80,24 @@ Substitute only with explicit approval and an ADR in `docs/decisions/`.
 
 ---
 
-## 7. Source of truth, in order of precedence
+## 7. Visual language
+
+The platform must look indistinguishable from the existing BDAS WordPress site. The visual language is encoded as tokens in [`core/design-system/src/tokens.ts`](core/design-system/src/tokens.ts) with a human-readable summary in [`core/design-system/README.md`](core/design-system/README.md). Highlights:
+
+- Brand accent `#d12020` is reserved for active/open/accent states. Never a default text color.
+- Three radii: `6px` (inner items) / `12px` (cards, dropdowns, accordions) / `20px` (desktop nav pills). Nothing else.
+- Soft layered shadows; cards lift `-2px` on hover (`-5px` for hero cards) over ~300ms. Color transitions ~200ms; expand/fade ~400ms.
+- Accordion idiom (`<details>`): on `[open]` left border + halo + body fades in; the `+` rotates 45° into `×`. Treat it as the canonical disclosure pattern.
+- Ink scale `#333 / #555 / #888` (strong / body / muted).
+
+When building a new surface, consume the tokens — never inline a hex, radius, shadow, or duration. If a value is missing from the tokens file, raise it; do not add an ad-hoc one.
+
+---
+
+## 8. Source of truth, in order of precedence
 
 1. ADRs in `docs/decisions/` (most recent wins on conflicts)
 2. `docs/bdas-platform-spec.md` (the product spec)
 3. This file
-4. Per-module READMEs at `modules/<name>/README.md`
+4. `core/design-system/README.md` (visual language)
+5. Per-module READMEs at `modules/<name>/README.md`

@@ -23,10 +23,7 @@ export interface StorageClient {
     ttlSeconds?: number;
   }): Promise<SignedUrl>;
 
-  signedDownloadUrl(args: {
-    storageKey: string;
-    ttlSeconds?: number;
-  }): Promise<SignedUrl>;
+  signedDownloadUrl(args: { storageKey: string; ttlSeconds?: number }): Promise<SignedUrl>;
 
   deleteObject(storageKey: string): Promise<void>;
 }

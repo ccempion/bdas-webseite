@@ -1,0 +1,9 @@
+{
+  "name": "@bdas/wp-plugin-sso",
+  "version": "0.1.0",
+  "private": true,
+  "description": "WordPress plugin that hydrates wp_set_current_user from the dashboard.bdas.de session cookie and exposes the primary nav at /wp-json/bdas/v1/menu. PHP only — no Node build step.",
+  "scripts": {
+    "typecheck": "echo 'php plugin — nothing to typecheck'"
+  }
+}

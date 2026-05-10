@@ -2,4 +2,7 @@ packages:
   - "apps/*"
   - "modules/*"
   - "core/*"
+  - "infra/*"
   - "wp-plugin/*"
+allowBuilds:
+  esbuild: true

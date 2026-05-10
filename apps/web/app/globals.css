@@ -1,0 +1,88 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    /* Body ink as the default text color so child surfaces inherit correctly. */
+    color: theme("colors.bdas.ink");
+  }
+
+  body {
+    background: #fafafa;
+  }
+
+  /* The accordion idiom from the source CSS — kept globally so any <details>
+     in content (CMS markdown, future cards) gets it for free. */
+  details.bdas-accordion {
+    background-color: theme("colors.bdas.surface");
+    border: 1px solid theme("borderColor.bdas-soft");
+    border-radius: theme("borderRadius.bdas");
+    box-shadow: theme("boxShadow.bdas-card");
+    transition:
+      transform theme("transitionDuration.bdas-soft") theme("transitionTimingFunction.bdas"),
+      box-shadow theme("transitionDuration.bdas-soft") theme("transitionTimingFunction.bdas");
+    overflow: hidden;
+    margin-bottom: 12px;
+  }
+
+  details.bdas-accordion:hover {
+    box-shadow: theme("boxShadow.bdas-lift-sm");
+    transform: translateY(-2px);
+  }
+
+  details.bdas-accordion > summary {
+    padding: 16px 20px;
+    font-weight: 600;
+    font-size: theme("fontSize.bdas-summary");
+    color: theme("colors.bdas.ink");
+    cursor: pointer;
+    list-style: none;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition:
+      color theme("transitionDuration.bdas-soft") theme("transitionTimingFunction.bdas"),
+      padding theme("transitionDuration.bdas-soft") theme("transitionTimingFunction.bdas");
+  }
+
+  details.bdas-accordion > summary::-webkit-details-marker {
+    display: none;
+  }
+
+  details.bdas-accordion > summary::after {
+    content: "+";
+    font-size: theme("fontSize.bdas-icon");
+    font-weight: 300;
+    line-height: 0.5;
+    color: theme("colors.bdas.ink-muted");
+    transition:
+      transform theme("transitionDuration.bdas-soft") theme("transitionTimingFunction.bdas"),
+      color theme("transitionDuration.bdas-soft") theme("transitionTimingFunction.bdas");
+  }
+
+  details.bdas-accordion[open] {
+    border-left: 4px solid theme("colors.bdas.red");
+    box-shadow: theme("boxShadow.bdas-red-glow");
+  }
+
+  details.bdas-accordion[open] > summary {
+    color: theme("colors.bdas.red");
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    padding-left: 16px;
+  }
+
+  details.bdas-accordion[open] > summary::after {
+    transform: rotate(45deg);
+    color: theme("colors.bdas.red");
+  }
+
+  details.bdas-accordion[open] > *:not(summary) {
+    padding: 16px 20px;
+    margin: 0;
+    color: theme("colors.bdas.ink-body");
+    font-size: theme("fontSize.bdas-body");
+    line-height: 1.6;
+    animation: bdas-fade-slide-down 400ms ease forwards;
+  }
+}

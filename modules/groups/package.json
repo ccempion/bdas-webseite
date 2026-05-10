@@ -1,0 +1,27 @@
+{
+  "name": "@bdas/groups",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run --dir src",
+    "seed": "tsx src/cli.ts seed"
+  },
+  "dependencies": {
+    "@bdas/db": "workspace:*",
+    "@bdas/errors": "workspace:*",
+    "@bdas/events": "workspace:*",
+    "@bdas/id": "workspace:*",
+    "dotenv": "^16.4.5",
+    "drizzle-orm": "^0.36.0",
+    "postgres": "^3.4.5",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.1"
+  }
+}

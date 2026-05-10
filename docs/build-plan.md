@@ -14,13 +14,13 @@ A pnpm-workspace monorepo skeleton with the correct folder structure, plus the f
 
 These are cheap to choose now, expensive to change later. The spec leaves them open.
 
-| Decision | Options | Recommendation |
-|---|---|---|
-| **DB host** | Supabase / Neon | **Supabase** — also provides object storage (Phase 2) and a unified dashboard. One vendor for DB + storage = less glue. |
-| **Auth library** | Lucia / Auth.js | **Lucia** — Auth.js's defaults fight the WordPress-SSO requirement (custom cookie domain, JWT shape). Lucia is a thin primitive you control. |
-| **Local dev DB** | Docker Postgres / shared dev DB | **Docker Postgres** per developer — keeps migration dry-run honest. |
+| Decision                                      | Options                                                | Recommendation                                                                                                                               |
+| --------------------------------------------- | ------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| **DB host**                                   | Supabase / Neon                                        | **Supabase** — also provides object storage (Phase 2) and a unified dashboard. One vendor for DB + storage = less glue.                      |
+| **Auth library**                              | Lucia / Auth.js                                        | **Lucia** — Auth.js's defaults fight the WordPress-SSO requirement (custom cookie domain, JWT shape). Lucia is a thin primitive you control. |
+| **Local dev DB**                              | Docker Postgres / shared dev DB                        | **Docker Postgres** per developer — keeps migration dry-run honest.                                                                          |
 | **Federal-board bootstrap** (open Q from §25) | Manual SQL / first-registered-user / env-var allowlist | **Env-var allowlist of email addresses** that auto-receive `federal_board` on first login. Documented, reversible, no production-data hacks. |
-| **Domain** | `bdas.de` + `dashboard.bdas.de` / single sub-domain | **Two sub-domains** — spec already prefers this; cookie scope works either way. |
+| **Domain**                                    | `bdas.de` + `dashboard.bdas.de` / single sub-domain    | **Two sub-domains** — spec already prefers this; cookie scope works either way.                                                              |
 
 Once these are locked, capture each one as an ADR in `docs/decisions/`.
 
@@ -63,7 +63,7 @@ Build before members because `members.primary_group_id` references it.
 - Schema + migrations (without `group_change_requests` — Phase 6).
 - Service layer: profile CRUD, `transitionStatus`, `grantRole`/`revokeRole` with privilege guards.
 - `/account` profile editor.
-- A **temporary** `/admin/pending-members` page gated by `federal_board` so a board user can approve pending members. The real UI lives in `apps/dashboard` in Phase 3 — this is a one-screen stopgap, *not* the dashboard app.
+- A **temporary** `/admin/pending-members` page gated by `federal_board` so a board user can approve pending members. The real UI lives in `apps/dashboard` in Phase 3 — this is a one-screen stopgap, _not_ the dashboard app.
 - Wire the env-var federal-board bootstrap rule.
 
 ### Sprint 4 — Content bridge + WordPress SSO (2–3 days)
@@ -148,7 +148,7 @@ The single biggest lever. Most quality loss with an AI builder comes from drift:
 - **Background tasks** — long-running test suite or `tsc --watch` in the background, check back periodically
 - **Memory system** — preferences and project facts persist across sessions in structured form
 - **`/review`, `/security-review`, `/ultrareview`** — review skills as described
-- **MCP for browser/Playwright** — *not currently configured*. If you want Claude to actually click through the UI, set up a Playwright MCP server. Otherwise visual verification stays manual.
+- **MCP for browser/Playwright** — _not currently configured_. If you want Claude to actually click through the UI, set up a Playwright MCP server. Otherwise visual verification stays manual.
 
 ---
 

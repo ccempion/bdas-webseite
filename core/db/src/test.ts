@@ -23,8 +23,7 @@ export type TestDb = {
  *   }
  */
 export async function createTestDb(): Promise<TestDb> {
-  const url =
-    process.env["DATABASE_URL"] ?? "postgres://bdas:bdas@localhost:5432/bdas";
+  const url = process.env["DATABASE_URL"] ?? "postgres://bdas:bdas@localhost:5432/bdas";
   const schema = `test_${randomSlug()}`;
 
   // 1. Create the schema using a one-shot connection.

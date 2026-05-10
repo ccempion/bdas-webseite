@@ -1,11 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  AppError,
-  ForbiddenError,
-  NotFoundError,
-  ValidationError,
-  isAppError,
-} from "./index.js";
+import { AppError, ForbiddenError, NotFoundError, ValidationError, isAppError } from "./index.js";
 
 describe("AppError hierarchy", () => {
   it("NotFoundError sets code and statusCode", () => {

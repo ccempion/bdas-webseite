@@ -5,9 +5,17 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
+    "./tokens": "./src/tokens.ts",
     "./tailwind-preset": "./src/tailwind-preset.ts"
   },
   "scripts": {
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run --dir src"
+  },
+  "dependencies": {
+    "react": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.12"
   }
 }

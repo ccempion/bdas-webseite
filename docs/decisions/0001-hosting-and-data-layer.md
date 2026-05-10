@@ -83,14 +83,14 @@ Comparable to Supabase on the database axis but lacks bundled object storage. Wo
 
 Realistic monthly steady-state for this stack:
 
-| Item | Cost |
-|---|---|
-| Supabase Pro (production) | $25 |
-| Supabase Free (staging) | $0 |
-| Cloudflare R2 (backup dumps) | ~$1 |
-| Resend (free tier covers Phase 1 volume) | $0 |
+| Item                                                     | Cost  |
+| -------------------------------------------------------- | ----- |
+| Supabase Pro (production)                                | $25   |
+| Supabase Free (staging)                                  | $0    |
+| Cloudflare R2 (backup dumps)                             | ~$1   |
+| Resend (free tier covers Phase 1 volume)                 | $0    |
 | Stripe (transaction fees only, 1.5% + €0.25 per EU card) | usage |
-| Vercel (Hobby if eligible, else Pro) | $0–40 |
+| Vercel (Hobby if eligible, else Pro)                     | $0–40 |
 
 **Total: ~$25–65/month (~€280–730/year)**, dominated by Supabase Pro. This is acceptable for a federation funded by voluntary dues.
 

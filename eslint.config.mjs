@@ -34,12 +34,7 @@ export default tseslint.config(
         { type: "app", pattern: "apps/*", mode: "folder" },
         { type: "infra", pattern: "infra/*", mode: "folder" },
       ],
-      "boundaries/include": [
-        "core/**/*",
-        "modules/**/*",
-        "apps/**/*",
-        "infra/**/*",
-      ],
+      "boundaries/include": ["core/**/*", "modules/**/*", "apps/**/*", "infra/**/*"],
     },
     rules: {
       "@typescript-eslint/no-unused-vars": [
@@ -52,10 +47,7 @@ export default tseslint.config(
       ],
       // Belt-and-suspenders: package.json `exports` already block deep imports,
       // this catches the same violation with a clearer error message.
-      "import/no-internal-modules": [
-        "error",
-        { forbid: ["@bdas/*/src/**", "@bdas/*/dist/**"] },
-      ],
+      "import/no-internal-modules": ["error", { forbid: ["@bdas/*/src/**", "@bdas/*/dist/**"] }],
       // Enforces the §5 layering rules from CLAUDE.md.
       "boundaries/element-types": [
         "error",
