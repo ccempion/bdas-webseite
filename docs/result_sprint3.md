@@ -81,3 +81,17 @@
   BDAS_SSO_JWT_SECRET in wp-config.php to the same value as SSO_JWT_SECRET in Vercel                 
                                                             
   What does the build log show?            
+
+
+   1. Open https://dashboard.bdas.de — homepage should load with the BDAS header pulled from WordPress
+  2. Click /registrieren — try registering a test account (it'll write to Supabase)
+  3. Check the cookie domain — after login, open bdas.de and you should be logged in there too       
+  (that's the SSO bridge)                                                                            
+                                                                                                     
+  What's left from the original plan:                                                                
+  - Reset both DB passwords — you leaked BDAS_Deutschland! (Supabase) and the Strato DB password
+  earlier in chat                                                                                    
+  - Update the WP primary menu — those #services/#about items aren't right for BDAS
+  - Add pnpm --filter @bdas/web build to CI — so we never ship a code change without verifying it    
+  builds                                                                                             
+                                         
