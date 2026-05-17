@@ -1,6 +1,6 @@
 # ADR 0002 — SSO JWT Shape
 
-- **Status:** Accepted
+- **Status:** Accepted (amended 2026-05-17 — see Amendment below)
 - **Date:** 2026-05-10
 - **Supersedes:** —
 - **Superseded by:** —
@@ -144,3 +144,21 @@ The cookie contains `email` and `sub`. Both are HttpOnly and not exposed to clie
 - Once `wp-plugin/bdas-sso` is implemented (Sprint 4), pin the JWT library version on the WP side and add an integration test that issues a token from `apps/web` and verifies it through the plugin's parser, against a known fixture.
 - After Phase 1 acceptance, revisit rolling expiry. If kept fixed, document why.
 - After Phase 5 (role-aware WP), add an ADR for the `roles` → WP-role mapping. Until then, WP only differentiates "logged in" vs "anonymous".
+
+## Amendment — 2026-05-17
+
+Verification of the implemented SSO bridge against this ADR surfaced two points where the original text and the shipped code disagree. This amendment reconciles them. Per CLAUDE.md §8, the most recent ruling wins on conflict, so the statements here supersede the conflicting passages above.
+
+### 1. WordPress user mapping is by `email`, not `sub`
+
+The "What goes where" section says the plugin hydrates `wp_set_current_user` "based on `sub` (mapping `sub` to a WordPress user via a custom user-meta lookup created on first SSO login)." The shipped `wp-plugin/bdas-sso/src/sso.php` instead matches on the token's `email` claim via `get_user_by('email', …)` and auto-provisions a low-privilege Subscriber on first match.
+
+**Decision: email-based mapping is the accepted Phase 1 mechanism.** It is simpler, needs no extra user-meta write path, and is sufficient for the Phase 1 goal of "logged in vs not." `email` is already a required, lowercased, verified claim (it exists in the token precisely so WP avoids a REST round-trip), so it is a sound join key.
+
+**Accepted caveat:** if a member changes their primary email in BDAS, the next SSO request will not match the original WP user and will provision a _new_ Subscriber; the old WP user is orphaned. Likewise, if a WP account with that email already exists from some other flow, SSO adopts it. This is tolerable in Phase 1 (WP users carry no BDAS-side state beyond the Subscriber shell). Revisit when Phase 5 introduces role-aware WP: a durable `sub`→WP-user link (the originally-specified user-meta lookup) should be added then, keyed on the immutable `sub` rather than the mutable `email`. Tracked as a Phase 5 follow-up.
+
+### 2. `sub` carries the `usr_` prefix, not `mem_`
+
+The payload example shows `"sub": "mem_<nanoid>"`. The issuer (`modules/auth/src/sso.ts` via `login`) sets `sub` to `auth_users.id`, which is a `usr_<nanoid>` id from `core/id`; the `@bdas/auth` README documents `sub=usr_…`. The implementation and README are correct; the ADR example was wrong.
+
+**Correction:** `sub` is the `auth` user id, `usr_<nanoid>`. It is stable for the user's lifetime, which is the property `sub` consumers (Phase 3 dashboard) require. The `mem_<nanoid>` in the original payload example should be read as `usr_<nanoid>`.

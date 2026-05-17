@@ -61,6 +61,12 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm test
+      # ADR 0002: a token minted by the TS issuer must verify through the real
+      # PHP plugin parser. `pnpm test` writes the freshly minted token; this
+      # step reads it back through wp-plugin/bdas-sso/src/jwt.php. Same job, so
+      # the artifact is on disk. ubuntu-latest ships the PHP CLI.
+      - name: SSO issuer ↔ verifier contract (PHP)
+        run: php wp-plugin/bdas-sso/test/verify-fixture.php
 
   migrate-dry-run:
     name: Migrations dry-run

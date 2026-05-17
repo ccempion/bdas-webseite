@@ -1,0 +1,17 @@
+{
+  "_comment": "Shared SSO contract fixture (ADR 0002 follow-up). The TS issuer test (modules/auth/src/sso.test.ts) mints a token from `input` using `secret` and writes it to runtime-token.local; the PHP verifier test (verify-fixture.php) reads that token through the real plugin parser and asserts it decodes to `expectClaims`. Both sides read THIS file, so the issuer and verifier cannot silently drift. Test-only secret — never a real key.",
+  "secret": "bdas-sso-fixture-secret-do-not-use-in-prod-0001",
+  "input": {
+    "userId": "usr_fixture000000000000001",
+    "email": "fixture@bdas.de",
+    "roles": ["member"],
+    "sessionId": "ses_fixture000000000000001"
+  },
+  "expectClaims": {
+    "iss": "bdas",
+    "sub": "usr_fixture000000000000001",
+    "email": "fixture@bdas.de",
+    "roles": ["member"],
+    "ver": 1
+  }
+}
