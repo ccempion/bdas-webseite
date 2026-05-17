@@ -10,7 +10,9 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  NODE_VERSION: "20"
+  # pnpm 11.x requires node:sqlite (Node 22.5+). Node 20 makes setup-node's
+  # `cache: pnpm` step crash before any job runs. Matches local (v22.x).
+  NODE_VERSION: "22"
   PNPM_VERSION: "11.0.9"
 
 jobs:
