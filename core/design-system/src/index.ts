@@ -25,12 +25,7 @@ export { tailwindPreset } from "./tailwind-preset";
 
 export { cx } from "./cx";
 
-export {
-  Button,
-  type ButtonProps,
-  type ButtonVariant,
-  type ButtonSize,
-} from "./components/Button";
+export { Button, type ButtonProps, type ButtonVariant, type ButtonSize } from "./components/Button";
 export { Input, type InputProps } from "./components/Input";
 export { Card, type CardProps } from "./components/Card";
 export { Alert, type AlertProps, type AlertVariant } from "./components/Alert";

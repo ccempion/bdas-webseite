@@ -6,12 +6,7 @@
  */
 
 // Services
-export {
-  register,
-  RegisterInput,
-  buildVerifyUrl,
-  type RegisterResult,
-} from "./services/register";
+export { register, RegisterInput, buildVerifyUrl, type RegisterResult } from "./services/register";
 export { verifyEmail, type VerifyResult } from "./services/verify";
 export { login, LoginInput, type LoginResult, type LoginContext } from "./services/login";
 export { logout } from "./services/logout";
