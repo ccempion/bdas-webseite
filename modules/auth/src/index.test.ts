@@ -24,6 +24,7 @@ import { login } from "./services/login";
 import { logout } from "./services/logout";
 import { completePasswordReset, requestPasswordReset } from "./services/password-reset";
 import { getCurrentUser } from "./services/me";
+import { getUserExport } from "./services/export";
 import { passwordSchema, PASSWORD_MIN_LENGTH } from "./password";
 import { CONSENT_VERSION } from "./consent";
 
@@ -137,6 +138,23 @@ describeIfDb("auth integration", () => {
     `;
     expect(rows[0]?.["consent_at"]).not.toBeNull();
     expect(rows[0]?.["consent_version"]).toBe(CONSENT_VERSION);
+  });
+
+  it("getUserExport returns the user's own account row, or null", async () => {
+    const reg = await register(
+      t.db,
+      { email: "export@example.de", password: "Verysecret!23", consent: true },
+      { ip: "8.8.8.8", publicSiteUrl: "https://bdas.de" },
+    );
+
+    const exp = await getUserExport(t.db, reg.userId);
+    expect(exp?.id).toBe(reg.userId);
+    expect(exp?.email).toBe("export@example.de");
+    expect(exp?.status).toBe("unverified");
+    expect(exp?.consentVersion).toBe(CONSENT_VERSION);
+    expect(exp?.consentAt).not.toBeNull();
+
+    expect(await getUserExport(t.db, "usr_does_not_exist")).toBeNull();
   });
 
   it("rejects login before email verification", async () => {

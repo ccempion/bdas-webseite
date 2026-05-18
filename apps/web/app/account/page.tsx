@@ -76,11 +76,16 @@ export default async function AccountPage() {
         />
       </Card>
 
-      <form action="/abmelden" method="post">
-        <Button type="submit" variant="secondary">
-          Abmelden
-        </Button>
-      </form>
+      <div className="flex flex-wrap items-center gap-3">
+        <Link href="/account/datenexport">
+          <Button variant="secondary">Meine Daten exportieren</Button>
+        </Link>
+        <form action="/abmelden" method="post">
+          <Button type="submit" variant="secondary">
+            Abmelden
+          </Button>
+        </form>
+      </div>
     </main>
   );
 }

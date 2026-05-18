@@ -22,8 +22,9 @@ export { getCurrentUser, requireRole, type CurrentUser } from "./services/me";
 // Password policy (UI shows the hint; schema is the single source of truth).
 export { passwordSchema, PASSWORD_RULE_HINT, PASSWORD_MIN_LENGTH } from "./password";
 
-// GDPR consent (ADR 0008).
+// GDPR consent + self-service export (ADR 0008).
 export { CONSENT_VERSION } from "./consent";
+export { getUserExport, type UserExport } from "./services/export";
 
 // SSO + cookie
 export {
