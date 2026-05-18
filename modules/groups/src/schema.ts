@@ -7,8 +7,6 @@ export const groups = pgTable(
     slug: text("slug").notNull().unique(),
     name: text("name").notNull(),
     city: text("city").notNull(),
-    university: text("university"),
-    description: text("description"),
     contactEmail: text("contact_email"),
     instagramUrl: text("instagram_url"),
     websiteUrl: text("website_url"),

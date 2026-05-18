@@ -25,12 +25,10 @@ export const UpsertGroupInput = z.object({
     .regex(/^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/, "Slug must be lowercase kebab-case"),
   name: z.string().min(2).max(120),
   city: z.string().min(2).max(120),
-  university: z.string().max(200).optional().nullable(),
-  description: z.string().max(8000).optional().nullable(),
   contactEmail: z.string().email().max(254).optional().nullable(),
   instagramUrl: z.string().url().max(500).optional().nullable(),
   websiteUrl: z.string().url().max(500).optional().nullable(),
-  status: z.enum(["active", "dormant", "new"]).default("active"),
+  status: z.enum(["active", "dormant", "new", "archived"]).default("active"),
 });
 export type UpsertGroupInput = z.infer<typeof UpsertGroupInput>;
 
@@ -60,8 +58,6 @@ export async function upsertGroupBySlug(db: Db, input: unknown): Promise<UpsertR
       .set({
         name: v.name,
         city: v.city,
-        university: v.university ?? null,
-        description: v.description ?? null,
         contactEmail: v.contactEmail ?? null,
         instagramUrl: v.instagramUrl ?? null,
         websiteUrl: v.websiteUrl ?? null,
@@ -87,8 +83,6 @@ export async function upsertGroupBySlug(db: Db, input: unknown): Promise<UpsertR
     slug: v.slug,
     name: v.name,
     city: v.city,
-    university: v.university ?? null,
-    description: v.description ?? null,
     contactEmail: v.contactEmail ?? null,
     instagramUrl: v.instagramUrl ?? null,
     websiteUrl: v.websiteUrl ?? null,
@@ -112,8 +106,6 @@ function toGroup(id: string, v: UpsertGroupInput): Group {
     slug: v.slug,
     name: v.name,
     city: v.city,
-    university: v.university ?? null,
-    description: v.description ?? null,
     contactEmail: v.contactEmail ?? null,
     instagramUrl: v.instagramUrl ?? null,
     websiteUrl: v.websiteUrl ?? null,

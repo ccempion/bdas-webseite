@@ -12,8 +12,6 @@ function row2group(r: typeof groups.$inferSelect): Group {
     slug: r.slug,
     name: r.name,
     city: r.city,
-    university: r.university,
-    description: r.description,
     contactEmail: r.contactEmail,
     instagramUrl: r.instagramUrl,
     websiteUrl: r.websiteUrl,

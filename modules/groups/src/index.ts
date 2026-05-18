@@ -9,6 +9,13 @@ export { listGroups, type ListOpts } from "./services/list";
 export { getGroup, getGroupBySlug } from "./services/get";
 export { getJoinPolicy } from "./services/join-policy";
 export { upsertGroupBySlug, UpsertGroupInput, type UpsertResult } from "./services/upsert";
+export {
+  createGroup,
+  updateGroup,
+  archiveGroup,
+  CreateGroupInput,
+  UpdateGroupInput,
+} from "./services/manage";
 
 export type { Group, GroupSummary, GroupStatus, JoinPolicy } from "./types";
-export type { GroupEvent, GroupCreated, GroupUpdated } from "./events";
+export type { GroupEvent, GroupCreated, GroupUpdated, GroupArchived } from "./events";

@@ -17,4 +17,11 @@ export type GroupUpdated = {
   readonly at: Date;
 };
 
-export type GroupEvent = GroupCreated | GroupUpdated;
+export type GroupArchived = {
+  readonly type: "groups.group.archived";
+  readonly groupId: string;
+  readonly slug: string;
+  readonly at: Date;
+};
+
+export type GroupEvent = GroupCreated | GroupUpdated | GroupArchived;

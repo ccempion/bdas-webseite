@@ -1,0 +1,175 @@
+/**
+ * Federal-board group management: create, edit, archive.
+ *
+ * Authorization is NOT enforced here — callers gate on `requireFederalBoard`
+ * at the app action layer, same as modules/members. Keeping this auth-agnostic
+ * keeps `groups` free of an `auth`/`members` dependency (CLAUDE.md §1 rule 2).
+ *
+ * `upsertGroupBySlug` (seed CLI) is intentionally separate: it keys on slug
+ * and is idempotent. These services key on id so an edit can never silently
+ * fork a second row when a value changes.
+ */
+import { eq } from "drizzle-orm";
+import type { PostgresJsDatabase } from "drizzle-orm/postgres-js";
+import { z } from "zod";
+
+import { ConflictError, NotFoundError, ValidationError } from "@bdas/errors";
+import { getEventBus } from "@bdas/events";
+import { createId } from "@bdas/id";
+
+import type { GroupArchived, GroupCreated, GroupUpdated } from "../events";
+import { groups } from "../schema";
+import type { Group, GroupStatus } from "../types";
+
+export type Db = PostgresJsDatabase<Record<string, never>>;
+
+// Slug is immutable after creation (it is the public /gruppen/[slug] URL), so
+// it is deliberately absent from the update surface. Create extends this via
+// zod `.extend()` — sharing the shape by object spread widens `.default()`
+// inference under exactOptionalPropertyTypes.
+export const UpdateGroupInput = z.object({
+  name: z.string().min(2).max(120),
+  city: z.string().min(2).max(120),
+  contactEmail: z.string().email().max(254).optional().nullable(),
+  instagramUrl: z.string().url().max(500).optional().nullable(),
+  websiteUrl: z.string().url().max(500).optional().nullable(),
+  status: z.enum(["active", "dormant", "new", "archived"]).default("active"),
+});
+export type UpdateGroupInput = z.infer<typeof UpdateGroupInput>;
+
+export const CreateGroupInput = UpdateGroupInput.extend({
+  slug: z
+    .string()
+    .min(2)
+    .max(64)
+    .regex(/^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/, "Slug must be lowercase kebab-case"),
+});
+export type CreateGroupInput = z.infer<typeof CreateGroupInput>;
+
+function parseOrThrow<S extends z.ZodTypeAny>(schema: S, input: unknown): z.infer<S> {
+  const parsed = schema.safeParse(input);
+  if (!parsed.success) {
+    const fields: Record<string, string> = {};
+    for (const i of parsed.error.issues) {
+      fields[i.path.join(".") || "_"] = i.message;
+    }
+    throw new ValidationError("Group input invalid", { fields });
+  }
+  return parsed.data;
+}
+
+function rowToGroup(r: typeof groups.$inferSelect): Group {
+  return {
+    id: r.id,
+    slug: r.slug,
+    name: r.name,
+    city: r.city,
+    contactEmail: r.contactEmail,
+    instagramUrl: r.instagramUrl,
+    websiteUrl: r.websiteUrl,
+    status: r.status as GroupStatus,
+  };
+}
+
+export async function createGroup(db: Db, input: unknown): Promise<Group> {
+  const v = parseOrThrow(CreateGroupInput, input);
+
+  const clash = await db.select().from(groups).where(eq(groups.slug, v.slug)).limit(1);
+  if (clash[0]) {
+    throw new ConflictError(`Eine Gruppe mit dem Kürzel „${v.slug}" existiert bereits.`);
+  }
+
+  const id = createId("grp");
+  const now = new Date();
+  await db.insert(groups).values({
+    id,
+    slug: v.slug,
+    name: v.name,
+    city: v.city,
+    contactEmail: v.contactEmail ?? null,
+    instagramUrl: v.instagramUrl ?? null,
+    websiteUrl: v.websiteUrl ?? null,
+    status: v.status,
+  });
+
+  const event: GroupCreated = {
+    type: "groups.group.created",
+    groupId: id,
+    slug: v.slug,
+    at: now,
+  };
+  await getEventBus().publish(event);
+
+  return {
+    id,
+    slug: v.slug,
+    name: v.name,
+    city: v.city,
+    contactEmail: v.contactEmail ?? null,
+    instagramUrl: v.instagramUrl ?? null,
+    websiteUrl: v.websiteUrl ?? null,
+    status: v.status as GroupStatus,
+  };
+}
+
+export async function updateGroup(db: Db, id: string, input: unknown): Promise<Group> {
+  const v = parseOrThrow(UpdateGroupInput, input);
+
+  const existing = await db.select().from(groups).where(eq(groups.id, id)).limit(1);
+  if (!existing[0]) {
+    throw new NotFoundError("Gruppe nicht gefunden.");
+  }
+
+  const now = new Date();
+  await db
+    .update(groups)
+    .set({
+      name: v.name,
+      city: v.city,
+      contactEmail: v.contactEmail ?? null,
+      instagramUrl: v.instagramUrl ?? null,
+      websiteUrl: v.websiteUrl ?? null,
+      status: v.status,
+      updatedAt: now,
+    })
+    .where(eq(groups.id, id));
+
+  const event: GroupUpdated = {
+    type: "groups.group.updated",
+    groupId: id,
+    slug: existing[0].slug,
+    at: now,
+  };
+  await getEventBus().publish(event);
+
+  return {
+    id,
+    slug: existing[0].slug,
+    name: v.name,
+    city: v.city,
+    contactEmail: v.contactEmail ?? null,
+    instagramUrl: v.instagramUrl ?? null,
+    websiteUrl: v.websiteUrl ?? null,
+    status: v.status as GroupStatus,
+  };
+}
+
+export async function archiveGroup(db: Db, id: string): Promise<Group> {
+  const existing = await db.select().from(groups).where(eq(groups.id, id)).limit(1);
+  if (!existing[0]) {
+    throw new NotFoundError("Gruppe nicht gefunden.");
+  }
+
+  const now = new Date();
+  await db.update(groups).set({ status: "archived", updatedAt: now }).where(eq(groups.id, id));
+
+  const event: GroupArchived = {
+    type: "groups.group.archived",
+    groupId: id,
+    slug: existing[0].slug,
+    at: now,
+  };
+  await getEventBus().publish(event);
+
+  return rowToGroup({ ...existing[0], status: "archived" });
+}

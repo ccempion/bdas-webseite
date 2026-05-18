@@ -3,15 +3,13 @@
  * (`GroupRow`) is internal — service callers see `Group` / `GroupSummary`.
  */
 
-export type GroupStatus = "active" | "dormant" | "new";
+export type GroupStatus = "active" | "dormant" | "new" | "archived";
 
 export type Group = {
   readonly id: string;
   readonly slug: string;
   readonly name: string;
   readonly city: string;
-  readonly university: string | null;
-  readonly description: string | null;
   readonly contactEmail: string | null;
   readonly instagramUrl: string | null;
   readonly websiteUrl: string | null;

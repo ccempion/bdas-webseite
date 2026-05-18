@@ -19,7 +19,7 @@ export default async function GruppeDetailPage({ params }: { params: { slug: str
   requireGroupsFlag();
 
   const group = await getGroupBySlug(getDb(), params.slug);
-  if (!group) notFound();
+  if (!group || group.status === "archived") notFound();
 
   return (
     <main className="mx-auto flex max-w-3xl flex-col gap-6 px-4 py-12">
@@ -32,21 +32,12 @@ export default async function GruppeDetailPage({ params }: { params: { slug: str
       <header className="flex flex-col gap-1">
         <p className="text-sm text-bdas-ink-muted">{group.city}</p>
         <h1 className="text-3xl font-semibold text-bdas-ink">{group.name}</h1>
-        {group.university ? <p className="text-bdas-ink-body">{group.university}</p> : null}
       </header>
 
       {group.status === "dormant" ? (
         <Alert variant="info" title="Inaktive Gruppe">
           Diese Hochschulgruppe ist derzeit nicht aktiv.
         </Alert>
-      ) : null}
-
-      {group.description ? (
-        <Card flat className="p-6">
-          <p className="whitespace-pre-line text-bdas-ink-body leading-relaxed">
-            {group.description}
-          </p>
-        </Card>
       ) : null}
 
       <Card className="p-6">
