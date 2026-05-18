@@ -14,7 +14,7 @@ import { NotFoundError, ValidationError } from "@bdas/errors";
 import { getEventBus } from "@bdas/events";
 
 import type { PasswordReset as PasswordResetEvent } from "../events";
-import { hashPassword, PASSWORD_ALGORITHM, PASSWORD_MIN_LENGTH } from "../password";
+import { hashPassword, passwordSchema, PASSWORD_ALGORITHM } from "../password";
 import { rateLimit } from "../rate-limit";
 import { authCredentials, authPasswordResets, authSessions, authUsers } from "../schema";
 import { randomToken } from "../tokens";
@@ -26,7 +26,7 @@ export const RESET_TTL_MS = 60 * 60 * 1000;
 export const ResetRequestInput = z.object({ email: z.string().email().max(254) });
 export const ResetCompleteInput = z.object({
   token: z.string().min(10).max(256),
-  password: z.string().min(PASSWORD_MIN_LENGTH).max(256),
+  password: passwordSchema,
 });
 
 export type ResetRequestResult = { readonly resetToken: string } | null;

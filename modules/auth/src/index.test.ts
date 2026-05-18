@@ -24,6 +24,18 @@ import { login } from "./services/login";
 import { logout } from "./services/logout";
 import { completePasswordReset, requestPasswordReset } from "./services/password-reset";
 import { getCurrentUser } from "./services/me";
+import { passwordSchema, PASSWORD_MIN_LENGTH } from "./password";
+
+describe("password policy", () => {
+  it("enforces min length + upper + lower + special, no digit required", () => {
+    expect(PASSWORD_MIN_LENGTH).toBe(10);
+    expect(passwordSchema.safeParse("Abc!45678").success).toBe(false); // 9 chars
+    expect(passwordSchema.safeParse("abcdefghij!").success).toBe(false); // no upper
+    expect(passwordSchema.safeParse("ABCDEFGHIJ!").success).toBe(false); // no lower
+    expect(passwordSchema.safeParse("Abcdefghij1").success).toBe(false); // no special
+    expect(passwordSchema.safeParse("Abcdefgh!j").success).toBe(true); // 10, upper+lower+special
+  });
+});
 
 const DEFAULT_URL = "postgres://bdas:bdas@localhost:5432/bdas";
 
@@ -75,7 +87,7 @@ describeIfDb("auth integration", () => {
   it("register → verify → login → logout happy path", async () => {
     const reg = await register(
       t.db,
-      { email: "alice@example.de", password: "verysecret123" },
+      { email: "alice@example.de", password: "Verysecret!23" },
       { ip: "1.1.1.1", publicSiteUrl: "https://bdas.de" },
     );
     expect(reg.userId).toMatch(/^usr_/);
@@ -91,7 +103,7 @@ describeIfDb("auth integration", () => {
 
     const lr = await login(
       t.db,
-      { email: "alice@example.de", password: "verysecret123" },
+      { email: "alice@example.de", password: "Verysecret!23" },
       { ip: "1.1.1.1" },
     );
     expect(lr.token.split(".")).toHaveLength(3);
@@ -109,20 +121,20 @@ describeIfDb("auth integration", () => {
   it("rejects login before email verification", async () => {
     const reg = await register(
       t.db,
-      { email: "bob@example.de", password: "verysecret123" },
+      { email: "bob@example.de", password: "Verysecret!23" },
       { ip: "2.2.2.2", publicSiteUrl: "https://bdas.de" },
     );
     expect(reg.userId).toBeTruthy();
 
     await expect(
-      login(t.db, { email: "bob@example.de", password: "verysecret123" }, { ip: "2.2.2.2" }),
+      login(t.db, { email: "bob@example.de", password: "Verysecret!23" }, { ip: "2.2.2.2" }),
     ).rejects.toMatchObject({ code: "UNAUTHORIZED" });
   });
 
   it("rejects wrong password and never reveals which field was wrong", async () => {
     await register(
       t.db,
-      { email: "carol@example.de", password: "verysecret123" },
+      { email: "carol@example.de", password: "Verysecret!23" },
       { ip: "3.3.3.3", publicSiteUrl: "https://bdas.de" },
     );
 
@@ -145,14 +157,14 @@ describeIfDb("auth integration", () => {
     for (let i = 0; i < 5; i++) {
       await register(
         t.db,
-        { email: `flood-${i}@example.de`, password: "verysecret123" },
+        { email: `flood-${i}@example.de`, password: "Verysecret!23" },
         { ip: "9.9.9.9", publicSiteUrl: "https://bdas.de" },
       );
     }
     await expect(
       register(
         t.db,
-        { email: "flood-6@example.de", password: "verysecret123" },
+        { email: "flood-6@example.de", password: "Verysecret!23" },
         { ip: "9.9.9.9", publicSiteUrl: "https://bdas.de" },
       ),
     ).rejects.toMatchObject({ code: "RATE_LIMITED" });
@@ -161,13 +173,13 @@ describeIfDb("auth integration", () => {
   it("password reset rotates the hash and revokes existing sessions", async () => {
     const reg = await register(
       t.db,
-      { email: "dora@example.de", password: "verysecret123" },
+      { email: "dora@example.de", password: "Verysecret!23" },
       { ip: "4.4.4.4", publicSiteUrl: "https://bdas.de" },
     );
     await verifyEmail(t.db, reg.verifyToken);
     const lr = await login(
       t.db,
-      { email: "dora@example.de", password: "verysecret123" },
+      { email: "dora@example.de", password: "Verysecret!23" },
       { ip: "4.4.4.4" },
     );
 
@@ -181,7 +193,7 @@ describeIfDb("auth integration", () => {
 
     await completePasswordReset(t.db, {
       token: reqResult.resetToken,
-      password: "newsecretpw123",
+      password: "Newsecretpw!23",
     });
 
     // Old session is revoked.
@@ -190,13 +202,13 @@ describeIfDb("auth integration", () => {
 
     // Old password no longer works.
     await expect(
-      login(t.db, { email: "dora@example.de", password: "verysecret123" }, { ip: "4.4.4.5" }),
+      login(t.db, { email: "dora@example.de", password: "Verysecret!23" }, { ip: "4.4.4.5" }),
     ).rejects.toMatchObject({ code: "UNAUTHORIZED" });
 
     // New password works.
     const lr2 = await login(
       t.db,
-      { email: "dora@example.de", password: "newsecretpw123" },
+      { email: "dora@example.de", password: "Newsecretpw!23" },
       { ip: "4.4.4.5" },
     );
     expect(lr2.token).toBeTruthy();
@@ -215,13 +227,13 @@ describeIfDb("auth integration", () => {
     process.env["BDAS_FEDERAL_BOARD_EMAILS"] = "eve@example.de";
     const reg = await register(
       t.db,
-      { email: "eve@example.de", password: "verysecret123" },
+      { email: "eve@example.de", password: "Verysecret!23" },
       { ip: "6.6.6.6", publicSiteUrl: "https://bdas.de" },
     );
     await verifyEmail(t.db, reg.verifyToken);
     const lr = await login(
       t.db,
-      { email: "eve@example.de", password: "verysecret123" },
+      { email: "eve@example.de", password: "Verysecret!23" },
       { ip: "6.6.6.6" },
     );
     const me = await getCurrentUser(t.db, lr.token);

@@ -2,6 +2,7 @@
 
 import { useFormState, useFormStatus } from "react-dom";
 
+import { PASSWORD_RULE_HINT } from "@bdas/auth";
 import { Alert, Button, Field, Form, Input } from "@bdas/design-system";
 
 import { registerAction, type RegisterFormState } from "./actions";
@@ -30,7 +31,7 @@ export function RegistrierenForm() {
       <Field
         label="Passwort"
         htmlFor="password"
-        hint="Mindestens 12 Zeichen."
+        hint={PASSWORD_RULE_HINT}
         {...(state.fields?.["password"] ? { error: state.fields["password"] } : {})}
       >
         <Input

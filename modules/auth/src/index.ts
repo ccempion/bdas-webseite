@@ -19,6 +19,9 @@ export {
 } from "./services/password-reset";
 export { getCurrentUser, requireRole, type CurrentUser } from "./services/me";
 
+// Password policy (UI shows the hint; schema is the single source of truth).
+export { passwordSchema, PASSWORD_RULE_HINT, PASSWORD_MIN_LENGTH } from "./password";
+
 // SSO + cookie
 export {
   COOKIE_NAME,

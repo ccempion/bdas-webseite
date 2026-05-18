@@ -19,7 +19,7 @@ import { getEventBus } from "@bdas/events";
 import { createId } from "@bdas/id";
 
 import type { UserRegistered } from "../events";
-import { hashPassword, PASSWORD_ALGORITHM, PASSWORD_MIN_LENGTH } from "../password";
+import { hashPassword, passwordSchema, PASSWORD_ALGORITHM } from "../password";
 import { rateLimit } from "../rate-limit";
 import { authCredentials, authEmailVerifications, authUsers } from "../schema";
 import { randomToken } from "../tokens";
@@ -28,7 +28,7 @@ export type Db = PostgresJsDatabase<Record<string, never>>;
 
 export const RegisterInput = z.object({
   email: z.string().email().max(254),
-  password: z.string().min(PASSWORD_MIN_LENGTH).max(256),
+  password: passwordSchema,
 });
 export type RegisterInput = z.infer<typeof RegisterInput>;
 
