@@ -18,12 +18,14 @@ export function setSessionCookie(jwt: string): void {
 }
 
 export function clearSessionCookie(): void {
+  const domain = process.env["SSO_COOKIE_DOMAIN"] || undefined;
   cookies().set({
     name: COOKIE_NAME,
     value: "",
     httpOnly: true,
     path: "/",
     maxAge: 0,
+    ...(domain ? { domain } : {}),
   });
 }
 
