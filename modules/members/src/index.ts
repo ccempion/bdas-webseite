@@ -17,9 +17,16 @@ export { getMember, getMemberByUserId } from "./services/get";
 export { listPendingMembers } from "./services/list-pending";
 export { getCurrentMember, requireFederalBoard, type CurrentMember } from "./services/me";
 
-export { canTransition, effectiveRoles, isRole } from "./roles";
+export {
+  canTransition,
+  effectiveGrants,
+  isRole,
+  isFederalBoard,
+  canManageGroup,
+  canApproveMember,
+} from "./roles";
 
-export type { Member, MemberStatus, PendingMember } from "./types";
+export type { Member, MemberStatus, PendingMember, Grant } from "./types";
 export type {
   MembersEvent,
   ProfileCreated,

@@ -28,6 +28,7 @@ export type RoleGranted = {
   readonly type: "members.role.granted";
   readonly memberId: string;
   readonly role: Role;
+  readonly groupId: string | null;
   readonly actorUserId: string;
   readonly at: Date;
 };
@@ -36,6 +37,7 @@ export type RoleRevoked = {
   readonly type: "members.role.revoked";
   readonly memberId: string;
   readonly role: Role;
+  readonly groupId: string | null;
   readonly actorUserId: string;
   readonly at: Date;
 };

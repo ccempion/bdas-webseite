@@ -3,6 +3,7 @@ import type { PostgresJsDatabase } from "drizzle-orm/postgres-js";
 
 import { ForbiddenError } from "@bdas/errors";
 
+import { isFederalBoard } from "../roles";
 import { members } from "../schema";
 import type { Member } from "../types";
 
@@ -11,14 +12,32 @@ import type { Actor } from "./status";
 
 export type Db = PostgresJsDatabase<Record<string, never>>;
 
+/**
+ * Pending members the actor may decide on (ADR 0007): federal_board sees all;
+ * a local_board sees only pending members of the groups it is scoped to.
+ */
 export async function listPendingMembers(db: Db, actor: Actor): Promise<Member[]> {
-  if (!actor.effectiveRoles.includes("federal_board")) {
-    throw new ForbiddenError("Nur der Bundesvorstand darf diese Liste sehen.");
+  const federal = isFederalBoard(actor.grants);
+  const scopedGroupIds = actor.grants
+    .filter(
+      (g): g is { role: "local_board"; groupId: string } =>
+        g.role === "local_board" && g.groupId !== null,
+    )
+    .map((g) => g.groupId);
+
+  if (!federal && scopedGroupIds.length === 0) {
+    throw new ForbiddenError("Nur Vorstände dürfen diese Liste sehen.");
   }
+
   const rows = await db
     .select()
     .from(members)
     .where(eq(members.status, "pending"))
     .orderBy(asc(members.createdAt));
-  return rows.map(row2member);
+
+  const visible = federal
+    ? rows
+    : rows.filter((r) => r.primaryGroupId !== null && scopedGroupIds.includes(r.primaryGroupId));
+
+  return visible.map(row2member);
 }

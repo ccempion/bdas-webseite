@@ -1,6 +1,8 @@
 /**
- * Status transitions. Phase 1 only the federal_board can transition members;
- * local_board approval comes in a later sprint.
+ * Status transitions. The actor must manage the member's group (ADR 0007):
+ * federal_board for any member, local_board only for members of its own
+ * group. The group is known only after the row is read, so the authorization
+ * check lives inside the transaction.
  */
 import { eq } from "drizzle-orm";
 import type { PostgresJsDatabase } from "drizzle-orm/postgres-js";
@@ -9,9 +11,9 @@ import { ConflictError, ForbiddenError, NotFoundError } from "@bdas/errors";
 import { getEventBus } from "@bdas/events";
 
 import type { StatusChanged } from "../events";
-import { canTransition } from "../roles";
+import { canManageGroup, canTransition } from "../roles";
 import { members } from "../schema";
-import type { Member, MemberStatus } from "../types";
+import type { Grant, Member, MemberStatus } from "../types";
 
 import { row2member } from "./get";
 
@@ -19,14 +21,8 @@ export type Db = PostgresJsDatabase<Record<string, never>>;
 
 export type Actor = {
   readonly userId: string;
-  readonly effectiveRoles: ReadonlyArray<string>;
+  readonly grants: ReadonlyArray<Grant>;
 };
-
-function requireBoard(actor: Actor): void {
-  if (!actor.effectiveRoles.includes("federal_board")) {
-    throw new ForbiddenError("Nur der Bundesvorstand darf diese Aktion ausführen.");
-  }
-}
 
 export async function transitionStatus(
   db: Db,
@@ -34,12 +30,15 @@ export async function transitionStatus(
   to: MemberStatus,
   actor: Actor,
 ): Promise<Member> {
-  requireBoard(actor);
-
   return db.transaction(async (tx) => {
     const rows = await tx.select().from(members).where(eq(members.id, memberId)).limit(1);
     const row = rows[0];
     if (!row) throw new NotFoundError("Mitglied nicht gefunden.");
+
+    if (!canManageGroup(actor.grants, row.primaryGroupId)) {
+      throw new ForbiddenError("Du darfst dieses Mitglied nicht verwalten.");
+    }
+
     const from = row.status as MemberStatus;
     if (from === to) return row2member(row);
     if (!canTransition(from, to)) {
@@ -71,7 +70,7 @@ export async function transitionStatus(
   });
 }
 
-/** Convenience for the most common Sprint 3 transition. */
+/** Convenience for the most common transition (pending → active). */
 export async function approveMember(db: Db, memberId: string, actor: Actor): Promise<Member> {
   return transitionStatus(db, memberId, "active", actor);
 }

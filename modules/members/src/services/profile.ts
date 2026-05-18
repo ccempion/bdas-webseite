@@ -66,7 +66,6 @@ export async function createProfile(db: Db, input: unknown): Promise<Member> {
       lastName: v.lastName,
       primaryGroupId: v.primaryGroupId ?? null,
       status: "pending",
-      roles: [],
     })
     .returning();
   if (!row) throw new Error("createProfile: insert returned no row");

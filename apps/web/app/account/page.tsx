@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { getDb } from "@bdas/db";
 import { Alert, Button, Card } from "@bdas/design-system";
 import { listGroups } from "@bdas/groups";
-import { getCurrentMember } from "@bdas/members";
+import { getCurrentMember, isFederalBoard } from "@bdas/members";
 
 import { requireAuthFlag } from "../_auth/flag";
 import { requireMembersFlag } from "../_members/flag";
@@ -30,7 +30,7 @@ export default async function AccountPage() {
 
   const groups = await listGroups(db, { status: "active" });
 
-  const isBoard = me.effectiveRoles.includes("federal_board");
+  const isBoard = isFederalBoard(me.grants);
   const status = me.member?.status;
 
   return (

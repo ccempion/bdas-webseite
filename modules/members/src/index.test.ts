@@ -2,7 +2,7 @@
  * Members integration tests against a real Postgres schema.
  * Skips when DATABASE_URL is unreachable; CI brings up a Postgres service.
  *
- * Pulls in the auth + groups migrations because the members table FKs both.
+ * Pulls in the auth + groups migrations because the members tables FK both.
  */
 import { promises as fs } from "node:fs";
 import path from "node:path";
@@ -17,7 +17,8 @@ import { createProfile } from "./services/profile";
 import { approveMember, transitionStatus } from "./services/status";
 import { grantRole, revokeRole } from "./services/roles";
 import { listPendingMembers } from "./services/list-pending";
-import { getMemberByUserId } from "./services/get";
+import { getGrants } from "./services/get";
+import type { Grant } from "./types";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DEFAULT_URL = "postgres://bdas:bdas@localhost:5432/bdas";
@@ -44,12 +45,16 @@ const describeIfDb = reachable ? describe : describe.skip;
 
 const BOARD = {
   userId: "usr_board_actor",
-  effectiveRoles: ["federal_board"] as const,
+  grants: [{ role: "federal_board", groupId: null }] as ReadonlyArray<Grant>,
 };
 const PEASANT = {
   userId: "usr_peasant_actor",
-  effectiveRoles: ["member"] as const,
+  grants: [{ role: "member", groupId: null }] as ReadonlyArray<Grant>,
 };
+const localBoardOf = (userId: string, groupId: string) => ({
+  userId,
+  grants: [{ role: "local_board", groupId }] as ReadonlyArray<Grant>,
+});
 
 describeIfDb("members integration", () => {
   let t: TestDb;
@@ -64,6 +69,7 @@ describeIfDb("members integration", () => {
       ["..", "..", "auth", "migrations", "0001_init.sql"],
       ["..", "..", "groups", "migrations", "0001_init.sql"],
       ["..", "migrations", "0001_init.sql"],
+      ["..", "migrations", "0002_role_grants.sql"],
     ]) {
       const sql = await fs.readFile(path.join(__dirname, ...file), "utf8");
       await t.client.unsafe(sql);
@@ -82,6 +88,13 @@ describeIfDb("members integration", () => {
     `;
   }
 
+  async function createGroup(id: string, slug: string): Promise<void> {
+    await t.client`
+      INSERT INTO groups (id, slug, name, city, status)
+      VALUES (${id}, ${slug}, ${slug}, 'Teststadt', 'active')
+    `;
+  }
+
   it("createProfile writes a pending row", async () => {
     await createUser("usr_alice", "alice@example.de");
     const m = await createProfile(t.db, {
@@ -91,15 +104,16 @@ describeIfDb("members integration", () => {
     });
     expect(m.id).toMatch(/^mem_/);
     expect(m.status).toBe("pending");
-    expect(m.roles).toEqual([]);
   });
 
-  it("approveMember requires federal_board and stamps joined_at", async () => {
+  it("approveMember requires board authority and stamps joined_at", async () => {
+    await createGroup("grp_a", "aachen");
     await createUser("usr_bob", "bob@example.de");
     const m = await createProfile(t.db, {
       userId: "usr_bob",
       firstName: "Bob",
       lastName: "Beispiel",
+      primaryGroupId: "grp_a",
     });
 
     await expect(approveMember(t.db, m.id, PEASANT)).rejects.toMatchObject({
@@ -111,19 +125,70 @@ describeIfDb("members integration", () => {
     expect(approved.joinedAt).not.toBeNull();
   });
 
-  it("listPendingMembers shows only pending rows, ordered by createdAt", async () => {
-    await createUser("usr_a", "a@example.de");
-    await createUser("usr_b", "b@example.de");
-    await createUser("usr_c", "c@example.de");
+  it("local_board may approve only members of its own group", async () => {
+    await createGroup("grp_a", "aachen");
+    await createGroup("grp_b", "berlin");
+    await createUser("usr_in_a", "a@example.de");
+    await createUser("usr_in_b", "b@example.de");
+    const inA = await createProfile(t.db, {
+      userId: "usr_in_a",
+      firstName: "InA",
+      lastName: "x",
+      primaryGroupId: "grp_a",
+    });
+    const inB = await createProfile(t.db, {
+      userId: "usr_in_b",
+      firstName: "InB",
+      lastName: "x",
+      primaryGroupId: "grp_b",
+    });
 
-    const a = await createProfile(t.db, { userId: "usr_a", firstName: "A", lastName: "x" });
-    await createProfile(t.db, { userId: "usr_b", firstName: "B", lastName: "x" });
-    await createProfile(t.db, { userId: "usr_c", firstName: "C", lastName: "x" });
+    const boardA = localBoardOf("usr_board_a", "grp_a");
 
-    await approveMember(t.db, a.id, BOARD);
+    // Same group → allowed.
+    const approved = await approveMember(t.db, inA.id, boardA);
+    expect(approved.status).toBe("active");
 
-    const pending = await listPendingMembers(t.db, BOARD);
-    expect(pending.map((m) => m.firstName)).toEqual(["B", "C"]);
+    // Other group → forbidden.
+    await expect(approveMember(t.db, inB.id, boardA)).rejects.toMatchObject({
+      code: "FORBIDDEN",
+    });
+  });
+
+  it("a member with no group can only be transitioned by federal_board", async () => {
+    await createUser("usr_nogroup", "n@example.de");
+    const m = await createProfile(t.db, {
+      userId: "usr_nogroup",
+      firstName: "No",
+      lastName: "Group",
+    });
+    await expect(approveMember(t.db, m.id, localBoardOf("usr_x", "grp_a"))).rejects.toMatchObject({
+      code: "FORBIDDEN",
+    });
+    const ok = await approveMember(t.db, m.id, BOARD);
+    expect(ok.status).toBe("active");
+  });
+
+  it("listPendingMembers: federal sees all, local sees only its group", async () => {
+    await createGroup("grp_a", "aachen");
+    await createGroup("grp_b", "berlin");
+    for (const [u, g] of [
+      ["usr_pa", "grp_a"],
+      ["usr_pb", "grp_b"],
+    ] as const) {
+      await createUser(u, `${u}@example.de`);
+      await createProfile(t.db, { userId: u, firstName: u, lastName: "x", primaryGroupId: g });
+    }
+
+    const all = await listPendingMembers(t.db, BOARD);
+    expect(all.map((m) => m.firstName).sort()).toEqual(["usr_pa", "usr_pb"]);
+
+    const onlyA = await listPendingMembers(t.db, localBoardOf("usr_ba", "grp_a"));
+    expect(onlyA.map((m) => m.firstName)).toEqual(["usr_pa"]);
+
+    await expect(listPendingMembers(t.db, PEASANT)).rejects.toMatchObject({
+      code: "FORBIDDEN",
+    });
   });
 
   it("rejects illegal status transitions", async () => {
@@ -135,24 +200,64 @@ describeIfDb("members integration", () => {
     });
   });
 
-  it("grantRole / revokeRole writes the array correctly and is idempotent", async () => {
+  it("grantRole/revokeRole: federal-only, scoped, idempotent, immediate", async () => {
+    await createGroup("grp_a", "aachen");
     await createUser("usr_e", "e@example.de");
-    const m = await createProfile(t.db, { userId: "usr_e", firstName: "E", lastName: "x" });
+    const m = await createProfile(t.db, {
+      userId: "usr_e",
+      firstName: "E",
+      lastName: "x",
+      primaryGroupId: "grp_a",
+    });
     await approveMember(t.db, m.id, BOARD);
 
-    await grantRole(t.db, m.id, "local_board", BOARD);
-    await grantRole(t.db, m.id, "local_board", BOARD); // idempotent
-    let updated = await getMemberByUserId(t.db, "usr_e");
-    expect(updated?.roles).toEqual(["local_board"]);
+    // Only federal_board may grant.
+    await expect(grantRole(t.db, m.id, "local_board", PEASANT, "grp_a")).rejects.toMatchObject({
+      code: "FORBIDDEN",
+    });
 
-    await revokeRole(t.db, m.id, "local_board", BOARD);
-    updated = await getMemberByUserId(t.db, "usr_e");
-    expect(updated?.roles).toEqual([]);
-
+    // local_board requires a group; federal_board must be unscoped.
+    await expect(grantRole(t.db, m.id, "local_board", BOARD)).rejects.toMatchObject({
+      code: "VALIDATION",
+    });
+    await expect(grantRole(t.db, m.id, "federal_board", BOARD, "grp_a")).rejects.toMatchObject({
+      code: "VALIDATION",
+    });
     await expect(grantRole(t.db, m.id, "not_a_role", BOARD)).rejects.toMatchObject({
       code: "VALIDATION",
     });
-    await expect(grantRole(t.db, m.id, "local_board", PEASANT)).rejects.toMatchObject({
+
+    // Grant is written and idempotent.
+    await grantRole(t.db, m.id, "local_board", BOARD, "grp_a");
+    await grantRole(t.db, m.id, "local_board", BOARD, "grp_a"); // idempotent
+    expect(await getGrants(t.db, m.id)).toEqual([{ role: "local_board", groupId: "grp_a" }]);
+
+    // The granted scope actually authorizes: usr_e now boards grp_a and can
+    // approve a pending member of grp_a.
+    await createUser("usr_pending_a", "pa@example.de");
+    const pa = await createProfile(t.db, {
+      userId: "usr_pending_a",
+      firstName: "PA",
+      lastName: "x",
+      primaryGroupId: "grp_a",
+    });
+    const eActor = { userId: "usr_e", grants: await getGrants(t.db, m.id) };
+    expect((await approveMember(t.db, pa.id, eActor)).status).toBe("active");
+
+    // Revocation takes effect immediately (next read).
+    await revokeRole(t.db, m.id, "local_board", BOARD, "grp_a");
+    await revokeRole(t.db, m.id, "local_board", BOARD, "grp_a"); // idempotent
+    expect(await getGrants(t.db, m.id)).toEqual([]);
+
+    await createUser("usr_pending_a2", "pa2@example.de");
+    const pa2 = await createProfile(t.db, {
+      userId: "usr_pending_a2",
+      firstName: "PA2",
+      lastName: "x",
+      primaryGroupId: "grp_a",
+    });
+    const eActorAfter = { userId: "usr_e", grants: await getGrants(t.db, m.id) };
+    await expect(approveMember(t.db, pa2.id, eActorAfter)).rejects.toMatchObject({
       code: "FORBIDDEN",
     });
   });

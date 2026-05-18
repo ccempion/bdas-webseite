@@ -2,9 +2,10 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { getDb } from "@bdas/db";
+import { ForbiddenError } from "@bdas/errors";
 import { Alert, Button, Card } from "@bdas/design-system";
 import { listGroups } from "@bdas/groups";
-import { getCurrentMember, requireFederalBoard } from "@bdas/members";
+import { canManageGroup, getCurrentMember, isFederalBoard } from "@bdas/members";
 
 import { requireAuthFlag } from "../../_auth/flag";
 import { requireGroupsFlag } from "../../_groups/flag";
@@ -21,8 +22,9 @@ const STATUS_LABEL: Record<string, string> = {
 };
 
 /**
- * Temporary federal-board group management per build plan §3.
- * The proper dashboard ships in Phase 3.
+ * Temporary board group management per build plan §3. The proper dashboard
+ * ships in Phase 3. Federal board sees and creates all groups; a local board
+ * sees and edits only its own group(s) (ADR 0007).
  */
 export default async function AdminGruppenPage() {
   requireAuthFlag();
@@ -32,9 +34,15 @@ export default async function AdminGruppenPage() {
   const db = getDb();
   const me = await getCurrentMember(db, readSessionCookie());
   if (!me) redirect("/anmelden");
-  requireFederalBoard(me);
 
-  const groups = await listGroups(db);
+  const isFederal = isFederalBoard(me.grants);
+  const isLocalBoard = me.grants.some((g) => g.role === "local_board");
+  if (!isFederal && !isLocalBoard) {
+    throw new ForbiddenError("Nur Vorstände dürfen Gruppen verwalten.");
+  }
+
+  const allGroups = await listGroups(db);
+  const groups = isFederal ? allGroups : allGroups.filter((g) => canManageGroup(me.grants, g.id));
 
   return (
     <main className="mx-auto flex max-w-4xl flex-col gap-6 px-4 py-12">
@@ -42,17 +50,23 @@ export default async function AdminGruppenPage() {
         <div className="flex flex-col gap-1">
           <h1 className="text-2xl font-semibold text-bdas-ink">Gruppen verwalten</h1>
           <p className="text-bdas-ink-body">
-            Hochschulgruppen anlegen, bearbeiten und archivieren (Bundesvorstand).
+            {isFederal
+              ? "Hochschulgruppen anlegen, bearbeiten und archivieren (Bundesvorstand)."
+              : "Bearbeite das Profil deiner Hochschulgruppe."}
           </p>
         </div>
-        <Link href="/admin/gruppen/neu">
-          <Button>Neue Gruppe</Button>
-        </Link>
+        {isFederal ? (
+          <Link href="/admin/gruppen/neu">
+            <Button>Neue Gruppe</Button>
+          </Link>
+        ) : null}
       </header>
 
       {groups.length === 0 ? (
-        <Alert variant="info" title="Noch keine Gruppen">
-          Lege die erste Hochschulgruppe an.
+        <Alert variant="info" title="Keine Gruppen">
+          {isFederal
+            ? "Lege die erste Hochschulgruppe an."
+            : "Dir ist noch keine Gruppe zugeordnet."}
         </Alert>
       ) : (
         <ul className="flex flex-col gap-3">

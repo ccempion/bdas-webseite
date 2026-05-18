@@ -1,6 +1,6 @@
 import type { Role } from "@bdas/auth";
 
-import type { Member, MemberStatus } from "./types";
+import type { Grant, Member, MemberStatus } from "./types";
 
 const ALL_ROLES: ReadonlyArray<Role> = ["member", "local_board", "federal_board", "alumnus"];
 
@@ -9,22 +9,57 @@ export function isRole(value: string): value is Role {
 }
 
 /**
- * Effective roles a request acts with:
- *   - JWT roles (from `core/feature-flags` env allowlist at login),
- *   - explicitly-granted DB roles on the member row,
- *   - status-implied roles (active → member; alumnus → alumnus).
+ * Effective grants a request acts with (ADR 0007):
+ *   - JWT roles (env allowlist at login per ADR 0002) → unscoped grants,
+ *   - active rows from `member_role_grants` → their stored scope,
+ *   - status-implied: active → member, alumnus → alumnus (unscoped).
+ * Deduplicated on (role, groupId).
  */
-export function effectiveRoles(
+export function effectiveGrants(
   jwtRoles: ReadonlyArray<Role>,
   member: Member | null,
-): ReadonlyArray<Role> {
-  const out = new Set<Role>(jwtRoles);
+  dbGrants: ReadonlyArray<Grant>,
+): ReadonlyArray<Grant> {
+  const out: Grant[] = [];
+  const seen = new Set<string>();
+  const add = (role: Role, groupId: string | null): void => {
+    const key = `${role}:${groupId ?? ""}`;
+    if (seen.has(key)) return;
+    seen.add(key);
+    out.push({ role, groupId });
+  };
+
+  for (const r of jwtRoles) add(r, null);
+  for (const g of dbGrants) add(g.role, g.groupId);
   if (member) {
-    for (const r of member.roles) out.add(r);
-    if (member.status === "active") out.add("member");
-    if (member.status === "alumnus") out.add("alumnus");
+    if (member.status === "active") add("member", null);
+    if (member.status === "alumnus") add("alumnus", null);
   }
-  return [...out];
+  return out;
+}
+
+/** Federal board is always unscoped and authorises every group. */
+export function isFederalBoard(grants: ReadonlyArray<Grant>): boolean {
+  return grants.some((g) => g.role === "federal_board");
+}
+
+/**
+ * May the actor manage this group? Federal board → any group. Local board →
+ * only the group its grant is scoped to. A null groupId is manageable only by
+ * federal board (a member with no primary group).
+ */
+export function canManageGroup(grants: ReadonlyArray<Grant>, groupId: string | null): boolean {
+  if (isFederalBoard(grants)) return true;
+  if (groupId === null) return false;
+  return grants.some((g) => g.role === "local_board" && g.groupId === groupId);
+}
+
+/** Approving/transitioning a member is "do you manage their group?". */
+export function canApproveMember(
+  grants: ReadonlyArray<Grant>,
+  member: { readonly primaryGroupId: string | null },
+): boolean {
+  return canManageGroup(grants, member.primaryGroupId);
 }
 
 const TRANSITIONS: Record<MemberStatus, ReadonlySet<MemberStatus>> = {

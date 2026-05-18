@@ -2,9 +2,10 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
 import { getDb } from "@bdas/db";
+import { ForbiddenError } from "@bdas/errors";
 import { Alert, Card } from "@bdas/design-system";
 import { getGroupBySlug } from "@bdas/groups";
-import { getCurrentMember, requireFederalBoard } from "@bdas/members";
+import { canManageGroup, getCurrentMember, isFederalBoard } from "@bdas/members";
 
 import { requireAuthFlag } from "../../../../_auth/flag";
 import { requireGroupsFlag } from "../../../../_groups/flag";
@@ -29,12 +30,17 @@ export default async function GruppeBearbeitenPage({ params }: { params: { slug:
   const db = getDb();
   const me = await getCurrentMember(db, readSessionCookie());
   if (!me) redirect("/anmelden");
-  requireFederalBoard(me);
 
   const group = await getGroupBySlug(db, params.slug);
   if (!group) notFound();
 
+  // Federal board → any group; local board → only its own (ADR 0007).
+  if (!canManageGroup(me.grants, group.id)) {
+    throw new ForbiddenError("Du darfst diese Gruppe nicht bearbeiten.");
+  }
+
   const isArchived = group.status === "archived";
+  const canArchive = isFederalBoard(me.grants);
 
   return (
     <main className="mx-auto flex max-w-2xl flex-col gap-6 px-4 py-12">
@@ -65,7 +71,7 @@ export default async function GruppeBearbeitenPage({ params }: { params: { slug:
         }}
       />
 
-      {!isArchived ? (
+      {!isArchived && canArchive ? (
         <Card className="flex flex-col gap-3 p-5">
           <div>
             <h2 className="text-lg font-semibold text-bdas-ink">Gruppe archivieren</h2>

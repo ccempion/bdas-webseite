@@ -4,10 +4,10 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { getDb } from "@bdas/db";
-import { isAppError } from "@bdas/errors";
+import { ForbiddenError, isAppError } from "@bdas/errors";
 import { requireFlag } from "@bdas/feature-flags";
 import { archiveGroup, createGroup, updateGroup } from "@bdas/groups";
-import { getCurrentMember, requireFederalBoard } from "@bdas/members";
+import { canManageGroup, getCurrentMember, isFederalBoard } from "@bdas/members";
 
 import { readSessionCookie } from "../../../lib/auth-cookie";
 
@@ -16,9 +16,10 @@ export type GroupFormState = {
   readonly fields?: Record<string, string>;
 };
 
-async function requireBoard() {
+async function currentMember() {
   const me = await getCurrentMember(getDb(), readSessionCookie());
-  requireFederalBoard(me);
+  if (!me) throw new ForbiddenError("Anmeldung erforderlich.");
+  return me;
 }
 
 function str(formData: FormData, key: string): string {
@@ -46,13 +47,16 @@ function revalidateGroupViews(): void {
 /**
  * Single create/edit action, branching on the presence of a `groupId` —
  * mirrors the members module's `saveProfileAction` pattern.
+ *
+ * Authorization (ADR 0007): editing an existing group needs
+ * `canManageGroup` (federal_board, or local_board of that group); creating a
+ * new group is federal_board only (spec §9).
  */
 export async function saveGroupAction(
   _prev: GroupFormState,
   formData: FormData,
 ): Promise<GroupFormState> {
   requireFlag("groups");
-  await requireBoard();
   const db = getDb();
 
   const groupId = str(formData, "groupId");
@@ -66,9 +70,16 @@ export async function saveGroupAction(
   };
 
   try {
+    const me = await currentMember();
     if (groupId) {
+      if (!canManageGroup(me.grants, groupId)) {
+        throw new ForbiddenError("Du darfst diese Gruppe nicht bearbeiten.");
+      }
       await updateGroup(db, groupId, profile);
     } else {
+      if (!isFederalBoard(me.grants)) {
+        throw new ForbiddenError("Nur der Bundesvorstand darf Gruppen anlegen.");
+      }
       await createGroup(db, { ...profile, slug: str(formData, "slug") });
     }
   } catch (err) {
@@ -83,15 +94,19 @@ export async function saveGroupAction(
   redirect("/admin/gruppen");
 }
 
+/** Archiving is federal_board only (spec §9). */
 export async function archiveGroupAction(
   _prev: GroupFormState,
   formData: FormData,
 ): Promise<GroupFormState> {
   requireFlag("groups");
-  await requireBoard();
 
   const groupId = str(formData, "groupId");
   try {
+    const me = await currentMember();
+    if (!isFederalBoard(me.grants)) {
+      throw new ForbiddenError("Nur der Bundesvorstand darf Gruppen archivieren.");
+    }
     await archiveGroup(getDb(), groupId);
   } catch (err) {
     if (isAppError(err)) return { error: err.message };

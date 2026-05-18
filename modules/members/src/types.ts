@@ -9,10 +9,19 @@ export type Member = {
   readonly lastName: string;
   readonly primaryGroupId: string | null;
   readonly status: MemberStatus;
-  readonly roles: ReadonlyArray<Role>;
   readonly joinedAt: Date | null;
   readonly createdAt: Date;
   readonly updatedAt: Date;
 };
 
 export type PendingMember = Member & { readonly status: "pending" };
+
+/**
+ * One effective authority (ADR 0007). `groupId` null ⇔ unscoped
+ * (federal_board, status-implied member/alumnus); set ⇔ scoped to a group
+ * (local_board).
+ */
+export type Grant = {
+  readonly role: Role;
+  readonly groupId: string | null;
+};

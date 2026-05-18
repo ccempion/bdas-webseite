@@ -1,16 +1,20 @@
 /**
- * Role grant / revoke. Federal_board only in Phase 1.
+ * Role grant / revoke (ADR 0007). Writes scoped rows to `member_role_grants`.
+ * Only federal_board may grant or revoke — the spec gives the Bundesvorstand
+ * sole authority to set/unset the local board role. `local_board` grants must
+ * be group-scoped; `federal_board` must be unscoped.
  */
-import { eq, sql } from "drizzle-orm";
+import { and, eq, isNull, sql } from "drizzle-orm";
 import type { PostgresJsDatabase } from "drizzle-orm/postgres-js";
 
 import type { Role } from "@bdas/auth";
 import { ForbiddenError, NotFoundError, ValidationError } from "@bdas/errors";
 import { getEventBus } from "@bdas/events";
+import { createId } from "@bdas/id";
 
 import type { RoleGranted, RoleRevoked } from "../events";
-import { isRole } from "../roles";
-import { members } from "../schema";
+import { isFederalBoard, isRole } from "../roles";
+import { members, memberRoleGrants } from "../schema";
 import type { Member } from "../types";
 
 import { row2member } from "./get";
@@ -19,7 +23,7 @@ import type { Actor } from "./status";
 export type Db = PostgresJsDatabase<Record<string, never>>;
 
 function requireBoard(actor: Actor): void {
-  if (!actor.effectiveRoles.includes("federal_board")) {
+  if (!isFederalBoard(actor.grants)) {
     throw new ForbiddenError("Nur der Bundesvorstand darf Rollen vergeben.");
   }
 }
@@ -30,41 +34,68 @@ function requireValidRole(role: string): asserts role is Role {
   }
 }
 
+/** local_board is always group-scoped; federal_board is always unscoped. */
+function requireValidScope(role: Role, groupId: string | null): void {
+  if (role === "local_board" && groupId === null) {
+    throw new ValidationError("local_board erfordert eine Gruppe.");
+  }
+  if (role === "federal_board" && groupId !== null) {
+    throw new ValidationError("federal_board ist nicht gruppengebunden.");
+  }
+}
+
 export async function grantRole(
   db: Db,
   memberId: string,
   role: string,
   actor: Actor,
+  groupId: string | null = null,
 ): Promise<Member> {
   requireBoard(actor);
   requireValidRole(role);
+  requireValidScope(role, groupId);
 
   return db.transaction(async (tx) => {
     const rows = await tx.select().from(members).where(eq(members.id, memberId)).limit(1);
     const row = rows[0];
     if (!row) throw new NotFoundError("Mitglied nicht gefunden.");
-    if (row.roles.includes(role)) return row2member(row);
+    const member = row2member(row);
 
-    const [updated] = await tx
-      .update(members)
-      .set({
-        roles: sql`array_append(${members.roles}, ${role})`,
-        updatedAt: new Date(),
-      })
-      .where(eq(members.id, memberId))
-      .returning();
-    if (!updated) throw new Error("grantRole: update returned no row");
+    const existing = await tx
+      .select({ id: memberRoleGrants.id })
+      .from(memberRoleGrants)
+      .where(
+        and(
+          eq(memberRoleGrants.memberId, memberId),
+          eq(memberRoleGrants.role, role),
+          isNull(memberRoleGrants.revokedAt),
+          groupId === null
+            ? isNull(memberRoleGrants.groupId)
+            : eq(memberRoleGrants.groupId, groupId),
+        ),
+      )
+      .limit(1);
+    if (existing[0]) return member; // idempotent
+
+    await tx.insert(memberRoleGrants).values({
+      id: createId("mrg"),
+      memberId,
+      role,
+      groupId,
+      grantedBy: actor.userId,
+    });
 
     const event: RoleGranted = {
       type: "members.role.granted",
       memberId,
       role,
+      groupId,
       actorUserId: actor.userId,
       at: new Date(),
     };
     await getEventBus().publish(event);
 
-    return row2member(updated);
+    return member;
   });
 }
 
@@ -73,6 +104,7 @@ export async function revokeRole(
   memberId: string,
   role: string,
   actor: Actor,
+  groupId: string | null = null,
 ): Promise<Member> {
   requireBoard(actor);
   requireValidRole(role);
@@ -81,27 +113,34 @@ export async function revokeRole(
     const rows = await tx.select().from(members).where(eq(members.id, memberId)).limit(1);
     const row = rows[0];
     if (!row) throw new NotFoundError("Mitglied nicht gefunden.");
-    if (!row.roles.includes(role)) return row2member(row);
+    const member = row2member(row);
 
-    const [updated] = await tx
-      .update(members)
-      .set({
-        roles: sql`array_remove(${members.roles}, ${role})`,
-        updatedAt: new Date(),
-      })
-      .where(eq(members.id, memberId))
-      .returning();
-    if (!updated) throw new Error("revokeRole: update returned no row");
+    const updated = await tx
+      .update(memberRoleGrants)
+      .set({ revokedAt: sql`now()` })
+      .where(
+        and(
+          eq(memberRoleGrants.memberId, memberId),
+          eq(memberRoleGrants.role, role),
+          isNull(memberRoleGrants.revokedAt),
+          groupId === null
+            ? isNull(memberRoleGrants.groupId)
+            : eq(memberRoleGrants.groupId, groupId),
+        ),
+      )
+      .returning({ id: memberRoleGrants.id });
+    if (updated.length === 0) return member; // idempotent
 
     const event: RoleRevoked = {
       type: "members.role.revoked",
       memberId,
       role,
+      groupId,
       actorUserId: actor.userId,
       at: new Date(),
     };
     await getEventBus().publish(event);
 
-    return row2member(updated);
+    return member;
   });
 }

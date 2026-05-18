@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { getDb } from "@bdas/db";
 import { Alert, Card } from "@bdas/design-system";
 import { listGroups } from "@bdas/groups";
-import { getCurrentMember, listPendingMembers, requireFederalBoard } from "@bdas/members";
+import { getCurrentMember, listPendingMembers } from "@bdas/members";
 
 import { requireAuthFlag } from "../../_auth/flag";
 import { requireMembersFlag } from "../../_members/flag";
@@ -23,10 +23,11 @@ export default async function PendingMembersPage() {
   const db = getDb();
   const me = await getCurrentMember(db, readSessionCookie());
   if (!me) redirect("/anmelden");
-  requireFederalBoard(me);
 
+  // listPendingMembers enforces board authority and scopes the list to the
+  // actor's groups (federal_board → all) per ADR 0007.
   const [pending, groups] = await Promise.all([
-    listPendingMembers(db, { userId: me.user.id, effectiveRoles: me.effectiveRoles }),
+    listPendingMembers(db, { userId: me.user.id, grants: me.grants }),
     listGroups(db),
   ]);
   const groupById = new Map(groups.map((g) => [g.id, g]));
@@ -36,7 +37,7 @@ export default async function PendingMembersPage() {
       <header className="flex flex-col gap-1">
         <h1 className="text-2xl font-semibold text-bdas-ink">Pending-Mitglieder</h1>
         <p className="text-bdas-ink-body">
-          Mitglieder mit eingereichtem Profil, die auf eine Entscheidung des Bundesvorstands warten.
+          Mitglieder mit eingereichtem Profil, die auf eine Entscheidung des Vorstands warten.
         </p>
       </header>
 
