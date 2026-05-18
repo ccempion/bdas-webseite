@@ -27,22 +27,50 @@ export type Db = PostgresJsDatabase<Record<string, never>>;
 // it is deliberately absent from the update surface. Create extends this via
 // zod `.extend()` — sharing the shape by object spread widens `.default()`
 // inference under exactOptionalPropertyTypes.
+// `archived` is intentionally NOT a valid input value: archiving goes
+// exclusively through `archiveGroup` so the `groups.group.archived` event is
+// always emitted. The DB CHECK still permits it (that is the value
+// `archiveGroup` writes).
 export const UpdateGroupInput = z.object({
-  name: z.string().min(2).max(120),
-  city: z.string().min(2).max(120),
-  contactEmail: z.string().email().max(254).optional().nullable(),
-  instagramUrl: z.string().url().max(500).optional().nullable(),
-  websiteUrl: z.string().url().max(500).optional().nullable(),
-  status: z.enum(["active", "dormant", "new", "archived"]).default("active"),
+  name: z
+    .string()
+    .min(2, "Name muss mindestens 2 Zeichen haben")
+    .max(120, "Name darf höchstens 120 Zeichen haben"),
+  city: z
+    .string()
+    .min(2, "Stadt muss mindestens 2 Zeichen haben")
+    .max(120, "Stadt darf höchstens 120 Zeichen haben"),
+  contactEmail: z
+    .string()
+    .email("Ungültige E-Mail-Adresse")
+    .max(254, "E-Mail-Adresse ist zu lang")
+    .optional()
+    .nullable(),
+  instagramUrl: z
+    .string()
+    .url("Ungültige Instagram-URL")
+    .max(500, "URL ist zu lang")
+    .optional()
+    .nullable(),
+  websiteUrl: z
+    .string()
+    .url("Ungültige Website-URL")
+    .max(500, "URL ist zu lang")
+    .optional()
+    .nullable(),
+  status: z.enum(["active", "dormant", "new"]).default("active"),
 });
 export type UpdateGroupInput = z.infer<typeof UpdateGroupInput>;
 
 export const CreateGroupInput = UpdateGroupInput.extend({
   slug: z
     .string()
-    .min(2)
-    .max(64)
-    .regex(/^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/, "Slug must be lowercase kebab-case"),
+    .min(2, "Kürzel muss mindestens 2 Zeichen haben")
+    .max(64, "Kürzel darf höchstens 64 Zeichen haben")
+    .regex(
+      /^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/,
+      "Kürzel darf nur Kleinbuchstaben, Zahlen und Bindestriche enthalten",
+    ),
 });
 export type CreateGroupInput = z.infer<typeof CreateGroupInput>;
 
@@ -53,7 +81,7 @@ function parseOrThrow<S extends z.ZodTypeAny>(schema: S, input: unknown): z.infe
     for (const i of parsed.error.issues) {
       fields[i.path.join(".") || "_"] = i.message;
     }
-    throw new ValidationError("Group input invalid", { fields });
+    throw new ValidationError("Eingabe ungültig", { fields });
   }
   return parsed.data;
 }
@@ -71,12 +99,27 @@ function rowToGroup(r: typeof groups.$inferSelect): Group {
   };
 }
 
+/** Build the returned domain object from validated input (slug passed in
+ *  separately since it is immutable / absent from the update surface). */
+function toGroup(id: string, slug: string, v: UpdateGroupInput): Group {
+  return {
+    id,
+    slug,
+    name: v.name,
+    city: v.city,
+    contactEmail: v.contactEmail ?? null,
+    instagramUrl: v.instagramUrl ?? null,
+    websiteUrl: v.websiteUrl ?? null,
+    status: v.status as GroupStatus,
+  };
+}
+
 export async function createGroup(db: Db, input: unknown): Promise<Group> {
   const v = parseOrThrow(CreateGroupInput, input);
 
   const clash = await db.select().from(groups).where(eq(groups.slug, v.slug)).limit(1);
   if (clash[0]) {
-    throw new ConflictError(`Eine Gruppe mit dem Kürzel „${v.slug}" existiert bereits.`);
+    throw new ConflictError(`Eine Gruppe mit dem Kürzel „${v.slug}“ existiert bereits.`);
   }
 
   const id = createId("grp");
@@ -100,16 +143,7 @@ export async function createGroup(db: Db, input: unknown): Promise<Group> {
   };
   await getEventBus().publish(event);
 
-  return {
-    id,
-    slug: v.slug,
-    name: v.name,
-    city: v.city,
-    contactEmail: v.contactEmail ?? null,
-    instagramUrl: v.instagramUrl ?? null,
-    websiteUrl: v.websiteUrl ?? null,
-    status: v.status as GroupStatus,
-  };
+  return toGroup(id, v.slug, v);
 }
 
 export async function updateGroup(db: Db, id: string, input: unknown): Promise<Group> {
@@ -142,16 +176,7 @@ export async function updateGroup(db: Db, id: string, input: unknown): Promise<G
   };
   await getEventBus().publish(event);
 
-  return {
-    id,
-    slug: existing[0].slug,
-    name: v.name,
-    city: v.city,
-    contactEmail: v.contactEmail ?? null,
-    instagramUrl: v.instagramUrl ?? null,
-    websiteUrl: v.websiteUrl ?? null,
-    status: v.status as GroupStatus,
-  };
+  return toGroup(id, existing[0].slug, v);
 }
 
 export async function archiveGroup(db: Db, id: string): Promise<Group> {

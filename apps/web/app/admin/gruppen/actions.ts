@@ -31,6 +31,19 @@ function optional(formData: FormData, key: string): string | null {
 }
 
 /**
+ * Invalidate every view that reflects group data. The public `/gruppen`
+ * list is statically renderable, so without this an archived/edited group
+ * stays visible there until the next deploy. `[slug]` is revalidated for
+ * all params (slug is immutable but name/status changes must show, and an
+ * archived group must start 404-ing).
+ */
+function revalidateGroupViews(): void {
+  revalidatePath("/admin/gruppen");
+  revalidatePath("/gruppen");
+  revalidatePath("/gruppen/[slug]", "page");
+}
+
+/**
  * Single create/edit action, branching on the presence of a `groupId` —
  * mirrors the members module's `saveProfileAction` pattern.
  */
@@ -66,7 +79,7 @@ export async function saveGroupAction(
     throw err;
   }
 
-  revalidatePath("/admin/gruppen");
+  revalidateGroupViews();
   redirect("/admin/gruppen");
 }
 
@@ -85,6 +98,6 @@ export async function archiveGroupAction(
     throw err;
   }
 
-  revalidatePath("/admin/gruppen");
+  revalidateGroupViews();
   redirect("/admin/gruppen");
 }
