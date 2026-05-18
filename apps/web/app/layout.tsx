@@ -1,7 +1,10 @@
 import type { ReactNode } from "react";
 import type { Metadata } from "next";
 
+import { CookieNotice } from "../components/CookieNotice";
+import { SiteFooter } from "../components/SiteFooter";
 import { SiteHeader } from "../components/SiteHeader";
+import { legalUrls } from "../lib/legal";
 
 import "./globals.css";
 
@@ -14,11 +17,22 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
+  const { privacy, imprint } = legalUrls();
   return (
     <html lang="de">
-      <body className="min-h-screen antialiased">
+      <body className="flex min-h-screen flex-col antialiased">
+        <a
+          href="#inhalt"
+          className="sr-only rounded-bdas px-4 py-2 focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:bg-bdas-surface focus:text-bdas-ink focus:shadow-bdas-card"
+        >
+          Zum Inhalt springen
+        </a>
         <SiteHeader />
-        {children}
+        <div id="inhalt" tabIndex={-1} className="flex-1 outline-none">
+          {children}
+        </div>
+        <SiteFooter privacyUrl={privacy} imprintUrl={imprint} />
+        <CookieNotice privacyUrl={privacy} />
       </body>
     </html>
   );
