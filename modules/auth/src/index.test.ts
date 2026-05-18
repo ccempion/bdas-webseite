@@ -25,6 +25,7 @@ import { logout } from "./services/logout";
 import { completePasswordReset, requestPasswordReset } from "./services/password-reset";
 import { getCurrentUser } from "./services/me";
 import { passwordSchema, PASSWORD_MIN_LENGTH } from "./password";
+import { CONSENT_VERSION } from "./consent";
 
 describe("password policy", () => {
   it("enforces min length + upper + lower + special, no digit required", () => {
@@ -68,11 +69,10 @@ describeIfDb("auth integration", () => {
 
   beforeEach(async () => {
     t = await createTestDb();
-    const sql = await fs.readFile(
-      path.join(__dirname, "..", "migrations", "0001_init.sql"),
-      "utf8",
-    );
-    await t.client.unsafe(sql);
+    for (const file of ["0001_init.sql", "0002_consent.sql"]) {
+      const sql = await fs.readFile(path.join(__dirname, "..", "migrations", file), "utf8");
+      await t.client.unsafe(sql);
+    }
     resetEventBus();
   });
 
@@ -87,7 +87,7 @@ describeIfDb("auth integration", () => {
   it("register → verify → login → logout happy path", async () => {
     const reg = await register(
       t.db,
-      { email: "alice@example.de", password: "Verysecret!23" },
+      { email: "alice@example.de", password: "Verysecret!23", consent: true },
       { ip: "1.1.1.1", publicSiteUrl: "https://bdas.de" },
     );
     expect(reg.userId).toMatch(/^usr_/);
@@ -118,10 +118,31 @@ describeIfDb("auth integration", () => {
     expect(me2).toBeNull();
   });
 
+  it("requires GDPR consent and records the accepted version", async () => {
+    await expect(
+      register(
+        t.db,
+        { email: "noconsent@example.de", password: "Verysecret!23", consent: false },
+        { ip: "7.7.7.7", publicSiteUrl: "https://bdas.de" },
+      ),
+    ).rejects.toMatchObject({ code: "VALIDATION" });
+
+    const reg = await register(
+      t.db,
+      { email: "consent@example.de", password: "Verysecret!23", consent: true },
+      { ip: "7.7.7.7", publicSiteUrl: "https://bdas.de" },
+    );
+    const rows = await t.client`
+      SELECT consent_at, consent_version FROM auth_users WHERE id = ${reg.userId}
+    `;
+    expect(rows[0]?.["consent_at"]).not.toBeNull();
+    expect(rows[0]?.["consent_version"]).toBe(CONSENT_VERSION);
+  });
+
   it("rejects login before email verification", async () => {
     const reg = await register(
       t.db,
-      { email: "bob@example.de", password: "Verysecret!23" },
+      { email: "bob@example.de", password: "Verysecret!23", consent: true },
       { ip: "2.2.2.2", publicSiteUrl: "https://bdas.de" },
     );
     expect(reg.userId).toBeTruthy();
@@ -134,7 +155,7 @@ describeIfDb("auth integration", () => {
   it("rejects wrong password and never reveals which field was wrong", async () => {
     await register(
       t.db,
-      { email: "carol@example.de", password: "Verysecret!23" },
+      { email: "carol@example.de", password: "Verysecret!23", consent: true },
       { ip: "3.3.3.3", publicSiteUrl: "https://bdas.de" },
     );
 
@@ -157,14 +178,14 @@ describeIfDb("auth integration", () => {
     for (let i = 0; i < 5; i++) {
       await register(
         t.db,
-        { email: `flood-${i}@example.de`, password: "Verysecret!23" },
+        { email: `flood-${i}@example.de`, password: "Verysecret!23", consent: true },
         { ip: "9.9.9.9", publicSiteUrl: "https://bdas.de" },
       );
     }
     await expect(
       register(
         t.db,
-        { email: "flood-6@example.de", password: "Verysecret!23" },
+        { email: "flood-6@example.de", password: "Verysecret!23", consent: true },
         { ip: "9.9.9.9", publicSiteUrl: "https://bdas.de" },
       ),
     ).rejects.toMatchObject({ code: "RATE_LIMITED" });
@@ -173,7 +194,7 @@ describeIfDb("auth integration", () => {
   it("password reset rotates the hash and revokes existing sessions", async () => {
     const reg = await register(
       t.db,
-      { email: "dora@example.de", password: "Verysecret!23" },
+      { email: "dora@example.de", password: "Verysecret!23", consent: true },
       { ip: "4.4.4.4", publicSiteUrl: "https://bdas.de" },
     );
     await verifyEmail(t.db, reg.verifyToken);
@@ -227,7 +248,7 @@ describeIfDb("auth integration", () => {
     process.env["BDAS_FEDERAL_BOARD_EMAILS"] = "eve@example.de";
     const reg = await register(
       t.db,
-      { email: "eve@example.de", password: "Verysecret!23" },
+      { email: "eve@example.de", password: "Verysecret!23", consent: true },
       { ip: "6.6.6.6", publicSiteUrl: "https://bdas.de" },
     );
     await verifyEmail(t.db, reg.verifyToken);

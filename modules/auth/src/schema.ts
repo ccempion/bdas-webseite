@@ -6,6 +6,8 @@ export const authUsers = pgTable("auth_users", {
   emailNormalized: text("email_normalized").notNull().unique(),
   emailDisplay: text("email_display").notNull(),
   status: text("status").notNull().default("unverified"),
+  consentAt: timestamp("consent_at", { withTimezone: true }),
+  consentVersion: text("consent_version"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });

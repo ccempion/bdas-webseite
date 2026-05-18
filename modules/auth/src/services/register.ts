@@ -18,6 +18,7 @@ import { ConflictError, ValidationError } from "@bdas/errors";
 import { getEventBus } from "@bdas/events";
 import { createId } from "@bdas/id";
 
+import { CONSENT_VERSION } from "../consent";
 import type { UserRegistered } from "../events";
 import { hashPassword, passwordSchema, PASSWORD_ALGORITHM } from "../password";
 import { rateLimit } from "../rate-limit";
@@ -29,6 +30,11 @@ export type Db = PostgresJsDatabase<Record<string, never>>;
 export const RegisterInput = z.object({
   email: z.string().email().max(254),
   password: passwordSchema,
+  // GDPR Art. 7: consent must be an active opt-in. `false`/missing → reject
+  // with a German message keyed to the `consent` field (ADR 0008).
+  consent: z.literal(true, {
+    errorMap: () => ({ message: "Bitte stimme der Datenschutzerklärung zu." }),
+  }),
 });
 export type RegisterInput = z.infer<typeof RegisterInput>;
 
@@ -79,6 +85,8 @@ export async function register(
       emailNormalized,
       emailDisplay: email.trim(),
       status: "unverified",
+      consentAt: new Date(),
+      consentVersion: CONSENT_VERSION,
     });
     await tx.insert(authCredentials).values({
       userId,

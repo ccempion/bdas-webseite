@@ -9,8 +9,9 @@ import { registerAction, type RegisterFormState } from "./actions";
 
 const initial: RegisterFormState = {};
 
-export function RegistrierenForm() {
+export function RegistrierenForm({ privacyUrl }: { privacyUrl: string }) {
   const [state, action] = useFormState(registerAction, initial);
+  const consentError = state.fields?.["consent"];
   return (
     <Form action={action}>
       {state.error ? <Alert variant="error">{state.error}</Alert> : null}
@@ -43,6 +44,36 @@ export function RegistrierenForm() {
           required
         />
       </Field>
+      <div className="flex flex-col gap-1">
+        <label htmlFor="consent" className="flex items-start gap-2 text-sm text-bdas-ink-body">
+          <input
+            id="consent"
+            name="consent"
+            type="checkbox"
+            value="true"
+            required
+            aria-describedby={consentError ? "consent-error" : undefined}
+            className="mt-0.5 accent-bdas-red"
+          />
+          <span>
+            Ich habe die{" "}
+            <a
+              href={privacyUrl}
+              target="_blank"
+              rel="noreferrer noopener"
+              className="text-bdas-red hover:underline"
+            >
+              Datenschutzerklärung
+            </a>{" "}
+            gelesen und stimme der Verarbeitung meiner Daten zu.
+          </span>
+        </label>
+        {consentError ? (
+          <p id="consent-error" role="alert" className="text-sm text-bdas-red">
+            {consentError}
+          </p>
+        ) : null}
+      </div>
       <SubmitButton />
     </Form>
   );

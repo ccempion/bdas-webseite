@@ -24,13 +24,14 @@ export async function registerAction(
 
   const email = String(formData.get("email") ?? "");
   const password = String(formData.get("password") ?? "");
+  const consent = formData.get("consent") === "true";
   const ip = clientIp();
 
   let result;
   try {
     result = await register(
       getDb(),
-      { email, password },
+      { email, password, consent },
       {
         ip,
         publicSiteUrl: process.env["PUBLIC_SITE_URL"] ?? "http://localhost:3000",

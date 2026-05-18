@@ -3,12 +3,14 @@ import Link from "next/link";
 import { Card } from "@bdas/design-system";
 
 import { requireAuthFlag } from "../_auth/flag";
+import { legalUrls } from "../../lib/legal";
 import { RegistrierenForm } from "./RegistrierenForm";
 
 export const metadata = { title: "Registrieren" };
 
 export default function RegistrierenPage() {
   requireAuthFlag();
+  const { privacy } = legalUrls();
 
   return (
     <main className="mx-auto flex max-w-md flex-col gap-6 px-4 py-12">
@@ -20,7 +22,7 @@ export default function RegistrierenPage() {
       </header>
 
       <Card flat className="p-6">
-        <RegistrierenForm />
+        <RegistrierenForm privacyUrl={privacy} />
       </Card>
 
       <p className="text-center text-sm text-bdas-ink-body">
