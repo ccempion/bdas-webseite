@@ -1,3 +1,4 @@
+import { PASSWORD_RULE_HINT } from "@bdas/auth";
 import { Card } from "@bdas/design-system";
 
 import { requireAuthFlag } from "../../_auth/flag";
@@ -19,7 +20,7 @@ export default function PasswortZuruecksetzenTokenPage({ params }: { params: { t
       </header>
 
       <Card flat className="p-6">
-        <CompleteResetForm token={params.token} />
+        <CompleteResetForm token={params.token} passwordHint={PASSWORD_RULE_HINT} />
       </Card>
     </main>
   );

@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { PASSWORD_RULE_HINT } from "@bdas/auth";
 import { Card } from "@bdas/design-system";
 
 import { requireAuthFlag } from "../_auth/flag";
@@ -22,7 +23,7 @@ export default function RegistrierenPage() {
       </header>
 
       <Card flat className="p-6">
-        <RegistrierenForm privacyUrl={privacy} />
+        <RegistrierenForm privacyUrl={privacy} passwordHint={PASSWORD_RULE_HINT} />
       </Card>
 
       <p className="text-center text-sm text-bdas-ink-body">

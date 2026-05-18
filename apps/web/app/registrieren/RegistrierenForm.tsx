@@ -2,14 +2,19 @@
 
 import { useFormState, useFormStatus } from "react-dom";
 
-import { PASSWORD_RULE_HINT } from "@bdas/auth";
 import { Alert, Button, Field, Form, Input } from "@bdas/design-system";
 
 import { registerAction, type RegisterFormState } from "./actions";
 
 const initial: RegisterFormState = {};
 
-export function RegistrierenForm({ privacyUrl }: { privacyUrl: string }) {
+export function RegistrierenForm({
+  privacyUrl,
+  passwordHint,
+}: {
+  privacyUrl: string;
+  passwordHint: string;
+}) {
   const [state, action] = useFormState(registerAction, initial);
   const consentError = state.fields?.["consent"];
   return (
@@ -32,7 +37,7 @@ export function RegistrierenForm({ privacyUrl }: { privacyUrl: string }) {
       <Field
         label="Passwort"
         htmlFor="password"
-        hint={PASSWORD_RULE_HINT}
+        hint={passwordHint}
         {...(state.fields?.["password"] ? { error: state.fields["password"] } : {})}
       >
         <Input
