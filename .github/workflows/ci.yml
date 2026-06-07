@@ -88,6 +88,14 @@ jobs:
   web-build:
     name: Web app production build
     runs-on: ubuntu-latest
+    # Build with the deploy-time flags ON so flag-gated routes are actually
+    # compiled. A green typecheck/test can still hide a broken `next build`
+    # (e.g. a client component importing a server-only barrel), so this is the
+    # gate that catches it before deploy.
+    env:
+      BDAS_FLAG_AUTH: "true"
+      BDAS_FLAG_MEMBERS: "true"
+      BDAS_FLAG_GROUPS: "true"
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -99,3 +107,30 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter @bdas/web build
+
+  lighthouse:
+    name: Lighthouse accessibility (>= 90 mobile)
+    runs-on: ubuntu-latest
+    # §23: every public page must pass Lighthouse a11y >= 90 on mobile.
+    # Asserts categories:accessibility minScore 0.9 (lighthouserc.json) so the
+    # score can't silently regress. ubuntu-latest ships Google Chrome, which
+    # @lhci/cli auto-detects. Same deploy flags as web-build so gated routes
+    # are reachable.
+    env:
+      BDAS_FLAG_AUTH: "true"
+      BDAS_FLAG_MEMBERS: "true"
+      BDAS_FLAG_GROUPS: "true"
+      PUBLIC_SITE_URL: "http://localhost:3000"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @bdas/web build
+      - name: Lighthouse CI (collect + assert)
+        run: pnpm dlx @lhci/cli@0.14.0 autorun --config=./lighthouserc.json
