@@ -53,9 +53,6 @@ importers:
       '@bdas/auth':
         specifier: workspace:*
         version: link:../../modules/auth
-      '@bdas/content-bridge':
-        specifier: workspace:*
-        version: link:../../modules/content-bridge
       '@bdas/db':
         specifier: workspace:*
         version: link:../../core/db
@@ -186,15 +183,6 @@ importers:
       zod:
         specifier: ^3.23.8
         version: 3.25.76
-
-  modules/content-bridge:
-    dependencies:
-      '@bdas/errors':
-        specifier: workspace:*
-        version: link:../../core/errors
-      '@bdas/feature-flags':
-        specifier: workspace:*
-        version: link:../../core/feature-flags
 
   modules/groups:
     dependencies:

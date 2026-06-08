@@ -1,17 +1,14 @@
 /**
- * Top-of-page nav. Mirrors the WP primary menu (per ADR 0004) so the
- * dashboard and bdas.de feel like one site. Links go to bdas.de pages
- * directly — the shared `.bdas.de` cookie keeps the user logged in across
- * both surfaces. The visual idiom is the desktop nav-pill from
- * core/design-system tokens.
+ * Top-of-page nav for the standalone dashboard. A small static set of in-app
+ * links; the visual idiom is the desktop nav-pill from core/design-system
+ * tokens. The Gruppen link only appears when the groups module is enabled.
  */
 import Link from "next/link";
 
-import { getMenu } from "@bdas/content-bridge";
+import { isFlagOn } from "@bdas/feature-flags";
 
-export async function SiteHeader() {
-  const { items } = await getMenu();
-  const topLevel = items.filter((i) => i.parentId === 0);
+export function SiteHeader() {
+  const groupsOn = isFlagOn("groups");
 
   return (
     <header className="border-b border-bdas-soft bg-bdas-surface">
@@ -23,27 +20,26 @@ export async function SiteHeader() {
           BDAS
         </Link>
         <nav aria-label="Hauptnavigation" className="flex flex-1 items-center justify-end">
-          {topLevel.length === 0 ? (
-            <a
-              href="https://bdas.de"
-              className="rounded-bdas-pill px-3 py-1 text-sm text-bdas-ink hover:bg-bdas-overlay-hover"
-            >
-              Zur Hauptseite
-            </a>
-          ) : (
-            <ul className="flex flex-wrap items-center gap-1">
-              {topLevel.map((item) => (
-                <li key={item.id}>
-                  <a
-                    href={item.url}
-                    className="inline-flex items-center rounded-bdas-pill px-3 py-1 text-sm text-bdas-ink transition-colors duration-bdas-quick ease-bdas hover:bg-bdas-overlay-hover"
-                  >
-                    {item.title}
-                  </a>
-                </li>
-              ))}
-            </ul>
-          )}
+          <ul className="flex flex-wrap items-center gap-1">
+            {groupsOn ? (
+              <li>
+                <Link
+                  href="/gruppen"
+                  className="inline-flex items-center rounded-bdas-pill px-3 py-1 text-sm text-bdas-ink transition-colors duration-bdas-quick ease-bdas hover:bg-bdas-overlay-hover"
+                >
+                  Gruppen
+                </Link>
+              </li>
+            ) : null}
+            <li>
+              <Link
+                href="/anmelden"
+                className="inline-flex items-center rounded-bdas-pill px-3 py-1 text-sm text-bdas-ink transition-colors duration-bdas-quick ease-bdas hover:bg-bdas-overlay-hover"
+              >
+                Anmelden
+              </Link>
+            </li>
+          </ul>
         </nav>
       </div>
     </header>

@@ -12,7 +12,6 @@
   },
   "dependencies": {
     "@bdas/auth": "workspace:*",
-    "@bdas/content-bridge": "workspace:*",
     "@bdas/db": "workspace:*",
     "@bdas/design-system": "workspace:*",
     "@bdas/errors": "workspace:*",
