@@ -12,6 +12,7 @@
  * When a non-essential cookie is introduced this becomes the upgrade point
  * to a true consent banner.
  */
+import Link from "next/link";
 import { useEffect, useState } from "react";
 
 const STORAGE_KEY = "bdas-cookie-notice";
@@ -48,14 +49,9 @@ export function CookieNotice({ privacyUrl }: { privacyUrl: string }) {
         <p>
           Diese Seite verwendet ausschließlich technisch notwendige Cookies, um dich angemeldet zu
           halten. Mehr dazu in der{" "}
-          <a
-            href={privacyUrl}
-            target="_blank"
-            rel="noreferrer noopener"
-            className="text-bdas-red hover:underline"
-          >
+          <Link href={privacyUrl} className="text-bdas-red hover:underline">
             Datenschutzerklärung
-          </a>
+          </Link>
           .
         </p>
         <button

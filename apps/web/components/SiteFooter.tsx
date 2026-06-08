@@ -1,7 +1,8 @@
+import Link from "next/link";
+
 /**
  * Site footer landmark. Carries the legal links (Datenschutzerklärung +
- * Impressum) which live in WordPress per spec §27 / ADR 0008 — linked via
- * server-resolved env URLs, never hosted here.
+ * Impressum), which are in-app routes (ADR 0009).
  */
 export function SiteFooter({ privacyUrl, imprintUrl }: { privacyUrl: string; imprintUrl: string }) {
   const year = new Date().getFullYear();
@@ -10,22 +11,12 @@ export function SiteFooter({ privacyUrl, imprintUrl }: { privacyUrl: string; imp
       <div className="mx-auto flex max-w-6xl flex-col gap-2 px-4 py-6 text-sm text-bdas-ink-muted sm:flex-row sm:items-center sm:justify-between">
         <p>© {year} Bund der Alevitischen Studierenden</p>
         <nav aria-label="Rechtliches" className="flex items-center gap-4">
-          <a
-            href={privacyUrl}
-            target="_blank"
-            rel="noreferrer noopener"
-            className="hover:text-bdas-red hover:underline"
-          >
+          <Link href={privacyUrl} className="hover:text-bdas-red hover:underline">
             Datenschutz
-          </a>
-          <a
-            href={imprintUrl}
-            target="_blank"
-            rel="noreferrer noopener"
-            className="hover:text-bdas-red hover:underline"
-          >
+          </Link>
+          <Link href={imprintUrl} className="hover:text-bdas-red hover:underline">
             Impressum
-          </a>
+          </Link>
         </nav>
       </div>
     </footer>
