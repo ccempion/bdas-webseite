@@ -3,7 +3,7 @@
 - **Status:** Accepted (§3 amended by ADR 0009)
 - **Date:** 2026-05-18
 - **Supersedes:** —
-- **Superseded by:** ADR 0009 — *§3 only* (legal pages are now in-app routes, not WordPress pages). §1, §2, and §4 stand.
+- **Superseded by:** ADR 0009 — _§3 only_ (legal pages are now in-app routes, not WordPress pages). §1, §2, and §4 stand.
 
 ## Context
 

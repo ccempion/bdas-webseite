@@ -3,7 +3,7 @@
 - **Status:** Accepted
 - **Date:** 2026-05-10
 - **Supersedes:** Section 13 of `docs/bdas-platform-spec.md` (the two-app split)
-- **Superseded by:** ADR 0009 — *WordPress references only* (the WP/dashboard split diagram and the "WordPress retains exclusive ownership of public content" clause are void; the platform is standalone). The single-app decision otherwise stands.
+- **Superseded by:** ADR 0009 — _WordPress references only_ (the WP/dashboard split diagram and the "WordPress retains exclusive ownership of public content" clause are void; the platform is standalone). The single-app decision otherwise stands.
 
 ## Context
 

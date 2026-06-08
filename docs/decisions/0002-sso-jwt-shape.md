@@ -3,7 +3,7 @@
 - **Status:** Accepted (amended 2026-05-17; cross-domain scheme superseded by ADR 0009)
 - **Date:** 2026-05-10
 - **Supersedes:** —
-- **Superseded by:** ADR 0009 — *cross-domain cookie scheme only.* The JWT shape, signing, and claims here are retained; the `.bdas.de` cookie scope and the WordPress-verifier premise are void. The cookie is now host-only and internal to the app.
+- **Superseded by:** ADR 0009 — _cross-domain cookie scheme only._ The JWT shape, signing, and claims here are retained; the `.bdas.de` cookie scope and the WordPress-verifier premise are void. The cookie is now host-only and internal to the app.
 
 ## Context
 
