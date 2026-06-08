@@ -74,11 +74,11 @@ const from = process.env.RESEND_FROM_EMAIL;
 setNotifier(apiKey && from ? createResendNotifier({ apiKey, from }) : consoleNotifier);
 ```
 
-## SSO cookie (per ADR 0002)
+## Session cookie (ADR 0002, as amended by ADR 0009)
 
 - Name: `bdas_session` · HttpOnly · `SameSite=Lax` · 7-day fixed expiry
-- Domain: `.bdas.de` in production (so `wp-plugin/bdas-sso` reads the same cookie)
-- Algorithm: HS256 with `SSO_JWT_SECRET` (≥ 32 chars, identical in WP plugin)
+- Host-only (no `Domain` attribute) — an internal app session, not shared with any other surface
+- Algorithm: HS256 with `SSO_JWT_SECRET` (≥ 32 chars, internal app secret)
 - Claims: `iss=bdas, sub=usr_..., email, roles[], ver=1, iat, exp, jti=ses_...`
 
 ## Testing

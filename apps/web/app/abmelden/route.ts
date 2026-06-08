@@ -18,8 +18,7 @@ export async function POST(): Promise<NextResponse> {
 
   // Set the cookie directly on the response object — calling cookies().set()
   // then returning NextResponse.redirect() loses the Set-Cookie header in
-  // Next.js Route Handlers. Must include domain to clear the .bdas.de cookie.
-  const domain = process.env["SSO_COOKIE_DOMAIN"] || undefined;
+  // Next.js Route Handlers.
   response.cookies.set({
     name: COOKIE_NAME,
     value: "",
@@ -28,7 +27,6 @@ export async function POST(): Promise<NextResponse> {
     sameSite: "lax",
     path: "/",
     maxAge: 0,
-    ...(domain ? { domain } : {}),
   });
 
   return response;

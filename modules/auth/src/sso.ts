@@ -1,7 +1,8 @@
 /**
- * SSO JWT issuer/verifier per ADR 0002.
+ * App session JWT issuer/verifier (ADR 0002, as amended by ADR 0009).
  *
- * Cookie shape: `bdas_session`, HttpOnly, Domain=.bdas.de (prod), 7-day fixed
+ * The token is an internal app session credential — it is never read by any
+ * other surface. Cookie shape: `bdas_session`, HttpOnly, host-only, 7-day fixed
  * expiry. Algorithm HS256. Claims: iss, sub, email, roles, ver, iat, exp, jti.
  *
  * The `ver` claim is mandatory and strict — token-shape changes bump the
