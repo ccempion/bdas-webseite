@@ -6,7 +6,7 @@ This document is the agreed sequencing and approach for building the platform de
 
 ## 1. Current state of the repository
 
-A pnpm-workspace monorepo skeleton with the correct folder structure, plus the full product specification and a WordPress context note. **Nothing is implemented yet** — every directory under `apps/`, `modules/`, and `core/` contains only a `.gitkeep`. The spec at `docs/bdas-platform-spec.md` is detailed (~585 lines, 25 sections) and is the source of truth for what to build.
+A pnpm-workspace monorepo skeleton with the correct folder structure, plus the full product specification. **Nothing is implemented yet** — every directory under `apps/`, `modules/`, and `core/` contains only a `.gitkeep`. The spec at `docs/bdas-platform-spec.md` is detailed (~585 lines, 25 sections) and is the source of truth for what to build.
 
 ---
 
@@ -17,10 +17,10 @@ These are cheap to choose now, expensive to change later. The spec leaves them o
 | Decision                                      | Options                                                | Recommendation                                                                                                                               |
 | --------------------------------------------- | ------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------- |
 | **DB host**                                   | Supabase / Neon                                        | **Supabase** — also provides object storage (Phase 2) and a unified dashboard. One vendor for DB + storage = less glue.                      |
-| **Auth library**                              | Lucia / Auth.js                                        | **Lucia** — Auth.js's defaults fight the WordPress-SSO requirement (custom cookie domain, JWT shape). Lucia is a thin primitive you control. |
+| **Auth library**                              | Lucia / Auth.js                                        | **Hand-rolled session layer** (ADR 0003) — a thin primitive you control: host-only cookie carrying a signed JWT, no third-party auth framework. |
 | **Local dev DB**                              | Docker Postgres / shared dev DB                        | **Docker Postgres** per developer — keeps migration dry-run honest.                                                                          |
 | **Federal-board bootstrap** (open Q from §25) | Manual SQL / first-registered-user / env-var allowlist | **Env-var allowlist of email addresses** that auto-receive `federal_board` on first login. Documented, reversible, no production-data hacks. |
-| **Domain**                                    | `bdas.de` + `dashboard.bdas.de` / single sub-domain    | **Two sub-domains** — spec already prefers this; cookie scope works either way.                                                              |
+| **Domain**                                    | dedicated host (e.g. `dashboard.bdas.de` / `app.bdas.de`) | **A single dedicated host** — the session cookie is host-only, so any single host works.                                                  |
 
 Once these are locked, capture each one as an ADR in `docs/decisions/`.
 
@@ -28,7 +28,7 @@ Once these are locked, capture each one as an ADR in `docs/decisions/`.
 
 ## 3. Phase 1 — sprint plan
 
-Phase 1 acceptance (§23 of the spec) is the goal: register → verify → login → SSO into WordPress → browse groups → local board approves a member. Roughly 3–4 weeks of focused work.
+Phase 1 acceptance (§23 of the spec) is the goal: register → verify → login → browse groups → local board approves a member. Roughly 3–4 weeks of focused work.
 
 ### Sprint 0 — Bootstrap (1–2 days)
 
@@ -43,7 +43,7 @@ Make the modular rules enforceable from day one. Skip this and rule violations s
 
 ### Sprint 1 — Auth + UI shell (3–5 days)
 
-- `core/design-system`: tokens, `Button`, `Input`, `Form`, `Card`, `Alert`. Tailwind config exported. Keep the surface small — every primitive added is one more thing the WordPress theme will eventually need to mirror.
+- `core/design-system`: tokens, `Button`, `Input`, `Form`, `Card`, `Alert`. Tailwind config exported. Keep the surface small — every primitive added is one more thing to maintain.
 - `auth` module: schema migration, register, verify email (Resend), login, logout, password reset, rate limiter middleware. Public interface = `getCurrentUser`, `requireRole`, event emissions.
 - `apps/web`: root layout, `/anmelden`, `/registrieren`, `/passwort-zuruecksetzen`, `/account` (skeleton).
 
@@ -66,13 +66,7 @@ Build before members because `members.primary_group_id` references it.
 - A **temporary** `/admin/pending-members` page gated by `federal_board` so a board user can approve pending members. The real UI lives in `apps/dashboard` in Phase 3 — this is a one-screen stopgap, _not_ the dashboard app.
 - Wire the env-var federal-board bootstrap rule.
 
-### Sprint 4 — Content bridge + WordPress SSO (2–3 days)
-
-- `content-bridge` read side: typed WordPress REST client with `revalidate: 3600` caching. Used on homepage and group profile intro.
-- Auth: issue the cross-domain cookie (`Domain=.bdas.de`, signed JWT).
-- `wp-plugin/bdas-sso`: minimal PHP plugin reads the cookie, hydrates `wp_set_current_user`. Role mapping is Phase 5 — Phase 1 only does "logged in vs not".
-
-### Sprint 5 — Phase 1 acceptance pass (2–3 days)
+### Sprint 4 — Phase 1 acceptance pass (2–3 days)
 
 - German strings audit, cookie banner, GDPR consent on register, data-export endpoint stub.
 - Lighthouse mobile ≥ 90.
@@ -92,7 +86,7 @@ Phase 6 (payments) is last on purpose — the spec defers it because the federat
 
 - **Rule-1 violations are silent.** A module reading another's tables typechecks fine. Add a CI lint that greps for `from "modules/*/schema"` outside the module itself, and fail the build.
 - **Migration ordering across modules** is the gnarliest monorepo problem. The aggregator in `infra/migrations` needs a deterministic order — declare it explicitly in a manifest, not by directory walk.
-- **The SSO cookie is the load-bearing wall.** Get the JWT shape, signing key, and cookie domain right in Sprint 1. Changing it later means re-issuing all sessions and shipping a WordPress plugin update.
+- **The session cookie is the load-bearing wall.** Get the JWT shape and signing key right in Sprint 1. Changing it later means re-issuing all sessions.
 - **§25 open questions** — at minimum, get answers to the federal-board bootstrap question (Sprint 3 needs it) and the dues / Spendenbescheinigung question (before Phase 6) from the federation.
 
 ---
@@ -144,7 +138,7 @@ The single biggest lever. Most quality loss with an AI builder comes from drift:
 
 - **Plan mode** — draft an approach for review before execution
 - **Worktree isolation** — spin a side worktree to try something risky without touching your branch
-- **Subagents** — parallel work (e.g. one agent researching the WordPress REST API while Claude implements the bridge)
+- **Subagents** — parallel work (e.g. one agent researching a library's API while Claude implements against it)
 - **Background tasks** — long-running test suite or `tsc --watch` in the background, check back periodically
 - **Memory system** — preferences and project facts persist across sessions in structured form
 - **`/review`, `/security-review`, `/ultrareview`** — review skills as described

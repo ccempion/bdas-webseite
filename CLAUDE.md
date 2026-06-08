@@ -82,7 +82,7 @@ Substitute only with explicit approval and an ADR in `docs/decisions/`.
 
 ## 7. Visual language
 
-The platform must look indistinguishable from the existing BDAS WordPress site. The visual language is encoded as tokens in [`core/design-system/src/tokens.ts`](core/design-system/src/tokens.ts) with a human-readable summary in [`core/design-system/README.md`](core/design-system/README.md). Highlights:
+The platform presents a cohesive BDAS brand identity. The visual language is encoded as tokens in [`core/design-system/src/tokens.ts`](core/design-system/src/tokens.ts) with a human-readable summary in [`core/design-system/README.md`](core/design-system/README.md). Highlights:
 
 - Brand accent `#d12020` is reserved for active/open/accent states. Never a default text color.
 - Three radii: `6px` (inner items) / `12px` (cards, dropdowns, accordions) / `20px` (desktop nav pills). Nothing else.

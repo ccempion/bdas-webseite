@@ -1,9 +1,9 @@
 # ADR 0008 — GDPR posture for Phase 1
 
-- **Status:** Accepted
+- **Status:** Accepted (§3 amended by ADR 0009)
 - **Date:** 2026-05-18
 - **Supersedes:** —
-- **Superseded by:** —
+- **Superseded by:** ADR 0009 — *§3 only* (legal pages are now in-app routes, not WordPress pages). §1, §2, and §4 stand.
 
 ## Context
 
@@ -65,6 +65,12 @@ client state, sets nothing readable cross-site, and so does not itself
 create a consent obligation.
 
 ### 3. Legal content lives in WordPress, linked by env URL
+
+> **Amended by ADR 0009 (2026-06-08):** the platform is now standalone, so the
+> Datenschutzerklärung and Impressum are hosted **in-app** as routes
+> (`/datenschutz`, `/impressum`), not in WordPress. The `LEGAL_PRIVACY_URL` /
+> `LEGAL_IMPRINT_URL` env vars are removed. The original ruling below is kept
+> as historical record.
 
 Per spec §27 WordPress is the board-edited content layer. The
 Datenschutzerklärung and Impressum are **WordPress pages**, not app routes.

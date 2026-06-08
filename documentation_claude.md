@@ -1,6 +1,12 @@
+> **Historical snapshot.** This is an early mirror of `docs/build-plan.md`,
+> which is the canonical sequencing doc. The WordPress integration described
+> below (content bridge, cross-domain SSO, WP plugin) was removed per ADR 0009;
+> the platform is standalone. Prose references are corrected here; the ASCII
+> decision tables are left as a frozen record.
+
 1. Sprint-by-sprint plan for Phase 1
 
-Phase 1 acceptance (§23) is the goal: register → verify → login → SSO into WP → browse groups → local board approves a  
+Phase 1 acceptance (§23) is the goal: register → verify → login → browse groups → local board approves a  
  member. ~3–4 weeks of focused work.
 
 Sprint 0 — Bootstrap (1–2 days)
@@ -44,14 +50,7 @@ Sprint 3 — Members (3–5 days)
   lives in apps/dashboard in Phase 3 — this is a one-screen stopgap, not the dashboard app.)
 - Wire the env-var federal-board bootstrap rule.
 
-Sprint 4 — Content bridge + WP SSO (2–3 days)
-
-- content-bridge read side: typed WP REST client with revalidate: 3600 caching. Used on homepage and group profile intro.
-- Auth: issue the cross-domain cookie (Domain=.bdas.de, signed JWT).
-- wp-plugin/bdas-sso: minimal PHP plugin reads cookie, hydrates wp_set_current_user. Role mapping is Phase 5; Phase 1 only
-  does "logged in vs not".
-
-Sprint 5 — Phase 1 acceptance pass (2–3 days)
+Sprint 4 — Phase 1 acceptance pass (2–3 days)
 
 - German strings audit, cookie banner, GDPR consent on register, data-export endpoint stub.
 - Lighthouse mobile ≥ 90.
@@ -77,8 +76,8 @@ Phases 1–3.
   "modules/\*/schema" outside the module itself, and fail the build.
 - Migration ordering across modules is the gnarliest monorepo problem. The aggregator in infra/migrations needs a  
   deterministic order — declare it explicitly in a manifest, not by directory walk.
-- The SSO cookie is the load-bearing wall. Get the JWT shape, signing key, and cookie domain right in Sprint 1. Changing it
-  later means re-issuing all sessions and shipping a WP plugin update.
+- The session cookie is the load-bearing wall. Get the JWT shape and signing key right in Sprint 1. Changing it
+  later means re-issuing all sessions.
 - §25 open questions — at minimum, get answers to the federal-board bootstrap question (Sprint 3 needs it) and the  
   dues/Spendenbescheinigung question (before Phase 6) from the federation.
 

@@ -1,9 +1,9 @@
 # ADR 0004 — Content Bridge
 
-- **Status:** Accepted
+- **Status:** Superseded by ADR 0009
 - **Date:** 2026-05-10
 - **Supersedes:** —
-- **Superseded by:** —
+- **Superseded by:** ADR 0009 — the platform is standalone; the content bridge and its WordPress plugin are removed. Retained as historical record.
 
 ## Context
 

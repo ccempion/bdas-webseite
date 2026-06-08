@@ -1,10 +1,10 @@
 /**
  * BDAS visual language — single source of truth.
  *
- * Distilled from the existing WordPress site CSS so the new platform is
- * visually indistinguishable from what BDAS members already know. The
- * Tailwind preset (`./tailwind-preset.ts`) consumes these; the WordPress
- * theme port in Sprint 4 will too. Do not redefine these values in apps.
+ * The platform's cohesive, self-owned brand identity. (Values were originally
+ * distilled from the federation's established visual language and are retained
+ * here as the platform's own.) The Tailwind preset (`./tailwind-preset.ts`)
+ * consumes these; do not redefine these values in apps.
  *
  * If a value is missing here, it is intentionally not part of the
  * language — propose an addition rather than ad-hoc'ing it in app code.

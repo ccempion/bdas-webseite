@@ -1,9 +1,9 @@
 # ADR 0002 — SSO JWT Shape
 
-- **Status:** Accepted (amended 2026-05-17 — see Amendment below)
+- **Status:** Accepted (amended 2026-05-17; cross-domain scheme superseded by ADR 0009)
 - **Date:** 2026-05-10
 - **Supersedes:** —
-- **Superseded by:** —
+- **Superseded by:** ADR 0009 — *cross-domain cookie scheme only.* The JWT shape, signing, and claims here are retained; the `.bdas.de` cookie scope and the WordPress-verifier premise are void. The cookie is now host-only and internal to the app.
 
 ## Context
 

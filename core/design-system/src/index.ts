@@ -1,7 +1,6 @@
 /**
  * Shared design system — tokens, Tailwind preset, and primitive components.
- * The WordPress theme also consumes the preset so the visual transition is
- * invisible.
+ * The platform's single visual language.
  */
 
 export const DESIGN_SYSTEM_VERSION = "0.0.0";

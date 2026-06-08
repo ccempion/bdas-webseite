@@ -1,8 +1,8 @@
 # `@bdas/design-system`
 
-Tokens and primitives for the BDAS platform. Distilled from the existing
-WordPress site CSS so the new platform looks indistinguishable from what
-members already know.
+Tokens and primitives for the BDAS platform — its cohesive, self-owned brand
+identity. (The token values were originally distilled from the federation's
+established visual language and are retained as the platform's own.)
 
 **Source of truth: `src/tokens.ts`. Do not introduce raw colors, radii,
 shadows, or motion values in app code.** If a value is missing here, it
@@ -32,8 +32,8 @@ ad-hoc.
 ## Component recipes
 
 These are the patterns the source CSS encodes. Match them when building
-the equivalent components in apps/web, apps/dashboard, and the WordPress
-theme. Names refer to tokens in `src/tokens.ts`.
+the equivalent components across the app. Names refer to tokens in
+`src/tokens.ts`.
 
 - **Card** — white surface, `radii.md`, `border.soft`, `shadows.cardResting`. On
   hover translateY(`lift.sm`) and shadow upgrade to `cardLiftSm`. Transition
@@ -83,13 +83,6 @@ const cardStyle = {
   boxShadow: shadows.cardResting,
 };
 ```
-
-### From the WordPress theme port (Sprint 4)
-
-The same tokens are intended to be emitted as CSS custom properties so
-`wp-plugin/bdas-theme` can consume them without a Node build step. That
-emitter lands in Sprint 4 — until then, keep the WordPress site's
-inline CSS as the spec for parity.
 
 ## What is NOT in the language
 

@@ -3,7 +3,7 @@
 - **Status:** Accepted
 - **Date:** 2026-05-10
 - **Supersedes:** —
-- **Superseded by:** —
+- **Superseded by:** ADR 0009 — *WordPress clause only* (the "WordPress stays on its existing host; only the SSO bridge cookie connects it" line is void; the platform is standalone). Hosting/data-layer decisions otherwise stand.
 
 ## Context
 

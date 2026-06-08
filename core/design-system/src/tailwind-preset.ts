@@ -1,6 +1,6 @@
 /**
- * Tailwind preset shared by apps/web, apps/dashboard, and the WordPress
- * theme port. Tokens come from ./tokens.ts — never inline values here.
+ * Tailwind preset shared across the platform's apps. Tokens come from
+ * ./tokens.ts — never inline values here.
  *
  * The local TailwindPreset type avoids depending on tailwindcss until
  * Sprint 1 installs it; apps will retype this against `Config['theme']`.

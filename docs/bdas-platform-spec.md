@@ -16,19 +16,19 @@ The Bund der Alevitischen Studierenden in Deutschland (BDAS) is a federation of 
 - Local initiatives are invisible to other groups; reusable ideas don't propagate.
 - New members can't easily find a path in; recruitment depends on personal networks.
 
-The goal of this project is a digital platform that centralizes representation, membership, organization, and cross-group synergies, without throwing away the existing WordPress content site.
+The goal of this project is a standalone digital platform that centralizes representation, membership, organization, and cross-group synergies. It is a self-contained product for the federation's members and boards — a separate service with its own audience, independent of the federation's public marketing website.
 
 ---
 
 ## 2. Strategic Architecture Decision
 
-The platform is **hybrid**:
+The platform is a **standalone custom application** (ADR 0009):
 
-- **WordPress** remains the public **content layer**: marketing pages, Alevi values content, blog, local group profile pages, project showcases. Edited by board members without developer involvement.
-- **A custom modular application** (this spec) is the **structured-data layer**: authentication, members, events, admin, board tooling. Lives in a Git repository, deployed independently of WordPress.
-- The two are linked through (a) **single sign-on** so a logged-in user is recognized on both, and (b) a **shared design system** so the visual transition is invisible to the user.
+- **A custom modular application** (this spec) is the **structured-data layer**: authentication, members, events, admin, board tooling. It owns its own identity, content, and legal pages. Lives in a Git repository, deployed independently.
+- It is a **separate service with its own audience** — the federation's members and boards. It does not integrate with, depend on, or share a session with the federation's public marketing website. Any such website is a distinct product with a distinct audience.
+- The platform owns a **single design system** (`core/design-system`) that defines its visual identity end to end.
 
-**Why hybrid:** WordPress is good at content, bad at structured workflows; a custom app is the inverse. Splitting them prevents WordPress plugin sprawl from becoming the system of record for membership data, and isolates volunteer developer effort to the part that actually requires it.
+**Why standalone:** keeping the platform self-contained removes a whole class of cross-system coupling (shared cookies, content bridges, role mirroring) and lets the federation's public web presence evolve independently. The platform is the system of record for membership, events, and board tooling; nothing outside it reads or writes that data.
 
 ---
 
@@ -47,7 +47,7 @@ The platform is **hybrid**:
 - Native mobile apps (the platform is mobile-responsive web only).
 - Replacing WhatsApp as the day-to-day chat channel.
 - Internal social-network features (DMs, feeds, comments).
-- Replacing WordPress for blog and content pages.
+- A public marketing/blog website — that is a separate product with a separate audience, out of scope here.
 - Multi-federation tenancy — this is for BDAS only.
 
 ---
@@ -89,7 +89,7 @@ The application is built as a set of modules with **explicit boundaries**. The i
   /web              # Public site — Next.js. Marketing, group profiles, event browsing, donations, /account
   /dashboard        # Boards-only surface — separate Next.js app, deployed at dashboard.bdas.de
 /modules
-  /auth             # Sessions, login, registration, password reset, SSO bridge to WordPress
+  /auth             # Sessions, login, registration, password reset
   /members          # Profile, membership lifecycle, alumni transition, group changes
   /groups           # Local groups (Hochschulgruppen) — registry, profile, contact, per-group join policy
   /events           # Event CRUD, registration, deregistration, calendar, attendance
@@ -99,12 +99,11 @@ The application is built as a set of modules with **explicit boundaries**. The i
   /handover         # Board handover templates, role docs, contact continuity
   /payments         # Stripe integration: donations (visitor), voluntary yearly dues, per-group join fees
   /notifications    # Email, in-app announcements, transactional sends, group-scoped broadcasts
-  /content-bridge   # Pulls public content from WordPress REST API, syncs author roles for blog
 /core
   /db               # DB client, migration runner
   /id               # ID generation
   /errors           # Shared error types
-  /design-system    # Tokens, primitives, shared components (also consumed by WP theme)
+  /design-system    # Tokens, primitives, shared components — the platform's visual identity
   /storage          # Object-store client wrapper used by /files
   /types            # Cross-module shared types only
 /infra
@@ -121,12 +120,12 @@ Pinned to keep the AI builder predictable. Substitute only if you have a specifi
 - **Framework:** Next.js 14 (App Router). Server Components for reads, Server Actions or route handlers for writes.
 - **Database:** PostgreSQL (Supabase or Neon for managed hosting).
 - **ORM:** Drizzle (lightweight, modular schemas — better fit than Prisma for the per-module migration model).
-- **Auth:** Lucia or Auth.js, configured for email + password and a WordPress SSO bridge.
+- **Auth:** hand-rolled session layer (email + password) — see ADR 0003. The session cookie is host-only and internal to the app.
 - **Object storage:** Supabase Storage or Vercel Blob (S3-compatible). Used exclusively by the `files` module.
 - **Styling:** Tailwind CSS + shadcn/ui primitives.
 - **Email:** Resend.
 - **Payments:** Stripe (Checkout for donations and join fees, Customer Portal for recurring dues).
-- **Hosting:** Vercel for the app; WordPress stays where it is.
+- **Hosting:** Vercel for the app.
 - **Repository:** Single Git repository (monorepo) using pnpm workspaces. One repo, many modules.
 - **CI:** GitHub Actions: typecheck, test, lint, migration dry-run on every PR.
 
@@ -134,7 +133,7 @@ Pinned to keep the AI builder predictable. Substitute only if you have a specifi
 
 ## 7. Module: `auth`
 
-**Purpose:** Identity, sessions, and the SSO bridge to WordPress. Owns nothing about the user's profile beyond credentials.
+**Purpose:** Identity and sessions. Owns nothing about the user's profile beyond credentials.
 
 **Owns the tables:** `auth_users`, `auth_sessions`, `auth_password_resets`, `auth_email_verifications`.
 
@@ -147,7 +146,7 @@ Pinned to keep the AI builder predictable. Substitute only if you have a specifi
 - Email + password registration with email verification (mandatory before any role grant).
 - Login, logout, "remember me" 30-day cookie session.
 - Password reset by emailed token, 1-hour expiry.
-- WordPress SSO bridge: a logged-in app user gets a signed cookie that the WP theme reads to show "Hi, $name" without a second login.
+- Host-only session cookie carrying a signed JWT, internal to the app (ADR 0002 as amended by ADR 0009).
 - Rate limiting on `/login` and `/register` (5/15min per IP).
 
 **Out of scope for this module:** profile data, membership status, payment, group assignment, role grant CRUD. Those live in `members`, `payments`, and the `dashboard` app respectively.
@@ -219,7 +218,7 @@ group_contacts
 ```
 
 **Capabilities:**
-- Public group profile page at `/gruppen/[slug]` — sourced from this module, NOT from WordPress.
+- Public group profile page at `/gruppen/[slug]` — sourced from this module's data, not hand-edited HTML.
 - Local board can edit own group's profile and toggle the group's join-fee policy (whether joining requires payment, how much, and whether one-time or yearly).
 - Federal board can create, archive, and override group settings.
 - Group activity feed = aggregation pulled from `events` and `projects` modules via their public interfaces (no direct table access).
@@ -333,7 +332,7 @@ file_access_log
 
 ## 13. Dashboard App: `apps/dashboard`
 
-**Important:** The dashboard is a **separate Next.js app**, not a route group inside the public site. It is deployed at `dashboard.bdas.de` (or `app.bdas.de` if a single sub-domain is preferred). The public site never renders dashboard pages, and the dashboard never renders public marketing pages. They share the design tokens in `core/design-system` and the SSO cookie, nothing else.
+**Important:** The dashboard is a **separate Next.js app**, not a route group inside the public site. It is deployed at `dashboard.bdas.de` (or `app.bdas.de` if a single sub-domain is preferred). The public site never renders dashboard pages, and the dashboard never renders public marketing pages. They share the design tokens in `core/design-system` and the session cookie, nothing else.
 
 **Why a separate app:** the public site and the dashboard have different information density, different UI vocabulary (sidebar + tables vs. editorial layout), different release cadences, and different security postures. Splitting them keeps each one focused and lets the public site stay fully cacheable.
 
@@ -384,7 +383,7 @@ dashboard.bdas.de/
 - File repository links (`local_board:[group_id]` and `group_members:[group_id]`).
 
 ### Access enforcement
-- Every dashboard route is gated at the edge by middleware that reads the SSO session and checks for the required role grant. No grant → redirect to public site.
+- Every dashboard route is gated at the edge by middleware that reads the session and checks for the required role grant. No grant → redirect to the public pages.
 - A user with no board grants who lands on `dashboard.bdas.de` is bounced to `/account` on the public site. The dashboard is invisible to non-board users.
 - Federal board grants are super-set: holding `federal_board` grants implicit access to every `/gruppe/[slug]` view.
 
@@ -460,35 +459,27 @@ This is the module that turns "Vorstandswechsel" from a recurring crisis into a 
 
 ---
 
-## 17. Module: `content-bridge`
+## 17. Module: `content-bridge` — removed (ADR 0009)
 
-**Purpose:** Make WordPress content reachable from the app, and make app role grants reachable from WordPress.
+This module previously pulled public content (nav, posts) from a WordPress site and mirrored board role grants into WordPress author roles. The platform is now standalone (ADR 0009): it integrates with no external content system. The module, its WordPress plugin, and all related capabilities have been removed. Navigation and any editorial content the platform needs are owned in-app.
 
-**Capabilities:**
-- **Read side:** calls WordPress REST API (`/wp-json/wp/v2/posts`, `/pages`) with caching. Used by the homepage, "Alevitische Werte" page, and group profile pages that embed an editorial intro.
-- **Write side (role sync):** when a member receives a `local_board:[group_id]` or `federal_board` grant, the bridge ensures they hold the corresponding **WordPress author role** (with a per-group category restriction enforced by a small WP plugin). On revocation, the author role is removed. This is what enables "make posts in blog" — local board members write blog posts in WordPress, scoped to their group's category, with no second login required thanks to SSO.
-- Read-only with respect to post content; the app never writes blog posts back to WordPress.
-
-This module is the only place WordPress is referenced. If WordPress is ever retired, only this module changes.
+Retained as a numbered placeholder so later section references stay stable.
 
 ---
 
-## 18. Cross-Cutting: Authentication and SSO Across Public Site, Dashboard, and WordPress
+## 18. Cross-Cutting: Authentication
 
-- The `auth` module is the source of truth for identity. The public site (`bdas.de`), the dashboard (`dashboard.bdas.de`), and WordPress all trust a signed cookie issued by it.
-- Implementation: `auth` sets a JWT cookie scoped to the parent domain (`Domain=.bdas.de`) so all three surfaces see it without separate logins.
-  - Public site reads it server-side to render `/account` and to gate event registration.
-  - Dashboard reads it in middleware to gate every route by role grant.
-  - A small WordPress plugin reads it, hydrates the WP user, and maps role grants to WP capabilities (Author restricted by category for `local_board`, Editor for `federal_board`).
-- Logout in any one surface clears the cookie everywhere.
-- This is one-way: WordPress logins do not authenticate against the app. (Avoids two writable identity stores.)
-- The WP plugin lives in the same monorepo under `/wp-plugin/bdas-sso` and is versioned alongside the app.
+- The `auth` module is the single source of truth for identity. There is no external surface to share a session with (ADR 0009).
+- Implementation: `auth` sets a **host-only** cookie carrying a signed JWT (HS256, claims per ADR 0002). It is scoped to the app's own host — never a parent domain.
+  - The app's public pages read it server-side to render `/account` and to gate event registration.
+  - The dashboard reads it in middleware to gate every route by role grant.
+- Logout clears the cookie.
+- The JWT secret is an internal app secret; the token is never verified by any other system.
 
 ---
 
 ## 19. Data Migration from Current State
 
-- **WordPress posts and pages:** stay where they are. The app links to them.
 - **Existing member lists** (spreadsheets, WhatsApp): out of scope to import automatically. Boards will re-onboard via a one-time bulk-invite tool in `members` (CSV upload → invitation emails).
 - **Existing event history:** not migrated. Events module starts fresh.
 - **Existing files:** not migrated automatically. Boards upload current handover docs, templates, and group resources into the `files` module during Phase 4.
@@ -512,10 +503,10 @@ This module is the only place WordPress is referenced. If WordPress is ever reti
 
 ## 21. Repository and Deployment Structure
 
-- One Git repository, pnpm workspaces. Two deployable Next.js apps (`/apps/web`, `/apps/dashboard`), shared modules under `/modules`, plus a `wp-plugin/` workspace for the WordPress SSO plugin.
-- Each app has its own Vercel project: `web` at `bdas.de`, `dashboard` at `dashboard.bdas.de`. They share the same database, Stripe account, and object store.
+- One Git repository, pnpm workspaces. Deployable Next.js app(s) under `/apps`, shared modules under `/modules`. No external plugins.
+- Vercel project(s) for the app, sharing the same database, Stripe account, and object store.
 - Branch model: `main` is production, PRs from feature branches, required CI checks (typecheck, lint, test, migration dry-run) run once across the monorepo.
-- Deployments: every PR gets two preview URLs (one per app); merge to `main` deploys both to production. The WP plugin is built as a zip artifact on each release tag and uploaded to the WordPress install manually (or via WP-CLI).
+- Deployments: every PR gets a preview URL; merge to `main` deploys to production.
 - Environment variables documented in `/.env.example` at repo root and per-module `.env.example`.
 - Secrets in Vercel + GitHub Actions secrets, never committed.
 - README at repo root explains the modular boundary rules; each module has its own README explaining its public interface.
@@ -526,11 +517,11 @@ This module is the only place WordPress is referenced. If WordPress is ever reti
 
 The platform is delivered in phases. Each phase is independently shippable. Do not start phase N+1 until phase N is in production.
 
-1. **Phase 1 — Foundation.** `auth`, `members` (without group-change), `groups` (without join-fee policy), `core/design-system`, `content-bridge` (read side only). Public site can render groups; users can register; SSO into WordPress works.
+1. **Phase 1 — Foundation.** `auth`, `members` (without group-change), `groups` (without join-fee policy), `core/design-system`. The app can render groups; users can register, verify, and log in.
 2. **Phase 2 — Events + comms + files.** `events`, `notifications` (transactional + group broadcast), `files`. Members can register/deregister for events; boards can email their group; member, group-shared, and board folders go live.
-3. **Phase 3 — Dashboard.** Stand up `apps/dashboard` at `dashboard.bdas.de` with `dashboard-shell`, the federal scope (`/federal/*`), and the local scope (`/gruppe/[slug]/*`). Includes member, event, and file-access tables, plus the **role grant management UI** for federal board. SSO middleware blocks access for users without board grants.
+3. **Phase 3 — Dashboard.** Stand up `apps/dashboard` at `dashboard.bdas.de` with `dashboard-shell`, the federal scope (`/federal/*`), and the local scope (`/gruppe/[slug]/*`). Includes member, event, and file-access tables, plus the **role grant management UI** for federal board. Session middleware blocks access for users without board grants.
 4. **Phase 4 — Handover.** `handover` module. Documents stored via `files`. Solves the recurring board-transition pain.
-5. **Phase 5 — Synergies.** `projects` module with cross-group discovery; `content-bridge` write side (role sync) so local boards can author blog posts in WordPress.
+5. **Phase 5 — Synergies.** `projects` module with cross-group discovery.
 6. **Phase 6 — Money.** `payments` covering donations, voluntary yearly dues, and per-group join fees. Group-change flow and join-policy editor in `groups` ship here.
 
 ---
@@ -539,10 +530,9 @@ The platform is delivered in phases. Each phase is independently shippable. Do n
 
 The platform is "Phase 1 done" when:
 - A new visitor can register, verify email, log in, log out, reset password.
-- A logged-in user is recognized on WordPress without a second login.
 - A federal board member can create a new group, edit it, and archive it.
 - A local board member can edit their own group's profile and approve a pending member.
-- A user can view all groups at `/gruppen` and a single group at `/gruppen/[slug]` with content sourced from the database (not WordPress).
+- A user can view all groups at `/gruppen` and a single group at `/gruppen/[slug]` with content sourced from the database.
 - All Phase 1 modules pass their own test suites in CI.
 - All pages pass Lighthouse accessibility audit ≥ 90 on mobile.
 
@@ -577,7 +567,7 @@ These are not blockers for Phase 1 but should be answered before the correspondi
 - Will dues be a single tier or a free-amount-with-minimum?
 - Who gets to grant `federal_board` role? (Bootstrapping question.)
 - What happens to a group that becomes `dormant` for >12 months — auto-archive, or manual?
-- Final domain choice: `bdas.de` for public + `dashboard.bdas.de` for the boards (recommended), or `app.bdas.de/dashboard` under a single sub-domain? The cookie scope (`Domain=.bdas.de`) works for either.
+- Final domain choice for the platform: a dedicated host such as `dashboard.bdas.de` / `app.bdas.de`. The session cookie is host-only, so any single host works.
 - **When a member changes group**, do per-group join fees carry over, or is the fee re-charged at the new group?
 - **Donation receipts**: must they be tax-compliant (Spendenbescheinigung)? If yes, the donations flow needs to capture full postal address and produce a PDF — a sub-feature of `payments`.
 - **File quotas** (25 MB / 5 GB defaults): do these match the kinds of files boards actually want to share (videos, scanned documents, archives)? Adjust before Phase 2.

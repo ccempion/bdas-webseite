@@ -42,16 +42,11 @@ Vercel account
 - Note: confirm with the federation's legal contact whether Hobby plan is acceptable for an e.V. site, or whether Pro  
   ($20/month per app) is needed (per ADR 0001 follow-up)
 
-bdas.de DNS access
+DNS access for the app host
 
 - Make sure you (or whoever owns the domain) has login to the DNS provider
-- Sprint 4 will add the SSO cookie domain (\*.bdas.de); Sprint 5 will set up bdas.de and dashboard.bdas.de to point at
-  Vercel
-
-WordPress URL + admin access
-
-- Confirm where the existing WordPress install lives — I need the public URL for content-bridge configuration in Sprint 4
-- We'll also need WordPress admin/FTP access at some point to install the bdas-sso plugin (Sprint 4)
+- A single dedicated host (e.g. dashboard.bdas.de / app.bdas.de) needs to point at Vercel. The session cookie is
+  host-only, so no parent-domain cookie scope is required.
 
 Brand and content assets
 

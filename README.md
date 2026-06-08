@@ -12,7 +12,6 @@ core/        Shared, non-domain primitives:
              storage, design-system
 infra/       Migration aggregator and other deployment glue
 docs/        Spec, build plan, ADRs (docs/decisions/)
-wp-plugin/   WordPress SSO plugin (Sprint 4 onward)
 ```
 
 ## Quick start
