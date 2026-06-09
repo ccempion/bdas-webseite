@@ -4,5 +4,8 @@ dist
 .turbo
 coverage
 .drizzle-noop
+test-results
+playwright-report
+.lighthouseci
 pnpm-lock.yaml
 docs/bdas-platform-spec.md
