@@ -1,0 +1,53 @@
+name: Deploy migrations
+
+# Apply pending DB migrations to production automatically, so the production
+# schema can never silently drift behind the repo (ADR 0010). Runs only after
+# the CI workflow has succeeded on `main`, never on PRs or feature branches.
+#
+# The runner (infra/migrations) is idempotent: it tracks applied IDs in
+# `_bdas_migrations` and skips anything already recorded, so a run with nothing
+# pending is a safe no-op.
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+    branches: [main]
+
+concurrency:
+  group: deploy-migrations
+  cancel-in-progress: false
+
+env:
+  NODE_VERSION: "22"
+  PNPM_VERSION: "11.0.9"
+
+jobs:
+  migrate:
+    name: Apply DB migrations to production
+    # Only when CI passed. `workflow_run` fires on completion regardless of
+    # outcome, so gate explicitly on success.
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    # Scopes the production secret to this environment and allows an optional
+    # manual approval gate to be added later in repo settings.
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Apply migrations
+        run: pnpm db:migrate
+        env:
+          # Supabase session-pooler connection string (port 5432) with the DB
+          # password. The transaction pooler (6543) breaks DDL, so it must be
+          # the session pooler. Set in repo → Settings → Environments →
+          # production → Secrets.
+          DATABASE_URL: ${{ secrets.PRODUCTION_DATABASE_URL }}
