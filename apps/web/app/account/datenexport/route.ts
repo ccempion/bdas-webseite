@@ -17,6 +17,10 @@ import { readSessionCookie } from "../../../lib/auth-cookie";
  * no id parameter, so it cannot return another user's data. Phase-1 stub:
  * covers only the modules that exist (auth + members); the payload says so.
  */
+// Route handlers aren't covered by the parent layout's segment config, and this
+// one reads the per-request session + DB, so it must opt out of static export.
+export const dynamic = "force-dynamic";
+
 export async function GET(): Promise<NextResponse> {
   requireAuthFlag();
   requireMembersFlag();
