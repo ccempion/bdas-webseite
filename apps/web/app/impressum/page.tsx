@@ -21,8 +21,8 @@ export default function ImpressumPage() {
 
       <div className="flex flex-col gap-4 text-bdas-ink-body">
         <p>
-          Hier sind Name und Anschrift des Vereins, die Vertretungsberechtigten, das
-          Vereinsregister und die Registernummer, Kontaktdaten (E-Mail, ggf. Telefon) sowie ggf. die
+          Hier sind Name und Anschrift des Vereins, die Vertretungsberechtigten, das Vereinsregister
+          und die Registernummer, Kontaktdaten (E-Mail, ggf. Telefon) sowie ggf. die
           Umsatzsteuer-Identifikationsnummer einzufügen.
         </p>
       </div>

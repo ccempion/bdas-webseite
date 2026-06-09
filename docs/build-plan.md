@@ -14,13 +14,13 @@ A pnpm-workspace monorepo skeleton with the correct folder structure, plus the f
 
 These are cheap to choose now, expensive to change later. The spec leaves them open.
 
-| Decision                                      | Options                                                | Recommendation                                                                                                                               |
-| --------------------------------------------- | ------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| **DB host**                                   | Supabase / Neon                                        | **Supabase** — also provides object storage (Phase 2) and a unified dashboard. One vendor for DB + storage = less glue.                      |
-| **Auth library**                              | Lucia / Auth.js                                        | **Hand-rolled session layer** (ADR 0003) — a thin primitive you control: host-only cookie carrying a signed JWT, no third-party auth framework. |
-| **Local dev DB**                              | Docker Postgres / shared dev DB                        | **Docker Postgres** per developer — keeps migration dry-run honest.                                                                          |
-| **Federal-board bootstrap** (open Q from §25) | Manual SQL / first-registered-user / env-var allowlist | **Env-var allowlist of email addresses** that auto-receive `federal_board` on first login. Documented, reversible, no production-data hacks. |
-| **Domain**                                    | dedicated host (e.g. `dashboard.bdas.de` / `app.bdas.de`) | **A single dedicated host** — the session cookie is host-only, so any single host works.                                                  |
+| Decision                                      | Options                                                   | Recommendation                                                                                                                                  |
+| --------------------------------------------- | --------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| **DB host**                                   | Supabase / Neon                                           | **Supabase** — also provides object storage (Phase 2) and a unified dashboard. One vendor for DB + storage = less glue.                         |
+| **Auth library**                              | Lucia / Auth.js                                           | **Hand-rolled session layer** (ADR 0003) — a thin primitive you control: host-only cookie carrying a signed JWT, no third-party auth framework. |
+| **Local dev DB**                              | Docker Postgres / shared dev DB                           | **Docker Postgres** per developer — keeps migration dry-run honest.                                                                             |
+| **Federal-board bootstrap** (open Q from §25) | Manual SQL / first-registered-user / env-var allowlist    | **Env-var allowlist of email addresses** that auto-receive `federal_board` on first login. Documented, reversible, no production-data hacks.    |
+| **Domain**                                    | dedicated host (e.g. `dashboard.bdas.de` / `app.bdas.de`) | **A single dedicated host** — the session cookie is host-only, so any single host works.                                                        |
 
 Once these are locked, capture each one as an ADR in `docs/decisions/`.
 
