@@ -14,11 +14,13 @@ import postgres from "postgres";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { createTestDb, type TestDb } from "@bdas/db/test";
+import { getEventBus, resetEventBus } from "@bdas/events";
 
 import { setNotifier, type OutboundEmail } from "./notifier";
 import { setRecipientResolver } from "./resolver";
 import { notificationLog } from "./schema";
 import { sendTransactional } from "./services/send";
+import { registerNotificationSubscribers, unregisterNotificationSubscribers } from "./subscribers";
 import type { RecipientContact } from "./types";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -74,6 +76,8 @@ describeIfDb("notifications integration", () => {
   });
 
   afterEach(async () => {
+    unregisterNotificationSubscribers();
+    resetEventBus();
     await t.cleanup();
   });
 
@@ -149,5 +153,28 @@ describeIfDb("notifications integration", () => {
     expect(sent).toHaveLength(0);
     const rows = await t.db.select().from(notificationLog);
     expect(rows).toHaveLength(0);
+  });
+
+  it("sends via the events bus when a registration event is published", async () => {
+    const memberId = await seedMember();
+
+    resetEventBus();
+    registerNotificationSubscribers(t.db);
+    await getEventBus().publish({
+      type: "events.event.registered",
+      eventId: "evt_1",
+      memberId,
+      waitlisted: true,
+      at: new Date(),
+    });
+
+    expect(sent).toHaveLength(1);
+    expect(sent[0]?.subject).toContain("Warteliste");
+
+    const rows = await t.db.select().from(notificationLog);
+    expect(rows).toHaveLength(1);
+    expect(rows[0]?.template).toBe("event_waitlisted");
+
+    unregisterNotificationSubscribers();
   });
 });
