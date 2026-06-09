@@ -14,6 +14,13 @@ export function AnmeldenForm() {
   return (
     <Form action={action}>
       {state.error ? <Alert variant="error">{state.error}</Alert> : null}
+      {state.needsVerification ? (
+        <p className="text-sm text-bdas-ink-body">
+          <Link href="/verifizierung-erneut-senden" className="text-bdas-red hover:underline">
+            Bestätigungsmail erneut senden
+          </Link>
+        </p>
+      ) : null}
       <Field label="E-Mail" htmlFor="email">
         <Input id="email" name="email" type="email" autoComplete="email" required />
       </Field>

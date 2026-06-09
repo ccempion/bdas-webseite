@@ -18,8 +18,8 @@ export default function RegistrierenErfolgPage() {
       </Alert>
       <p className="text-sm text-bdas-ink-body">
         Keine E-Mail erhalten? Prüfe deinen Spam-Ordner oder{" "}
-        <Link href="/registrieren" className="text-bdas-red hover:underline">
-          versuche es erneut
+        <Link href="/verifizierung-erneut-senden" className="text-bdas-red hover:underline">
+          fordere einen neuen Link an
         </Link>
         .
       </p>

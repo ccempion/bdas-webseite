@@ -13,6 +13,7 @@ import { setSessionCookie } from "../../lib/auth-cookie";
 
 export type LoginFormState = {
   readonly error?: string;
+  readonly needsVerification?: boolean;
 };
 
 export async function loginAction(
@@ -36,7 +37,10 @@ export async function loginAction(
       { ip, ...(userAgent !== undefined ? { userAgent } : {}) },
     );
   } catch (err) {
-    if (isAppError(err)) return { error: err.message };
+    if (isAppError(err)) {
+      const needsVerification = err.message.includes("E-Mail-Adresse");
+      return { error: err.message, ...(needsVerification ? { needsVerification: true } : {}) };
+    }
     throw err;
   }
 
