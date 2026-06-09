@@ -5,11 +5,7 @@
  */
 import { expect, test } from "@playwright/test";
 
-import { closeDb, seedGroup, uniqueSlug } from "./helpers/db";
-
-test.afterAll(async () => {
-  await closeDb();
-});
+import { seedGroup, uniqueSlug } from "./helpers/db";
 
 test("public group list and detail render from the DB; archived is hidden", async ({ page }) => {
   const activeName = "E2E Aktive Gruppe";

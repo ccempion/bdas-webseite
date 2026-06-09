@@ -5,12 +5,8 @@
  */
 import { expect, test } from "@playwright/test";
 
-import { closeDb, latestResetToken, resetRateLimits, uniqueEmail } from "./helpers/db";
+import { latestResetToken, resetRateLimits, uniqueEmail } from "./helpers/db";
 import { login, logout, PASSWORD, register, verify } from "./helpers/flows";
-
-test.afterAll(async () => {
-  await closeDb();
-});
 
 test("register → verify → login → logout → reset → re-login", async ({ page }) => {
   const email = uniqueEmail("auth");

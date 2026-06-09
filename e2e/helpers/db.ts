@@ -13,11 +13,11 @@ if (!url) {
   throw new Error("E2E helper requires DATABASE_URL (the same DB the app runs against).");
 }
 
-const sql = postgres(url, { max: 2, onnotice: () => {} });
-
-export async function closeDb(): Promise<void> {
-  await sql.end({ timeout: 5 });
-}
+// One shared client for the whole Playwright worker. `idle_timeout` lets idle
+// connections close themselves so the worker process can exit without anyone
+// calling `.end()` — ending it mid-suite would break later spec files
+// (CONNECTION_ENDED), since they share this module instance.
+const sql = postgres(url, { max: 2, idle_timeout: 3, onnotice: () => {} });
 
 /** Random suffix so parallel-safe unique emails/slugs never collide across runs. */
 function rand(): string {
@@ -95,7 +95,13 @@ export async function memberIdByEmail(email: string): Promise<string | null> {
 
 /** Grant local_board of a group to the member with this email (immediate, DB-side). */
 export async function grantLocalBoard(email: string, groupId: string): Promise<void> {
-  const memberId = await memberIdByEmail(email);
+  // The member row is created by the /account Server Action just before this;
+  // poll briefly so we don't race its commit.
+  let memberId: string | null = null;
+  for (let i = 0; i < 20 && !memberId; i++) {
+    memberId = await memberIdByEmail(email);
+    if (!memberId) await new Promise((r) => setTimeout(r, 250));
+  }
   if (!memberId) throw new Error(`grantLocalBoard: no member for ${email}`);
   await sql`
     INSERT INTO member_role_grants (id, member_id, role, group_id, granted_by)

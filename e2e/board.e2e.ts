@@ -10,7 +10,6 @@
 import { expect, test } from "@playwright/test";
 
 import {
-  closeDb,
   deleteUserByEmail,
   grantLocalBoard,
   memberStatusByEmail,
@@ -22,10 +21,6 @@ import { createProfile, logout, registerVerifyLogin } from "./helpers/flows";
 
 // Must match BDAS_FEDERAL_BOARD_EMAILS in the CI e2e job.
 const FEDERAL_EMAIL = "federal@e2e.bdas.test";
-
-test.afterAll(async () => {
-  await closeDb();
-});
 
 test("federal board can create, edit, and archive a group", async ({ page }) => {
   // Idempotent across retries (fixed email in a shared DB).
