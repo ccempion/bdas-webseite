@@ -15,6 +15,7 @@
     "@bdas/db": "workspace:*",
     "@bdas/design-system": "workspace:*",
     "@bdas/errors": "workspace:*",
+    "@bdas/events-module": "workspace:*",
     "@bdas/feature-flags": "workspace:*",
     "@bdas/groups": "workspace:*",
     "@bdas/members": "workspace:*",

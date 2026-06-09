@@ -1,14 +1,18 @@
 /**
  * Top-of-page nav for the standalone dashboard. A small static set of in-app
  * links; the visual idiom is the desktop nav-pill from core/design-system
- * tokens. The Gruppen link only appears when the groups module is enabled.
+ * tokens. Module links only appear when their feature flag is enabled.
  */
 import Link from "next/link";
 
 import { isFlagOn } from "@bdas/feature-flags";
 
+const PILL =
+  "inline-flex items-center rounded-bdas-pill px-3 py-1 text-sm text-bdas-ink transition-colors duration-bdas-quick ease-bdas hover:bg-bdas-overlay-hover";
+
 export function SiteHeader() {
   const groupsOn = isFlagOn("groups");
+  const eventsOn = isFlagOn("events");
 
   return (
     <header className="border-b border-bdas-soft bg-bdas-surface">
@@ -23,19 +27,20 @@ export function SiteHeader() {
           <ul className="flex flex-wrap items-center gap-1">
             {groupsOn ? (
               <li>
-                <Link
-                  href="/gruppen"
-                  className="inline-flex items-center rounded-bdas-pill px-3 py-1 text-sm text-bdas-ink transition-colors duration-bdas-quick ease-bdas hover:bg-bdas-overlay-hover"
-                >
+                <Link href="/gruppen" className={PILL}>
                   Gruppen
                 </Link>
               </li>
             ) : null}
+            {eventsOn ? (
+              <li>
+                <Link href="/events" className={PILL}>
+                  Veranstaltungen
+                </Link>
+              </li>
+            ) : null}
             <li>
-              <Link
-                href="/anmelden"
-                className="inline-flex items-center rounded-bdas-pill px-3 py-1 text-sm text-bdas-ink transition-colors duration-bdas-quick ease-bdas hover:bg-bdas-overlay-hover"
-              >
+              <Link href="/anmelden" className={PILL}>
                 Anmelden
               </Link>
             </li>

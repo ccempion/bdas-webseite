@@ -90,6 +90,7 @@ jobs:
       BDAS_FLAG_AUTH: "true"
       BDAS_FLAG_MEMBERS: "true"
       BDAS_FLAG_GROUPS: "true"
+      BDAS_FLAG_EVENTS: "true"
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -131,6 +132,7 @@ jobs:
       BDAS_FLAG_AUTH: "true"
       BDAS_FLAG_MEMBERS: "true"
       BDAS_FLAG_GROUPS: "true"
+      BDAS_FLAG_EVENTS: "true"
       PUBLIC_SITE_URL: "http://localhost:3000"
       DATABASE_URL: postgres://bdas:bdas@localhost:5432/bdas
     steps:
@@ -173,6 +175,7 @@ jobs:
       BDAS_FLAG_AUTH: "true"
       BDAS_FLAG_MEMBERS: "true"
       BDAS_FLAG_GROUPS: "true"
+      BDAS_FLAG_EVENTS: "true"
       DATABASE_URL: postgres://bdas:bdas@localhost:5432/bdas
       SSO_JWT_SECRET: e2e-test-secret-e2e-test-secret-0123456789
       BDAS_FEDERAL_BOARD_EMAILS: federal@e2e.bdas.test
