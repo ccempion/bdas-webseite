@@ -10,6 +10,7 @@ import { requireFlag } from "@bdas/feature-flags";
 
 import { bootAuth } from "../../lib/auth-bootstrap";
 import { setSessionCookie } from "../../lib/auth-cookie";
+import { bootNotifications } from "../../lib/notifications-bootstrap";
 
 export type LoginFormState = {
   readonly error?: string;
@@ -22,6 +23,7 @@ export async function loginAction(
 ): Promise<LoginFormState> {
   requireFlag("auth");
   bootAuth();
+  bootNotifications();
 
   const email = String(formData.get("email") ?? "");
   const password = String(formData.get("password") ?? "");

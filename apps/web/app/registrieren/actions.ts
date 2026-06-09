@@ -9,6 +9,7 @@ import { isAppError, ValidationError } from "@bdas/errors";
 import { requireFlag } from "@bdas/feature-flags";
 
 import { bootAuth } from "../../lib/auth-bootstrap";
+import { bootNotifications } from "../../lib/notifications-bootstrap";
 
 export type RegisterFormState = {
   readonly error?: string;
@@ -21,6 +22,7 @@ export async function registerAction(
 ): Promise<RegisterFormState> {
   requireFlag("auth");
   bootAuth();
+  bootNotifications();
 
   const email = String(formData.get("email") ?? "");
   const password = String(formData.get("password") ?? "");

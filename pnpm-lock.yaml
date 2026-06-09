@@ -80,6 +80,9 @@ importers:
       '@bdas/members':
         specifier: workspace:*
         version: link:../../modules/members
+      '@bdas/notifications':
+        specifier: workspace:*
+        version: link:../../modules/notifications
       '@node-rs/argon2':
         specifier: ^2.0.2
         version: 2.0.2
@@ -281,6 +284,40 @@ importers:
       zod:
         specifier: ^3.23.8
         version: 3.25.76
+
+  modules/notifications:
+    dependencies:
+      '@bdas/db':
+        specifier: workspace:*
+        version: link:../../core/db
+      '@bdas/errors':
+        specifier: workspace:*
+        version: link:../../core/errors
+      '@bdas/events':
+        specifier: workspace:*
+        version: link:../../core/events
+      '@bdas/events-module':
+        specifier: workspace:*
+        version: link:../events
+      '@bdas/id':
+        specifier: workspace:*
+        version: link:../../core/id
+      drizzle-orm:
+        specifier: ^0.36.0
+        version: 0.36.4(@types/react@18.3.28)(postgres@3.4.9)(react@18.3.1)
+      postgres:
+        specifier: ^3.4.5
+        version: 3.4.9
+      resend:
+        specifier: ^4.0.1
+        version: 4.8.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      zod:
+        specifier: ^3.23.8
+        version: 3.25.76
+    devDependencies:
+      tsx:
+        specifier: ^4.19.1
+        version: 4.21.0
 
 packages:
 
