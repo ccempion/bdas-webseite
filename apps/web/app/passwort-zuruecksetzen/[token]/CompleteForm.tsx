@@ -26,7 +26,7 @@ export function CompleteResetForm({
           name="password"
           type="password"
           autoComplete="new-password"
-          minLength={12}
+          minLength={10}
           required
         />
       </Field>
