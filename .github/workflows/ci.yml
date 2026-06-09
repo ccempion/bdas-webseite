@@ -147,3 +147,56 @@ jobs:
       - run: pnpm --filter @bdas/web build
       - name: Lighthouse CI (collect + assert)
         run: pnpm dlx @lhci/cli@0.14.0 autorun --config=./lighthouserc.json
+
+  e2e:
+    name: E2E acceptance (Playwright, §23)
+    runs-on: ubuntu-latest
+    # Drives the built app through the §23 user-facing flows. Needs a served app
+    # + a migrated Postgres (the dynamic routes answer at request time), same
+    # recipe as the lighthouse job. The federal-board flow relies on the bootstrap
+    # email below being in BDAS_FEDERAL_BOARD_EMAILS (login adds the JWT role).
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: bdas
+          POSTGRES_PASSWORD: bdas
+          POSTGRES_DB: bdas
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U bdas -d bdas"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      BDAS_FLAG_AUTH: "true"
+      BDAS_FLAG_MEMBERS: "true"
+      BDAS_FLAG_GROUPS: "true"
+      DATABASE_URL: postgres://bdas:bdas@localhost:5432/bdas
+      SSO_JWT_SECRET: e2e-test-secret-e2e-test-secret-0123456789
+      BDAS_FEDERAL_BOARD_EMAILS: federal@e2e.bdas.test
+      PUBLIC_SITE_URL: http://localhost:3000
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm db:migrate
+      - run: pnpm --filter @bdas/web build
+      - name: Install Playwright browser
+        run: pnpm exec playwright install --with-deps chromium
+      - name: Run E2E acceptance suite
+        run: pnpm e2e
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
