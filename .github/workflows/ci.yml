@@ -109,12 +109,30 @@ jobs:
     # Asserts categories:accessibility minScore 0.9 (lighthouserc.json) so the
     # score can't silently regress. ubuntu-latest ships Google Chrome, which
     # @lhci/cli auto-detects. Same deploy flags as web-build so gated routes
-    # are reachable.
+    # are reachable. The audited set includes /gruppen, which renders at request
+    # time (force-dynamic), so the served app needs a migrated DB to respond 200
+    # — hence the postgres service + db:migrate below. Empty data is fine: the
+    # a11y audit checks markup, and /gruppen renders its empty state.
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: bdas
+          POSTGRES_PASSWORD: bdas
+          POSTGRES_DB: bdas
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U bdas -d bdas"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
     env:
       BDAS_FLAG_AUTH: "true"
       BDAS_FLAG_MEMBERS: "true"
       BDAS_FLAG_GROUPS: "true"
       PUBLIC_SITE_URL: "http://localhost:3000"
+      DATABASE_URL: postgres://bdas:bdas@localhost:5432/bdas
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -125,6 +143,7 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - run: pnpm db:migrate
       - run: pnpm --filter @bdas/web build
       - name: Lighthouse CI (collect + assert)
         run: pnpm dlx @lhci/cli@0.14.0 autorun --config=./lighthouserc.json
