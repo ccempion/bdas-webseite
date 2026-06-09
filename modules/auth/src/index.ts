@@ -18,6 +18,7 @@ export {
   ResetCompleteInput,
 } from "./services/password-reset";
 export { getCurrentUser, requireRole, type CurrentUser } from "./services/me";
+export { resendVerification, type ResendResult } from "./services/resend-verification";
 
 // Password policy (UI shows the hint; schema is the single source of truth).
 export { passwordSchema, PASSWORD_RULE_HINT, PASSWORD_MIN_LENGTH } from "./password";
