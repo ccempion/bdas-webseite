@@ -2,11 +2,29 @@
  * @bdas/notifications — public surface.
  *
  * Per CLAUDE.md §1 rule 8: only symbols re-exported here are visible to other
- * workspaces. Internal files are not importable.
- *
- * Outbound communication: subscribes to module bus events (@bdas/events) and
- * sends transactional email through a composition-time Notifier. Owns the
- * `notification_log` table only.
+ * workspaces. Internal files (schema, templates, services) are private.
  */
 
-export {}; // populated as services land; final surface defined in Task 8
+export { sendTransactional } from "./services/send";
+export { registerNotificationSubscribers } from "./subscribers";
+
+export {
+  consoleNotifier,
+  getNotifier,
+  setNotifier,
+  type Notifier,
+  type OutboundEmail,
+} from "./notifier";
+export { createResendNotifier, type ResendNotifierOptions } from "./notifier-resend";
+export {
+  getRecipientResolver,
+  setRecipientResolver,
+  type RecipientResolver,
+} from "./resolver";
+
+export type {
+  TransactionalTemplate,
+  TemplateData,
+  SendResult,
+  RecipientContact,
+} from "./types";
