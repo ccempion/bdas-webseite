@@ -11,10 +11,7 @@ export type ResendResult = {
   readonly verifyToken: string;
 };
 
-export async function resendVerification(
-  db: Db,
-  email: string,
-): Promise<ResendResult | null> {
+export async function resendVerification(db: Db, email: string): Promise<ResendResult | null> {
   const emailNormalized = email.trim().toLowerCase();
 
   const rows = await db
@@ -29,12 +26,7 @@ export async function resendVerification(
   // Remove old unused tokens before issuing a fresh one.
   await db
     .delete(authEmailVerifications)
-    .where(
-      and(
-        eq(authEmailVerifications.userId, user.id),
-        isNull(authEmailVerifications.usedAt),
-      ),
-    );
+    .where(and(eq(authEmailVerifications.userId, user.id), isNull(authEmailVerifications.usedAt)));
 
   const verifyToken = randomToken();
   await db.insert(authEmailVerifications).values({
