@@ -18,15 +18,19 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 import { createTestDb, type TestDb } from "@bdas/db/test";
 import { resetEventBus } from "@bdas/events";
 
+import { eq } from "drizzle-orm";
+
 import { register } from "./services/register";
 import { verifyEmail } from "./services/verify";
 import { login } from "./services/login";
 import { logout } from "./services/logout";
 import { completePasswordReset, requestPasswordReset } from "./services/password-reset";
+import { resendVerification } from "./services/resend-verification";
 import { getCurrentUser } from "./services/me";
 import { getUserExport } from "./services/export";
 import { passwordSchema, PASSWORD_MIN_LENGTH } from "./password";
 import { CONSENT_VERSION } from "./consent";
+import { authEmailVerifications } from "./schema";
 
 describe("password policy", () => {
   it("enforces min length + upper + lower + special, no digit required", () => {
@@ -260,6 +264,47 @@ describeIfDb("auth integration", () => {
       { ip: "5.5.5.5" },
     );
     expect(result).toBeNull();
+  });
+
+  it("resendVerification returns null for unknown email", async () => {
+    const result = await resendVerification(t.db, "nobody@example.de");
+    expect(result).toBeNull();
+  });
+
+  it("resendVerification returns null for an already-active user", async () => {
+    const reg = await register(
+      t.db,
+      { email: "active-resend@example.de", password: "Verysecret!23", consent: true },
+      { ip: "10.0.0.1", publicSiteUrl: "https://bdas.de" },
+    );
+    await verifyEmail(t.db, reg.verifyToken);
+
+    const result = await resendVerification(t.db, "active-resend@example.de");
+    expect(result).toBeNull();
+  });
+
+  it("resendVerification issues a new token and removes the old unused one", async () => {
+    const reg = await register(
+      t.db,
+      { email: "resend-test@example.de", password: "Verysecret!23", consent: true },
+      { ip: "10.0.0.2", publicSiteUrl: "https://bdas.de" },
+    );
+    const oldToken = reg.verifyToken;
+
+    const result = await resendVerification(t.db, "resend-test@example.de");
+    expect(result).not.toBeNull();
+    expect(result!.verifyToken).not.toBe(oldToken);
+
+    // Old token must be gone from the DB.
+    const remaining = await t.db
+      .select()
+      .from(authEmailVerifications)
+      .where(eq(authEmailVerifications.token, oldToken));
+    expect(remaining).toHaveLength(0);
+
+    // New token exists and is valid for verification.
+    const v = await verifyEmail(t.db, result!.verifyToken);
+    expect(v.alreadyVerified).toBe(false);
   });
 
   it("federal-board allowlist attaches the role at JWT mint", async () => {
