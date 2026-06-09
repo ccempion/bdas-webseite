@@ -51,7 +51,8 @@ test("federal publishes an event; a member registers then deregisters", async ({
   await page.waitForURL("**/events/**");
 
   await page.getByRole("button", { name: "Anmelden" }).click();
-  await expect(page.getByText("Angemeldet")).toBeVisible();
+  // Registered → the controls switch to the cancel ("Abmelden") button.
+  await expect(page.getByRole("button", { name: "Abmelden" })).toBeVisible();
 
   await page.getByRole("button", { name: "Abmelden" }).click();
   await expect(page.getByRole("button", { name: "Anmelden" })).toBeVisible();
