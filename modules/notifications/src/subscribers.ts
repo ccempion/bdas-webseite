@@ -6,13 +6,15 @@
  * Dependency is one-way (notifications → events-module types + public read
  * service) per CLAUDE.md §1 rules 2/3 — no cross-module table reads, no cycle.
  *
- * The bus runs handlers synchronously inside the producer's flow, so a thrown
- * handler would roll back the producer's transaction. Handlers must therefore
- * never throw: `eventTitle` swallows read failures and `sendTransactional`
- * already swallows send failures into a logged 'failed' row.
+ * The events producer publishes AFTER its own transaction commits (see
+ * events/registration.ts), so a thrown handler does not roll anything back —
+ * it would surface an error to the originating action's caller after the write
+ * already succeeded. Handlers must therefore never throw: every handler body is
+ * wrapped in `safe()`, `eventTitle` swallows read failures, and
+ * `sendTransactional` records send failures as a logged 'failed' row.
  */
 import type { Db } from "@bdas/db";
-import { getEventBus, type Subscription } from "@bdas/events";
+import { getEventBus, type AnyEvent, type EventHandler, type Subscription } from "@bdas/events";
 import { getEvent, type Viewer } from "@bdas/events-module";
 import type { EventRegistered, EventDeregistered, WaitlistPromoted } from "@bdas/events-module";
 
@@ -27,6 +29,22 @@ const SYSTEM_VIEWER: Viewer = {
 };
 
 let subs: Subscription[] = [];
+
+/**
+ * Wrap a handler so it can never throw into the bus. The producer publishes
+ * after commit, so an escaping error would only fail the originating action
+ * after its write already succeeded — a notification problem must not do that.
+ * Failures are logged, not propagated.
+ */
+function safe<E extends AnyEvent>(fn: EventHandler<E>): EventHandler<E> {
+  return async (e: E) => {
+    try {
+      await fn(e);
+    } catch (err) {
+      console.error(`[notifications] handler for "${e.type}" failed:`, err);
+    }
+  };
+}
 
 async function eventTitle(db: Db, eventId: string): Promise<string> {
   try {
@@ -45,29 +63,38 @@ export function registerNotificationSubscribers(db: Db): void {
   if (subs.length > 0) return;
 
   subs = [
-    getEventBus().subscribe<EventRegistered>("events.event.registered", async (e) => {
-      const title = await eventTitle(db, e.eventId);
-      await sendTransactional(
-        db,
-        e.waitlisted ? "event_waitlisted" : "event_registration_confirmed",
-        e.memberId,
-        { eventTitle: title, eventId: e.eventId },
-      );
-    }),
-    getEventBus().subscribe<EventDeregistered>("events.event.deregistered", async (e) => {
-      const title = await eventTitle(db, e.eventId);
-      await sendTransactional(db, "event_deregistration_confirmed", e.memberId, {
-        eventTitle: title,
-        eventId: e.eventId,
-      });
-    }),
-    getEventBus().subscribe<WaitlistPromoted>("events.waitlist.promoted", async (e) => {
-      const title = await eventTitle(db, e.eventId);
-      await sendTransactional(db, "event_waitlist_promoted", e.memberId, {
-        eventTitle: title,
-        eventId: e.eventId,
-      });
-    }),
+    getEventBus().subscribe<EventRegistered>(
+      "events.event.registered",
+      safe<EventRegistered>(async (e) => {
+        const title = await eventTitle(db, e.eventId);
+        await sendTransactional(
+          db,
+          e.waitlisted ? "event_waitlisted" : "event_registration_confirmed",
+          e.memberId,
+          { eventTitle: title, eventId: e.eventId },
+        );
+      }),
+    ),
+    getEventBus().subscribe<EventDeregistered>(
+      "events.event.deregistered",
+      safe<EventDeregistered>(async (e) => {
+        const title = await eventTitle(db, e.eventId);
+        await sendTransactional(db, "event_deregistration_confirmed", e.memberId, {
+          eventTitle: title,
+          eventId: e.eventId,
+        });
+      }),
+    ),
+    getEventBus().subscribe<WaitlistPromoted>(
+      "events.waitlist.promoted",
+      safe<WaitlistPromoted>(async (e) => {
+        const title = await eventTitle(db, e.eventId);
+        await sendTransactional(db, "event_waitlist_promoted", e.memberId, {
+          eventTitle: title,
+          eventId: e.eventId,
+        });
+      }),
+    ),
   ];
 }
 

@@ -10,9 +10,11 @@ import type { SendResult, TemplateData, TransactionalTemplate } from "../types";
 /**
  * Resolve the recipient, render the template, send via the composed Notifier,
  * and write one audit row. Transactional mail is non-optional (spec §16), so
- * no preference check. Returns the outcome; never throws on a send failure —
- * the failure is logged so a thrown subscriber cannot roll back the producer's
- * transaction (the bus runs handlers synchronously).
+ * no preference check. A send failure is recorded as a 'failed' row rather than
+ * thrown, so the common email-delivery error never disrupts the caller.
+ * (Resolver and DB-insert errors still propagate to direct callers; the bus
+ * subscriber wraps each handler in `safe()` so they never escape into the
+ * producer — see subscribers.ts.)
  *
  * `extra.eventTitle` supplies the event name for the template; callers that
  * have it (the subscribers) pass it so the service stays free of cross-module

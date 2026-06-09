@@ -61,7 +61,10 @@ handler resolves the title at runtime via the `events` module's public
 `getEvent` service (passing a system viewer). This is a **runtime** dependency
 on `@bdas/events-module`, not types-only — `subscribers.ts` calls `getEvent` to
 render a meaningful subject/body. The lookup is wrapped so a read failure falls
-back to a generic title rather than throwing inside the producer's transaction.
+back to a generic title, and each handler is wrapped in `safe()` so it can never
+throw into the bus. (The events producer publishes after its transaction
+commits, so an escaping error would not roll anything back — it would just fail
+the originating action after its write already succeeded.)
 
 ## Cross-module boundaries (rule 1)
 

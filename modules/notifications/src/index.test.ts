@@ -177,4 +177,34 @@ describeIfDb("notifications integration", () => {
 
     unregisterNotificationSubscribers();
   });
+
+  it("a failing handler does not reject the bus publish (producer is protected)", async () => {
+    const memberId = await seedMember();
+    setRecipientResolver({
+      async resolve(): Promise<RecipientContact | null> {
+        throw new Error("resolver boom");
+      },
+    });
+
+    resetEventBus();
+    registerNotificationSubscribers(t.db);
+
+    // The events producer publishes after commit, so a thrown handler must not
+    // surface here — `safe()` swallows it. publish() must resolve, not reject.
+    await expect(
+      getEventBus().publish({
+        type: "events.event.registered",
+        eventId: "evt_1",
+        memberId,
+        waitlisted: false,
+        at: new Date(),
+      }),
+    ).resolves.toBeUndefined();
+
+    expect(sent).toHaveLength(0);
+    const rows = await t.db.select().from(notificationLog);
+    expect(rows).toHaveLength(0);
+
+    unregisterNotificationSubscribers();
+  });
 });
