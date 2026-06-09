@@ -26,8 +26,12 @@ export async function register(
 
 /** Read the emailed verification token from the DB and visit the verify URL. */
 export async function verify(page: Page, email: string): Promise<void> {
-  const token = await latestVerifyToken(email);
-  expect(token, `verify token for ${email}`).toBeTruthy();
+  let token: string | null = null;
+  // The token is written by the register Server Action; poll to avoid a race.
+  await expect(async () => {
+    token = await latestVerifyToken(email);
+    expect(token, `verify token for ${email}`).toBeTruthy();
+  }).toPass({ timeout: 10_000 });
   await page.goto(`/verifizieren/${token}`);
 }
 

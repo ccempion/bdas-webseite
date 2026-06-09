@@ -41,7 +41,7 @@ export async function latestVerifyToken(email: string): Promise<string | null> {
     SELECT v.token
     FROM auth_email_verifications v
     JOIN auth_users u ON u.id = v.user_id
-    WHERE lower(u.email) = lower(${email}) AND v.used_at IS NULL
+    WHERE u.email_normalized = lower(${email}) AND v.used_at IS NULL
     ORDER BY v.created_at DESC
     LIMIT 1`;
   return rows[0]?.token ?? null;
@@ -53,7 +53,7 @@ export async function latestResetToken(email: string): Promise<string | null> {
     SELECT r.token
     FROM auth_password_resets r
     JOIN auth_users u ON u.id = r.user_id
-    WHERE lower(u.email) = lower(${email}) AND r.used_at IS NULL
+    WHERE u.email_normalized = lower(${email}) AND r.used_at IS NULL
     ORDER BY r.created_at DESC
     LIMIT 1`;
   return rows[0]?.token ?? null;
@@ -65,7 +65,7 @@ export async function latestResetToken(email: string): Promise<string | null> {
  * idempotent across Playwright retries in a shared DB.
  */
 export async function deleteUserByEmail(email: string): Promise<void> {
-  await sql`DELETE FROM auth_users WHERE lower(email) = lower(${email})`;
+  await sql`DELETE FROM auth_users WHERE email_normalized = lower(${email})`;
 }
 
 /** Insert a group directly and return its id. `status` defaults to 'active'. */
@@ -88,7 +88,7 @@ export async function memberIdByEmail(email: string): Promise<string | null> {
     SELECT m.id
     FROM members m
     JOIN auth_users u ON u.id = m.user_id
-    WHERE lower(u.email) = lower(${email})
+    WHERE u.email_normalized = lower(${email})
     LIMIT 1`;
   return rows[0]?.id ?? null;
 }
@@ -108,7 +108,7 @@ export async function memberStatusByEmail(email: string): Promise<string | null>
     SELECT m.status
     FROM members m
     JOIN auth_users u ON u.id = m.user_id
-    WHERE lower(u.email) = lower(${email})
+    WHERE u.email_normalized = lower(${email})
     LIMIT 1`;
   return rows[0]?.status ?? null;
 }

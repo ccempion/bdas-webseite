@@ -30,13 +30,19 @@ test("register → verify → login → logout → reset → re-login", async ({
   await page.getByLabel("E-Mail").fill(email);
   await page.getByRole("button", { name: "Link senden" }).click();
 
-  const token = await latestResetToken(email);
-  expect(token, `reset token for ${email}`).toBeTruthy();
+  // The reset token is written by the Server Action; poll to avoid a race.
+  let token: string | null = null;
+  await expect(async () => {
+    token = await latestResetToken(email);
+    expect(token, `reset token for ${email}`).toBeTruthy();
+  }).toPass({ timeout: 10_000 });
 
   const newPassword = `${PASSWORD}-neu`;
   await page.goto(`/passwort-zuruecksetzen/${token}`);
   await page.getByLabel("Neues Passwort").fill(newPassword);
   await page.getByRole("button", { name: "Passwort speichern" }).click();
+  // completeResetAction redirects to /anmelden only on success — confirms done.
+  await page.waitForURL("**/anmelden");
 
   // The old password must no longer work; the new one must.
   await login(page, email, newPassword);
