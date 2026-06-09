@@ -14,6 +14,7 @@ import { isAppError } from "@bdas/errors";
 import { requireFlag } from "@bdas/feature-flags";
 
 import { bootAuth } from "../../lib/auth-bootstrap";
+import { bootNotifications } from "../../lib/notifications-bootstrap";
 
 export type RequestResetState = {
   readonly error?: string;
@@ -26,6 +27,7 @@ export async function requestResetAction(
 ): Promise<RequestResetState> {
   requireFlag("auth");
   bootAuth();
+  bootNotifications();
 
   const email = String(formData.get("email") ?? "");
   const h = headers();
@@ -59,6 +61,7 @@ export async function completeResetAction(
 ): Promise<CompleteResetState> {
   requireFlag("auth");
   bootAuth();
+  bootNotifications();
 
   const token = String(formData.get("token") ?? "");
   const password = String(formData.get("password") ?? "");
