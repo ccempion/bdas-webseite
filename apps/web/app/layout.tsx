@@ -8,6 +8,11 @@ import { legalUrls } from "../lib/legal";
 
 import "./globals.css";
 
+// SiteHeader reads the per-request session cookie + DB to reflect login state, so
+// the root layout must render at request time. Mirrors apps/web/app/account/layout.tsx:
+// static prerender constructs core/db with no DATABASE_URL and fails the web build.
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: {
     default: "BDAS",

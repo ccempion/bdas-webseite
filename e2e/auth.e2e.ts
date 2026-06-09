@@ -17,8 +17,19 @@ test("register → verify → login → logout → reset → re-login", async ({
   await login(page, email);
   await expect(page.getByRole("heading", { name: "Mein Konto" })).toBeVisible();
 
+  // The global header (role=banner) must reflect the session, and must survive a
+  // reload of a public page — the reported "logged out on reload" symptom.
+  const banner = page.getByRole("banner");
+  await expect(banner.getByRole("link", { name: "Mein Konto" })).toBeVisible();
+  await expect(banner.getByRole("button", { name: "Abmelden" })).toBeVisible();
+  await page.goto("/");
+  await page.reload();
+  await expect(banner.getByRole("button", { name: "Abmelden" })).toBeVisible();
+  await expect(banner.getByRole("link", { name: "Anmelden" })).toHaveCount(0);
+
   await logout(page);
   await expect(page).not.toHaveURL(/\/account/);
+  await expect(banner.getByRole("link", { name: "Anmelden" })).toBeVisible();
 
   // Request a password reset, then complete it with the DB-read token.
   await resetRateLimits();

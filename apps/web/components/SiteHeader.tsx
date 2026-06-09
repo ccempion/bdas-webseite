@@ -5,14 +5,19 @@
  */
 import Link from "next/link";
 
+import { getCurrentUser } from "@bdas/auth";
+import { getDb } from "@bdas/db";
 import { isFlagOn } from "@bdas/feature-flags";
+
+import { readSessionCookie } from "../lib/auth-cookie";
 
 const PILL =
   "inline-flex items-center rounded-bdas-pill px-3 py-1 text-sm text-bdas-ink transition-colors duration-bdas-quick ease-bdas hover:bg-bdas-overlay-hover";
 
-export function SiteHeader() {
+export async function SiteHeader() {
   const groupsOn = isFlagOn("groups");
   const eventsOn = isFlagOn("events");
+  const me = isFlagOn("auth") ? await getCurrentUser(getDb(), readSessionCookie()) : null;
 
   return (
     <header className="border-b border-bdas-soft bg-bdas-surface">
@@ -39,11 +44,28 @@ export function SiteHeader() {
                 </Link>
               </li>
             ) : null}
-            <li>
-              <Link href="/anmelden" className={PILL}>
-                Anmelden
-              </Link>
-            </li>
+            {me ? (
+              <>
+                <li>
+                  <Link href="/account" className={PILL}>
+                    Mein Konto
+                  </Link>
+                </li>
+                <li>
+                  <form action="/abmelden" method="post">
+                    <button type="submit" className={PILL}>
+                      Abmelden
+                    </button>
+                  </form>
+                </li>
+              </>
+            ) : (
+              <li>
+                <Link href="/anmelden" className={PILL}>
+                  Anmelden
+                </Link>
+              </li>
+            )}
           </ul>
         </nav>
       </div>

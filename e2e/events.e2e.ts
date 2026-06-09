@@ -50,10 +50,13 @@ test("federal publishes an event; a member registers then deregisters", async ({
   await page.getByRole("link", { name: new RegExp(title) }).click();
   await page.waitForURL("**/events/**");
 
-  await page.getByRole("button", { name: "Anmelden" }).click();
+  // Scope to the page body (role=main): the header (role=banner) now also carries
+  // an "Abmelden" logout button for the logged-in user.
+  const controls = page.getByRole("main");
+  await controls.getByRole("button", { name: "Anmelden" }).click();
   // Registered → the controls switch to the cancel ("Abmelden") button.
-  await expect(page.getByRole("button", { name: "Abmelden" })).toBeVisible();
+  await expect(controls.getByRole("button", { name: "Abmelden" })).toBeVisible();
 
-  await page.getByRole("button", { name: "Abmelden" }).click();
-  await expect(page.getByRole("button", { name: "Anmelden" })).toBeVisible();
+  await controls.getByRole("button", { name: "Abmelden" }).click();
+  await expect(controls.getByRole("button", { name: "Anmelden" })).toBeVisible();
 });

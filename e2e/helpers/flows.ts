@@ -45,7 +45,9 @@ export async function login(page: Page, email: string, password: string = PASSWO
 }
 
 export async function logout(page: Page): Promise<void> {
-  await page.getByRole("button", { name: "Abmelden" }).click();
+  // The header (role=banner) carries the global logout; scope to it so we don't
+  // collide with page-level "Abmelden" buttons (/account, event cancel).
+  await page.getByRole("banner").getByRole("button", { name: "Abmelden" }).click();
   await page.waitForURL((url) => !url.pathname.startsWith("/account"));
 }
 
