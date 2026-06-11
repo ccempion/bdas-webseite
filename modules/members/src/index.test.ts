@@ -70,6 +70,7 @@ describeIfDb("members integration", () => {
       ["..", "..", "groups", "migrations", "0001_init.sql"],
       ["..", "migrations", "0001_init.sql"],
       ["..", "migrations", "0002_role_grants.sql"],
+      ["..", "migrations", "0003_local_board_lead.sql"],
     ]) {
       const sql = await fs.readFile(path.join(__dirname, ...file), "utf8");
       await t.client.unsafe(sql);
@@ -259,6 +260,29 @@ describeIfDb("members integration", () => {
     const eActorAfter = { userId: "usr_e", grants: await getGrants(t.db, m.id) };
     await expect(approveMember(t.db, pa2.id, eActorAfter)).rejects.toMatchObject({
       code: "FORBIDDEN",
+    });
+  });
+
+  it("federal board may appoint a local_board_lead (migration 0003)", async () => {
+    await createGroup("grp_a", "aachen");
+    await createUser("usr_lead", "lead@example.de");
+    const m = await createProfile(t.db, {
+      userId: "usr_lead",
+      firstName: "L",
+      lastName: "x",
+      primaryGroupId: "grp_a",
+    });
+    await approveMember(t.db, m.id, BOARD);
+
+    // local_board_lead is group-scoped, like local_board.
+    await expect(grantRole(t.db, m.id, "local_board_lead", BOARD)).rejects.toMatchObject({
+      code: "VALIDATION",
+    });
+
+    await grantRole(t.db, m.id, "local_board_lead", BOARD, "grp_a");
+    expect(await getGrants(t.db, m.id)).toContainEqual({
+      role: "local_board_lead",
+      groupId: "grp_a",
     });
   });
 });

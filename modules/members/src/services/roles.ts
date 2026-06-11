@@ -34,10 +34,10 @@ function requireValidRole(role: string): asserts role is Role {
   }
 }
 
-/** local_board is always group-scoped; federal_board is always unscoped. */
+/** local_board and local_board_lead are group-scoped; federal_board is unscoped. */
 function requireValidScope(role: Role, groupId: string | null): void {
-  if (role === "local_board" && groupId === null) {
-    throw new ValidationError("local_board erfordert eine Gruppe.");
+  if ((role === "local_board" || role === "local_board_lead") && groupId === null) {
+    throw new ValidationError(`${role} erfordert eine Gruppe.`);
   }
   if (role === "federal_board" && groupId !== null) {
     throw new ValidationError("federal_board ist nicht gruppengebunden.");
