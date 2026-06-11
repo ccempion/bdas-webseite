@@ -11,6 +11,7 @@ const nextConfig = {
   transpilePackages: [
     "@bdas/design-system",
     "@bdas/feature-flags",
+    "@bdas/files",
     "@bdas/errors",
     "@bdas/auth",
     "@bdas/content-bridge",
@@ -20,6 +21,7 @@ const nextConfig = {
     "@bdas/id",
     "@bdas/members",
     "@bdas/notifications",
+    "@bdas/storage",
   ],
   experimental: {
     instrumentationHook: true,

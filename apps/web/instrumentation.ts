@@ -11,5 +11,7 @@ export async function register(): Promise<void> {
     // A throw here (flag-on production with partial Resend config) intentionally
     // crashes startup, surfacing the misconfig before any request is served.
     bootNotifications();
+    const { bootFiles } = await import("./lib/files-bootstrap");
+    await bootFiles();
   }
 }

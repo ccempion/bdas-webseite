@@ -74,6 +74,9 @@ importers:
       '@bdas/feature-flags':
         specifier: workspace:*
         version: link:../../core/feature-flags
+      '@bdas/files':
+        specifier: workspace:*
+        version: link:../../modules/files
       '@bdas/groups':
         specifier: workspace:*
         version: link:../../modules/groups
@@ -83,6 +86,9 @@ importers:
       '@bdas/notifications':
         specifier: workspace:*
         version: link:../../modules/notifications
+      '@bdas/storage':
+        specifier: workspace:*
+        version: link:../../core/storage
       '@node-rs/argon2':
         specifier: ^2.0.2
         version: 2.0.2
