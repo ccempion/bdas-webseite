@@ -121,6 +121,7 @@ export async function revokeRole(
   groupId: string | null = null,
 ): Promise<Member> {
   requireValidRole(role);
+  requireValidScope(role, groupId);
   requireCanGrant(actor, role, groupId);
 
   return db.transaction(async (tx) => {

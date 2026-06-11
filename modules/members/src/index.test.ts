@@ -329,6 +329,11 @@ describeIfDb("members integration", () => {
       grantRole(t.db, member.id, "local_board", leadActor, "grp_b"),
     ).rejects.toMatchObject({ code: "FORBIDDEN" });
 
+    // Lead CANNOT revoke local_board in another group either.
+    await expect(
+      revokeRole(t.db, member.id, "local_board", leadActor, "grp_b"),
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+
     // Lead CANNOT appoint another lead, nor grant federal_board.
     await expect(
       grantRole(t.db, member.id, "local_board_lead", leadActor, "grp_a"),
