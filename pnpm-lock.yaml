@@ -59,6 +59,9 @@ importers:
       '@bdas/auth':
         specifier: workspace:*
         version: link:../../modules/auth
+      '@bdas/dashboard-shell':
+        specifier: workspace:*
+        version: link:../../modules/dashboard-shell
       '@bdas/db':
         specifier: workspace:*
         version: link:../../core/db
@@ -205,6 +208,19 @@ importers:
       zod:
         specifier: ^3.23.8
         version: 3.25.76
+
+  modules/dashboard-shell:
+    dependencies:
+      '@bdas/groups':
+        specifier: workspace:*
+        version: link:../groups
+      '@bdas/members':
+        specifier: workspace:*
+        version: link:../members
+    devDependencies:
+      tsx:
+        specifier: ^4.19.1
+        version: 4.21.0
 
   modules/events:
     dependencies:
