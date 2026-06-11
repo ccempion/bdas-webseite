@@ -13,9 +13,11 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { createTestDb, type TestDb } from "@bdas/db/test";
 import { resetEventBus } from "@bdas/events";
+import type { CurrentMember, Grant } from "@bdas/members";
 import { setStorage, type SignedUrl, type StorageClient } from "@bdas/storage";
 
 import { fileAccessLog, files, folders } from "./schema";
+import { ensureFolders, listFolders } from "./services/folders";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DEFAULT_URL = "postgres://bdas:bdas@localhost:5432/bdas";
@@ -65,6 +67,10 @@ function fakeStorage(over: Partial<StorageClient> = {}): StorageClient {
   };
 }
 
+function meWith(grants: Grant[], member: CurrentMember["member"]): CurrentMember {
+  return { user: { id: "usr_1", email: "t@x.org", roles: [] } as CurrentMember["user"], member, grants };
+}
+
 /** Seed a group + an active member belonging to it. Returns their ids. */
 async function seedGroupAndMember(
   t: TestDb,
@@ -106,5 +112,51 @@ describeIfDb("files schema", () => {
     await expect(
       t.client`INSERT INTO folders (id, slug, name, scope, group_id) VALUES ('fld_b', 'b', 'B', 'local_board', 'grp_muc')`,
     ).rejects.toThrow();
+  });
+});
+
+describeIfDb("ensureFolders / listFolders", () => {
+  let t: TestDb;
+
+  beforeEach(async () => {
+    t = await createTestDb();
+    await applyMigrations(t);
+    setStorage(fakeStorage());
+  });
+  afterEach(async () => {
+    resetEventBus();
+    await t.cleanup();
+  });
+
+  it("provisions the two singletons + two folders per group, idempotently", async () => {
+    await seedGroupAndMember(t, { groupId: "grp_muc", memberId: "mbr_1", userId: "usr_1" });
+    await t.client`INSERT INTO groups (id, slug, name, city) VALUES ('grp_ber', 'ber', 'Berlin', 'Berlin')`;
+
+    await ensureFolders(t.db);
+    await ensureFolders(t.db); // second run must not duplicate
+
+    const rows = await t.db.select().from(folders);
+    // 2 singletons + 2 groups × 2 = 6
+    expect(rows).toHaveLength(6);
+    expect(rows.filter((r) => r.scope === "members_all")).toHaveLength(1);
+    expect(rows.filter((r) => r.scope === "federal_board")).toHaveLength(1);
+    expect(rows.filter((r) => r.scope === "group_members")).toHaveLength(2);
+    expect(rows.filter((r) => r.scope === "local_board")).toHaveLength(2);
+  });
+
+  it("listFolders returns only folders the member can read", async () => {
+    await seedGroupAndMember(t, { groupId: "grp_muc", memberId: "mbr_1", userId: "usr_1" });
+    await t.client`INSERT INTO groups (id, slug, name, city) VALUES ('grp_ber', 'ber', 'Berlin', 'Berlin')`;
+    await ensureFolders(t.db);
+
+    const plainMucMember = meWith([{ role: "member", groupId: null }], {
+      id: "mbr_1", userId: "usr_1", firstName: "T", lastName: "M",
+      primaryGroupId: "grp_muc", status: "active", joinedAt: null, createdAt: new Date(), updatedAt: new Date(),
+    });
+
+    const visible = await listFolders(t.db, plainMucMember);
+    const scopes = visible.map((f) => `${f.scope}:${f.groupId ?? ""}`).sort();
+    // members_all + own group_members only; no board/federal/other-group folders
+    expect(scopes).toEqual(["group_members:grp_muc", "members_all:"]);
   });
 });
