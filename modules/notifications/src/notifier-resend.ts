@@ -22,7 +22,7 @@ export function createResendNotifier(opts: ResendNotifierOptions): Notifier {
         html: email.html,
         text: email.text,
       });
-      if (error) throw new Error(error.message);
+      if (error) throw new Error(error.message ?? JSON.stringify(error));
     },
   };
 }

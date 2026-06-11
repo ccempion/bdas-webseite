@@ -8,6 +8,8 @@
 export async function register(): Promise<void> {
   if (process.env.NEXT_RUNTIME === "nodejs") {
     const { bootNotifications } = await import("./lib/notifications-bootstrap");
+    // A throw here (flag-on production with partial Resend config) intentionally
+    // crashes startup, surfacing the misconfig before any request is served.
     bootNotifications();
   }
 }
