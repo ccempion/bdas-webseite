@@ -31,6 +31,15 @@ describe("render", () => {
     expect(out.subject).toContain("Abmeldung");
   });
 
+  it("closes German quotes with U+201C, not an ASCII straight quote", () => {
+    const out = render("event_registration_confirmed", {
+      firstName: "Mara",
+      eventTitle: "Sommerfest",
+    });
+    expect(out.text).toContain("„Sommerfest“"); // „Sommerfest"
+    expect(out.text).not.toContain("„Sommerfest\""); // not „Sommerfest"
+  });
+
   it("escapes HTML in firstName and eventTitle in the html part", () => {
     const out = render("event_registration_confirmed", {
       firstName: "<img src=x onerror=alert(1)>",
