@@ -27,8 +27,11 @@ This is not an open product question. The spec already dictates the model:
   sketched as `id, member_id, scope (e.g. 'federal_board' |
 'local_board:moenchengladbach'), granted_at, granted_by, revoked_at`.
 
-The `text[]` column was a deliberate Sprint-3 shortcut, flagged for repayment
-in `docs/result_sprint5.md`. This ADR records how the spec's already-decided
+The `text[]` column was a deliberate Sprint-3 shortcut; repaying it means
+normalizing scoped grants into a dedicated join table before the grant model
+is treated as final. (The originating Sprint-3 note has since been removed, so
+this ADR is now the record of that obligation.) This ADR records how the
+spec's already-decided
 scoped-grant model is implemented and the design choices the spec leaves open.
 
 ## Decision
