@@ -17,7 +17,7 @@ import type { CurrentMember, Grant } from "@bdas/members";
 import { setStorage, type SignedUrl, type StorageClient } from "@bdas/storage";
 
 import { fileAccessLog, files, folders } from "./schema";
-import { confirmUpload, deleteFile, getDownloadUrl, listFiles, requestUpload } from "./services/files";
+import { confirmUpload, deleteFile, getDownloadUrl, listFiles, requestUpload, sweepStalePendingUploads } from "./services/files";
 import { ensureFolders, listFolders } from "./services/folders";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -331,5 +331,51 @@ describeIfDb("listFiles / getDownloadUrl / deleteFile", () => {
       primaryGroupId: "grp_muc", status: "active", joinedAt: null, createdAt: new Date(), updatedAt: new Date(),
     });
     await expect(getDownloadUrl(t.db, fileId, plain)).rejects.toThrow();
+  });
+});
+
+describeIfDb("sweepStalePendingUploads", () => {
+  let t: TestDb;
+  const boardMe = () =>
+    meWith([{ role: "local_board", groupId: "grp_muc" }], {
+      id: "mbr_1", userId: "usr_1", firstName: "T", lastName: "M",
+      primaryGroupId: "grp_muc", status: "active", joinedAt: null, createdAt: new Date(), updatedAt: new Date(),
+    });
+  async function localBoardFolderId(): Promise<string> {
+    const rows = await t.db.select().from(folders);
+    return rows.find((f) => f.scope === "local_board" && f.groupId === "grp_muc")!.id;
+  }
+
+  beforeEach(async () => {
+    t = await createTestDb();
+    await applyMigrations(t);
+    setStorage(fakeStorage());
+    await seedGroupAndMember(t, { groupId: "grp_muc", memberId: "mbr_1", userId: "usr_1" });
+    await ensureFolders(t.db);
+  });
+  afterEach(async () => {
+    resetEventBus();
+    await t.cleanup();
+  });
+
+  it("deletes pending rows older than the cutoff, keeps recent + ready", async () => {
+    const folderId = await localBoardFolderId();
+    const removed: string[] = [];
+    setStorage(fakeStorage({ statObject: async () => ({ sizeBytes: 5 }), deleteObject: async (k) => { removed.push(k); } }));
+
+    // an old pending upload
+    const { fileId: oldPending } = await requestUpload(
+      t.db, folderId, { filename: "old.pdf", mimeType: "application/pdf", sizeBytes: 5 }, boardMe(),
+    );
+    await t.client`UPDATE files SET uploaded_at = now() - interval '2 days' WHERE id = ${oldPending}`;
+    // a fresh pending upload
+    await requestUpload(t.db, folderId, { filename: "fresh.pdf", mimeType: "application/pdf", sizeBytes: 5 }, boardMe());
+
+    const swept = await sweepStalePendingUploads(t.db, new Date(Date.now() - 24 * 3600 * 1000));
+    expect(swept).toBe(1);
+    expect(removed).toHaveLength(1);
+    const remaining = await t.db.select().from(files);
+    expect(remaining).toHaveLength(1);
+    expect(remaining[0]?.filename).toBe("fresh.pdf");
   });
 });

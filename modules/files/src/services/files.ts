@@ -1,4 +1,4 @@
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, lt, sql } from "drizzle-orm";
 
 import type { Db } from "@bdas/db";
 import { ForbiddenError, NotFoundError, ValidationError } from "@bdas/errors";
@@ -174,4 +174,25 @@ export async function deleteFile(db: Db, fileId: string, byMember: CurrentMember
   await writeAccessLog(db, fileId, actor.id, "delete");
   await getStorage().deleteObject(row.storageKey);
   await db.delete(files).where(eq(files.id, fileId));
+}
+
+/**
+ * Delete pending uploads whose row predates `olderThan` — clients that requested
+ * an upload but never confirmed. Removes the (possibly absent) object then the
+ * row. Returns the count swept. Unwired in v1; Phase 3 attaches a cron.
+ */
+export async function sweepStalePendingUploads(db: Db, olderThan: Date): Promise<number> {
+  const stale = await db
+    .select()
+    .from(files)
+    .where(and(eq(files.status, "pending"), lt(files.uploadedAt, olderThan)));
+  for (const row of stale) {
+    try {
+      await getStorage().deleteObject(row.storageKey);
+    } catch {
+      // object may never have been PUT; deleting the row is still correct
+    }
+    await db.delete(files).where(eq(files.id, row.id));
+  }
+  return stale.length;
 }
