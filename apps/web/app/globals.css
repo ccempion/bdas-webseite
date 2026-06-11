@@ -2,6 +2,10 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --bdas-accent: #d12020;
+}
+
 @layer base {
   html {
     /* Body ink as the default text color so child surfaces inherit correctly. */
