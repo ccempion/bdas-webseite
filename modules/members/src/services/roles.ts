@@ -1,8 +1,8 @@
 /**
- * Role grant / revoke (ADR 0007). Writes scoped rows to `member_role_grants`.
- * Only federal_board may grant or revoke — the spec gives the Bundesvorstand
- * sole authority to set/unset the local board role. `local_board` grants must
- * be group-scoped; `federal_board` must be unscoped.
+ * Role grant / revoke (ADR 0007, amended by ADR 0013). Writes scoped rows to
+ * `member_role_grants`. Federal board may grant any role; a `local_board_lead`
+ * may grant/revoke `local_board` within its own group only (see requireCanGrant).
+ * `local_board` and `local_board_lead` are group-scoped; `federal_board` is unscoped.
  */
 import { and, eq, isNull, sql } from "drizzle-orm";
 import type { PostgresJsDatabase } from "drizzle-orm/postgres-js";
