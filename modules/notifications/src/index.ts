@@ -16,15 +16,6 @@ export {
   type OutboundEmail,
 } from "./notifier";
 export { createResendNotifier, type ResendNotifierOptions } from "./notifier-resend";
-export {
-  getRecipientResolver,
-  setRecipientResolver,
-  type RecipientResolver,
-} from "./resolver";
+export { getRecipientResolver, setRecipientResolver, type RecipientResolver } from "./resolver";
 
-export type {
-  TransactionalTemplate,
-  TemplateData,
-  SendResult,
-  RecipientContact,
-} from "./types";
+export type { TransactionalTemplate, TemplateData, SendResult, RecipientContact } from "./types";

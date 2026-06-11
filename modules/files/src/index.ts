@@ -12,4 +12,11 @@ export {
   sweepStalePendingUploads,
 } from "./services/files";
 export { registerFilesSubscribers, unregisterFilesSubscribers } from "./subscribers";
-export type { Folder, FileMeta, FolderScope, FileStatus, AccessAction, UploadRequest } from "./types";
+export type {
+  Folder,
+  FileMeta,
+  FolderScope,
+  FileStatus,
+  AccessAction,
+  UploadRequest,
+} from "./types";

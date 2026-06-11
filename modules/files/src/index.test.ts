@@ -18,7 +18,14 @@ import type { CurrentMember, Grant } from "@bdas/members";
 import { setStorage, type SignedUrl, type StorageClient } from "@bdas/storage";
 
 import { fileAccessLog, files, folders } from "./schema";
-import { confirmUpload, deleteFile, getDownloadUrl, listFiles, requestUpload, sweepStalePendingUploads } from "./services/files";
+import {
+  confirmUpload,
+  deleteFile,
+  getDownloadUrl,
+  listFiles,
+  requestUpload,
+  sweepStalePendingUploads,
+} from "./services/files";
 import { ensureFolders, listFolders } from "./services/folders";
 import { registerFilesSubscribers, unregisterFilesSubscribers } from "./subscribers";
 
@@ -60,7 +67,10 @@ async function applyMigrations(t: TestDb): Promise<void> {
 
 /** A fake storage driver whose behavior each test configures. */
 function fakeStorage(over: Partial<StorageClient> = {}): StorageClient {
-  const url: SignedUrl = { url: "https://signed.example/put", expiresAt: new Date(Date.now() + 3600_000) };
+  const url: SignedUrl = {
+    url: "https://signed.example/put",
+    expiresAt: new Date(Date.now() + 3600_000),
+  };
   return {
     signedUploadUrl: async () => url,
     signedDownloadUrl: async () => ({ ...url, url: "https://signed.example/get" }),
@@ -157,8 +167,15 @@ describeIfDb("ensureFolders / listFolders", () => {
     await ensureFolders(t.db);
 
     const plainMucMember = meWith([{ role: "member", groupId: null }], {
-      id: "mbr_1", userId: "usr_1", firstName: "T", lastName: "M",
-      primaryGroupId: "grp_muc", status: "active", joinedAt: null, createdAt: new Date(), updatedAt: new Date(),
+      id: "mbr_1",
+      userId: "usr_1",
+      firstName: "T",
+      lastName: "M",
+      primaryGroupId: "grp_muc",
+      status: "active",
+      joinedAt: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
     });
 
     const visible = await listFolders(t.db, plainMucMember);
@@ -172,8 +189,15 @@ describeIfDb("two-phase upload", () => {
   let t: TestDb;
   const boardMe = () =>
     meWith([{ role: "local_board", groupId: "grp_muc" }], {
-      id: "mbr_1", userId: "usr_1", firstName: "T", lastName: "M",
-      primaryGroupId: "grp_muc", status: "active", joinedAt: null, createdAt: new Date(), updatedAt: new Date(),
+      id: "mbr_1",
+      userId: "usr_1",
+      firstName: "T",
+      lastName: "M",
+      primaryGroupId: "grp_muc",
+      status: "active",
+      joinedAt: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
     });
 
   async function localBoardFolderId(): Promise<string> {
@@ -196,7 +220,10 @@ describeIfDb("two-phase upload", () => {
   it("requestUpload inserts a pending row and returns an upload URL", async () => {
     const folderId = await localBoardFolderId();
     const { fileId, uploadUrl } = await requestUpload(
-      t.db, folderId, { filename: "satzung.pdf", mimeType: "application/pdf", sizeBytes: 1000 }, boardMe(),
+      t.db,
+      folderId,
+      { filename: "satzung.pdf", mimeType: "application/pdf", sizeBytes: 1000 },
+      boardMe(),
     );
     expect(uploadUrl.url).toContain("https://signed.example/put");
     const rows = await t.db.select().from(files);
@@ -208,7 +235,12 @@ describeIfDb("two-phase upload", () => {
   it("requestUpload rejects a disallowed MIME type", async () => {
     const folderId = await localBoardFolderId();
     await expect(
-      requestUpload(t.db, folderId, { filename: "x.exe", mimeType: "application/x-msdownload", sizeBytes: 10 }, boardMe()),
+      requestUpload(
+        t.db,
+        folderId,
+        { filename: "x.exe", mimeType: "application/x-msdownload", sizeBytes: 10 },
+        boardMe(),
+      ),
     ).rejects.toThrow();
     expect(await t.db.select().from(files)).toHaveLength(0);
   });
@@ -216,18 +248,35 @@ describeIfDb("two-phase upload", () => {
   it("requestUpload rejects an over-cap declared size", async () => {
     const folderId = await localBoardFolderId();
     await expect(
-      requestUpload(t.db, folderId, { filename: "big.pdf", mimeType: "application/pdf", sizeBytes: 26 * 1024 * 1024 }, boardMe()),
+      requestUpload(
+        t.db,
+        folderId,
+        { filename: "big.pdf", mimeType: "application/pdf", sizeBytes: 26 * 1024 * 1024 },
+        boardMe(),
+      ),
     ).rejects.toThrow();
   });
 
   it("requestUpload denies a member who cannot write the folder", async () => {
     const folderId = await localBoardFolderId();
     const plain = meWith([{ role: "member", groupId: null }], {
-      id: "mbr_1", userId: "usr_1", firstName: "T", lastName: "M",
-      primaryGroupId: "grp_muc", status: "active", joinedAt: null, createdAt: new Date(), updatedAt: new Date(),
+      id: "mbr_1",
+      userId: "usr_1",
+      firstName: "T",
+      lastName: "M",
+      primaryGroupId: "grp_muc",
+      status: "active",
+      joinedAt: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
     });
     await expect(
-      requestUpload(t.db, folderId, { filename: "x.pdf", mimeType: "application/pdf", sizeBytes: 10 }, plain),
+      requestUpload(
+        t.db,
+        folderId,
+        { filename: "x.pdf", mimeType: "application/pdf", sizeBytes: 10 },
+        plain,
+      ),
     ).rejects.toThrow();
   });
 
@@ -235,7 +284,10 @@ describeIfDb("two-phase upload", () => {
     const folderId = await localBoardFolderId();
     setStorage(fakeStorage({ statObject: async () => ({ sizeBytes: 1000 }) }));
     const { fileId } = await requestUpload(
-      t.db, folderId, { filename: "satzung.pdf", mimeType: "application/pdf", sizeBytes: 1000 }, boardMe(),
+      t.db,
+      folderId,
+      { filename: "satzung.pdf", mimeType: "application/pdf", sizeBytes: 1000 },
+      boardMe(),
     );
     const meta = await confirmUpload(t.db, fileId, boardMe());
     expect(meta.status).toBe("ready");
@@ -251,11 +303,16 @@ describeIfDb("two-phase upload", () => {
     setStorage(
       fakeStorage({
         statObject: async () => ({ sizeBytes: 26 * 1024 * 1024 }),
-        deleteObject: async (k) => { removed = k; },
+        deleteObject: async (k) => {
+          removed = k;
+        },
       }),
     );
     const { fileId } = await requestUpload(
-      t.db, folderId, { filename: "lie.pdf", mimeType: "application/pdf", sizeBytes: 1000 }, boardMe(),
+      t.db,
+      folderId,
+      { filename: "lie.pdf", mimeType: "application/pdf", sizeBytes: 1000 },
+      boardMe(),
     );
     await expect(confirmUpload(t.db, fileId, boardMe())).rejects.toThrow();
     expect(removed).not.toBeNull();
@@ -267,8 +324,15 @@ describeIfDb("listFiles / getDownloadUrl / deleteFile", () => {
   let t: TestDb;
   const boardMe = () =>
     meWith([{ role: "local_board", groupId: "grp_muc" }], {
-      id: "mbr_1", userId: "usr_1", firstName: "T", lastName: "M",
-      primaryGroupId: "grp_muc", status: "active", joinedAt: null, createdAt: new Date(), updatedAt: new Date(),
+      id: "mbr_1",
+      userId: "usr_1",
+      firstName: "T",
+      lastName: "M",
+      primaryGroupId: "grp_muc",
+      status: "active",
+      joinedAt: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
     });
 
   async function localBoardFolderId(): Promise<string> {
@@ -279,7 +343,10 @@ describeIfDb("listFiles / getDownloadUrl / deleteFile", () => {
     const folderId = await localBoardFolderId();
     setStorage(fakeStorage({ statObject: async () => ({ sizeBytes: 500 }) }));
     const { fileId } = await requestUpload(
-      t.db, folderId, { filename: "doc.pdf", mimeType: "application/pdf", sizeBytes: 500 }, boardMe(),
+      t.db,
+      folderId,
+      { filename: "doc.pdf", mimeType: "application/pdf", sizeBytes: 500 },
+      boardMe(),
     );
     await confirmUpload(t.db, fileId, boardMe());
     return fileId;
@@ -301,7 +368,12 @@ describeIfDb("listFiles / getDownloadUrl / deleteFile", () => {
     await makeReadyFile();
     const folderId = await localBoardFolderId();
     // a pending file in the same folder must not appear
-    await requestUpload(t.db, folderId, { filename: "draft.pdf", mimeType: "application/pdf", sizeBytes: 10 }, boardMe());
+    await requestUpload(
+      t.db,
+      folderId,
+      { filename: "draft.pdf", mimeType: "application/pdf", sizeBytes: 10 },
+      boardMe(),
+    );
 
     const listed = await listFiles(t.db, folderId, boardMe());
     expect(listed).toHaveLength(1);
@@ -319,7 +391,14 @@ describeIfDb("listFiles / getDownloadUrl / deleteFile", () => {
   it("deleteFile removes the row + object and logs 'delete'", async () => {
     const fileId = await makeReadyFile();
     let removed: string | null = null;
-    setStorage(fakeStorage({ statObject: async () => ({ sizeBytes: 500 }), deleteObject: async (k) => { removed = k; } }));
+    setStorage(
+      fakeStorage({
+        statObject: async () => ({ sizeBytes: 500 }),
+        deleteObject: async (k) => {
+          removed = k;
+        },
+      }),
+    );
 
     await deleteFile(t.db, fileId, boardMe());
     expect(removed).not.toBeNull();
@@ -333,8 +412,15 @@ describeIfDb("listFiles / getDownloadUrl / deleteFile", () => {
   it("getDownloadUrl denies a member without read access", async () => {
     const fileId = await makeReadyFile();
     const plain = meWith([{ role: "member", groupId: null }], {
-      id: "mbr_1", userId: "usr_1", firstName: "T", lastName: "M",
-      primaryGroupId: "grp_muc", status: "active", joinedAt: null, createdAt: new Date(), updatedAt: new Date(),
+      id: "mbr_1",
+      userId: "usr_1",
+      firstName: "T",
+      lastName: "M",
+      primaryGroupId: "grp_muc",
+      status: "active",
+      joinedAt: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
     });
     await expect(getDownloadUrl(t.db, fileId, plain)).rejects.toThrow();
   });
@@ -344,8 +430,15 @@ describeIfDb("sweepStalePendingUploads", () => {
   let t: TestDb;
   const boardMe = () =>
     meWith([{ role: "local_board", groupId: "grp_muc" }], {
-      id: "mbr_1", userId: "usr_1", firstName: "T", lastName: "M",
-      primaryGroupId: "grp_muc", status: "active", joinedAt: null, createdAt: new Date(), updatedAt: new Date(),
+      id: "mbr_1",
+      userId: "usr_1",
+      firstName: "T",
+      lastName: "M",
+      primaryGroupId: "grp_muc",
+      status: "active",
+      joinedAt: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
     });
   async function localBoardFolderId(): Promise<string> {
     const rows = await t.db.select().from(folders);
@@ -367,15 +460,30 @@ describeIfDb("sweepStalePendingUploads", () => {
   it("deletes pending rows older than the cutoff, keeps recent + ready", async () => {
     const folderId = await localBoardFolderId();
     const removed: string[] = [];
-    setStorage(fakeStorage({ statObject: async () => ({ sizeBytes: 5 }), deleteObject: async (k) => { removed.push(k); } }));
+    setStorage(
+      fakeStorage({
+        statObject: async () => ({ sizeBytes: 5 }),
+        deleteObject: async (k) => {
+          removed.push(k);
+        },
+      }),
+    );
 
     // an old pending upload
     const { fileId: oldPending } = await requestUpload(
-      t.db, folderId, { filename: "old.pdf", mimeType: "application/pdf", sizeBytes: 5 }, boardMe(),
+      t.db,
+      folderId,
+      { filename: "old.pdf", mimeType: "application/pdf", sizeBytes: 5 },
+      boardMe(),
     );
     await t.client`UPDATE files SET uploaded_at = now() - interval '2 days' WHERE id = ${oldPending}`;
     // a fresh pending upload
-    await requestUpload(t.db, folderId, { filename: "fresh.pdf", mimeType: "application/pdf", sizeBytes: 5 }, boardMe());
+    await requestUpload(
+      t.db,
+      folderId,
+      { filename: "fresh.pdf", mimeType: "application/pdf", sizeBytes: 5 },
+      boardMe(),
+    );
 
     const swept = await sweepStalePendingUploads(t.db, new Date(Date.now() - 24 * 3600 * 1000));
     expect(swept).toBe(1);
@@ -404,7 +512,12 @@ describeIfDb("group.created subscriber", () => {
     await t.client`INSERT INTO groups (id, slug, name, city) VALUES ('grp_new', 'new', 'Neustadt', 'Neustadt')`;
     registerFilesSubscribers(t.db);
 
-    const event: GroupCreated = { type: "groups.group.created", groupId: "grp_new", slug: "new", at: new Date() };
+    const event: GroupCreated = {
+      type: "groups.group.created",
+      groupId: "grp_new",
+      slug: "new",
+      at: new Date(),
+    };
     await getEventBus().publish(event);
 
     const rows = (await t.db.select().from(folders)).filter((f) => f.groupId === "grp_new");
@@ -413,6 +526,8 @@ describeIfDb("group.created subscriber", () => {
 
     // re-publish must not duplicate (idempotent)
     await getEventBus().publish(event);
-    expect((await t.db.select().from(folders)).filter((f) => f.groupId === "grp_new")).toHaveLength(2);
+    expect((await t.db.select().from(folders)).filter((f) => f.groupId === "grp_new")).toHaveLength(
+      2,
+    );
   });
 });

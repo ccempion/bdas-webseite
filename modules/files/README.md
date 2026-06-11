@@ -5,12 +5,12 @@ Role-scoped file repository (spec §11). Owns `folders`, `files`,
 
 ## Scopes
 
-| Scope | Cardinality | Read | Write |
-|-------|-------------|------|-------|
-| `members_all` | 1 | every active member | federal board |
-| `group_members:[g]` | 1 per group | active members of g | g's local board |
-| `local_board:[g]` | 1 per group | g's local board + federal | g's local board |
-| `federal_board` | 1 | federal board | federal board |
+| Scope               | Cardinality | Read                      | Write           |
+| ------------------- | ----------- | ------------------------- | --------------- |
+| `members_all`       | 1           | every active member       | federal board   |
+| `group_members:[g]` | 1 per group | active members of g       | g's local board |
+| `local_board:[g]`   | 1 per group | g's local board + federal | g's local board |
+| `federal_board`     | 1           | federal board             | federal board   |
 
 Folders are system-provisioned (`ensureFolders` at boot + a
 `groups.group.created` subscriber); they are not user-creatable in v1.

@@ -40,8 +40,6 @@ export function render(template: TransactionalTemplate, data: TemplateData): Ren
 function body(subject: string, firstName: string, line: string): RenderedEmail {
   const text = `Hallo ${firstName},\n\n${line}\n\nViele Grüße\nDein BDAS-Team\n`;
   const html =
-    `<p>Hallo ${firstName},</p>` +
-    `<p>${line}</p>` +
-    `<p>Viele Grüße<br>Dein BDAS-Team</p>`;
+    `<p>Hallo ${firstName},</p>` + `<p>${line}</p>` + `<p>Viele Grüße<br>Dein BDAS-Team</p>`;
   return { subject, text, html };
 }

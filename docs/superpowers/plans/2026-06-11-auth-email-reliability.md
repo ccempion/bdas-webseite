@@ -17,6 +17,7 @@ When a verification/reset email fails to send, the auth flow **succeeds and logs
 ## Scope
 
 **In scope:**
+
 - `modules/auth/src/notifier-resend.ts` — throw on Resend error result (mirror of the notifications finding-2 fix). New driver unit test.
 - `apps/web/app/registrieren/actions.ts` — wrap the verify-email `send()` in try/catch + log; keep `redirect()` outside the catch.
 - `apps/web/app/passwort-zuruecksetzen/actions.ts` — wrap the reset-email `send()` in an inner try/catch + log; preserve the outer `isAppError` handling and the `{ sent: true }` contract.
@@ -24,6 +25,7 @@ When a verification/reset email fails to send, the auth flow **succeeds and logs
 - `docs/decisions/0011-defer-email-consolidation.md` — mark the "mirror into auth" follow-up as done.
 
 **Out of scope (do NOT do):**
+
 - HTML-escaping auth templates: auth's `render()` interpolates `verifyUrl`/`resetUrl`, which are **system-generated** (built by `buildVerifyUrl`/`buildResetUrl`), not user input — no injection surface. Do not add escaping here.
 - The `core/email` consolidation itself (ADR 0011 keeps it deferred).
 - Any change to `modules/auth` services (`register`, `requestPasswordReset`, etc.) or their return shapes.
@@ -32,6 +34,7 @@ When a verification/reset email fails to send, the auth flow **succeeds and logs
 **Module-boundary note:** this PR touches `modules/auth` (the driver) and `apps/web` (the three call sites that consume it). That is one logical concern (auth email reliability); the app layer is the consumer of the driver, not a second business module.
 
 **File structure:**
+
 - `modules/auth/src/notifier-resend.ts` — driver send method gains error handling.
 - `modules/auth/src/notifier-resend.test.ts` — **new** Vitest unit test mocking `resend`.
 - `apps/web/app/registrieren/actions.ts` — call-site error handling.
@@ -48,9 +51,11 @@ When a verification/reset email fails to send, the auth flow **succeeds and logs
 - [ ] **Step 1: Create the feature branch**
 
 Run:
+
 ```bash
 git checkout main && git checkout -b fix/auth-email-reliability && git branch --show-current
 ```
+
 Expected: `fix/auth-email-reliability`.
 
 ---
@@ -58,6 +63,7 @@ Expected: `fix/auth-email-reliability`.
 ### Task 1: Auth Resend driver throws on error result
 
 **Files:**
+
 - Modify: `modules/auth/src/notifier-resend.ts` (the `send` method)
 - Test: `modules/auth/src/notifier-resend.test.ts` (create)
 
@@ -170,6 +176,7 @@ Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
 ### Task 2: Log send failures at the three call sites (no behavior change)
 
 **Files:**
+
 - Modify: `apps/web/app/registrieren/actions.ts:52`
 - Modify: `apps/web/app/passwort-zuruecksetzen/actions.ts:41`
 - Modify: `apps/web/app/verifizierung-erneut-senden/actions.ts:29`
@@ -181,31 +188,31 @@ There is no test harness in `apps/web`; verify with typecheck + build. The drive
 The current tail of `registerAction` (lines 48-54) is:
 
 ```ts
-  const verifyUrl = buildVerifyUrl(
-    process.env["PUBLIC_SITE_URL"] ?? "http://localhost:3000",
-    result.verifyToken,
-  );
-  await getNotifier().send({ kind: "verify", to: email, verifyUrl });
+const verifyUrl = buildVerifyUrl(
+  process.env["PUBLIC_SITE_URL"] ?? "http://localhost:3000",
+  result.verifyToken,
+);
+await getNotifier().send({ kind: "verify", to: email, verifyUrl });
 
-  redirect("/registrieren/erfolg");
+redirect("/registrieren/erfolg");
 ```
 
 Replace with:
 
 ```ts
-  const verifyUrl = buildVerifyUrl(
-    process.env["PUBLIC_SITE_URL"] ?? "http://localhost:3000",
-    result.verifyToken,
-  );
-  try {
-    await getNotifier().send({ kind: "verify", to: email, verifyUrl });
-  } catch (err) {
-    // Account is already created; the resend-verification flow is the recovery
-    // path. Don't fail the response — surface the failure in logs instead.
-    console.error("[auth] verify email send failed:", err);
-  }
+const verifyUrl = buildVerifyUrl(
+  process.env["PUBLIC_SITE_URL"] ?? "http://localhost:3000",
+  result.verifyToken,
+);
+try {
+  await getNotifier().send({ kind: "verify", to: email, verifyUrl });
+} catch (err) {
+  // Account is already created; the resend-verification flow is the recovery
+  // path. Don't fail the response — surface the failure in logs instead.
+  console.error("[auth] verify email send failed:", err);
+}
 
-  redirect("/registrieren/erfolg");
+redirect("/registrieren/erfolg");
 ```
 
 `redirect()` must stay OUTSIDE the try/catch — it signals via a thrown `NEXT_REDIRECT` that must propagate.
@@ -215,47 +222,47 @@ Replace with:
 The current `requestResetAction` body (lines 34-49) is:
 
 ```ts
-  try {
-    const result = await requestPasswordReset(getDb(), { email }, { ip });
-    if (result) {
-      const url = buildResetUrl(
-        process.env["PUBLIC_SITE_URL"] ?? "http://localhost:3000",
-        result.resetToken,
-      );
-      await getNotifier().send({ kind: "reset", to: email, resetUrl: url });
-    }
-  } catch (err) {
-    if (isAppError(err)) return { error: err.message };
-    throw err;
+try {
+  const result = await requestPasswordReset(getDb(), { email }, { ip });
+  if (result) {
+    const url = buildResetUrl(
+      process.env["PUBLIC_SITE_URL"] ?? "http://localhost:3000",
+      result.resetToken,
+    );
+    await getNotifier().send({ kind: "reset", to: email, resetUrl: url });
   }
+} catch (err) {
+  if (isAppError(err)) return { error: err.message };
+  throw err;
+}
 
-  // Always report "sent" — never reveal whether the email is registered.
-  return { sent: true };
+// Always report "sent" — never reveal whether the email is registered.
+return { sent: true };
 ```
 
 Replace the inner `await getNotifier().send(...)` line with its own try/catch so a send failure is logged but never breaks the `{ sent: true }` privacy contract (and is not mistaken for an app error by the outer catch):
 
 ```ts
-  try {
-    const result = await requestPasswordReset(getDb(), { email }, { ip });
-    if (result) {
-      const url = buildResetUrl(
-        process.env["PUBLIC_SITE_URL"] ?? "http://localhost:3000",
-        result.resetToken,
-      );
-      try {
-        await getNotifier().send({ kind: "reset", to: email, resetUrl: url });
-      } catch (err) {
-        console.error("[auth] reset email send failed:", err);
-      }
+try {
+  const result = await requestPasswordReset(getDb(), { email }, { ip });
+  if (result) {
+    const url = buildResetUrl(
+      process.env["PUBLIC_SITE_URL"] ?? "http://localhost:3000",
+      result.resetToken,
+    );
+    try {
+      await getNotifier().send({ kind: "reset", to: email, resetUrl: url });
+    } catch (err) {
+      console.error("[auth] reset email send failed:", err);
     }
-  } catch (err) {
-    if (isAppError(err)) return { error: err.message };
-    throw err;
   }
+} catch (err) {
+  if (isAppError(err)) return { error: err.message };
+  throw err;
+}
 
-  // Always report "sent" — never reveal whether the email is registered.
-  return { sent: true };
+// Always report "sent" — never reveal whether the email is registered.
+return { sent: true };
 ```
 
 - [ ] **Step 3: verifizierung-erneut-senden/actions.ts — log send failures, keep privacy swallow**
@@ -263,43 +270,43 @@ Replace the inner `await getNotifier().send(...)` line with its own try/catch so
 The current `resendAction` body (lines 22-35) is:
 
 ```ts
-  try {
-    const result = await resendVerification(getDb(), email);
-    if (result) {
-      const verifyUrl = buildVerifyUrl(
-        process.env["PUBLIC_SITE_URL"] ?? "http://localhost:3000",
-        result.verifyToken,
-      );
-      await getNotifier().send({ kind: "verify", to: email, verifyUrl });
-    }
-  } catch {
-    // Always return "sent" — do not reveal whether the email exists.
+try {
+  const result = await resendVerification(getDb(), email);
+  if (result) {
+    const verifyUrl = buildVerifyUrl(
+      process.env["PUBLIC_SITE_URL"] ?? "http://localhost:3000",
+      result.verifyToken,
+    );
+    await getNotifier().send({ kind: "verify", to: email, verifyUrl });
   }
+} catch {
+  // Always return "sent" — do not reveal whether the email exists.
+}
 
-  return { sent: true };
+return { sent: true };
 ```
 
 Wrap only the send in an inner try/catch that logs, leaving the outer privacy-preserving `catch {}` intact (so `resendVerification` failures stay silent, but send failures are logged):
 
 ```ts
-  try {
-    const result = await resendVerification(getDb(), email);
-    if (result) {
-      const verifyUrl = buildVerifyUrl(
-        process.env["PUBLIC_SITE_URL"] ?? "http://localhost:3000",
-        result.verifyToken,
-      );
-      try {
-        await getNotifier().send({ kind: "verify", to: email, verifyUrl });
-      } catch (err) {
-        console.error("[auth] resend verification email send failed:", err);
-      }
+try {
+  const result = await resendVerification(getDb(), email);
+  if (result) {
+    const verifyUrl = buildVerifyUrl(
+      process.env["PUBLIC_SITE_URL"] ?? "http://localhost:3000",
+      result.verifyToken,
+    );
+    try {
+      await getNotifier().send({ kind: "verify", to: email, verifyUrl });
+    } catch (err) {
+      console.error("[auth] resend verification email send failed:", err);
     }
-  } catch {
-    // Always return "sent" — do not reveal whether the email exists.
   }
+} catch {
+  // Always return "sent" — do not reveal whether the email exists.
+}
 
-  return { sent: true };
+return { sent: true };
 ```
 
 - [ ] **Step 4: Typecheck**
@@ -331,6 +338,7 @@ Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
 ### Task 3: Mark the ADR 0011 follow-up done
 
 **Files:**
+
 - Modify: `docs/decisions/0011-defer-email-consolidation.md`
 
 - [ ] **Step 1: Update the consequence note**
@@ -389,4 +397,7 @@ Expected exactly: `modules/auth/src/notifier-resend.ts`, `modules/auth/src/notif
 - **Behavior-change check:** registration still redirects to `/registrieren/erfolg`; reset still returns `{ sent: true }`; resend still returns `{ sent: true }`. The only new behavior is `console.error` on send failure. `redirect()` is kept outside the try/catch so `NEXT_REDIRECT` still propagates. Matches the user's "succeed + log" decision.
 - **Type consistency:** `createResendNotifier(opts: ResendNotifierOptions): Notifier`; `send(message: AuthMessage): Promise<void>` unchanged; the `AuthMessage` shapes used in tests (`{kind:"verify",to,verifyUrl}` / `{kind:"reset",to,resetUrl}`) match `modules/auth/src/notifier.ts`.
 - **Security note:** `auth` templates interpolate system-generated URLs only — no user-controlled HTML — so the notifications HTML-escaping fix is intentionally not mirrored here.
+
+```
+
 ```

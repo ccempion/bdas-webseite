@@ -14,14 +14,15 @@
 
 **In scope (this PR):** the three member-scoped events that already carry a single `memberId`:
 
-| Bus event | Transactional email |
-| --- | --- |
-| `events.event.registered` (`waitlisted=false`) | Anmeldung bestätigt |
-| `events.event.registered` (`waitlisted=true`) | Auf der Warteliste |
-| `events.event.deregistered` | Abmeldung bestätigt |
-| `events.waitlist.promoted` | Nachgerückt — Platz frei |
+| Bus event                                      | Transactional email      |
+| ---------------------------------------------- | ------------------------ |
+| `events.event.registered` (`waitlisted=false`) | Anmeldung bestätigt      |
+| `events.event.registered` (`waitlisted=true`)  | Auf der Warteliste       |
+| `events.event.deregistered`                    | Abmeldung bestätigt      |
+| `events.waitlist.promoted`                     | Nachgerückt — Platz frei |
 
 **Deferred (later PRs):**
+
 - `events.event.published` / `events.event.cancelled` — these are group-wide, not single-recipient. Fanning out to all registrants needs `events` to expose a registrant-list service or emit per-registrant events (rule 1: `notifications` cannot read `event_registrations`). Belongs in the broadcast PR.
 - `broadcastToGroup` / `broadcastFederal` (§16) and per-user preferences — second PR.
 - Reconciling auth's verify/reset email into `notifications` — noted as a future ADR; out of scope by decision.
@@ -63,6 +64,7 @@ apps/web/lib/
 ### Task 1: Scaffold the module package
 
 **Files:**
+
 - Create: `modules/notifications/package.json`
 - Create: `modules/notifications/tsconfig.json`
 - Create: `modules/notifications/src/index.ts`
@@ -144,6 +146,7 @@ git commit -m "chore(notifications): scaffold module package"
 ### Task 2: Owned table — `notification_log` schema + migration
 
 **Files:**
+
 - Create: `modules/notifications/migrations/0001_init.sql`
 - Create: `modules/notifications/src/schema.ts`
 
@@ -223,6 +226,7 @@ git commit -m "feat(notifications): notification_log table + migration"
 ### Task 3: `Notifier` interface + console default + Resend driver
 
 **Files:**
+
 - Create: `modules/notifications/src/notifier.ts`
 - Create: `modules/notifications/src/notifier-resend.ts`
 
@@ -318,6 +322,7 @@ git commit -m "feat(notifications): Notifier interface + console + Resend driver
 ### Task 4: Templates (TDD)
 
 **Files:**
+
 - Create: `modules/notifications/src/types.ts`
 - Create: `modules/notifications/src/templates.ts`
 - Test: `modules/notifications/src/templates.test.ts`
@@ -445,9 +450,7 @@ export function render(template: TransactionalTemplate, data: TemplateData): Ren
 function body(subject: string, firstName: string, line: string): RenderedEmail {
   const text = `Hallo ${firstName},\n\n${line}\n\nViele Grüße\nDein BDAS-Team\n`;
   const html =
-    `<p>Hallo ${firstName},</p>` +
-    `<p>${line}</p>` +
-    `<p>Viele Grüße<br>Dein BDAS-Team</p>`;
+    `<p>Hallo ${firstName},</p>` + `<p>${line}</p>` + `<p>Viele Grüße<br>Dein BDAS-Team</p>`;
   return { subject, text, html };
 }
 ```
@@ -469,6 +472,7 @@ git commit -m "feat(notifications): transactional templates (DE) + render tests"
 ### Task 5: `RecipientResolver` interface + composition hook
 
 **Files:**
+
 - Create: `modules/notifications/src/resolver.ts`
 
 Email lives in `auth`, member identity in `members` (rule 1). The module must not read either module's tables. It depends on a composition-time interface that the app wires from public services. This mirrors the `getNotifier`/`setNotifier` pattern.
@@ -528,6 +532,7 @@ git commit -m "feat(notifications): RecipientResolver interface + composition ho
 ### Task 6: `sendTransactional` service + integration test
 
 **Files:**
+
 - Create: `modules/notifications/src/services/send.ts`
 - Test: `modules/notifications/src/index.test.ts` (created here; extended in Task 7)
 
@@ -754,6 +759,7 @@ git commit -m "feat(notifications): sendTransactional service + integration test
 ### Task 7: Bus subscribers + integration test
 
 **Files:**
+
 - Create: `modules/notifications/src/subscribers.ts`
 - Modify: `modules/notifications/src/index.test.ts` (add a "via bus" case)
 
@@ -773,11 +779,7 @@ The events module's events carry `memberId` and `eventId` but NOT the event titl
  */
 import { getDb } from "@bdas/db";
 import { getEventBus, type Subscription } from "@bdas/events";
-import type {
-  EventDeregistered,
-  EventRegistered,
-  WaitlistPromoted,
-} from "@bdas/events-module";
+import type { EventDeregistered, EventRegistered, WaitlistPromoted } from "@bdas/events-module";
 
 import { getEvent, type Viewer } from "../node_modules/@bdas/events-module"; // see note: import from package root, not deep path
 import { sendTransactional } from "./services/send";
@@ -846,10 +848,7 @@ export function unregisterNotificationSubscribers(): void {
 ```ts
 import { getEventBus, resetEventBus } from "@bdas/events";
 
-import {
-  registerNotificationSubscribers,
-  unregisterNotificationSubscribers,
-} from "./subscribers";
+import { registerNotificationSubscribers, unregisterNotificationSubscribers } from "./subscribers";
 
 // ... inside describeIfDb, add:
 
@@ -892,6 +891,7 @@ git commit -m "feat(notifications): subscribe to events bus → transactional se
 ### Task 8: Public surface (`index.ts`) + README
 
 **Files:**
+
 - Modify: `modules/notifications/src/index.ts`
 - Create: `modules/notifications/README.md`
 
@@ -908,20 +908,17 @@ git commit -m "feat(notifications): subscribe to events bus → transactional se
 export { sendTransactional } from "./services/send";
 export { registerNotificationSubscribers } from "./subscribers";
 
-export { consoleNotifier, getNotifier, setNotifier, type Notifier, type OutboundEmail } from "./notifier";
-export { createResendNotifier, type ResendNotifierOptions } from "./notifier-resend";
 export {
-  getRecipientResolver,
-  setRecipientResolver,
-  type RecipientResolver,
-} from "./resolver";
+  consoleNotifier,
+  getNotifier,
+  setNotifier,
+  type Notifier,
+  type OutboundEmail,
+} from "./notifier";
+export { createResendNotifier, type ResendNotifierOptions } from "./notifier-resend";
+export { getRecipientResolver, setRecipientResolver, type RecipientResolver } from "./resolver";
 
-export type {
-  TransactionalTemplate,
-  TemplateData,
-  SendResult,
-  RecipientContact,
-} from "./types";
+export type { TransactionalTemplate, TemplateData, SendResult, RecipientContact } from "./types";
 ```
 
 > Do NOT export `schema.ts`, `templates.ts`, or `unregisterNotificationSubscribers` — they are private (the last is a test helper, imported directly by the co-located test, which is allowed).
@@ -936,9 +933,9 @@ module event bus and sends the email that matches each event.
 
 ## Owned tables
 
-| Table              | Purpose                                            |
-| ------------------ | -------------------------------------------------- |
-| `notification_log` | One audit row per send (`sent` / `failed`)         |
+| Table              | Purpose                                    |
+| ------------------ | ------------------------------------------ |
+| `notification_log` | One audit row per send (`sent` / `failed`) |
 
 Migration: `migrations/0001_init.sql`, runs after `members` (the FK target) per
 the `infra/migrations` manifest.
@@ -947,12 +944,12 @@ the `infra/migrations` manifest.
 
 \`\`\`ts
 import {
-  sendTransactional,
-  registerNotificationSubscribers,
-  // composition seams (wired in apps/web at boot)
-  setNotifier, createResendNotifier, consoleNotifier, type Notifier,
-  setRecipientResolver, type RecipientResolver,
-  type TransactionalTemplate,
+sendTransactional,
+registerNotificationSubscribers,
+// composition seams (wired in apps/web at boot)
+setNotifier, createResendNotifier, consoleNotifier, type Notifier,
+setRecipientResolver, type RecipientResolver,
+type TransactionalTemplate,
 } from "@bdas/notifications";
 \`\`\`
 
@@ -965,12 +962,12 @@ Anything not re-exported from `src/index.ts` is private (rule 8).
 recipient via the composed `RecipientResolver`, renders a German template,
 sends through the composed `Notifier`, and writes a `notification_log` row.
 
-| Bus event (`@bdas/events-module`)            | Template                          |
-| -------------------------------------------- | --------------------------------- |
-| `events.event.registered` (waitlisted=false) | `event_registration_confirmed`    |
-| `events.event.registered` (waitlisted=true)  | `event_waitlisted`                |
-| `events.event.deregistered`                  | `event_deregistration_confirmed`  |
-| `events.waitlist.promoted`                   | `event_waitlist_promoted`         |
+| Bus event (`@bdas/events-module`)            | Template                         |
+| -------------------------------------------- | -------------------------------- |
+| `events.event.registered` (waitlisted=false) | `event_registration_confirmed`   |
+| `events.event.registered` (waitlisted=true)  | `event_waitlisted`               |
+| `events.event.deregistered`                  | `event_deregistration_confirmed` |
+| `events.waitlist.promoted`                   | `event_waitlist_promoted`        |
 
 ## Cross-module boundaries (rule 1)
 
@@ -1011,6 +1008,7 @@ git commit -m "docs(notifications): public surface + module README"
 ### Task 9: Compose in `apps/web` (boot hook, gated by flag)
 
 **Files:**
+
 - Create: `apps/web/lib/notifications-bootstrap.ts`
 - Modify: wherever `bootAuth()` is invoked (find the call sites of `apps/web/lib/auth-bootstrap.ts`) — add `bootNotifications()` beside it
 - Verify (no edit expected): `infra/migrations/src/manifest.ts` contains `notifications`; `core/feature-flags` contains `notifications`

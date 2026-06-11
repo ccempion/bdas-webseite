@@ -37,7 +37,7 @@ describe("render", () => {
       eventTitle: "Sommerfest",
     });
     expect(out.text).toContain("„Sommerfest“"); // „Sommerfest"
-    expect(out.text).not.toContain("„Sommerfest\""); // not „Sommerfest"
+    expect(out.text).not.toContain('„Sommerfest"'); // not „Sommerfest"
   });
 
   it("escapes HTML in firstName and eventTitle in the html part", () => {

@@ -15,6 +15,7 @@
 ## File structure
 
 **New module `modules/files/`:**
+
 - `package.json` — `@bdas/files` workspace package.
 - `tsconfig.json` — extends repo base.
 - `README.md` — module README (CLAUDE.md §1 rule 5).
@@ -31,16 +32,19 @@
 - `src/index.test.ts` — Docker-Postgres integration tests (harness + all service tests).
 
 **`core/storage` (package `@bdas/storage`):**
+
 - `package.json` — add `@supabase/supabase-js`.
 - `src/index.ts` — extend `StorageClient` with `statObject`; re-export the driver.
 - `src/supabase.ts` — `SupabaseStorageClient`.
 - `src/supabase.test.ts` — unit test, SDK mocked.
 
 **`modules/members`:**
+
 - `src/index.ts` — export `isFederalBoard`, `canManageGroup`.
 - `src/index.export.test.ts` — assert the re-exports behave.
 
 **`apps/web`:**
+
 - `lib/files-bootstrap.ts` — `bootFiles()` composition.
 - `instrumentation.ts` — call `bootFiles()`.
 - `next.config.mjs` — transpile `@bdas/storage`, `@bdas/files`.
@@ -48,6 +52,7 @@
 - repo `.env.example` — add `SUPABASE_STORAGE_BUCKET`.
 
 **Docs:**
+
 - `docs/decisions/0012-files-module-deviations.md` — ratify the §11 deviations.
 
 ---
@@ -55,6 +60,7 @@
 ### Task 1: Scaffold the `@bdas/files` package (types + constants)
 
 **Files:**
+
 - Create: `modules/files/package.json`
 - Create: `modules/files/tsconfig.json`
 - Create: `modules/files/src/types.ts`
@@ -223,6 +229,7 @@ Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
 ### Task 2: Migration + Drizzle schema + integration-test harness
 
 **Files:**
+
 - Create: `modules/files/migrations/0001_init.sql`
 - Create: `modules/files/src/schema.ts`
 - Test: `modules/files/src/index.test.ts`
@@ -419,7 +426,10 @@ async function applyMigrations(t: TestDb): Promise<void> {
 
 /** A fake storage driver whose behavior each test configures. */
 function fakeStorage(over: Partial<StorageClient> = {}): StorageClient {
-  const url: SignedUrl = { url: "https://signed.example/put", expiresAt: new Date(Date.now() + 3600_000) };
+  const url: SignedUrl = {
+    url: "https://signed.example/put",
+    expiresAt: new Date(Date.now() + 3600_000),
+  };
   return {
     signedUploadUrl: async () => url,
     signedDownloadUrl: async () => ({ ...url, url: "https://signed.example/get" }),
@@ -497,12 +507,13 @@ Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
 ### Task 3: Extend `core/storage` with `statObject` + the Supabase driver
 
 **Files:**
+
 - Modify: `core/storage/src/index.ts:18-29` (interface) and `:31-47` (stub)
 - Modify: `core/storage/package.json`
 - Create: `core/storage/src/supabase.ts`
 - Test: `core/storage/src/supabase.test.ts`
 
-`confirmUpload` must read the *actual* uploaded object size, so the interface needs a stat method.
+`confirmUpload` must read the _actual_ uploaded object size, so the interface needs a stat method.
 
 - [ ] **Step 1: Add `@supabase/supabase-js` to the package**
 
@@ -575,7 +586,11 @@ vi.mock("@supabase/supabase-js", () => ({
 import { SupabaseStorageClient } from "./supabase";
 
 function makeClient(): SupabaseStorageClient {
-  return new SupabaseStorageClient({ url: "https://x.supabase.co", serviceRoleKey: "k", bucket: "files" });
+  return new SupabaseStorageClient({
+    url: "https://x.supabase.co",
+    serviceRoleKey: "k",
+    bucket: "files",
+  });
 }
 
 describe("SupabaseStorageClient", () => {
@@ -588,7 +603,11 @@ describe("SupabaseStorageClient", () => {
 
   it("mints a signed upload URL", async () => {
     createSignedUploadUrl.mockResolvedValue({ data: { signedUrl: "https://up" }, error: null });
-    const res = await makeClient().signedUploadUrl({ storageKey: "a/b/f.pdf", mimeType: "application/pdf", sizeBytes: 10 });
+    const res = await makeClient().signedUploadUrl({
+      storageKey: "a/b/f.pdf",
+      mimeType: "application/pdf",
+      sizeBytes: 10,
+    });
     expect(res.url).toBe("https://up");
     expect(res.expiresAt.getTime()).toBeGreaterThan(Date.now());
     expect(fromMock).toHaveBeenCalledWith("files");
@@ -729,6 +748,7 @@ Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
 ### Task 4: Export role primitives from `members`
 
 **Files:**
+
 - Modify: `modules/members/src/index.ts`
 - Test: `modules/members/src/index.export.test.ts`
 
@@ -794,6 +814,7 @@ Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
 ### Task 5: Permission functions (pure) + matrix test
 
 **Files:**
+
 - Create: `modules/files/src/permissions.ts`
 - Test: `modules/files/src/permissions.test.ts`
 
@@ -838,7 +859,11 @@ function member(over: Partial<Member> = {}): Member {
 }
 
 function me(grants: Grant[], m: Member | null = member()): CurrentMember {
-  return { user: { id: "usr_1", email: "t@x.org", roles: [] } as CurrentMember["user"], member: m, grants };
+  return {
+    user: { id: "usr_1", email: "t@x.org", roles: [] } as CurrentMember["user"],
+    member: m,
+    grants,
+  };
 }
 
 const FED: Grant[] = [{ role: "federal_board", groupId: null }];
@@ -848,7 +873,9 @@ const PLAIN: Grant[] = [{ role: "member", groupId: null }];
 describe("canRead", () => {
   it("members_all: any active member, not inactive", () => {
     expect(canRead(folder("members_all", null), me(PLAIN))).toBe(true);
-    expect(canRead(folder("members_all", null), me(PLAIN, member({ status: "inactive" })))).toBe(false);
+    expect(canRead(folder("members_all", null), me(PLAIN, member({ status: "inactive" })))).toBe(
+      false,
+    );
   });
 
   it("group_members: only active members of that group", () => {
@@ -957,6 +984,7 @@ Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
 ### Task 6: Folder provisioning + listing (`ensureFolders`, `listFolders`)
 
 **Files:**
+
 - Create: `modules/files/src/services/folders.ts`
 - Test: `modules/files/src/index.test.ts` (append a `describe`)
 
@@ -973,7 +1001,11 @@ Add a small local helper near the other helpers:
 
 ```ts
 function meWith(grants: Grant[], member: CurrentMember["member"]): CurrentMember {
-  return { user: { id: "usr_1", email: "t@x.org", roles: [] } as CurrentMember["user"], member, grants };
+  return {
+    user: { id: "usr_1", email: "t@x.org", roles: [] } as CurrentMember["user"],
+    member,
+    grants,
+  };
 }
 ```
 
@@ -1015,8 +1047,15 @@ describeIfDb("ensureFolders / listFolders", () => {
     await ensureFolders(t.db);
 
     const plainMucMember = meWith([{ role: "member", groupId: null }], {
-      id: "mbr_1", userId: "usr_1", firstName: "T", lastName: "M",
-      primaryGroupId: "grp_muc", status: "active", joinedAt: null, createdAt: new Date(), updatedAt: new Date(),
+      id: "mbr_1",
+      userId: "usr_1",
+      firstName: "T",
+      lastName: "M",
+      primaryGroupId: "grp_muc",
+      status: "active",
+      joinedAt: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
     });
 
     const visible = await listFolders(t.db, plainMucMember);
@@ -1089,7 +1128,11 @@ export async function ensureFolders(db: Db): Promise<void> {
 }
 
 /** Create the two per-group folders for one group. Idempotent. */
-export async function provisionGroupFolders(db: Db, groupId: string, groupName: string): Promise<void> {
+export async function provisionGroupFolders(
+  db: Db,
+  groupId: string,
+  groupName: string,
+): Promise<void> {
   await db
     .insert(folders)
     .values({
@@ -1169,6 +1212,7 @@ Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
 ### Task 7: Two-phase upload (`requestUpload`, `confirmUpload`)
 
 **Files:**
+
 - Create: `modules/files/src/services/files.ts`
 - Test: `modules/files/src/index.test.ts` (append a `describe`)
 
@@ -1187,8 +1231,15 @@ describeIfDb("two-phase upload", () => {
   let t: TestDb;
   const boardMe = () =>
     meWith([{ role: "local_board", groupId: "grp_muc" }], {
-      id: "mbr_1", userId: "usr_1", firstName: "T", lastName: "M",
-      primaryGroupId: "grp_muc", status: "active", joinedAt: null, createdAt: new Date(), updatedAt: new Date(),
+      id: "mbr_1",
+      userId: "usr_1",
+      firstName: "T",
+      lastName: "M",
+      primaryGroupId: "grp_muc",
+      status: "active",
+      joinedAt: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
     });
 
   async function localBoardFolderId(): Promise<string> {
@@ -1211,7 +1262,10 @@ describeIfDb("two-phase upload", () => {
   it("requestUpload inserts a pending row and returns an upload URL", async () => {
     const folderId = await localBoardFolderId();
     const { fileId, uploadUrl } = await requestUpload(
-      t.db, folderId, { filename: "satzung.pdf", mimeType: "application/pdf", sizeBytes: 1000 }, boardMe(),
+      t.db,
+      folderId,
+      { filename: "satzung.pdf", mimeType: "application/pdf", sizeBytes: 1000 },
+      boardMe(),
     );
     expect(uploadUrl.url).toContain("https://signed.example/put");
     const rows = await t.db.select().from(files);
@@ -1223,7 +1277,12 @@ describeIfDb("two-phase upload", () => {
   it("requestUpload rejects a disallowed MIME type", async () => {
     const folderId = await localBoardFolderId();
     await expect(
-      requestUpload(t.db, folderId, { filename: "x.exe", mimeType: "application/x-msdownload", sizeBytes: 10 }, boardMe()),
+      requestUpload(
+        t.db,
+        folderId,
+        { filename: "x.exe", mimeType: "application/x-msdownload", sizeBytes: 10 },
+        boardMe(),
+      ),
     ).rejects.toThrow();
     expect(await t.db.select().from(files)).toHaveLength(0);
   });
@@ -1231,18 +1290,35 @@ describeIfDb("two-phase upload", () => {
   it("requestUpload rejects an over-cap declared size", async () => {
     const folderId = await localBoardFolderId();
     await expect(
-      requestUpload(t.db, folderId, { filename: "big.pdf", mimeType: "application/pdf", sizeBytes: 26 * 1024 * 1024 }, boardMe()),
+      requestUpload(
+        t.db,
+        folderId,
+        { filename: "big.pdf", mimeType: "application/pdf", sizeBytes: 26 * 1024 * 1024 },
+        boardMe(),
+      ),
     ).rejects.toThrow();
   });
 
   it("requestUpload denies a member who cannot write the folder", async () => {
     const folderId = await localBoardFolderId();
     const plain = meWith([{ role: "member", groupId: null }], {
-      id: "mbr_1", userId: "usr_1", firstName: "T", lastName: "M",
-      primaryGroupId: "grp_muc", status: "active", joinedAt: null, createdAt: new Date(), updatedAt: new Date(),
+      id: "mbr_1",
+      userId: "usr_1",
+      firstName: "T",
+      lastName: "M",
+      primaryGroupId: "grp_muc",
+      status: "active",
+      joinedAt: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
     });
     await expect(
-      requestUpload(t.db, folderId, { filename: "x.pdf", mimeType: "application/pdf", sizeBytes: 10 }, plain),
+      requestUpload(
+        t.db,
+        folderId,
+        { filename: "x.pdf", mimeType: "application/pdf", sizeBytes: 10 },
+        plain,
+      ),
     ).rejects.toThrow();
   });
 
@@ -1250,7 +1326,10 @@ describeIfDb("two-phase upload", () => {
     const folderId = await localBoardFolderId();
     setStorage(fakeStorage({ statObject: async () => ({ sizeBytes: 1000 }) }));
     const { fileId } = await requestUpload(
-      t.db, folderId, { filename: "satzung.pdf", mimeType: "application/pdf", sizeBytes: 1000 }, boardMe(),
+      t.db,
+      folderId,
+      { filename: "satzung.pdf", mimeType: "application/pdf", sizeBytes: 1000 },
+      boardMe(),
     );
     const meta = await confirmUpload(t.db, fileId, boardMe());
     expect(meta.status).toBe("ready");
@@ -1266,11 +1345,16 @@ describeIfDb("two-phase upload", () => {
     setStorage(
       fakeStorage({
         statObject: async () => ({ sizeBytes: 26 * 1024 * 1024 }),
-        deleteObject: async (k) => { removed = k; },
+        deleteObject: async (k) => {
+          removed = k;
+        },
       }),
     );
     const { fileId } = await requestUpload(
-      t.db, folderId, { filename: "lie.pdf", mimeType: "application/pdf", sizeBytes: 1000 }, boardMe(),
+      t.db,
+      folderId,
+      { filename: "lie.pdf", mimeType: "application/pdf", sizeBytes: 1000 },
+      boardMe(),
     );
     await expect(confirmUpload(t.db, fileId, boardMe())).rejects.toThrow();
     expect(removed).not.toBeNull();
@@ -1335,7 +1419,12 @@ async function folderUsage(db: Db, folderId: string): Promise<number> {
   return Number(rows[0]?.total ?? 0);
 }
 
-async function writeAccessLog(db: Db, fileId: string | null, memberId: string, action: AccessAction): Promise<void> {
+async function writeAccessLog(
+  db: Db,
+  fileId: string | null,
+  memberId: string,
+  action: AccessAction,
+): Promise<void> {
   await db.insert(fileAccessLog).values({ id: createId("fal"), fileId, memberId, action });
 }
 
@@ -1359,7 +1448,8 @@ export async function requestUpload(
 ): Promise<{ fileId: string; uploadUrl: SignedUrl }> {
   const actor = requireActingMember(byMember);
   const folder = await getFolder(db, folderId);
-  if (!canWrite(folder, byMember)) throw new ForbiddenError("Kein Schreibzugriff auf diesen Ordner.");
+  if (!canWrite(folder, byMember))
+    throw new ForbiddenError("Kein Schreibzugriff auf diesen Ordner.");
 
   if (!ALLOWED_MIME.has(input.mimeType)) throw new ValidationError("Dateityp nicht erlaubt.");
   if (input.sizeBytes <= 0 || input.sizeBytes > MAX_FILE_BYTES) {
@@ -1397,11 +1487,16 @@ export async function requestUpload(
  * upload. On a missing object or a real-size/quota violation, deletes the object
  * and the pending row and throws — nothing half-uploaded ever becomes visible.
  */
-export async function confirmUpload(db: Db, fileId: string, byMember: CurrentMember): Promise<FileMeta> {
+export async function confirmUpload(
+  db: Db,
+  fileId: string,
+  byMember: CurrentMember,
+): Promise<FileMeta> {
   const actor = requireActingMember(byMember);
   const row = await getFileRow(db, fileId);
   const folder = await getFolder(db, row.folderId);
-  if (!canWrite(folder, byMember)) throw new ForbiddenError("Kein Schreibzugriff auf diesen Ordner.");
+  if (!canWrite(folder, byMember))
+    throw new ForbiddenError("Kein Schreibzugriff auf diesen Ordner.");
 
   const stat = await getStorage().statObject(row.storageKey);
   const rollback = async (): Promise<void> => {
@@ -1452,6 +1547,7 @@ Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
 ### Task 8: `listFiles`, `getDownloadUrl`, `deleteFile` (+ audit)
 
 **Files:**
+
 - Modify: `modules/files/src/services/files.ts`
 - Test: `modules/files/src/index.test.ts` (append a `describe`)
 
@@ -1470,8 +1566,15 @@ describeIfDb("listFiles / getDownloadUrl / deleteFile", () => {
   let t: TestDb;
   const boardMe = () =>
     meWith([{ role: "local_board", groupId: "grp_muc" }], {
-      id: "mbr_1", userId: "usr_1", firstName: "T", lastName: "M",
-      primaryGroupId: "grp_muc", status: "active", joinedAt: null, createdAt: new Date(), updatedAt: new Date(),
+      id: "mbr_1",
+      userId: "usr_1",
+      firstName: "T",
+      lastName: "M",
+      primaryGroupId: "grp_muc",
+      status: "active",
+      joinedAt: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
     });
 
   async function localBoardFolderId(): Promise<string> {
@@ -1482,7 +1585,10 @@ describeIfDb("listFiles / getDownloadUrl / deleteFile", () => {
     const folderId = await localBoardFolderId();
     setStorage(fakeStorage({ statObject: async () => ({ sizeBytes: 500 }) }));
     const { fileId } = await requestUpload(
-      t.db, folderId, { filename: "doc.pdf", mimeType: "application/pdf", sizeBytes: 500 }, boardMe(),
+      t.db,
+      folderId,
+      { filename: "doc.pdf", mimeType: "application/pdf", sizeBytes: 500 },
+      boardMe(),
     );
     await confirmUpload(t.db, fileId, boardMe());
     return fileId;
@@ -1504,7 +1610,12 @@ describeIfDb("listFiles / getDownloadUrl / deleteFile", () => {
     await makeReadyFile();
     const folderId = await localBoardFolderId();
     // a pending file in the same folder must not appear
-    await requestUpload(t.db, folderId, { filename: "draft.pdf", mimeType: "application/pdf", sizeBytes: 10 }, boardMe());
+    await requestUpload(
+      t.db,
+      folderId,
+      { filename: "draft.pdf", mimeType: "application/pdf", sizeBytes: 10 },
+      boardMe(),
+    );
 
     const listed = await listFiles(t.db, folderId, boardMe());
     expect(listed).toHaveLength(1);
@@ -1522,7 +1633,14 @@ describeIfDb("listFiles / getDownloadUrl / deleteFile", () => {
   it("deleteFile removes the row + object and logs 'delete'", async () => {
     const fileId = await makeReadyFile();
     let removed: string | null = null;
-    setStorage(fakeStorage({ statObject: async () => ({ sizeBytes: 500 }), deleteObject: async (k) => { removed = k; } }));
+    setStorage(
+      fakeStorage({
+        statObject: async () => ({ sizeBytes: 500 }),
+        deleteObject: async (k) => {
+          removed = k;
+        },
+      }),
+    );
 
     await deleteFile(t.db, fileId, boardMe());
     expect(removed).not.toBeNull();
@@ -1536,8 +1654,15 @@ describeIfDb("listFiles / getDownloadUrl / deleteFile", () => {
   it("getDownloadUrl denies a member without read access", async () => {
     const fileId = await makeReadyFile();
     const plain = meWith([{ role: "member", groupId: null }], {
-      id: "mbr_1", userId: "usr_1", firstName: "T", lastName: "M",
-      primaryGroupId: "grp_muc", status: "active", joinedAt: null, createdAt: new Date(), updatedAt: new Date(),
+      id: "mbr_1",
+      userId: "usr_1",
+      firstName: "T",
+      lastName: "M",
+      primaryGroupId: "grp_muc",
+      status: "active",
+      joinedAt: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
     });
     await expect(getDownloadUrl(t.db, fileId, plain)).rejects.toThrow();
   });
@@ -1561,7 +1686,11 @@ Then add the functions:
 
 ```ts
 /** Ready files in a folder, read-gated. Pending uploads are never listed. */
-export async function listFiles(db: Db, folderId: string, forMember: CurrentMember): Promise<FileMeta[]> {
+export async function listFiles(
+  db: Db,
+  folderId: string,
+  forMember: CurrentMember,
+): Promise<FileMeta[]> {
   requireActingMember(forMember);
   const folder = await getFolder(db, folderId);
   if (!canRead(folder, forMember)) throw new ForbiddenError("Kein Lesezugriff auf diesen Ordner.");
@@ -1573,7 +1702,11 @@ export async function listFiles(db: Db, folderId: string, forMember: CurrentMemb
 }
 
 /** Signed download URL for one ready file. Read-gated; logs a 'download' row. */
-export async function getDownloadUrl(db: Db, fileId: string, forMember: CurrentMember): Promise<SignedUrl> {
+export async function getDownloadUrl(
+  db: Db,
+  fileId: string,
+  forMember: CurrentMember,
+): Promise<SignedUrl> {
   const actor = requireActingMember(forMember);
   const row = await getFileRow(db, fileId);
   if (row.status !== "ready") throw new NotFoundError("Datei nicht gefunden.");
@@ -1615,6 +1748,7 @@ Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
 ### Task 9: `sweepStalePendingUploads`
 
 **Files:**
+
 - Modify: `modules/files/src/services/files.ts`
 - Test: `modules/files/src/index.test.ts` (append a `describe`)
 
@@ -1635,8 +1769,15 @@ describeIfDb("sweepStalePendingUploads", () => {
   let t: TestDb;
   const boardMe = () =>
     meWith([{ role: "local_board", groupId: "grp_muc" }], {
-      id: "mbr_1", userId: "usr_1", firstName: "T", lastName: "M",
-      primaryGroupId: "grp_muc", status: "active", joinedAt: null, createdAt: new Date(), updatedAt: new Date(),
+      id: "mbr_1",
+      userId: "usr_1",
+      firstName: "T",
+      lastName: "M",
+      primaryGroupId: "grp_muc",
+      status: "active",
+      joinedAt: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
     });
   async function localBoardFolderId(): Promise<string> {
     const rows = await t.db.select().from(folders);
@@ -1658,15 +1799,30 @@ describeIfDb("sweepStalePendingUploads", () => {
   it("deletes pending rows older than the cutoff, keeps recent + ready", async () => {
     const folderId = await localBoardFolderId();
     const removed: string[] = [];
-    setStorage(fakeStorage({ statObject: async () => ({ sizeBytes: 5 }), deleteObject: async (k) => { removed.push(k); } }));
+    setStorage(
+      fakeStorage({
+        statObject: async () => ({ sizeBytes: 5 }),
+        deleteObject: async (k) => {
+          removed.push(k);
+        },
+      }),
+    );
 
     // an old pending upload
     const { fileId: oldPending } = await requestUpload(
-      t.db, folderId, { filename: "old.pdf", mimeType: "application/pdf", sizeBytes: 5 }, boardMe(),
+      t.db,
+      folderId,
+      { filename: "old.pdf", mimeType: "application/pdf", sizeBytes: 5 },
+      boardMe(),
     );
     await t.client`UPDATE files SET uploaded_at = now() - interval '2 days' WHERE id = ${oldPending}`;
     // a fresh pending upload
-    await requestUpload(t.db, folderId, { filename: "fresh.pdf", mimeType: "application/pdf", sizeBytes: 5 }, boardMe());
+    await requestUpload(
+      t.db,
+      folderId,
+      { filename: "fresh.pdf", mimeType: "application/pdf", sizeBytes: 5 },
+      boardMe(),
+    );
 
     const swept = await sweepStalePendingUploads(t.db, new Date(Date.now() - 24 * 3600 * 1000));
     expect(swept).toBe(1);
@@ -1735,6 +1891,7 @@ Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
 ### Task 10: Event subscriber — provision folders on `groups.group.created`
 
 **Files:**
+
 - Create: `modules/files/src/subscribers.ts`
 - Test: `modules/files/src/index.test.ts` (append a `describe`)
 
@@ -1769,7 +1926,12 @@ describeIfDb("group.created subscriber", () => {
     await t.client`INSERT INTO groups (id, slug, name, city) VALUES ('grp_new', 'new', 'Neustadt', 'Neustadt')`;
     registerFilesSubscribers(t.db);
 
-    const event: GroupCreated = { type: "groups.group.created", groupId: "grp_new", slug: "new", at: new Date() };
+    const event: GroupCreated = {
+      type: "groups.group.created",
+      groupId: "grp_new",
+      slug: "new",
+      at: new Date(),
+    };
     await getEventBus().publish(event);
 
     const rows = (await t.db.select().from(folders)).filter((f) => f.groupId === "grp_new");
@@ -1778,7 +1940,9 @@ describeIfDb("group.created subscriber", () => {
 
     // re-publish must not duplicate (idempotent)
     await getEventBus().publish(event);
-    expect((await t.db.select().from(folders)).filter((f) => f.groupId === "grp_new")).toHaveLength(2);
+    expect((await t.db.select().from(folders)).filter((f) => f.groupId === "grp_new")).toHaveLength(
+      2,
+    );
   });
 });
 ```
@@ -1850,6 +2014,7 @@ Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
 ### Task 11: Public surface (`index.ts`) + full module test run
 
 **Files:**
+
 - Create: `modules/files/src/index.ts`
 
 - [ ] **Step 1: Write the public surface**
@@ -1871,7 +2036,14 @@ export {
   sweepStalePendingUploads,
 } from "./services/files";
 export { registerFilesSubscribers, unregisterFilesSubscribers } from "./subscribers";
-export type { Folder, FileMeta, FolderScope, FileStatus, AccessAction, UploadRequest } from "./types";
+export type {
+  Folder,
+  FileMeta,
+  FolderScope,
+  FileStatus,
+  AccessAction,
+  UploadRequest,
+} from "./types";
 ```
 
 - [ ] **Step 2: Typecheck the module**
@@ -1898,6 +2070,7 @@ Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
 ### Task 12: Composition — `bootFiles`, instrumentation, config, env
 
 **Files:**
+
 - Create: `apps/web/lib/files-bootstrap.ts`
 - Modify: `apps/web/instrumentation.ts`
 - Modify: `apps/web/next.config.mjs`
@@ -1965,8 +2138,8 @@ export async function bootFiles(): Promise<void> {
 In `apps/web/instrumentation.ts`, inside the `if (process.env.NEXT_RUNTIME === "nodejs")` block, after the existing `bootNotifications()` call, add:
 
 ```ts
-    const { bootFiles } = await import("./lib/files-bootstrap");
-    await bootFiles();
+const { bootFiles } = await import("./lib/files-bootstrap");
+await bootFiles();
 ```
 
 - [ ] **Step 4: Transpile the new packages**
@@ -2006,6 +2179,7 @@ Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
 ### Task 13: Module README + ADR 0012
 
 **Files:**
+
 - Create: `modules/files/README.md`
 - Create: `docs/decisions/0012-files-module-deviations.md`
 
@@ -2021,12 +2195,12 @@ Role-scoped file repository (spec §11). Owns `folders`, `files`,
 
 ## Scopes
 
-| Scope | Cardinality | Read | Write |
-|-------|-------------|------|-------|
-| `members_all` | 1 | every active member | federal board |
-| `group_members:[g]` | 1 per group | active members of g | g's local board |
-| `local_board:[g]` | 1 per group | g's local board + federal | g's local board |
-| `federal_board` | 1 | federal board | federal board |
+| Scope               | Cardinality | Read                      | Write           |
+| ------------------- | ----------- | ------------------------- | --------------- |
+| `members_all`       | 1           | every active member       | federal board   |
+| `group_members:[g]` | 1 per group | active members of g       | g's local board |
+| `local_board:[g]`   | 1 per group | g's local board + federal | g's local board |
+| `federal_board`     | 1           | federal board             | federal board   |
 
 Folders are system-provisioned (`ensureFolders` at boot + a
 `groups.group.created` subscriber); they are not user-creatable in v1.
@@ -2180,4 +2354,7 @@ Expected: `files` appears after `members` (already present at line ~20). No edit
 - **Spec coverage (§11):** owns the three tables (Task 2); folder taxonomy + scopes (Tasks 2, 5, 6); upload/list/download/delete gated server-side (Tasks 7, 8); 25 MB cap + 5 GB quota before upload (Task 7, re-verified Task 7 confirm); signed-URL-only, no byte proxying (Tasks 3, 7, 8); all access logged (Tasks 7, 8); public interface present and permission-enforcing (Task 11). Out-of-scope items (versioning, FTS, share links, previews, comments, nested/user-created folders) are not built. The interface reshape + `status` + dropped `'view'` are ratified in ADR 0012 (Task 13).
 - **Placeholder scan:** every code step contains complete code; commands have expected output. The one inline `await import` in Task 6 is immediately corrected to a top-level import in the same step.
 - **Type consistency:** `Folder`/`FileMeta`/`FolderScope`/`FileStatus`/`AccessAction`/`UploadRequest` (Task 1) are used unchanged in Tasks 5–11. `StorageClient.statObject(): Promise<{sizeBytes:number}|null>` (Task 3) matches its callers in `confirmUpload` (Task 7) and the fakes in tests. `canRead(folder, me)` / `canWrite(folder, me)` (Task 5) signatures match every call site. `requestUpload`/`confirmUpload`/`listFiles`/`getDownloadUrl`/`deleteFile`/`sweepStalePendingUploads`/`ensureFolders`/`provisionGroupFolders`/`registerFilesSubscribers` names are identical across definition, tests, index, and bootstrap. `createId` prefixes: `fld` (folders), `fil` (files), `fal` (access log).
+
+```
+
 ```

@@ -44,7 +44,12 @@ async function folderUsage(db: Db, folderId: string): Promise<number> {
   return Number(rows[0]?.total ?? 0);
 }
 
-async function writeAccessLog(db: Db, fileId: string | null, memberId: string, action: AccessAction): Promise<void> {
+async function writeAccessLog(
+  db: Db,
+  fileId: string | null,
+  memberId: string,
+  action: AccessAction,
+): Promise<void> {
   await db.insert(fileAccessLog).values({ id: createId("fal"), fileId, memberId, action });
 }
 
@@ -68,7 +73,8 @@ export async function requestUpload(
 ): Promise<{ fileId: string; uploadUrl: SignedUrl }> {
   const actor = requireActingMember(byMember);
   const folder = await getFolder(db, folderId);
-  if (!canWrite(folder, byMember)) throw new ForbiddenError("Kein Schreibzugriff auf diesen Ordner.");
+  if (!canWrite(folder, byMember))
+    throw new ForbiddenError("Kein Schreibzugriff auf diesen Ordner.");
 
   if (!ALLOWED_MIME.has(input.mimeType)) throw new ValidationError("Dateityp nicht erlaubt.");
   if (input.sizeBytes <= 0 || input.sizeBytes > MAX_FILE_BYTES) {
@@ -106,11 +112,16 @@ export async function requestUpload(
  * upload. On a missing object or a real-size/quota violation, deletes the object
  * and the pending row and throws — nothing half-uploaded ever becomes visible.
  */
-export async function confirmUpload(db: Db, fileId: string, byMember: CurrentMember): Promise<FileMeta> {
+export async function confirmUpload(
+  db: Db,
+  fileId: string,
+  byMember: CurrentMember,
+): Promise<FileMeta> {
   const actor = requireActingMember(byMember);
   const row = await getFileRow(db, fileId);
   const folder = await getFolder(db, row.folderId);
-  if (!canWrite(folder, byMember)) throw new ForbiddenError("Kein Schreibzugriff auf diesen Ordner.");
+  if (!canWrite(folder, byMember))
+    throw new ForbiddenError("Kein Schreibzugriff auf diesen Ordner.");
 
   const stat = await getStorage().statObject(row.storageKey);
   const rollback = async (): Promise<void> => {
@@ -142,7 +153,11 @@ export async function confirmUpload(db: Db, fileId: string, byMember: CurrentMem
 }
 
 /** Ready files in a folder, read-gated. Pending uploads are never listed. */
-export async function listFiles(db: Db, folderId: string, forMember: CurrentMember): Promise<FileMeta[]> {
+export async function listFiles(
+  db: Db,
+  folderId: string,
+  forMember: CurrentMember,
+): Promise<FileMeta[]> {
   requireActingMember(forMember);
   const folder = await getFolder(db, folderId);
   if (!canRead(folder, forMember)) throw new ForbiddenError("Kein Lesezugriff auf diesen Ordner.");
@@ -154,7 +169,11 @@ export async function listFiles(db: Db, folderId: string, forMember: CurrentMemb
 }
 
 /** Signed download URL for one ready file. Read-gated; logs a 'download' row. */
-export async function getDownloadUrl(db: Db, fileId: string, forMember: CurrentMember): Promise<SignedUrl> {
+export async function getDownloadUrl(
+  db: Db,
+  fileId: string,
+  forMember: CurrentMember,
+): Promise<SignedUrl> {
   const actor = requireActingMember(forMember);
   const row = await getFileRow(db, fileId);
   if (row.status !== "ready") throw new NotFoundError("Datei nicht gefunden.");

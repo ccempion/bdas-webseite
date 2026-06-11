@@ -51,7 +51,11 @@ export async function ensureFolders(db: Db): Promise<void> {
 }
 
 /** Create the two per-group folders for one group. Idempotent. */
-export async function provisionGroupFolders(db: Db, groupId: string, groupName: string): Promise<void> {
+export async function provisionGroupFolders(
+  db: Db,
+  groupId: string,
+  groupName: string,
+): Promise<void> {
   await db
     .insert(folders)
     .values({

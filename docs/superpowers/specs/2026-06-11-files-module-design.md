@@ -11,6 +11,7 @@
 ## 1. Scope & delivery boundary
 
 **In scope (this work):**
+
 - `modules/files` — owns `folders`, `files`, `file_access_log`; schema, migrations, services, permission gating, events, tests.
 - The concrete `SupabaseStorageClient` implementation of the existing `core/storage` `StorageClient` interface.
 - Composition: idempotent folder provisioning + event subscription, wired behind the `files` feature flag in `apps/web` startup.
@@ -26,6 +27,7 @@
 Backend-only module. Bytes never touch the module or the app — every transfer is a signed URL minted server-side (spec §11 hard rule). The module's services are the **only** place permission is decided; no caller can bypass by forging IDs.
 
 **Dependencies (public surfaces only — no deep imports, CLAUDE.md §1 rules 1, 4):**
+
 - `core/storage` — object I/O (`StorageClient`: `signedUploadUrl`, `signedDownloadUrl`, `deleteObject`).
 - `core/events` — subscribe to `groups.group.created` for per-group folder provisioning.
 - `core/errors` — `ForbiddenError`, `NotFoundError`.
@@ -33,7 +35,7 @@ Backend-only module. Bytes never touch the module or the app — every transfer 
 - `groups` (public surface) — `listGroups` for provisioning backfill.
 
 **Supabase driver location (decision):** `core/storage` keeps the `StorageClient` interface; the concrete `SupabaseStorageClient` lands at `core/storage/src/supabase.ts`, instantiated and injected via `setStorage()` in `apps/web` bootstrap. Mirrors how `modules/notifications/src/notifier-resend.ts` is wired at composition. `core/storage` stays the single home for object-store concerns and is unit-testable in isolation.
-*Rejected alternative:* implementation in `apps/web/lib` — scatters storage logic out of its owning package.
+_Rejected alternative:_ implementation in `apps/web/lib` — scatters storage logic out of its owning package.
 
 ---
 
@@ -74,6 +76,7 @@ file_access_log
 ```
 
 **Decisions baked into the schema:**
+
 - **`files.status`** — required by two-phase commit (§5). Only `ready` rows count toward quota and appear in `listFiles`. `pending` rows are in-flight or abandoned.
 - **`unique(scope, group_id)`** — lets `ensureFolders()` upsert without dup-checking; the four-scope taxonomy is exactly keyed by this pair (`group_id` null for the two singletons).
 - **Size cap & quota are code constants, not columns:** `MAX_FILE_BYTES = 25 * 1024 * 1024`, `FOLDER_QUOTA_BYTES = 5 * 1024 * 1024 * 1024`. Spec §11's "configurable per scope by federal board" is a Phase 3 dashboard action; adding override columns now is YAGNI. Revisit when Phase 3 builds the config UI.
@@ -86,16 +89,16 @@ file_access_log
 Authorization is a pure function over a folder + the caller's `CurrentMember`. Reuses `members`' role primitives rather than re-deriving role semantics.
 
 **Required `members` export (decision):** promote `isFederalBoard` and `canManageGroup` from `modules/members/src/roles.ts` onto `modules/members/src/index.ts`. They are pure functions over `Grant[]`. This is a deliberate second-module touch in the files PR; justified because `members` owns role semantics and duplicating them in `files` would drift (cf. the email-driver duplication recorded in ADR 0011).
-*Rejected alternative:* reimplement both checks inside `files` to keep a strict one-module diff — rejected to avoid role-logic drift.
+_Rejected alternative:_ reimplement both checks inside `files` to keep a strict one-module diff — rejected to avoid role-logic drift.
 
 **Permission matrix (spec §11 taxonomy):**
 
-| Scope | Read | Write (upload/delete) |
-|---|---|---|
-| `members_all` | any `active` member | `isFederalBoard(grants)` |
+| Scope               | Read                                                        | Write (upload/delete)       |
+| ------------------- | ----------------------------------------------------------- | --------------------------- |
+| `members_all`       | any `active` member                                         | `isFederalBoard(grants)`    |
 | `group_members:[g]` | `member.status === 'active' && member.primaryGroupId === g` | `canManageGroup(grants, g)` |
-| `local_board:[g]` | `canManageGroup(grants, g)` ∨ `isFederalBoard(grants)` | `canManageGroup(grants, g)` |
-| `federal_board` | `isFederalBoard(grants)` | `isFederalBoard(grants)` |
+| `local_board:[g]`   | `canManageGroup(grants, g)` ∨ `isFederalBoard(grants)`      | `canManageGroup(grants, g)` |
+| `federal_board`     | `isFederalBoard(grants)`                                    | `isFederalBoard(grants)`    |
 
 (`canManageGroup` already returns true for federal board, so the `local_board` read row's explicit `isFederalBoard` is belt-and-suspenders / documents intent.)
 
@@ -133,11 +136,11 @@ deleteFile(db, fileId, byMember): Promise<void>
   // write-gated; deletes the object then the row; writes a 'delete' log row
 ```
 
-**Two-phase upload rationale:** with direct client→store PUTs the module can't trust the declared size. `requestUpload` gates on the declared size (fast rejection of obvious over-cap); `confirmUpload` re-checks the *actual* object size server-side via `StorageClient` HEAD before the file is ever visible (`ready`). Closes the "declare 1 MB, PUT 100 MB" hole.
+**Two-phase upload rationale:** with direct client→store PUTs the module can't trust the declared size. `requestUpload` gates on the declared size (fast rejection of obvious over-cap); `confirmUpload` re-checks the _actual_ object size server-side via `StorageClient` HEAD before the file is ever visible (`ready`). Closes the "declare 1 MB, PUT 100 MB" hole.
 
 **MIME allowlist (decision):** a constant set of document/image/archive types (PDF, common Office formats, PNG/JPG/GIF/WebP, txt/csv, zip). Reject executables and unknown types at `requestUpload`. Conservative default; the federation can widen it later.
 
-**No `replaceFile` in v1 (decision):** the spec's *public-interface list* omits it (only its prose capability list says "replace"); `deleteFile` + `requestUpload` already compose to a replace. Going with the interface list.
+**No `replaceFile` in v1 (decision):** the spec's _public-interface list_ omits it (only its prose capability list says "replace"); `deleteFile` + `requestUpload` already compose to a replace. Going with the interface list.
 
 **Abandoned `pending` rows:** `confirmUpload` is the happy path. Provide `sweepStalePendingUploads(db, olderThan)` (deletes objects + rows for `pending` files past a TTL) but leave it **unwired** — Phase 3 attaches it to a cron. Pending rows never count toward quota or appear in listings, so they are harmless until swept.
 

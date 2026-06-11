@@ -48,7 +48,9 @@ const PLAIN: Grant[] = [{ role: "member", groupId: null }];
 describe("canRead", () => {
   it("members_all: any active member, not inactive", () => {
     expect(canRead(folder("members_all", null), me(PLAIN))).toBe(true);
-    expect(canRead(folder("members_all", null), me(PLAIN, member({ status: "inactive" })))).toBe(false);
+    expect(canRead(folder("members_all", null), me(PLAIN, member({ status: "inactive" })))).toBe(
+      false,
+    );
   });
 
   it("group_members: only active members of that group", () => {

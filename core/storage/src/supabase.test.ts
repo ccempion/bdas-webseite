@@ -16,7 +16,11 @@ vi.mock("@supabase/supabase-js", () => ({
 import { SupabaseStorageClient } from "./supabase";
 
 function makeClient(): SupabaseStorageClient {
-  return new SupabaseStorageClient({ url: "https://x.supabase.co", serviceRoleKey: "k", bucket: "files" });
+  return new SupabaseStorageClient({
+    url: "https://x.supabase.co",
+    serviceRoleKey: "k",
+    bucket: "files",
+  });
 }
 
 describe("SupabaseStorageClient", () => {
@@ -29,7 +33,11 @@ describe("SupabaseStorageClient", () => {
 
   it("mints a signed upload URL", async () => {
     createSignedUploadUrl.mockResolvedValue({ data: { signedUrl: "https://up" }, error: null });
-    const res = await makeClient().signedUploadUrl({ storageKey: "a/b/f.pdf", mimeType: "application/pdf", sizeBytes: 10 });
+    const res = await makeClient().signedUploadUrl({
+      storageKey: "a/b/f.pdf",
+      mimeType: "application/pdf",
+      sizeBytes: 10,
+    });
     expect(res.url).toBe("https://up");
     expect(res.expiresAt.getTime()).toBeGreaterThan(Date.now());
     expect(fromMock).toHaveBeenCalledWith("files");

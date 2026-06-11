@@ -15,12 +15,14 @@
 **In scope (correctness cluster):** findings 1, 2, 3, 4, 5, 8, 9.
 **Deferred, recorded as ADR 0011:** finding 10 (Notifier/driver duplication vs `core/`).
 **Explicitly NOT done in this plan:**
+
 - Finding 6 (audit-row gap on resolver/insert error) — narrow; the existing test `index.test.ts:181` asserts a resolver throw writes **zero** rows, so changing it is a separate, deliberate decision. Held.
 - Finding 7 (defer sends out of the request path via `after()`) — real perf cost but the module is flag-off / not in production; premature. Revisit when the flag goes on.
 
-**Module-boundary note (CLAUDE.md "one module per PR"):** `modules/auth/src/notifier-resend.ts` has the *identical* finding-2 bug (discards Resend's error result), so auth verification/reset mail also logs success on failure. It is **out of scope here** and must be fixed in a separate auth PR — see "Follow-ups" at the end. Do not edit the auth module in this plan.
+**Module-boundary note (CLAUDE.md "one module per PR"):** `modules/auth/src/notifier-resend.ts` has the _identical_ finding-2 bug (discards Resend's error result), so auth verification/reset mail also logs success on failure. It is **out of scope here** and must be fixed in a separate auth PR — see "Follow-ups" at the end. Do not edit the auth module in this plan.
 
 **File structure:**
+
 - `modules/notifications/src/templates.ts` — add private `escapeHtml`, escape HTML interpolations, fix German closing quotes. (findings 3, 9)
 - `modules/notifications/src/templates.test.ts` — add escaping + typographic-quote tests.
 - `modules/notifications/src/notifier-resend.ts` — throw on Resend error result. (finding 2)
@@ -37,6 +39,7 @@
 ### Task 1: Escape HTML in transactional templates (finding 3)
 
 **Files:**
+
 - Modify: `modules/notifications/src/templates.ts:40-47`
 - Test: `modules/notifications/src/templates.test.ts`
 
@@ -45,18 +48,18 @@
 Add to `modules/notifications/src/templates.test.ts` inside `describe("render", ...)`:
 
 ```ts
-  it("escapes HTML in firstName and eventTitle in the html part", () => {
-    const out = render("event_registration_confirmed", {
-      firstName: "<img src=x onerror=alert(1)>",
-      eventTitle: '<a href="https://evil.example">klick</a>',
-    });
-    // html part must not contain live markup from user input
-    expect(out.html).not.toContain("<img");
-    expect(out.html).not.toContain("<a href");
-    expect(out.html).toContain("&lt;img");
-    // text part is plain text (clients do not render it) — left raw
-    expect(out.text).toContain("<img");
+it("escapes HTML in firstName and eventTitle in the html part", () => {
+  const out = render("event_registration_confirmed", {
+    firstName: "<img src=x onerror=alert(1)>",
+    eventTitle: '<a href="https://evil.example">klick</a>',
   });
+  // html part must not contain live markup from user input
+  expect(out.html).not.toContain("<img");
+  expect(out.html).not.toContain("<a href");
+  expect(out.html).toContain("&lt;img");
+  // text part is plain text (clients do not render it) — left raw
+  expect(out.text).toContain("<img");
+});
 ```
 
 - [ ] **Step 2: Run test to verify it fails**
@@ -112,6 +115,7 @@ Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
 ### Task 2: Use German typographic closing quotes (finding 9)
 
 **Files:**
+
 - Modify: `modules/notifications/src/templates.ts:17,23,29,35`
 - Test: `modules/notifications/src/templates.test.ts`
 
@@ -174,6 +178,7 @@ Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
 ### Task 3: Make the Resend driver throw on error result (finding 2)
 
 **Files:**
+
 - Modify: `modules/notifications/src/notifier-resend.ts:17-25`
 - Test: `modules/notifications/src/notifier-resend.test.ts` (create)
 
@@ -265,10 +270,12 @@ Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
 ### Task 4: Bootstrap — flag-check before latch + fail loud on partial prod config (findings 4, 5)
 
 **Files:**
+
 - Modify: `apps/web/lib/notifications-bootstrap.ts:22-46`
 
 Two defects in `bootNotifications()`:
-- **#4:** `booted = true` is set *before* the flag check, so a process whose first call saw the flag off can never wire later. Latch only after wiring succeeds; check the flag first.
+
+- **#4:** `booted = true` is set _before_ the flag check, so a process whose first call saw the flag off can never wire later. Latch only after wiring succeeds; check the flag first.
 - **#5:** partial Resend config (flag on, but `RESEND_API_KEY` or `RESEND_FROM_EMAIL` missing) silently falls back to `consoleNotifier` while `notification_log` still records `'sent'`. Fail loud in production; keep the console fallback in dev/test.
 
 > No app-level test harness exists in `apps/web` (no Vitest config), so this task verifies by typecheck + build. Standing up a Vitest harness for one function is out of scope.
@@ -339,6 +346,7 @@ Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
 ### Task 5: Single boot point via `instrumentation.ts`; remove scattered auth-action calls (finding 1)
 
 **Files:**
+
 - Create: `apps/web/instrumentation.ts`
 - Modify: `apps/web/next.config.mjs`
 - Modify: `apps/web/app/anmelden/actions.ts` (remove import line 13, call line 26)
@@ -433,6 +441,7 @@ Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
 ### Task 6: Remove dangling `result_sprint5.md` citation from ADR 0007 (finding 8)
 
 **Files:**
+
 - Modify: `docs/decisions/0007-scoped-role-grants.md:30-31`
 
 `docs/result_sprint5.md` was deleted (commit `4c9361c`). Verified via git history: the `text[]` repayment obligation only ever lived in this ADR sentence — `result_sprint5.md` never contained it — so the citation is a dead pointer. Drop the citation; keep the obligation stated inline (ADRs are rank-1 source of truth).
@@ -479,6 +488,7 @@ Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
 ### Task 7: Record the deferred email-consolidation decision as ADR 0011 (finding 10)
 
 **Files:**
+
 - Create: `docs/decisions/0011-defer-email-consolidation.md`
 
 Finding 10 is correct that `auth` and `notifications` each carry their own `Notifier`/Resend driver — structurally duplicating an email concern that CLAUDE.md rule 4 says belongs in `core/`. We are **not** refactoring two modules mid-phase (that is the opposite of simple, and auth-email absorption is already deferred per the build plan). The real governance gap the finding names is that no ADR records the deferral. This task closes that gap.
@@ -584,4 +594,7 @@ Expected: no output (the auth module was not touched — its identical bug is a 
 - **Spec coverage:** findings 1 (Task 5), 2 (Task 3), 3 (Task 1), 4 (Task 4), 5 (Task 4), 8 (Task 6), 9 (Task 2), 10 (Task 7). Findings 6 and 7 explicitly deferred with rationale. All ten accounted for.
 - **Placeholder scan:** every code/edit step contains complete code or an exact char-level change; no TBD/"handle errors"/"similar to" placeholders.
 - **Type consistency:** `escapeHtml(s: string): string`, `bootNotifications(): void`, `register(): Promise<void>`, and the `Notifier.send(email: OutboundEmail): Promise<void>` signature match across tasks and the existing module surface (`notifier.ts`, `index.ts`).
+
+```
+
 ```
