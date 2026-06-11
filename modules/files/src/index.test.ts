@@ -12,13 +12,15 @@ import postgres from "postgres";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { createTestDb, type TestDb } from "@bdas/db/test";
-import { resetEventBus } from "@bdas/events";
+import { getEventBus, resetEventBus } from "@bdas/events";
+import type { GroupCreated } from "@bdas/groups";
 import type { CurrentMember, Grant } from "@bdas/members";
 import { setStorage, type SignedUrl, type StorageClient } from "@bdas/storage";
 
 import { fileAccessLog, files, folders } from "./schema";
 import { confirmUpload, deleteFile, getDownloadUrl, listFiles, requestUpload, sweepStalePendingUploads } from "./services/files";
 import { ensureFolders, listFolders } from "./services/folders";
+import { registerFilesSubscribers, unregisterFilesSubscribers } from "./subscribers";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DEFAULT_URL = "postgres://bdas:bdas@localhost:5432/bdas";
@@ -377,5 +379,36 @@ describeIfDb("sweepStalePendingUploads", () => {
     const remaining = await t.db.select().from(files);
     expect(remaining).toHaveLength(1);
     expect(remaining[0]?.filename).toBe("fresh.pdf");
+  });
+});
+
+describeIfDb("group.created subscriber", () => {
+  let t: TestDb;
+
+  beforeEach(async () => {
+    t = await createTestDb();
+    await applyMigrations(t);
+    setStorage(fakeStorage());
+  });
+  afterEach(async () => {
+    unregisterFilesSubscribers();
+    resetEventBus();
+    await t.cleanup();
+  });
+
+  it("provisions the two folders for a newly created group", async () => {
+    await t.client`INSERT INTO groups (id, slug, name, city) VALUES ('grp_new', 'new', 'Neustadt', 'Neustadt')`;
+    registerFilesSubscribers(t.db);
+
+    const event: GroupCreated = { type: "groups.group.created", groupId: "grp_new", slug: "new", at: new Date() };
+    await getEventBus().publish(event);
+
+    const rows = (await t.db.select().from(folders)).filter((f) => f.groupId === "grp_new");
+    expect(rows).toHaveLength(2);
+    expect(rows.map((r) => r.scope).sort()).toEqual(["group_members", "local_board"]);
+
+    // re-publish must not duplicate (idempotent)
+    await getEventBus().publish(event);
+    expect((await t.db.select().from(folders)).filter((f) => f.groupId === "grp_new")).toHaveLength(2);
   });
 });
