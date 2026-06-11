@@ -5,7 +5,6 @@ import { getDb } from "@bdas/db";
 import { requireFlag } from "@bdas/feature-flags";
 
 import { bootAuth } from "../../lib/auth-bootstrap";
-import { bootNotifications } from "../../lib/notifications-bootstrap";
 
 export type ResendFormState = {
   readonly sent?: boolean;
@@ -17,7 +16,6 @@ export async function resendAction(
 ): Promise<ResendFormState> {
   requireFlag("auth");
   bootAuth();
-  bootNotifications();
 
   const email = String(formData.get("email") ?? "");
 

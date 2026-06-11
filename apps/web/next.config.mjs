@@ -19,8 +19,10 @@ const nextConfig = {
     "@bdas/groups",
     "@bdas/id",
     "@bdas/members",
+    "@bdas/notifications",
   ],
   experimental: {
+    instrumentationHook: true,
     typedRoutes: true,
     serverComponentsExternalPackages: ["@node-rs/argon2"],
     // Trace from the monorepo root so hoisted deps get included

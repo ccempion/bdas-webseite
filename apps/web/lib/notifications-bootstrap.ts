@@ -21,13 +21,21 @@ let booted = false;
  */
 export function bootNotifications(): void {
   if (booted) return;
-  booted = true;
-
-  if (!isFlagOn("notifications")) return;
+  if (!isFlagOn("notifications")) return; // not latched here — a flag-off boot must not permanently disable wiring
 
   const apiKey = process.env["RESEND_API_KEY"];
   const from = process.env["RESEND_FROM_EMAIL"];
-  setNotifier(apiKey && from ? createResendNotifier({ apiKey, from }) : consoleNotifier);
+  if (apiKey && from) {
+    setNotifier(createResendNotifier({ apiKey, from }));
+  } else if (process.env["VERCEL_ENV"] === "production") {
+    // Flag-on production with partial config would silently print to stdout
+    // while notification_log records 'sent'. Fail loud instead.
+    throw new Error(
+      "[notifications] flag is on but RESEND_API_KEY and RESEND_FROM_EMAIL are not both set",
+    );
+  } else {
+    setNotifier(consoleNotifier);
+  }
 
   setRecipientResolver({
     async resolve(db: Db, memberId: string): Promise<RecipientContact | null> {
@@ -43,4 +51,6 @@ export function bootNotifications(): void {
   });
 
   registerNotificationSubscribers(getDb());
+
+  booted = true;
 }
