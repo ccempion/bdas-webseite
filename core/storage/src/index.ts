@@ -25,6 +25,9 @@ export interface StorageClient {
 
   signedDownloadUrl(args: { storageKey: string; ttlSeconds?: number }): Promise<SignedUrl>;
 
+  /** Real size of an uploaded object, or null if it does not exist. */
+  statObject(storageKey: string): Promise<{ sizeBytes: number } | null>;
+
   deleteObject(storageKey: string): Promise<void>;
 }
 
@@ -39,6 +42,9 @@ class NotConfiguredStorageClient implements StorageClient {
     return this.fail();
   }
   async signedDownloadUrl(): Promise<SignedUrl> {
+    return this.fail();
+  }
+  async statObject(): Promise<{ sizeBytes: number } | null> {
     return this.fail();
   }
   async deleteObject(): Promise<void> {
@@ -56,3 +62,5 @@ export function getStorage(): StorageClient {
 export function setStorage(client: StorageClient): void {
   _client = client;
 }
+
+export { SupabaseStorageClient } from "./supabase";

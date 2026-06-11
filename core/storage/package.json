@@ -9,5 +9,8 @@
   "scripts": {
     "typecheck": "tsc --noEmit",
     "test": "vitest run --dir src"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.45.0"
   }
 }
