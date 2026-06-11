@@ -17,6 +17,7 @@ import type { CurrentMember, Grant } from "@bdas/members";
 import { setStorage, type SignedUrl, type StorageClient } from "@bdas/storage";
 
 import { fileAccessLog, files, folders } from "./schema";
+import { confirmUpload, requestUpload } from "./services/files";
 import { ensureFolders, listFolders } from "./services/folders";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -158,5 +159,100 @@ describeIfDb("ensureFolders / listFolders", () => {
     const scopes = visible.map((f) => `${f.scope}:${f.groupId ?? ""}`).sort();
     // members_all + own group_members only; no board/federal/other-group folders
     expect(scopes).toEqual(["group_members:grp_muc", "members_all:"]);
+  });
+});
+
+describeIfDb("two-phase upload", () => {
+  let t: TestDb;
+  const boardMe = () =>
+    meWith([{ role: "local_board", groupId: "grp_muc" }], {
+      id: "mbr_1", userId: "usr_1", firstName: "T", lastName: "M",
+      primaryGroupId: "grp_muc", status: "active", joinedAt: null, createdAt: new Date(), updatedAt: new Date(),
+    });
+
+  async function localBoardFolderId(): Promise<string> {
+    const rows = await t.db.select().from(folders);
+    return rows.find((f) => f.scope === "local_board" && f.groupId === "grp_muc")!.id;
+  }
+
+  beforeEach(async () => {
+    t = await createTestDb();
+    await applyMigrations(t);
+    setStorage(fakeStorage());
+    await seedGroupAndMember(t, { groupId: "grp_muc", memberId: "mbr_1", userId: "usr_1" });
+    await ensureFolders(t.db);
+  });
+  afterEach(async () => {
+    resetEventBus();
+    await t.cleanup();
+  });
+
+  it("requestUpload inserts a pending row and returns an upload URL", async () => {
+    const folderId = await localBoardFolderId();
+    const { fileId, uploadUrl } = await requestUpload(
+      t.db, folderId, { filename: "satzung.pdf", mimeType: "application/pdf", sizeBytes: 1000 }, boardMe(),
+    );
+    expect(uploadUrl.url).toContain("https://signed.example/put");
+    const rows = await t.db.select().from(files);
+    expect(rows).toHaveLength(1);
+    expect(rows[0]?.id).toBe(fileId);
+    expect(rows[0]?.status).toBe("pending");
+  });
+
+  it("requestUpload rejects a disallowed MIME type", async () => {
+    const folderId = await localBoardFolderId();
+    await expect(
+      requestUpload(t.db, folderId, { filename: "x.exe", mimeType: "application/x-msdownload", sizeBytes: 10 }, boardMe()),
+    ).rejects.toThrow();
+    expect(await t.db.select().from(files)).toHaveLength(0);
+  });
+
+  it("requestUpload rejects an over-cap declared size", async () => {
+    const folderId = await localBoardFolderId();
+    await expect(
+      requestUpload(t.db, folderId, { filename: "big.pdf", mimeType: "application/pdf", sizeBytes: 26 * 1024 * 1024 }, boardMe()),
+    ).rejects.toThrow();
+  });
+
+  it("requestUpload denies a member who cannot write the folder", async () => {
+    const folderId = await localBoardFolderId();
+    const plain = meWith([{ role: "member", groupId: null }], {
+      id: "mbr_1", userId: "usr_1", firstName: "T", lastName: "M",
+      primaryGroupId: "grp_muc", status: "active", joinedAt: null, createdAt: new Date(), updatedAt: new Date(),
+    });
+    await expect(
+      requestUpload(t.db, folderId, { filename: "x.pdf", mimeType: "application/pdf", sizeBytes: 10 }, plain),
+    ).rejects.toThrow();
+  });
+
+  it("confirmUpload promotes to ready when the real size is within cap", async () => {
+    const folderId = await localBoardFolderId();
+    setStorage(fakeStorage({ statObject: async () => ({ sizeBytes: 1000 }) }));
+    const { fileId } = await requestUpload(
+      t.db, folderId, { filename: "satzung.pdf", mimeType: "application/pdf", sizeBytes: 1000 }, boardMe(),
+    );
+    const meta = await confirmUpload(t.db, fileId, boardMe());
+    expect(meta.status).toBe("ready");
+    expect(meta.sizeBytes).toBe(1000);
+    const log = await t.db.select().from(fileAccessLog);
+    expect(log).toHaveLength(1);
+    expect(log[0]?.action).toBe("upload");
+  });
+
+  it("confirmUpload rolls back when the real object exceeds the cap", async () => {
+    const folderId = await localBoardFolderId();
+    let removed: string | null = null;
+    setStorage(
+      fakeStorage({
+        statObject: async () => ({ sizeBytes: 26 * 1024 * 1024 }),
+        deleteObject: async (k) => { removed = k; },
+      }),
+    );
+    const { fileId } = await requestUpload(
+      t.db, folderId, { filename: "lie.pdf", mimeType: "application/pdf", sizeBytes: 1000 }, boardMe(),
+    );
+    await expect(confirmUpload(t.db, fileId, boardMe())).rejects.toThrow();
+    expect(removed).not.toBeNull();
+    expect(await t.db.select().from(files)).toHaveLength(0);
   });
 });
