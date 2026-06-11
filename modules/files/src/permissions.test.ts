@@ -34,7 +34,11 @@ function member(over: Partial<Member> = {}): Member {
 }
 
 function me(grants: Grant[], m: Member | null = member()): CurrentMember {
-  return { user: { id: "usr_1", email: "t@x.org", roles: [] } as CurrentMember["user"], member: m, grants };
+  return {
+    user: { id: "usr_1", email: "t@x.org", status: "active", roles: [], sessionId: "ses_1" },
+    member: m,
+    grants,
+  };
 }
 
 const FED: Grant[] = [{ role: "federal_board", groupId: null }];

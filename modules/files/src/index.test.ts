@@ -71,7 +71,11 @@ function fakeStorage(over: Partial<StorageClient> = {}): StorageClient {
 }
 
 function meWith(grants: Grant[], member: CurrentMember["member"]): CurrentMember {
-  return { user: { id: "usr_1", email: "t@x.org", roles: [] } as CurrentMember["user"], member, grants };
+  return {
+    user: { id: "usr_1", email: "t@x.org", status: "active", roles: [], sessionId: "ses_1" },
+    member,
+    grants,
+  };
 }
 
 /** Seed a group + an active member belonging to it. Returns their ids. */
