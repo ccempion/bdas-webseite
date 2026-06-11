@@ -15,13 +15,14 @@ export function createResendNotifier(opts: ResendNotifierOptions): Notifier {
   const client = new Resend(opts.apiKey);
   return {
     async send(email: OutboundEmail): Promise<void> {
-      await client.emails.send({
+      const { error } = await client.emails.send({
         from: opts.from,
         to: email.to,
         subject: email.subject,
         html: email.html,
         text: email.text,
       });
+      if (error) throw new Error(error.message);
     },
   };
 }
