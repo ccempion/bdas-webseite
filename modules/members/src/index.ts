@@ -23,6 +23,7 @@ export {
   isRole,
   isFederalBoard,
   canManageGroup,
+  canGrantLocalBoard,
   canApproveMember,
 } from "./roles";
 
