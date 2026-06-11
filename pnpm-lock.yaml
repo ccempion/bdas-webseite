@@ -224,6 +224,40 @@ importers:
         specifier: ^4.19.1
         version: 4.21.0
 
+  modules/files:
+    dependencies:
+      '@bdas/db':
+        specifier: workspace:*
+        version: link:../../core/db
+      '@bdas/errors':
+        specifier: workspace:*
+        version: link:../../core/errors
+      '@bdas/events':
+        specifier: workspace:*
+        version: link:../../core/events
+      '@bdas/groups':
+        specifier: workspace:*
+        version: link:../groups
+      '@bdas/id':
+        specifier: workspace:*
+        version: link:../../core/id
+      '@bdas/members':
+        specifier: workspace:*
+        version: link:../members
+      '@bdas/storage':
+        specifier: workspace:*
+        version: link:../../core/storage
+      drizzle-orm:
+        specifier: ^0.36.0
+        version: 0.36.4(@types/react@18.3.28)(postgres@3.4.9)(react@18.3.1)
+      postgres:
+        specifier: ^3.4.5
+        version: 3.4.9
+    devDependencies:
+      tsx:
+        specifier: ^4.19.1
+        version: 4.21.0
+
   modules/groups:
     dependencies:
       '@bdas/db':
