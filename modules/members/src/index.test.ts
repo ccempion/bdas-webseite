@@ -285,4 +285,56 @@ describeIfDb("members integration", () => {
       groupId: "grp_a",
     });
   });
+
+  it("a local_board_lead grants local_board within its group, but not across groups or higher roles", async () => {
+    await createGroup("grp_a", "aachen");
+    await createGroup("grp_b", "bonn");
+    await createUser("usr_lead", "lead2@example.de");
+    const lead = await createProfile(t.db, {
+      userId: "usr_lead",
+      firstName: "Lead",
+      lastName: "x",
+      primaryGroupId: "grp_a",
+    });
+    await approveMember(t.db, lead.id, BOARD);
+    await grantRole(t.db, lead.id, "local_board_lead", BOARD, "grp_a");
+    const leadActor = { userId: "usr_lead", grants: await getGrants(t.db, lead.id) };
+
+    // A member of grp_a to be promoted by the lead.
+    await createUser("usr_member", "member@example.de");
+    const member = await createProfile(t.db, {
+      userId: "usr_member",
+      firstName: "Mem",
+      lastName: "x",
+      primaryGroupId: "grp_a",
+    });
+    await approveMember(t.db, member.id, BOARD);
+
+    // Lead CAN grant local_board within its own group...
+    await grantRole(t.db, member.id, "local_board", leadActor, "grp_a");
+    expect(await getGrants(t.db, member.id)).toContainEqual({
+      role: "local_board",
+      groupId: "grp_a",
+    });
+
+    // ...and CAN revoke it again.
+    await revokeRole(t.db, member.id, "local_board", leadActor, "grp_a");
+    expect(await getGrants(t.db, member.id)).not.toContainEqual({
+      role: "local_board",
+      groupId: "grp_a",
+    });
+
+    // Lead CANNOT grant local_board in another group.
+    await expect(
+      grantRole(t.db, member.id, "local_board", leadActor, "grp_b"),
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+
+    // Lead CANNOT appoint another lead, nor grant federal_board.
+    await expect(
+      grantRole(t.db, member.id, "local_board_lead", leadActor, "grp_a"),
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    await expect(
+      grantRole(t.db, member.id, "federal_board", leadActor),
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+  });
 });

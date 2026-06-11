@@ -13,7 +13,7 @@ import { getEventBus } from "@bdas/events";
 import { createId } from "@bdas/id";
 
 import type { RoleGranted, RoleRevoked } from "../events";
-import { isFederalBoard, isRole } from "../roles";
+import { canGrantLocalBoard, isFederalBoard, isRole } from "../roles";
 import { members, memberRoleGrants } from "../schema";
 import type { Member } from "../types";
 
@@ -22,9 +22,23 @@ import type { Actor } from "./status";
 
 export type Db = PostgresJsDatabase<Record<string, never>>;
 
-function requireBoard(actor: Actor): void {
+/**
+ * Who may grant/revoke (ADR 0013, supersedes the federal-only rule):
+ *  - `local_board`              → federal_board OR a local_board_lead of that group
+ *  - everything else            → federal_board only
+ *    (appointing leads and federal_board stays central; member/alumnus are
+ *     edge grants the federation owns).
+ * `role` must already be validated to a known Role and `groupId` to its scope.
+ */
+function requireCanGrant(actor: Actor, role: Role, groupId: string | null): void {
+  if (role === "local_board") {
+    if (canGrantLocalBoard(actor.grants, groupId)) return;
+    throw new ForbiddenError(
+      "Nur der Bundesvorstand oder ein Vorstands-Lead dieser Gruppe darf local_board vergeben.",
+    );
+  }
   if (!isFederalBoard(actor.grants)) {
-    throw new ForbiddenError("Nur der Bundesvorstand darf Rollen vergeben.");
+    throw new ForbiddenError("Nur der Bundesvorstand darf diese Rolle vergeben.");
   }
 }
 
@@ -51,9 +65,9 @@ export async function grantRole(
   actor: Actor,
   groupId: string | null = null,
 ): Promise<Member> {
-  requireBoard(actor);
   requireValidRole(role);
   requireValidScope(role, groupId);
+  requireCanGrant(actor, role, groupId);
 
   return db.transaction(async (tx) => {
     const rows = await tx.select().from(members).where(eq(members.id, memberId)).limit(1);
@@ -106,8 +120,8 @@ export async function revokeRole(
   actor: Actor,
   groupId: string | null = null,
 ): Promise<Member> {
-  requireBoard(actor);
   requireValidRole(role);
+  requireCanGrant(actor, role, groupId);
 
   return db.transaction(async (tx) => {
     const rows = await tx.select().from(members).where(eq(members.id, memberId)).limit(1);
