@@ -39,8 +39,9 @@ error-discard bug is tracked as a separate auth PR.
 
 - Short term: one known duplication, accepted and recorded here rather than
   silently carried.
-- The error-handling fix from the 2026-06 review lives in
-  `modules/notifications` now and must be mirrored into `modules/auth`
-  separately (tracked as a follow-up).
+- The error-handling fix from the 2026-06 review was applied to
+  `modules/notifications` first and has now been mirrored into `modules/auth`
+  (the driver throws on Resend errors; the auth Server Actions log and
+  continue). The two drivers remain separate pending consolidation.
 - When consolidation happens, this ADR is the entry point; the unified concern
   supersedes both per-module drivers.
