@@ -7,7 +7,7 @@ import type { CurrentMember } from "@bdas/members";
 import { getStorage, type SignedUrl } from "@bdas/storage";
 
 import { ALLOWED_MIME, FOLDER_QUOTA_BYTES, MAX_FILE_BYTES } from "../constants";
-import { canWrite } from "../permissions";
+import { canRead, canWrite } from "../permissions";
 import { fileAccessLog, files } from "../schema";
 import type { AccessAction, FileMeta, UploadRequest } from "../types";
 
@@ -139,4 +139,39 @@ export async function confirmUpload(db: Db, fileId: string, byMember: CurrentMem
   await writeAccessLog(db, fileId, actor.id, "upload");
 
   return rowToFileMeta({ ...row, status: "ready", sizeBytes: stat.sizeBytes });
+}
+
+/** Ready files in a folder, read-gated. Pending uploads are never listed. */
+export async function listFiles(db: Db, folderId: string, forMember: CurrentMember): Promise<FileMeta[]> {
+  requireActingMember(forMember);
+  const folder = await getFolder(db, folderId);
+  if (!canRead(folder, forMember)) throw new ForbiddenError("Kein Lesezugriff auf diesen Ordner.");
+  const rows = await db
+    .select()
+    .from(files)
+    .where(and(eq(files.folderId, folderId), eq(files.status, "ready")));
+  return rows.map(rowToFileMeta);
+}
+
+/** Signed download URL for one ready file. Read-gated; logs a 'download' row. */
+export async function getDownloadUrl(db: Db, fileId: string, forMember: CurrentMember): Promise<SignedUrl> {
+  const actor = requireActingMember(forMember);
+  const row = await getFileRow(db, fileId);
+  if (row.status !== "ready") throw new NotFoundError("Datei nicht gefunden.");
+  const folder = await getFolder(db, row.folderId);
+  if (!canRead(folder, forMember)) throw new ForbiddenError("Kein Lesezugriff auf diese Datei.");
+  const url = await getStorage().signedDownloadUrl({ storageKey: row.storageKey });
+  await writeAccessLog(db, fileId, actor.id, "download");
+  return url;
+}
+
+/** Delete a file: object then row. Write-gated; logs 'delete' before removal. */
+export async function deleteFile(db: Db, fileId: string, byMember: CurrentMember): Promise<void> {
+  const actor = requireActingMember(byMember);
+  const row = await getFileRow(db, fileId);
+  const folder = await getFolder(db, row.folderId);
+  if (!canWrite(folder, byMember)) throw new ForbiddenError("Kein Schreibzugriff auf diese Datei.");
+  await writeAccessLog(db, fileId, actor.id, "delete");
+  await getStorage().deleteObject(row.storageKey);
+  await db.delete(files).where(eq(files.id, fileId));
 }

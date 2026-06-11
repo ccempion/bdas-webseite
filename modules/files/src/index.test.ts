@@ -17,7 +17,7 @@ import type { CurrentMember, Grant } from "@bdas/members";
 import { setStorage, type SignedUrl, type StorageClient } from "@bdas/storage";
 
 import { fileAccessLog, files, folders } from "./schema";
-import { confirmUpload, requestUpload } from "./services/files";
+import { confirmUpload, deleteFile, getDownloadUrl, listFiles, requestUpload } from "./services/files";
 import { ensureFolders, listFolders } from "./services/folders";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -254,5 +254,82 @@ describeIfDb("two-phase upload", () => {
     await expect(confirmUpload(t.db, fileId, boardMe())).rejects.toThrow();
     expect(removed).not.toBeNull();
     expect(await t.db.select().from(files)).toHaveLength(0);
+  });
+});
+
+describeIfDb("listFiles / getDownloadUrl / deleteFile", () => {
+  let t: TestDb;
+  const boardMe = () =>
+    meWith([{ role: "local_board", groupId: "grp_muc" }], {
+      id: "mbr_1", userId: "usr_1", firstName: "T", lastName: "M",
+      primaryGroupId: "grp_muc", status: "active", joinedAt: null, createdAt: new Date(), updatedAt: new Date(),
+    });
+
+  async function localBoardFolderId(): Promise<string> {
+    const rows = await t.db.select().from(folders);
+    return rows.find((f) => f.scope === "local_board" && f.groupId === "grp_muc")!.id;
+  }
+  async function makeReadyFile(): Promise<string> {
+    const folderId = await localBoardFolderId();
+    setStorage(fakeStorage({ statObject: async () => ({ sizeBytes: 500 }) }));
+    const { fileId } = await requestUpload(
+      t.db, folderId, { filename: "doc.pdf", mimeType: "application/pdf", sizeBytes: 500 }, boardMe(),
+    );
+    await confirmUpload(t.db, fileId, boardMe());
+    return fileId;
+  }
+
+  beforeEach(async () => {
+    t = await createTestDb();
+    await applyMigrations(t);
+    setStorage(fakeStorage());
+    await seedGroupAndMember(t, { groupId: "grp_muc", memberId: "mbr_1", userId: "usr_1" });
+    await ensureFolders(t.db);
+  });
+  afterEach(async () => {
+    resetEventBus();
+    await t.cleanup();
+  });
+
+  it("listFiles returns only ready files and is read-gated", async () => {
+    await makeReadyFile();
+    const folderId = await localBoardFolderId();
+    // a pending file in the same folder must not appear
+    await requestUpload(t.db, folderId, { filename: "draft.pdf", mimeType: "application/pdf", sizeBytes: 10 }, boardMe());
+
+    const listed = await listFiles(t.db, folderId, boardMe());
+    expect(listed).toHaveLength(1);
+    expect(listed[0]?.filename).toBe("doc.pdf");
+  });
+
+  it("getDownloadUrl returns a URL and writes a 'download' log row", async () => {
+    const fileId = await makeReadyFile();
+    const url = await getDownloadUrl(t.db, fileId, boardMe());
+    expect(url.url).toContain("https://signed.example/get");
+    const log = await t.db.select().from(fileAccessLog);
+    expect(log.filter((r) => r.action === "download")).toHaveLength(1);
+  });
+
+  it("deleteFile removes the row + object and logs 'delete'", async () => {
+    const fileId = await makeReadyFile();
+    let removed: string | null = null;
+    setStorage(fakeStorage({ statObject: async () => ({ sizeBytes: 500 }), deleteObject: async (k) => { removed = k; } }));
+
+    await deleteFile(t.db, fileId, boardMe());
+    expect(removed).not.toBeNull();
+    expect(await t.db.select().from(files)).toHaveLength(0);
+    // delete log survives; its file_id is nulled by ON DELETE SET NULL
+    const del = (await t.db.select().from(fileAccessLog)).filter((r) => r.action === "delete");
+    expect(del).toHaveLength(1);
+    expect(del[0]?.fileId).toBeNull();
+  });
+
+  it("getDownloadUrl denies a member without read access", async () => {
+    const fileId = await makeReadyFile();
+    const plain = meWith([{ role: "member", groupId: null }], {
+      id: "mbr_1", userId: "usr_1", firstName: "T", lastName: "M",
+      primaryGroupId: "grp_muc", status: "active", joinedAt: null, createdAt: new Date(), updatedAt: new Date(),
+    });
+    await expect(getDownloadUrl(t.db, fileId, plain)).rejects.toThrow();
   });
 });
