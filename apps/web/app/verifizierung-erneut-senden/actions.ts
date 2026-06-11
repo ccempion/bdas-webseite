@@ -26,7 +26,11 @@ export async function resendAction(
         process.env["PUBLIC_SITE_URL"] ?? "http://localhost:3000",
         result.verifyToken,
       );
-      await getNotifier().send({ kind: "verify", to: email, verifyUrl });
+      try {
+        await getNotifier().send({ kind: "verify", to: email, verifyUrl });
+      } catch (err) {
+        console.error("[auth] resend-verification email send failed:", err);
+      }
     }
   } catch {
     // Always return "sent" — do not reveal whether the email exists.

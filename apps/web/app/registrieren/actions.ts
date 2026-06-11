@@ -49,7 +49,13 @@ export async function registerAction(
     process.env["PUBLIC_SITE_URL"] ?? "http://localhost:3000",
     result.verifyToken,
   );
-  await getNotifier().send({ kind: "verify", to: email, verifyUrl });
+  try {
+    await getNotifier().send({ kind: "verify", to: email, verifyUrl });
+  } catch (err) {
+    // Account is already created; the resend-verification flow is the recovery
+    // path. Don't fail the response — surface the failure in logs instead.
+    console.error("[auth] verify email send failed:", err);
+  }
 
   redirect("/registrieren/erfolg");
 }

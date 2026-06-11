@@ -38,7 +38,11 @@ export async function requestResetAction(
         process.env["PUBLIC_SITE_URL"] ?? "http://localhost:3000",
         result.resetToken,
       );
-      await getNotifier().send({ kind: "reset", to: email, resetUrl: url });
+      try {
+        await getNotifier().send({ kind: "reset", to: email, resetUrl: url });
+      } catch (err) {
+        console.error("[auth] reset email send failed:", err);
+      }
     }
   } catch (err) {
     if (isAppError(err)) return { error: err.message };
