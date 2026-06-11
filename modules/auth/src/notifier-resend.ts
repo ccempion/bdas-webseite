@@ -16,13 +16,14 @@ export function createResendNotifier(opts: ResendNotifierOptions): Notifier {
   return {
     async send(message: AuthMessage): Promise<void> {
       const { subject, html, text } = render(message);
-      await client.emails.send({
+      const { error } = await client.emails.send({
         from: opts.from,
         to: message.to,
         subject,
         html,
         text,
       });
+      if (error) throw new Error(error.message ?? JSON.stringify(error));
     },
   };
 }
