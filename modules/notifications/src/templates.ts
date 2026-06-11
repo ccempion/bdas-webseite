@@ -37,11 +37,20 @@ export function render(template: TransactionalTemplate, data: TemplateData): Ren
   }
 }
 
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 function body(subject: string, firstName: string, line: string): RenderedEmail {
   const text = `Hallo ${firstName},\n\n${line}\n\nViele Grüße\nDein BDAS-Team\n`;
   const html =
-    `<p>Hallo ${firstName},</p>` +
-    `<p>${line}</p>` +
+    `<p>Hallo ${escapeHtml(firstName)},</p>` +
+    `<p>${escapeHtml(line)}</p>` +
     `<p>Viele Grüße<br>Dein BDAS-Team</p>`;
   return { subject, text, html };
 }

@@ -30,4 +30,16 @@ describe("render", () => {
     const out = render("event_deregistration_confirmed", data);
     expect(out.subject).toContain("Abmeldung");
   });
+
+  it("escapes HTML in firstName and eventTitle in the html part", () => {
+    const out = render("event_registration_confirmed", {
+      firstName: "<img src=x onerror=alert(1)>",
+      eventTitle: '<a href="https://evil.example">klick</a>',
+    });
+    expect(out.html).not.toContain("<img");
+    expect(out.html).not.toContain("<a href");
+    expect(out.html).toContain("&lt;img");
+    // text part is plain text (clients do not render it) — left raw
+    expect(out.text).toContain("<img");
+  });
 });
