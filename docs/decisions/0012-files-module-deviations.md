@@ -43,6 +43,13 @@ decisions are recorded here rather than in chat. Design:
     milestone whose cost is a content-extraction/OCR pipeline + a new async worker
     tier, not the search itself. Nothing here forecloses it.
 
+11. **Bucket-level enforcement mirrors the code constants.** The production
+    `files` bucket is private with `file_size_limit = 25 MB` and
+    `allowed_mime_types` equal to `ALLOWED_MIME` — so Supabase rejects
+    over-cap or off-list uploads at PUT time even though `requestUpload`
+    only sees the declared MIME (defense-in-depth per the Phase 2 security
+    review).
+
 ## Consequences
 
 - The §11 interface text is superseded by the reshaped surface above; this ADR is
