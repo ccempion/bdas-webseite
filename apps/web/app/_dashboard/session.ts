@@ -6,7 +6,7 @@ import {
   canSeeFederalScope,
   canSeeGroupScope,
 } from "@bdas/dashboard-shell";
-import { getCurrentMember, type CurrentMember } from "@bdas/members";
+import { canGrantLocalBoard, getCurrentMember, type CurrentMember } from "@bdas/members";
 import { getGroupBySlug } from "@bdas/groups";
 
 import { readSessionCookie } from "../../lib/auth-cookie";
@@ -36,4 +36,14 @@ export async function requireGroupScope(
   if (!group) redirect("/account");
   if (!canSeeGroupScope(me.grants, group.id)) redirect("/account");
   return { me, groupId: group.id };
+}
+
+/** Lead-only gate for /gruppe/[slug]/vorstand: federal or a local_board_lead
+ *  of this group (canGrantLocalBoard, ADR 0013). */
+export async function requireLeadScope(
+  slug: string,
+): Promise<{ me: CurrentMember; groupId: string }> {
+  const { me, groupId } = await requireGroupScope(slug);
+  if (!canGrantLocalBoard(me.grants, groupId)) redirect(`/gruppe/${slug}/overview`);
+  return { me, groupId };
 }
