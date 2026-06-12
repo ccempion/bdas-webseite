@@ -36,14 +36,17 @@ export async function signupsOverTime(
   const days = q.days ?? 30;
   const conds: SQL[] = [gte(members.createdAt, sql`now() - (${days} || ' days')::interval`)];
   if (q.groupId) conds.push(eq(members.primaryGroupId, q.groupId));
+  // Bucket in UTC so the SQL day keys align with the UTC zero-fill keys below,
+  // regardless of the Postgres session timezone.
+  const dayUtc = sql`date_trunc('day', ${members.createdAt} AT TIME ZONE 'UTC')`;
   const rows = await db
     .select({
-      day: sql<string>`to_char(date_trunc('day', ${members.createdAt}), 'YYYY-MM-DD')`,
+      day: sql<string>`to_char(${dayUtc}, 'YYYY-MM-DD')`,
       n: sql<number>`count(*)::int`,
     })
     .from(members)
     .where(and(...conds))
-    .groupBy(sql`date_trunc('day', ${members.createdAt})`);
+    .groupBy(dayUtc);
 
   const byDay = new Map(rows.map((r) => [r.day, r.n]));
   const out: SignupPoint[] = [];
