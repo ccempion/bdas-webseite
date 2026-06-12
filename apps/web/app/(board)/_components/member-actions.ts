@@ -13,14 +13,19 @@ async function actor() {
   return { userId: me.user.id, grants: me.grants };
 }
 
+/** Server Actions are public endpoints; only ever revalidate board routes. */
+function safeRevalidate(path: string): void {
+  if (path.startsWith("/federal/") || path.startsWith("/gruppe/")) revalidatePath(path);
+}
+
 /** Approve a pending member. Authority is enforced inside approveMember. */
 export async function approveMemberAction(memberId: string, revalidate: string): Promise<void> {
   await approveMember(getDb(), memberId, await actor());
-  revalidatePath(revalidate);
+  safeRevalidate(revalidate);
 }
 
 /** Reject a pending member → inactive. */
 export async function rejectMemberAction(memberId: string, revalidate: string): Promise<void> {
   await transitionStatus(getDb(), memberId, "inactive", await actor());
-  revalidatePath(revalidate);
+  safeRevalidate(revalidate);
 }
