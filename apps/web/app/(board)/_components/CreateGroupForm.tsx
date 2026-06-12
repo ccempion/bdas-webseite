@@ -12,7 +12,11 @@ export function CreateGroupForm() {
 
   if (!open) {
     return (
-      <button type="button" onClick={() => setOpen(true)} className="self-start rounded-bdas-sm bg-bdas-red px-3 py-2 text-sm font-semibold text-bdas-surface">
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="self-start rounded-bdas-sm bg-bdas-red px-3 py-2 text-sm font-semibold text-bdas-surface"
+      >
         + Gruppe anlegen
       </button>
     );
@@ -36,11 +40,28 @@ export function CreateGroupForm() {
       {(["name", "city", "slug"] as const).map((k) => (
         <label key={k} className="flex flex-col text-xs text-bdas-ink-muted">
           {k === "name" ? "Name" : k === "city" ? "Stadt" : "Slug"}
-          <input required value={form[k]} onChange={(e) => setForm({ ...form, [k]: e.target.value })} className="rounded-bdas-sm border border-bdas-soft px-2 py-1 text-bdas-ink" />
+          <input
+            required
+            value={form[k]}
+            onChange={(e) => setForm({ ...form, [k]: e.target.value })}
+            className="rounded-bdas-sm border border-bdas-soft px-2 py-1 text-bdas-ink"
+          />
         </label>
       ))}
-      <button type="submit" disabled={pending} className="rounded-bdas-sm bg-bdas-red px-3 py-1.5 text-sm font-semibold text-bdas-surface">Anlegen</button>
-      <button type="button" onClick={() => setOpen(false)} className="rounded-bdas-sm border border-bdas-soft px-3 py-1.5 text-sm">Abbrechen</button>
+      <button
+        type="submit"
+        disabled={pending}
+        className="rounded-bdas-sm bg-bdas-red px-3 py-1.5 text-sm font-semibold text-bdas-surface"
+      >
+        Anlegen
+      </button>
+      <button
+        type="button"
+        onClick={() => setOpen(false)}
+        className="rounded-bdas-sm border border-bdas-soft px-3 py-1.5 text-sm"
+      >
+        Abbrechen
+      </button>
       {error && <span className="w-full text-xs text-bdas-red">{error}</span>}
     </form>
   );

@@ -40,14 +40,27 @@ export default async function FederalRolesPage({
         <h1 className="text-2xl font-semibold text-bdas-ink">Rollen &amp; Vorstände</h1>
         <GrantRoleModal
           title="Rolle erteilen"
-          candidates={activeMembers.map((m) => ({ memberId: m.id, name: `${m.firstName} ${m.lastName}` }))}
+          candidates={activeMembers.map((m) => ({
+            memberId: m.id,
+            name: `${m.firstName} ${m.lastName}`,
+          }))}
           roleOptions={roleOptions}
           revalidatePath="/federal/roles"
         />
       </div>
       <nav className="flex gap-2 text-sm">
-        <a href="/federal/roles" className={!showAudit ? "font-bold text-bdas-red" : "text-bdas-ink-body"}>Inhaber</a>
-        <a href="/federal/roles?tab=audit" className={showAudit ? "font-bold text-bdas-red" : "text-bdas-ink-body"}>Audit-Log</a>
+        <a
+          href="/federal/roles"
+          className={!showAudit ? "font-bold text-bdas-red" : "text-bdas-ink-body"}
+        >
+          Inhaber
+        </a>
+        <a
+          href="/federal/roles?tab=audit"
+          className={showAudit ? "font-bold text-bdas-red" : "text-bdas-ink-body"}
+        >
+          Audit-Log
+        </a>
       </nav>
       {showAudit ? (
         <AuditLog entries={audit} groupNames={groupNames} />
@@ -55,7 +68,10 @@ export default async function FederalRolesPage({
         <RoleRoster
           sections={[
             { title: "Bundesvorstand", holders: holders.filter((h) => h.role === "federal_board") },
-            { title: "Lokale Vorstands-Leads", holders: holders.filter((h) => h.role === "local_board_lead") },
+            {
+              title: "Lokale Vorstands-Leads",
+              holders: holders.filter((h) => h.role === "local_board_lead"),
+            },
             { title: "Lokale Vorstände", holders: holders.filter((h) => h.role === "local_board") },
           ]}
           groupNames={groupNames}

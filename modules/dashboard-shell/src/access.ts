@@ -5,8 +5,7 @@ import type { Grant } from "@bdas/members";
  *  board, or lead) qualifies; a plain member does not. */
 export function canAdministerBoard(grants: ReadonlyArray<Grant>): boolean {
   return grants.some(
-    (g) =>
-      g.role === "federal_board" || g.role === "local_board" || g.role === "local_board_lead",
+    (g) => g.role === "federal_board" || g.role === "local_board" || g.role === "local_board_lead",
   );
 }
 

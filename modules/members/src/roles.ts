@@ -66,10 +66,7 @@ export function canManageGroup(grants: ReadonlyArray<Grant>, groupId: string | n
  * scoped to. A null groupId is never delegable — only federal (handled above).
  * Note: a plain `local_board` grant does NOT confer this; only a lead does.
  */
-export function canGrantLocalBoard(
-  grants: ReadonlyArray<Grant>,
-  groupId: string | null,
-): boolean {
+export function canGrantLocalBoard(grants: ReadonlyArray<Grant>, groupId: string | null): boolean {
   if (isFederalBoard(grants)) return true;
   if (groupId === null) return false;
   return grants.some((g) => g.role === "local_board_lead" && g.groupId === groupId);

@@ -26,6 +26,7 @@
 ## Task 1: `listRoleHolders` + `listGrantAudit` read methods (TDD)
 
 **Files:**
+
 - Create: `modules/members/src/services/role-views.ts`
 - Modify: `modules/members/src/index.ts`
 - Test: `modules/members/src/index.test.ts`
@@ -35,36 +36,41 @@
 Add to `modules/members/src/index.test.ts` (inside `describeIfDb`, after the last test), plus the import `import { listGrantAudit, listRoleHolders } from "./services/role-views";`:
 
 ```ts
-  it("listRoleHolders and listGrantAudit expose roster + history", async () => {
-    await createGroup("grp_a", "aachen");
-    await createUser("usr_h1", "h1@example.de");
-    const m = await createProfile(t.db, { userId: "usr_h1", firstName: "Lena", lastName: "Hofer", primaryGroupId: "grp_a" });
-    await approveMember(t.db, m.id, BOARD);
-    await grantRole(t.db, m.id, "local_board_lead", BOARD, "grp_a");
-    await grantRole(t.db, m.id, "local_board", BOARD, "grp_a");
-    await revokeRole(t.db, m.id, "local_board", BOARD, "grp_a");
-
-    const holders = await listRoleHolders(t.db);
-    // Only ACTIVE board grants; the revoked local_board is gone.
-    expect(holders).toEqual([
-      expect.objectContaining({
-        memberId: m.id,
-        firstName: "Lena",
-        lastName: "Hofer",
-        role: "local_board_lead",
-        groupId: "grp_a",
-      }),
-    ]);
-
-    const audit = await listGrantAudit(t.db, {});
-    // Newest-first; includes the revoked row with revokedAt set.
-    expect(audit.length).toBe(2);
-    expect(audit.some((a) => a.role === "local_board" && a.revokedAt !== null)).toBe(true);
-    expect(audit.every((a) => a.firstName === "Lena")).toBe(true);
-
-    const scoped = await listGrantAudit(t.db, { groupId: "grp_a" });
-    expect(scoped.length).toBe(2);
+it("listRoleHolders and listGrantAudit expose roster + history", async () => {
+  await createGroup("grp_a", "aachen");
+  await createUser("usr_h1", "h1@example.de");
+  const m = await createProfile(t.db, {
+    userId: "usr_h1",
+    firstName: "Lena",
+    lastName: "Hofer",
+    primaryGroupId: "grp_a",
   });
+  await approveMember(t.db, m.id, BOARD);
+  await grantRole(t.db, m.id, "local_board_lead", BOARD, "grp_a");
+  await grantRole(t.db, m.id, "local_board", BOARD, "grp_a");
+  await revokeRole(t.db, m.id, "local_board", BOARD, "grp_a");
+
+  const holders = await listRoleHolders(t.db);
+  // Only ACTIVE board grants; the revoked local_board is gone.
+  expect(holders).toEqual([
+    expect.objectContaining({
+      memberId: m.id,
+      firstName: "Lena",
+      lastName: "Hofer",
+      role: "local_board_lead",
+      groupId: "grp_a",
+    }),
+  ]);
+
+  const audit = await listGrantAudit(t.db, {});
+  // Newest-first; includes the revoked row with revokedAt set.
+  expect(audit.length).toBe(2);
+  expect(audit.some((a) => a.role === "local_board" && a.revokedAt !== null)).toBe(true);
+  expect(audit.every((a) => a.firstName === "Lena")).toBe(true);
+
+  const scoped = await listGrantAudit(t.db, { groupId: "grp_a" });
+  expect(scoped.length).toBe(2);
+});
 ```
 
 - [ ] **Step 2: Run to verify it fails**
@@ -236,6 +242,7 @@ export async function revokeRoleAction(
 - [ ] **Step 2: Typecheck + commit**
 
 `pnpm --filter @bdas/web typecheck` → PASS.
+
 ```bash
 git add "apps/web/app/(board)/_components/role-actions.ts"
 git commit -m "$(printf 'feat(web): role grant/revoke server actions\n\nCo-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>')"
@@ -246,6 +253,7 @@ git commit -m "$(printf 'feat(web): role grant/revoke server actions\n\nCo-Autho
 ## Task 3: Roster + audit + grant-modal components
 
 **Files:**
+
 - Create: `apps/web/app/(board)/_components/RoleRoster.tsx` (client)
 - Create: `apps/web/app/(board)/_components/GrantRoleModal.tsx` (client)
 - Create: `apps/web/app/(board)/_components/AuditLog.tsx` (server)
@@ -285,21 +293,35 @@ export function RoleRoster({
     <div className="overflow-hidden rounded-bdas border border-bdas-soft bg-bdas-surface shadow-bdas-card">
       {sections.map((s) => (
         <div key={s.title}>
-          <h3 className="border-b border-bdas-soft px-4 pb-2 pt-4 text-xs font-bold uppercase tracking-wide text-bdas-ink-muted">{s.title}</h3>
+          <h3 className="border-b border-bdas-soft px-4 pb-2 pt-4 text-xs font-bold uppercase tracking-wide text-bdas-ink-muted">
+            {s.title}
+          </h3>
           {s.holders.map((h) => (
-            <div key={`${h.memberId}:${h.role}:${h.groupId ?? ""}`} className="flex items-center gap-3 border-b border-bdas-soft px-4 py-2 last:border-b-0">
-              <span className={`rounded-bdas-pill px-2 py-0.5 text-xs font-semibold ${h.role === "federal_board" ? "bg-bdas-red text-bdas-surface" : "bg-bdas-surface-hover text-bdas-red"}`}>
-                {ROLE_LABEL[h.role]}{h.groupId ? ` · ${groupNames[h.groupId] ?? h.groupId}` : ""}
+            <div
+              key={`${h.memberId}:${h.role}:${h.groupId ?? ""}`}
+              className="flex items-center gap-3 border-b border-bdas-soft px-4 py-2 last:border-b-0"
+            >
+              <span
+                className={`rounded-bdas-pill px-2 py-0.5 text-xs font-semibold ${h.role === "federal_board" ? "bg-bdas-red text-bdas-surface" : "bg-bdas-surface-hover text-bdas-red"}`}
+              >
+                {ROLE_LABEL[h.role]}
+                {h.groupId ? ` · ${groupNames[h.groupId] ?? h.groupId}` : ""}
               </span>
               <span className="flex-1 text-sm text-bdas-ink">
                 {h.firstName} {h.lastName}
-                {currentMemberId === h.memberId && <span className="text-bdas-ink-muted"> (du)</span>}
+                {currentMemberId === h.memberId && (
+                  <span className="text-bdas-ink-muted"> (du)</span>
+                )}
               </span>
               {currentMemberId !== h.memberId && (
                 <button
                   type="button"
                   disabled={pending}
-                  onClick={() => start(() => { void revokeRoleAction(h.memberId, h.role, h.groupId, revalidatePath); })}
+                  onClick={() =>
+                    start(() => {
+                      void revokeRoleAction(h.memberId, h.role, h.groupId, revalidatePath);
+                    })
+                  }
                   className="rounded-bdas-sm border border-bdas-soft px-2 py-1 text-xs text-bdas-ink-body hover:bg-bdas-surface-hover"
                 >
                   Entziehen
@@ -307,7 +329,9 @@ export function RoleRoster({
               )}
             </div>
           ))}
-          {s.holders.length === 0 && <p className="px-4 py-3 text-sm text-bdas-ink-muted">Niemand.</p>}
+          {s.holders.length === 0 && (
+            <p className="px-4 py-3 text-sm text-bdas-ink-muted">Niemand.</p>
+          )}
         </div>
       ))}
     </div>
@@ -328,7 +352,12 @@ import { useState, useTransition } from "react";
 
 import { grantRoleAction } from "./role-actions";
 
-export type RoleOption = { role: string; label: string; groupId: string | null; needsTypedConfirm?: boolean };
+export type RoleOption = {
+  role: string;
+  label: string;
+  groupId: string | null;
+  needsTypedConfirm?: boolean;
+};
 export type Candidate = { memberId: string; name: string };
 
 export function GrantRoleModal({
@@ -352,16 +381,30 @@ export function GrantRoleModal({
 
   const opt = roleOptions[optIdx];
   const needsConfirm = opt?.needsTypedConfirm === true;
-  const confirmOk = !needsConfirm || (picked !== null && confirmText.trim().toUpperCase() === picked.name.toUpperCase());
-  const matches = q.trim() === "" ? [] : candidates.filter((c) => c.name.toLowerCase().includes(q.toLowerCase())).slice(0, 8);
+  const confirmOk =
+    !needsConfirm ||
+    (picked !== null && confirmText.trim().toUpperCase() === picked.name.toUpperCase());
+  const matches =
+    q.trim() === ""
+      ? []
+      : candidates.filter((c) => c.name.toLowerCase().includes(q.toLowerCase())).slice(0, 8);
 
   function reset() {
-    setOpen(false); setQ(""); setPicked(null); setOptIdx(0); setConfirmText(""); setError(null);
+    setOpen(false);
+    setQ("");
+    setPicked(null);
+    setOptIdx(0);
+    setConfirmText("");
+    setError(null);
   }
 
   if (!open) {
     return (
-      <button type="button" onClick={() => setOpen(true)} className="self-start rounded-bdas-sm bg-bdas-red px-3 py-2 text-sm font-semibold text-bdas-surface">
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="self-start rounded-bdas-sm bg-bdas-red px-3 py-2 text-sm font-semibold text-bdas-surface"
+      >
         + {title}
       </button>
     );
@@ -371,27 +414,57 @@ export function GrantRoleModal({
       <h3 className="text-sm font-bold text-bdas-ink">{title}</h3>
       {!picked && (
         <>
-          <input autoFocus value={q} onChange={(e) => setQ(e.target.value)} placeholder="Mitglied suchen…" className="rounded-bdas-sm border border-bdas-soft px-3 py-2 text-bdas-ink" />
+          <input
+            autoFocus
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder="Mitglied suchen…"
+            className="rounded-bdas-sm border border-bdas-soft px-3 py-2 text-bdas-ink"
+          />
           <ul>
             {matches.map((c) => (
               <li key={c.memberId}>
-                <button type="button" onClick={() => setPicked(c)} className="block w-full rounded-bdas-sm px-2 py-1.5 text-left text-sm text-bdas-ink-body hover:bg-bdas-surface-hover">{c.name}</button>
+                <button
+                  type="button"
+                  onClick={() => setPicked(c)}
+                  className="block w-full rounded-bdas-sm px-2 py-1.5 text-left text-sm text-bdas-ink-body hover:bg-bdas-surface-hover"
+                >
+                  {c.name}
+                </button>
               </li>
             ))}
-            {q.trim() !== "" && matches.length === 0 && <li className="px-2 py-1.5 text-sm text-bdas-ink-muted">Keine Treffer.</li>}
+            {q.trim() !== "" && matches.length === 0 && (
+              <li className="px-2 py-1.5 text-sm text-bdas-ink-muted">Keine Treffer.</li>
+            )}
           </ul>
         </>
       )}
       {picked && (
         <>
           <p className="text-sm text-bdas-ink">{picked.name}</p>
-          <select value={optIdx} onChange={(e) => setOptIdx(Number(e.target.value))} className="rounded-bdas-sm border border-bdas-soft px-2 py-1.5 text-sm text-bdas-ink-body">
-            {roleOptions.map((o, i) => <option key={`${o.role}:${o.groupId ?? ""}`} value={i}>{o.label}</option>)}
+          <select
+            value={optIdx}
+            onChange={(e) => setOptIdx(Number(e.target.value))}
+            className="rounded-bdas-sm border border-bdas-soft px-2 py-1.5 text-sm text-bdas-ink-body"
+          >
+            {roleOptions.map((o, i) => (
+              <option key={`${o.role}:${o.groupId ?? ""}`} value={i}>
+                {o.label}
+              </option>
+            ))}
           </select>
           {needsConfirm && (
             <div className="rounded-bdas border border-bdas-strong p-3 text-sm">
-              <p className="mb-2 text-bdas-red">⚠ Bundesvorstand hat vollen Zugriff auf alle Gruppen. Tippe den Namen zur Bestätigung.</p>
-              <input value={confirmText} onChange={(e) => setConfirmText(e.target.value)} placeholder={picked.name.toUpperCase()} className="w-full rounded-bdas-sm border border-bdas-soft px-2 py-1.5" />
+              <p className="mb-2 text-bdas-red">
+                ⚠ Bundesvorstand hat vollen Zugriff auf alle Gruppen. Tippe den Namen zur
+                Bestätigung.
+              </p>
+              <input
+                value={confirmText}
+                onChange={(e) => setConfirmText(e.target.value)}
+                placeholder={picked.name.toUpperCase()}
+                className="w-full rounded-bdas-sm border border-bdas-soft px-2 py-1.5"
+              />
             </div>
           )}
           <div className="flex gap-2">
@@ -401,7 +474,12 @@ export function GrantRoleModal({
               onClick={() =>
                 start(async () => {
                   setError(null);
-                  const res = await grantRoleAction(picked.memberId, opt.role, opt.groupId, revalidatePath);
+                  const res = await grantRoleAction(
+                    picked.memberId,
+                    opt.role,
+                    opt.groupId,
+                    revalidatePath,
+                  );
                   if (res.ok) reset();
                   else setError(res.error ?? "Fehler");
                 })
@@ -410,7 +488,13 @@ export function GrantRoleModal({
             >
               Erteilen
             </button>
-            <button type="button" onClick={reset} className="rounded-bdas-sm border border-bdas-soft px-3 py-1.5 text-sm">Abbrechen</button>
+            <button
+              type="button"
+              onClick={reset}
+              className="rounded-bdas-sm border border-bdas-soft px-3 py-1.5 text-sm"
+            >
+              Abbrechen
+            </button>
           </div>
         </>
       )}
@@ -431,24 +515,38 @@ const ROLE_LABEL: Record<string, string> = {
   local_board: "Vorstand",
 };
 
-export function AuditLog({ entries, groupNames }: { entries: GrantAuditEntry[]; groupNames: Record<string, string> }) {
+export function AuditLog({
+  entries,
+  groupNames,
+}: {
+  entries: GrantAuditEntry[];
+  groupNames: Record<string, string>;
+}) {
   return (
     <div className="overflow-hidden rounded-bdas border border-bdas-soft bg-bdas-surface shadow-bdas-card">
       {entries.map((e) => (
-        <div key={`${e.memberId}:${e.role}:${e.groupId ?? ""}:${e.grantedAt.toISOString()}`} className="flex flex-wrap items-center gap-2 border-b border-bdas-soft px-4 py-2 text-sm last:border-b-0">
-          <span className={`rounded-bdas-sm px-2 py-0.5 text-xs font-bold ${e.revokedAt ? "bg-bdas-surface-hover text-bdas-red" : "bg-bdas-surface-hover text-bdas-ink-body"}`}>
+        <div
+          key={`${e.memberId}:${e.role}:${e.groupId ?? ""}:${e.grantedAt.toISOString()}`}
+          className="flex flex-wrap items-center gap-2 border-b border-bdas-soft px-4 py-2 text-sm last:border-b-0"
+        >
+          <span
+            className={`rounded-bdas-sm px-2 py-0.5 text-xs font-bold ${e.revokedAt ? "bg-bdas-surface-hover text-bdas-red" : "bg-bdas-surface-hover text-bdas-ink-body"}`}
+          >
             {e.revokedAt ? "ENTZOGEN" : "ERTEILT"}
           </span>
           <span className="text-bdas-ink-body">
             {ROLE_LABEL[e.role] ?? e.role}
-            {e.groupId ? ` · ${groupNames[e.groupId] ?? e.groupId}` : ""} → {e.firstName} {e.lastName}
+            {e.groupId ? ` · ${groupNames[e.groupId] ?? e.groupId}` : ""} → {e.firstName}{" "}
+            {e.lastName}
           </span>
           <span className="ml-auto text-xs text-bdas-ink-muted">
             {(e.revokedAt ?? e.grantedAt).toLocaleDateString("de-DE")}
           </span>
         </div>
       ))}
-      {entries.length === 0 && <p className="px-4 py-6 text-center text-sm text-bdas-ink-muted">Noch keine Einträge.</p>}
+      {entries.length === 0 && (
+        <p className="px-4 py-6 text-center text-sm text-bdas-ink-muted">Noch keine Einträge.</p>
+      )}
     </div>
   );
 }
@@ -457,6 +555,7 @@ export function AuditLog({ entries, groupNames }: { entries: GrantAuditEntry[]; 
 - [ ] **Step 4: Typecheck + commit**
 
 `pnpm --filter @bdas/web typecheck` → PASS.
+
 ```bash
 git add "apps/web/app/(board)/_components/RoleRoster.tsx" "apps/web/app/(board)/_components/GrantRoleModal.tsx" "apps/web/app/(board)/_components/AuditLog.tsx"
 git commit -m "$(printf 'feat(web): role roster, grant modal, audit log components\n\nCo-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>')"
@@ -483,7 +582,11 @@ import { RoleRoster } from "../../_components/RoleRoster";
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Rollen & Vorstände" };
 
-export default async function FederalRolesPage({ searchParams }: { searchParams: { tab?: string } }) {
+export default async function FederalRolesPage({
+  searchParams,
+}: {
+  searchParams: { tab?: string };
+}) {
   const db = getDb();
   const me = await getCurrentMember(db, readSessionCookie());
   const [holders, audit, groups, activeMembers] = await Promise.all([
@@ -508,14 +611,27 @@ export default async function FederalRolesPage({ searchParams }: { searchParams:
         <h1 className="text-2xl font-semibold text-bdas-ink">Rollen & Vorstände</h1>
         <GrantRoleModal
           title="Rolle erteilen"
-          candidates={activeMembers.map((m) => ({ memberId: m.id, name: `${m.firstName} ${m.lastName}` }))}
+          candidates={activeMembers.map((m) => ({
+            memberId: m.id,
+            name: `${m.firstName} ${m.lastName}`,
+          }))}
           roleOptions={roleOptions}
           revalidatePath="/federal/roles"
         />
       </div>
       <nav className="flex gap-2 text-sm">
-        <a href="/federal/roles" className={!showAudit ? "font-bold text-bdas-red" : "text-bdas-ink-body"}>Inhaber</a>
-        <a href="/federal/roles?tab=audit" className={showAudit ? "font-bold text-bdas-red" : "text-bdas-ink-body"}>Audit-Log</a>
+        <a
+          href="/federal/roles"
+          className={!showAudit ? "font-bold text-bdas-red" : "text-bdas-ink-body"}
+        >
+          Inhaber
+        </a>
+        <a
+          href="/federal/roles?tab=audit"
+          className={showAudit ? "font-bold text-bdas-red" : "text-bdas-ink-body"}
+        >
+          Audit-Log
+        </a>
       </nav>
       {showAudit ? (
         <AuditLog entries={audit} groupNames={groupNames} />
@@ -523,7 +639,10 @@ export default async function FederalRolesPage({ searchParams }: { searchParams:
         <RoleRoster
           sections={[
             { title: "Bundesvorstand", holders: holders.filter((h) => h.role === "federal_board") },
-            { title: "Lokale Vorstands-Leads", holders: holders.filter((h) => h.role === "local_board_lead") },
+            {
+              title: "Lokale Vorstands-Leads",
+              holders: holders.filter((h) => h.role === "local_board_lead"),
+            },
             { title: "Lokale Vorstände", holders: holders.filter((h) => h.role === "local_board") },
           ]}
           groupNames={groupNames}
@@ -539,6 +658,7 @@ export default async function FederalRolesPage({ searchParams }: { searchParams:
 - [ ] **Step 2: Typecheck + commit**
 
 `pnpm --filter @bdas/web typecheck` → PASS.
+
 ```bash
 git add "apps/web/app/(board)/federal/roles/page.tsx"
 git commit -m "$(printf 'feat(web): federal roles page — roster, grant modal, audit tab\n\nCo-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>')"
@@ -549,6 +669,7 @@ git commit -m "$(printf 'feat(web): federal roles page — roster, grant modal, 
 ## Task 5: Lead-only gate + `/gruppe/[slug]/vorstand` page
 
 **Files:**
+
 - Modify: `apps/web/app/_dashboard/session.ts` (add `requireLeadScope`)
 - Replace: `apps/web/app/(board)/gruppe/[slug]/vorstand/page.tsx`
 
@@ -610,14 +731,27 @@ export default async function VorstandPage({
         <h1 className="text-2xl font-semibold text-bdas-ink">Vorstand</h1>
         <GrantRoleModal
           title="Vorstand hinzufügen"
-          candidates={groupMembers.map((m) => ({ memberId: m.id, name: `${m.firstName} ${m.lastName}` }))}
+          candidates={groupMembers.map((m) => ({
+            memberId: m.id,
+            name: `${m.firstName} ${m.lastName}`,
+          }))}
           roleOptions={[{ role: "local_board", label: "Vorstand", groupId }]}
           revalidatePath={revalidate}
         />
       </div>
       <nav className="flex gap-2 text-sm">
-        <a href={revalidate} className={!showAudit ? "font-bold text-bdas-red" : "text-bdas-ink-body"}>Vorstand</a>
-        <a href={`${revalidate}?tab=audit`} className={showAudit ? "font-bold text-bdas-red" : "text-bdas-ink-body"}>Audit-Log</a>
+        <a
+          href={revalidate}
+          className={!showAudit ? "font-bold text-bdas-red" : "text-bdas-ink-body"}
+        >
+          Vorstand
+        </a>
+        <a
+          href={`${revalidate}?tab=audit`}
+          className={showAudit ? "font-bold text-bdas-red" : "text-bdas-ink-body"}
+        >
+          Audit-Log
+        </a>
       </nav>
       {showAudit ? (
         <AuditLog entries={audit} groupNames={{}} />
@@ -642,6 +776,7 @@ Note: a lead will see "Entziehen" next to other leads in the Leads section; the 
 - [ ] **Step 3: Build + commit**
 
 `pnpm --filter @bdas/web build` → PASS.
+
 ```bash
 git add apps/web/app/_dashboard/session.ts "apps/web/app/(board)/gruppe/[slug]/vorstand/page.tsx"
 git commit -m "$(printf 'feat(web): lead-gated vorstand page for local board management\n\nCo-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>')"
@@ -663,4 +798,7 @@ git commit -m "$(printf 'feat(web): lead-gated vorstand page for local board man
 - **RoleRoster revoke passes `h.role`/`h.groupId` from server-rendered props** — a tampered client could send anything, but the server re-checks; no client trust.
 - **Vorstand grant modal offers only `local_board` of that group**; federal roles page offers `federal_board` (typed confirm) + leads per active group. Plain `local_board` grants for arbitrary groups happen via the group's own vorstand page — intentional (delegation model).
 - `/security-review` (human-triggered) still owed on this PR before merge.
+
+```
+
 ```

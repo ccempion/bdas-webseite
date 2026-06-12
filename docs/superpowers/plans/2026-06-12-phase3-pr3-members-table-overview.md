@@ -29,6 +29,7 @@ Module tests: `pnpm --filter @bdas/members test`. Web typecheck: `pnpm --filter 
 ## Task 1: `MemberQuery` + `listMembers`
 
 **Files:**
+
 - Create: `modules/members/src/services/list-members.ts`
 - Modify: `modules/members/src/index.ts` (export)
 - Test: `modules/members/src/index.test.ts` (new `it` block; reuse the existing harness — it already migrates auth+groups+members 0001-0003 and has `createUser`/`createGroup`/`createProfile`/`approveMember`/`BOARD`)
@@ -38,30 +39,41 @@ Module tests: `pnpm --filter @bdas/members test`. Web typecheck: `pnpm --filter 
 Add to `modules/members/src/index.test.ts` (inside the `describeIfDb` block, after the last test):
 
 ```ts
-  it("listMembers filters by group, status, and search", async () => {
-    await createGroup("grp_a", "aachen");
-    await createGroup("grp_b", "bonn");
-    await createUser("usr_la", "la@example.de");
-    await createUser("usr_lb", "lb@example.de");
-    const la = await createProfile(t.db, { userId: "usr_la", firstName: "Lena", lastName: "Anders", primaryGroupId: "grp_a" });
-    await createProfile(t.db, { userId: "usr_lb", firstName: "Tom", lastName: "Berg", primaryGroupId: "grp_b" });
-    await approveMember(t.db, la.id, BOARD); // la → active; tom stays pending
-
-    const all = await listMembers(t.db, {});
-    expect(all.length).toBe(2);
-
-    const groupA = await listMembers(t.db, { groupId: "grp_a" });
-    expect(groupA.map((m) => m.id)).toEqual([la.id]);
-
-    const pending = await listMembers(t.db, { status: "pending" });
-    expect(pending.every((m) => m.status === "pending")).toBe(true);
-
-    const search = await listMembers(t.db, { search: "lena" });
-    expect(search.map((m) => m.id)).toEqual([la.id]);
+it("listMembers filters by group, status, and search", async () => {
+  await createGroup("grp_a", "aachen");
+  await createGroup("grp_b", "bonn");
+  await createUser("usr_la", "la@example.de");
+  await createUser("usr_lb", "lb@example.de");
+  const la = await createProfile(t.db, {
+    userId: "usr_la",
+    firstName: "Lena",
+    lastName: "Anders",
+    primaryGroupId: "grp_a",
   });
+  await createProfile(t.db, {
+    userId: "usr_lb",
+    firstName: "Tom",
+    lastName: "Berg",
+    primaryGroupId: "grp_b",
+  });
+  await approveMember(t.db, la.id, BOARD); // la → active; tom stays pending
+
+  const all = await listMembers(t.db, {});
+  expect(all.length).toBe(2);
+
+  const groupA = await listMembers(t.db, { groupId: "grp_a" });
+  expect(groupA.map((m) => m.id)).toEqual([la.id]);
+
+  const pending = await listMembers(t.db, { status: "pending" });
+  expect(pending.every((m) => m.status === "pending")).toBe(true);
+
+  const search = await listMembers(t.db, { search: "lena" });
+  expect(search.map((m) => m.id)).toEqual([la.id]);
+});
 ```
 
 Add `listMembers` to the existing service import block at the top of the test file:
+
 ```ts
 import { listMembers } from "./services/list-members";
 ```
@@ -119,6 +131,7 @@ export async function listMembers(db: Db, q: MemberQuery = {}): Promise<Member[]
 - [ ] **Step 4: Export from the surface**
 
 In `modules/members/src/index.ts`, add:
+
 ```ts
 export { listMembers, type MemberQuery } from "./services/list-members";
 ```
@@ -140,6 +153,7 @@ git commit -m "$(printf 'feat(members): listMembers query for the dashboard\n\nC
 ## Task 2: `countMembersByStatus` + `signupsOverTime`
 
 **Files:**
+
 - Create: `modules/members/src/services/stats.ts`
 - Modify: `modules/members/src/index.ts`
 - Test: `modules/members/src/index.test.ts`
@@ -149,29 +163,40 @@ git commit -m "$(printf 'feat(members): listMembers query for the dashboard\n\nC
 Add to `modules/members/src/index.test.ts`:
 
 ```ts
-  it("countMembersByStatus and signupsOverTime aggregate, group-scopable", async () => {
-    await createGroup("grp_a", "aachen");
-    await createUser("usr_s1", "s1@example.de");
-    await createUser("usr_s2", "s2@example.de");
-    const s1 = await createProfile(t.db, { userId: "usr_s1", firstName: "A", lastName: "A", primaryGroupId: "grp_a" });
-    await createProfile(t.db, { userId: "usr_s2", firstName: "B", lastName: "B", primaryGroupId: "grp_a" });
-    await approveMember(t.db, s1.id, BOARD);
-
-    const counts = await countMembersByStatus(t.db, {});
-    expect(counts.active).toBe(1);
-    expect(counts.pending).toBe(1);
-
-    const series = await signupsOverTime(t.db, { days: 30 });
-    const total = series.reduce((n, p) => n + p.count, 0);
-    expect(total).toBe(2); // both created within the window
-    expect(series.length).toBe(30); // one bucket per day, zero-filled
-
-    const scoped = await countMembersByStatus(t.db, { groupId: "grp_a" });
-    expect(scoped.active + scoped.pending).toBe(2);
+it("countMembersByStatus and signupsOverTime aggregate, group-scopable", async () => {
+  await createGroup("grp_a", "aachen");
+  await createUser("usr_s1", "s1@example.de");
+  await createUser("usr_s2", "s2@example.de");
+  const s1 = await createProfile(t.db, {
+    userId: "usr_s1",
+    firstName: "A",
+    lastName: "A",
+    primaryGroupId: "grp_a",
   });
+  await createProfile(t.db, {
+    userId: "usr_s2",
+    firstName: "B",
+    lastName: "B",
+    primaryGroupId: "grp_a",
+  });
+  await approveMember(t.db, s1.id, BOARD);
+
+  const counts = await countMembersByStatus(t.db, {});
+  expect(counts.active).toBe(1);
+  expect(counts.pending).toBe(1);
+
+  const series = await signupsOverTime(t.db, { days: 30 });
+  const total = series.reduce((n, p) => n + p.count, 0);
+  expect(total).toBe(2); // both created within the window
+  expect(series.length).toBe(30); // one bucket per day, zero-filled
+
+  const scoped = await countMembersByStatus(t.db, { groupId: "grp_a" });
+  expect(scoped.active + scoped.pending).toBe(2);
+});
 ```
 
 Add imports to the test file:
+
 ```ts
 import { countMembersByStatus, signupsOverTime } from "./services/stats";
 ```
@@ -248,6 +273,7 @@ export async function signupsOverTime(
 - [ ] **Step 4: Export**
 
 In `modules/members/src/index.ts`:
+
 ```ts
 export {
   countMembersByStatus,
@@ -274,6 +300,7 @@ git commit -m "$(printf 'feat(members): countMembersByStatus + signupsOverTime\n
 ## Task 3: Sparkline + Tiles presentational components
 
 **Files:**
+
 - Create: `apps/web/app/(board)/_components/Sparkline.tsx`
 - Create: `apps/web/app/(board)/_components/Tile.tsx`
 - Create: `apps/web/app/(board)/_components/ActionStrip.tsx`
@@ -294,14 +321,22 @@ export function Sparkline({ points, label }: { points: SignupPoint[]; label: str
   const max = Math.max(1, ...points.map((p) => p.count));
   const step = points.length > 1 ? w / (points.length - 1) : w;
   const coords = points.map((p, i) => [i * step, h - (p.count / max) * (h - 4) - 2] as const);
-  const line = coords.map(([x, y], i) => `${i === 0 ? "M" : "L"}${x.toFixed(1)},${y.toFixed(1)}`).join(" ");
+  const line = coords
+    .map(([x, y], i) => `${i === 0 ? "M" : "L"}${x.toFixed(1)},${y.toFixed(1)}`)
+    .join(" ");
   const area = `${line} L${w},${h} L0,${h} Z`;
   return (
     <figure className="rounded-bdas border border-bdas-soft bg-bdas-surface p-4 shadow-bdas-card-low">
       <figcaption className="mb-2 text-bdas-icon font-semibold uppercase tracking-wide text-bdas-ink-muted">
         {label}
       </figcaption>
-      <svg viewBox={`0 0 ${w} ${h}`} className="w-full" role="img" aria-label={label} preserveAspectRatio="none">
+      <svg
+        viewBox={`0 0 ${w} ${h}`}
+        className="w-full"
+        role="img"
+        aria-label={label}
+        preserveAspectRatio="none"
+      >
         <path d={area} className="fill-bdas-red/10" />
         <path d={line} className="fill-none stroke-bdas-red" strokeWidth={2} />
       </svg>
@@ -319,7 +354,9 @@ Create `apps/web/app/(board)/_components/Tile.tsx`:
 ```tsx
 export function Tile({ value, label, muted }: { value: string; label: string; muted?: boolean }) {
   return (
-    <div className={`flex-1 rounded-bdas border border-bdas-soft p-4 ${muted ? "opacity-40" : "bg-bdas-surface"}`}>
+    <div
+      className={`flex-1 rounded-bdas border border-bdas-soft p-4 ${muted ? "opacity-40" : "bg-bdas-surface"}`}
+    >
       <div className="text-2xl font-semibold text-bdas-ink">{value}</div>
       <div className="text-bdas-icon text-bdas-ink-muted">{label}</div>
     </div>
@@ -368,6 +405,7 @@ export function ActionStrip({ items }: { items: ActionItem[] }) {
 - [ ] **Step 4: Typecheck + commit**
 
 Run: `pnpm --filter @bdas/web typecheck` → PASS.
+
 ```bash
 git add "apps/web/app/(board)/_components"
 git commit -m "$(printf 'feat(web): board overview presentational components\n\nCo-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>')"
@@ -378,6 +416,7 @@ git commit -m "$(printf 'feat(web): board overview presentational components\n\n
 ## Task 4: Members table component + approve/reject Server Actions
 
 **Files:**
+
 - Create: `apps/web/app/(board)/_components/MembersTable.tsx` (client)
 - Create: `apps/web/app/(board)/_components/member-actions.ts` (server actions)
 
@@ -459,7 +498,8 @@ export function MembersTable({
       members.filter(
         (m) =>
           (filter === "all" || m.status === filter) &&
-          (q.trim() === "" || `${m.firstName} ${m.lastName}`.toLowerCase().includes(q.toLowerCase())),
+          (q.trim() === "" ||
+            `${m.firstName} ${m.lastName}`.toLowerCase().includes(q.toLowerCase())),
       ),
     [members, filter, q],
   );
@@ -474,7 +514,9 @@ export function MembersTable({
               type="button"
               onClick={() => setFilter(f.key)}
               className={`rounded-bdas-pill px-3 py-1 text-sm transition-colors ${
-                filter === f.key ? "bg-bdas-red text-bdas-surface" : "border border-bdas-soft text-bdas-ink-body hover:bg-bdas-surface-hover"
+                filter === f.key
+                  ? "bg-bdas-red text-bdas-surface"
+                  : "border border-bdas-soft text-bdas-ink-body hover:bg-bdas-surface-hover"
               }`}
             >
               {f.label}
@@ -503,38 +545,91 @@ export function MembersTable({
                 <td className="cursor-pointer p-3 text-bdas-ink" onClick={() => setSelected(m)}>
                   {m.firstName} {m.lastName} ›
                 </td>
-                <td className="p-3 text-bdas-ink-body">{m.primaryGroupId ? groupNames[m.primaryGroupId] ?? "—" : "—"}</td>
+                <td className="p-3 text-bdas-ink-body">
+                  {m.primaryGroupId ? (groupNames[m.primaryGroupId] ?? "—") : "—"}
+                </td>
                 <td className="p-3">
-                  <span className={`rounded-bdas-pill px-2 py-0.5 text-xs font-semibold ${m.status === "pending" ? "bg-bdas-red/10 text-bdas-red" : "bg-bdas-surface-hover text-bdas-ink-body"}`}>
+                  <span
+                    className={`rounded-bdas-pill px-2 py-0.5 text-xs font-semibold ${m.status === "pending" ? "bg-bdas-red/10 text-bdas-red" : "bg-bdas-surface-hover text-bdas-ink-body"}`}
+                  >
                     {STATUS_LABEL[m.status]}
                   </span>
                 </td>
-                <td className="p-3 text-bdas-ink-body">{m.joinedAt ? new Date(m.joinedAt).toLocaleDateString("de-DE") : "—"}</td>
+                <td className="p-3 text-bdas-ink-body">
+                  {m.joinedAt ? new Date(m.joinedAt).toLocaleDateString("de-DE") : "—"}
+                </td>
                 <td className="p-3">
                   {m.status === "pending" && (
                     <span className="flex gap-2">
-                      <button type="button" disabled={pending} onClick={() => start(() => { void approveMemberAction(m.id, revalidatePath); })} className="rounded-bdas-sm bg-bdas-red px-2 py-1 text-xs font-semibold text-bdas-surface">Freigeben</button>
-                      <button type="button" disabled={pending} onClick={() => start(() => { void rejectMemberAction(m.id, revalidatePath); })} className="rounded-bdas-sm border border-bdas-soft px-2 py-1 text-xs">Ablehnen</button>
+                      <button
+                        type="button"
+                        disabled={pending}
+                        onClick={() =>
+                          start(() => {
+                            void approveMemberAction(m.id, revalidatePath);
+                          })
+                        }
+                        className="rounded-bdas-sm bg-bdas-red px-2 py-1 text-xs font-semibold text-bdas-surface"
+                      >
+                        Freigeben
+                      </button>
+                      <button
+                        type="button"
+                        disabled={pending}
+                        onClick={() =>
+                          start(() => {
+                            void rejectMemberAction(m.id, revalidatePath);
+                          })
+                        }
+                        className="rounded-bdas-sm border border-bdas-soft px-2 py-1 text-xs"
+                      >
+                        Ablehnen
+                      </button>
                     </span>
                   )}
                 </td>
               </tr>
             ))}
             {rows.length === 0 && (
-              <tr><td colSpan={5} className="p-6 text-center text-bdas-ink-muted">Keine Mitglieder.</td></tr>
+              <tr>
+                <td colSpan={5} className="p-6 text-center text-bdas-ink-muted">
+                  Keine Mitglieder.
+                </td>
+              </tr>
             )}
           </tbody>
         </table>
       </div>
       {selected && (
         <aside className="w-72 shrink-0 rounded-bdas border-l-2 border-bdas-red bg-bdas-surface p-4 shadow-bdas-card">
-          <h3 className="text-lg font-semibold text-bdas-ink">{selected.firstName} {selected.lastName}</h3>
+          <h3 className="text-lg font-semibold text-bdas-ink">
+            {selected.firstName} {selected.lastName}
+          </h3>
           <dl className="mt-3 space-y-2 text-sm">
-            <div className="flex justify-between border-b border-bdas-soft pb-1"><dt className="text-bdas-ink-muted">Status</dt><dd className="text-bdas-ink-body">{STATUS_LABEL[selected.status]}</dd></div>
-            <div className="flex justify-between border-b border-bdas-soft pb-1"><dt className="text-bdas-ink-muted">Gruppe</dt><dd className="text-bdas-ink-body">{selected.primaryGroupId ? groupNames[selected.primaryGroupId] ?? "—" : "—"}</dd></div>
-            <div className="flex justify-between border-b border-bdas-soft pb-1"><dt className="text-bdas-ink-muted">Beigetreten</dt><dd className="text-bdas-ink-body">{selected.joinedAt ? new Date(selected.joinedAt).toLocaleDateString("de-DE") : "—"}</dd></div>
+            <div className="flex justify-between border-b border-bdas-soft pb-1">
+              <dt className="text-bdas-ink-muted">Status</dt>
+              <dd className="text-bdas-ink-body">{STATUS_LABEL[selected.status]}</dd>
+            </div>
+            <div className="flex justify-between border-b border-bdas-soft pb-1">
+              <dt className="text-bdas-ink-muted">Gruppe</dt>
+              <dd className="text-bdas-ink-body">
+                {selected.primaryGroupId ? (groupNames[selected.primaryGroupId] ?? "—") : "—"}
+              </dd>
+            </div>
+            <div className="flex justify-between border-b border-bdas-soft pb-1">
+              <dt className="text-bdas-ink-muted">Beigetreten</dt>
+              <dd className="text-bdas-ink-body">
+                {selected.joinedAt ? new Date(selected.joinedAt).toLocaleDateString("de-DE") : "—"}
+              </dd>
+            </div>
           </dl>
-          <button type="button" onClick={() => setSelected(null)} className="mt-4 text-sm text-bdas-ink-muted hover:text-bdas-ink">Schließen</button>
+          <button
+            type="button"
+            onClick={() => setSelected(null)}
+            className="mt-4 text-sm text-bdas-ink-muted hover:text-bdas-ink"
+          >
+            Schließen
+          </button>
         </aside>
       )}
     </div>
@@ -547,6 +642,7 @@ export function MembersTable({
 - [ ] **Step 3: Typecheck + commit**
 
 Run: `pnpm --filter @bdas/web typecheck` → PASS.
+
 ```bash
 git add "apps/web/app/(board)/_components/MembersTable.tsx" "apps/web/app/(board)/_components/member-actions.ts"
 git commit -m "$(printf 'feat(web): members table with inline approve/reject + drawer\n\nCo-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>')"
@@ -557,6 +653,7 @@ git commit -m "$(printf 'feat(web): members table with inline approve/reject + d
 ## Task 5: Wire federal members + overview pages
 
 **Files:**
+
 - Replace placeholder: `apps/web/app/(board)/federal/members/page.tsx`
 - Replace placeholder: `apps/web/app/(board)/federal/overview/page.tsx`
 
@@ -615,7 +712,9 @@ export default async function FederalOverviewPage() {
   return (
     <section className="flex flex-col gap-5">
       <h1 className="text-2xl font-semibold text-bdas-ink">Übersicht · Bundesverband</h1>
-      <ActionStrip items={[{ count: counts.pending, label: "Freigaben", href: "/federal/members" }]} />
+      <ActionStrip
+        items={[{ count: counts.pending, label: "Freigaben", href: "/federal/members" }]}
+      />
       <div className="flex flex-wrap gap-3">
         <Tile value={String(counts.active)} label="Aktive Mitglieder" />
         <Tile value={`+${newSignups}`} label="Neu (30 T.)" />
@@ -630,6 +729,7 @@ export default async function FederalOverviewPage() {
 - [ ] **Step 3: Build + commit**
 
 Run: `pnpm --filter @bdas/web build` → PASS (federal/members + federal/overview are dynamic).
+
 ```bash
 git add "apps/web/app/(board)/federal/members/page.tsx" "apps/web/app/(board)/federal/overview/page.tsx"
 git commit -m "$(printf 'feat(web): federal members table + overview pages\n\nCo-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>')"
@@ -652,4 +752,7 @@ git commit -m "$(printf 'feat(web): federal members table + overview pages\n\nCo
 - **Authorization:** the table's Server Actions call `approveMember`/`transitionStatus`, which enforce board authority internally; the page itself sits under the already-gated `(board)/federal` layout. `listMembers` is an unguarded read by design — the scope gate upstream restricts who reaches the page.
 - **Reuse:** `MembersTable`, `Tile`, `Sparkline`, `ActionStrip` are the templates PR 4 (events/groups/files) and PR 6 (local scope) consume.
 - **Tokens only**; pending pill / sparkline fall back noted if opacity utilities are absent in the Tailwind config.
+
+```
+
 ```

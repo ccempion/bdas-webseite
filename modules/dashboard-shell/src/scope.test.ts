@@ -5,7 +5,13 @@ import type { Grant } from "@bdas/members";
 import type { GroupSummary } from "@bdas/groups";
 
 const groups: GroupSummary[] = [
-  { id: "grp_mg", slug: "moenchengladbach", name: "HG Mönchengladbach", city: "MG", status: "active" },
+  {
+    id: "grp_mg",
+    slug: "moenchengladbach",
+    name: "HG Mönchengladbach",
+    city: "MG",
+    status: "active",
+  },
   { id: "grp_ac", slug: "aachen", name: "HG Aachen", city: "Aachen", status: "active" },
 ];
 

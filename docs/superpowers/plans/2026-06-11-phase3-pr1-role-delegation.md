@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Let the federal board appoint local board *leads* (a new scoped grant `local_board_lead`, several per group) who can then grant/revoke `local_board` within their own group — without touching any other module.
+**Goal:** Let the federal board appoint local board _leads_ (a new scoped grant `local_board_lead`, several per group) who can then grant/revoke `local_board` within their own group — without touching any other module.
 
 **Architecture:** `local_board_lead` is modelled as another value in the existing `member_role_grants` scoped-grant table (ADR 0007), so the scope column, active-unique index, and FK cascade are reused unchanged. The single authorization chokepoint `requireBoard` in `members/services/roles.ts` becomes scope-aware: appointing leads and `federal_board` stay federal-only; granting `local_board` is allowed for federal **or** a lead of that group. No login/JWT change — leads come purely from DB grants via `effectiveGrants`.
 
@@ -25,6 +25,7 @@ Run all tests from the repo root with: `pnpm --filter @bdas/members test`
 ## Task 1: Widen the role domain (type + runtime list)
 
 **Files:**
+
 - Modify: `modules/auth/src/sso.ts:19`
 - Modify: `modules/members/src/roles.ts:5`
 - Test: `modules/members/src/index.export.test.ts`
@@ -34,11 +35,11 @@ Run all tests from the repo root with: `pnpm --filter @bdas/members test`
 Add this `it` block inside the existing `describe("members public role primitives", ...)` in `modules/members/src/index.export.test.ts`:
 
 ```ts
-  it("isRole accepts local_board_lead", () => {
-    // isRole is re-exported from the module surface.
-    expect(isRole("local_board_lead")).toBe(true);
-    expect(isRole("not_a_role")).toBe(false);
-  });
+it("isRole accepts local_board_lead", () => {
+  // isRole is re-exported from the module surface.
+  expect(isRole("local_board_lead")).toBe(true);
+  expect(isRole("not_a_role")).toBe(false);
+});
 ```
 
 And add `isRole` to the import at the top of that file:
@@ -102,6 +103,7 @@ Expected: still FAILS to compile because `canGrantLocalBoard` does not exist yet
 ## Task 2: `canGrantLocalBoard` predicate (pure, no DB)
 
 **Files:**
+
 - Modify: `modules/members/src/roles.ts` (add after `canManageGroup`)
 - Test: `modules/members/src/index.export.test.ts`
 
@@ -110,14 +112,14 @@ Expected: still FAILS to compile because `canGrantLocalBoard` does not exist yet
 Add to `modules/members/src/index.export.test.ts` inside the same `describe`:
 
 ```ts
-  it("canGrantLocalBoard: federal anywhere; a lead only its own group", () => {
-    const lead: Grant[] = [{ role: "local_board_lead", groupId: "grp_muc" }];
-    expect(canGrantLocalBoard(federal, "grp_xyz")).toBe(true); // federal: any group
-    expect(canGrantLocalBoard(lead, "grp_muc")).toBe(true); // lead of this group
-    expect(canGrantLocalBoard(lead, "grp_other")).toBe(false); // lead, wrong group
-    expect(canGrantLocalBoard(lead, null)).toBe(false); // unscoped is never delegable
-    expect(canGrantLocalBoard(localMuc, "grp_muc")).toBe(false); // plain local_board ≠ lead
-  });
+it("canGrantLocalBoard: federal anywhere; a lead only its own group", () => {
+  const lead: Grant[] = [{ role: "local_board_lead", groupId: "grp_muc" }];
+  expect(canGrantLocalBoard(federal, "grp_xyz")).toBe(true); // federal: any group
+  expect(canGrantLocalBoard(lead, "grp_muc")).toBe(true); // lead of this group
+  expect(canGrantLocalBoard(lead, "grp_other")).toBe(false); // lead, wrong group
+  expect(canGrantLocalBoard(lead, null)).toBe(false); // unscoped is never delegable
+  expect(canGrantLocalBoard(localMuc, "grp_muc")).toBe(false); // plain local_board ≠ lead
+});
 ```
 
 - [ ] **Step 2: Run test to verify it fails**
@@ -136,10 +138,7 @@ In `modules/members/src/roles.ts`, add immediately after the `canManageGroup` fu
  * scoped to. A null groupId is never delegable — only federal (handled above).
  * Note: a plain `local_board` grant does NOT confer this; only a lead does.
  */
-export function canGrantLocalBoard(
-  grants: ReadonlyArray<Grant>,
-  groupId: string | null,
-): boolean {
+export function canGrantLocalBoard(grants: ReadonlyArray<Grant>, groupId: string | null): boolean {
   if (isFederalBoard(grants)) return true;
   if (groupId === null) return false;
   return grants.some((g) => g.role === "local_board_lead" && g.groupId === groupId);
@@ -163,6 +162,7 @@ git commit -m "feat(members): add local_board_lead role + canGrantLocalBoard pre
 ## Task 3: Migration — widen the role CHECK; verify a lead can be appointed
 
 **Files:**
+
 - Create: `modules/members/migrations/0003_local_board_lead.sql`
 - Modify: `modules/members/src/index.test.ts:67-72` (migration load list)
 - Test: `modules/members/src/index.test.ts` (new `it` block)
@@ -172,28 +172,28 @@ git commit -m "feat(members): add local_board_lead role + canGrantLocalBoard pre
 In `modules/members/src/index.test.ts`, add this `it` block immediately after the existing `grantRole/revokeRole: federal-only, scoped, idempotent, immediate` test (around line 245):
 
 ```ts
-  it("federal board may appoint a local_board_lead (migration 0003)", async () => {
-    await createGroup("grp_a", "aachen");
-    await createUser("usr_lead", "lead@example.de");
-    const m = await createProfile(t.db, {
-      userId: "usr_lead",
-      firstName: "L",
-      lastName: "x",
-      primaryGroupId: "grp_a",
-    });
-    await approveMember(t.db, m.id, BOARD);
-
-    // local_board_lead is group-scoped, like local_board.
-    await expect(grantRole(t.db, m.id, "local_board_lead", BOARD)).rejects.toMatchObject({
-      code: "VALIDATION",
-    });
-
-    await grantRole(t.db, m.id, "local_board_lead", BOARD, "grp_a");
-    expect(await getGrants(t.db, m.id)).toContainEqual({
-      role: "local_board_lead",
-      groupId: "grp_a",
-    });
+it("federal board may appoint a local_board_lead (migration 0003)", async () => {
+  await createGroup("grp_a", "aachen");
+  await createUser("usr_lead", "lead@example.de");
+  const m = await createProfile(t.db, {
+    userId: "usr_lead",
+    firstName: "L",
+    lastName: "x",
+    primaryGroupId: "grp_a",
   });
+  await approveMember(t.db, m.id, BOARD);
+
+  // local_board_lead is group-scoped, like local_board.
+  await expect(grantRole(t.db, m.id, "local_board_lead", BOARD)).rejects.toMatchObject({
+    code: "VALIDATION",
+  });
+
+  await grantRole(t.db, m.id, "local_board_lead", BOARD, "grp_a");
+  expect(await getGrants(t.db, m.id)).toContainEqual({
+    role: "local_board_lead",
+    groupId: "grp_a",
+  });
+});
 ```
 
 - [ ] **Step 2: Run test to verify it fails**
@@ -268,6 +268,7 @@ git commit -m "feat(members): migration + scope validation for local_board_lead"
 ## Task 4: Scope-aware grant authorization (delegation behavior)
 
 **Files:**
+
 - Modify: `modules/members/src/services/roles.ts` (replace `requireBoard`; update `grantRole`/`revokeRole` call order)
 - Test: `modules/members/src/index.test.ts` (new `it` block)
 
@@ -276,57 +277,57 @@ git commit -m "feat(members): migration + scope validation for local_board_lead"
 In `modules/members/src/index.test.ts`, add after the Task 3 test:
 
 ```ts
-  it("a local_board_lead grants local_board within its group, but not across groups or higher roles", async () => {
-    await createGroup("grp_a", "aachen");
-    await createGroup("grp_b", "bonn");
-    await createUser("usr_lead", "lead2@example.de");
-    const lead = await createProfile(t.db, {
-      userId: "usr_lead",
-      firstName: "Lead",
-      lastName: "x",
-      primaryGroupId: "grp_a",
-    });
-    await approveMember(t.db, lead.id, BOARD);
-    await grantRole(t.db, lead.id, "local_board_lead", BOARD, "grp_a");
-    const leadActor = { userId: "usr_lead", grants: await getGrants(t.db, lead.id) };
-
-    // A member of grp_a to be promoted by the lead.
-    await createUser("usr_member", "member@example.de");
-    const member = await createProfile(t.db, {
-      userId: "usr_member",
-      firstName: "Mem",
-      lastName: "x",
-      primaryGroupId: "grp_a",
-    });
-    await approveMember(t.db, member.id, BOARD);
-
-    // Lead CAN grant local_board within its own group...
-    await grantRole(t.db, member.id, "local_board", leadActor, "grp_a");
-    expect(await getGrants(t.db, member.id)).toContainEqual({
-      role: "local_board",
-      groupId: "grp_a",
-    });
-
-    // ...and CAN revoke it again.
-    await revokeRole(t.db, member.id, "local_board", leadActor, "grp_a");
-    expect(await getGrants(t.db, member.id)).not.toContainEqual({
-      role: "local_board",
-      groupId: "grp_a",
-    });
-
-    // Lead CANNOT grant local_board in another group.
-    await expect(
-      grantRole(t.db, member.id, "local_board", leadActor, "grp_b"),
-    ).rejects.toMatchObject({ code: "FORBIDDEN" });
-
-    // Lead CANNOT appoint another lead, nor grant federal_board.
-    await expect(
-      grantRole(t.db, member.id, "local_board_lead", leadActor, "grp_a"),
-    ).rejects.toMatchObject({ code: "FORBIDDEN" });
-    await expect(
-      grantRole(t.db, member.id, "federal_board", leadActor),
-    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+it("a local_board_lead grants local_board within its group, but not across groups or higher roles", async () => {
+  await createGroup("grp_a", "aachen");
+  await createGroup("grp_b", "bonn");
+  await createUser("usr_lead", "lead2@example.de");
+  const lead = await createProfile(t.db, {
+    userId: "usr_lead",
+    firstName: "Lead",
+    lastName: "x",
+    primaryGroupId: "grp_a",
   });
+  await approveMember(t.db, lead.id, BOARD);
+  await grantRole(t.db, lead.id, "local_board_lead", BOARD, "grp_a");
+  const leadActor = { userId: "usr_lead", grants: await getGrants(t.db, lead.id) };
+
+  // A member of grp_a to be promoted by the lead.
+  await createUser("usr_member", "member@example.de");
+  const member = await createProfile(t.db, {
+    userId: "usr_member",
+    firstName: "Mem",
+    lastName: "x",
+    primaryGroupId: "grp_a",
+  });
+  await approveMember(t.db, member.id, BOARD);
+
+  // Lead CAN grant local_board within its own group...
+  await grantRole(t.db, member.id, "local_board", leadActor, "grp_a");
+  expect(await getGrants(t.db, member.id)).toContainEqual({
+    role: "local_board",
+    groupId: "grp_a",
+  });
+
+  // ...and CAN revoke it again.
+  await revokeRole(t.db, member.id, "local_board", leadActor, "grp_a");
+  expect(await getGrants(t.db, member.id)).not.toContainEqual({
+    role: "local_board",
+    groupId: "grp_a",
+  });
+
+  // Lead CANNOT grant local_board in another group.
+  await expect(grantRole(t.db, member.id, "local_board", leadActor, "grp_b")).rejects.toMatchObject(
+    { code: "FORBIDDEN" },
+  );
+
+  // Lead CANNOT appoint another lead, nor grant federal_board.
+  await expect(
+    grantRole(t.db, member.id, "local_board_lead", leadActor, "grp_a"),
+  ).rejects.toMatchObject({ code: "FORBIDDEN" });
+  await expect(grantRole(t.db, member.id, "federal_board", leadActor)).rejects.toMatchObject({
+    code: "FORBIDDEN",
+  });
+});
 ```
 
 - [ ] **Step 2: Run test to verify it fails**
@@ -371,31 +372,31 @@ function requireCanGrant(actor: Actor, role: Role, groupId: string | null): void
 (c) In `grantRole`, replace the opening three guard lines:
 
 ```ts
-  requireBoard(actor);
-  requireValidRole(role);
-  requireValidScope(role, groupId);
+requireBoard(actor);
+requireValidRole(role);
+requireValidScope(role, groupId);
 ```
 
 with (validate role/scope first so `requireCanGrant` receives a typed `Role` and a checked scope):
 
 ```ts
-  requireValidRole(role);
-  requireValidScope(role, groupId);
-  requireCanGrant(actor, role, groupId);
+requireValidRole(role);
+requireValidScope(role, groupId);
+requireCanGrant(actor, role, groupId);
 ```
 
 (d) In `revokeRole`, replace its two opening guard lines:
 
 ```ts
-  requireBoard(actor);
-  requireValidRole(role);
+requireBoard(actor);
+requireValidRole(role);
 ```
 
 with:
 
 ```ts
-  requireValidRole(role);
-  requireCanGrant(actor, role, groupId);
+requireValidRole(role);
+requireCanGrant(actor, role, groupId);
 ```
 
 - [ ] **Step 4: Run tests to verify they pass**
@@ -420,6 +421,7 @@ git commit -m "feat(members): leads may grant local_board within their group"
 ## Task 5: Record the decision (ADR) and refresh stale comments
 
 **Files:**
+
 - Create: `docs/decisions/0013-local-board-delegation.md`
 - Modify: `modules/members/src/services/roles.ts` (file header comment)
 - Modify: `modules/members/README.md` (roles section, if present)
@@ -537,4 +539,7 @@ Expected: the runner lists `members/0003_local_board_lead.sql` in order after `0
 - **Spec coverage:** implements §5 "Role delegation model" and the §5 blast-radius table rows 1–6 of `docs/superpowers/specs/2026-06-11-phase3-dashboard-design.md`. UI surfaces (`/federal/roles`, `/vorstand`) are explicitly later PRs and out of this plan.
 - **Type consistency:** `canGrantLocalBoard(grants, groupId)`, `requireCanGrant(actor, role, groupId)`, `requireValidScope(role, groupId)` are used with identical signatures across tasks.
 - **No login change:** Task background and the ADR both state leads never come from the JWT allowlist.
+
+```
+
 ```

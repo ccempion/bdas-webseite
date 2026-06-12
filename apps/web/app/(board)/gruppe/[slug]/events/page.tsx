@@ -12,7 +12,10 @@ export const metadata = { title: "Events" };
 export default async function GroupEventsPage({ params }: { params: { slug: string } }) {
   const { me, groupId } = await requireGroupScope(params.slug);
   const db = getDb();
-  const [events, group] = await Promise.all([listManagedEvents(db, viewerFrom(me)), getGroupBySlug(db, params.slug)]);
+  const [events, group] = await Promise.all([
+    listManagedEvents(db, viewerFrom(me)),
+    getGroupBySlug(db, params.slug),
+  ]);
   const groupEvents = events.filter((e) => e.groupId === groupId);
   return (
     <section className="flex flex-col gap-4">

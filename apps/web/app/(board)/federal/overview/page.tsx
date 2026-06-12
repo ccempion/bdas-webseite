@@ -27,7 +27,9 @@ export default async function FederalOverviewPage() {
   return (
     <section className="flex flex-col gap-5">
       <h1 className="text-2xl font-semibold text-bdas-ink">Übersicht · Bundesverband</h1>
-      <ActionStrip items={[{ count: counts.pending, label: "Freigaben", href: "/federal/members" }]} />
+      <ActionStrip
+        items={[{ count: counts.pending, label: "Freigaben", href: "/federal/members" }]}
+      />
       <div className="flex flex-wrap gap-3">
         <Tile value={String(counts.active)} label="Aktive Mitglieder" />
         <Tile value={`+${newSignups}`} label="Neu (30 T.)" />

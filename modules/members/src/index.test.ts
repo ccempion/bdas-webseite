@@ -295,8 +295,18 @@ describeIfDb("members integration", () => {
     await createGroup("grp_b", "bonn");
     await createUser("usr_la", "la@example.de");
     await createUser("usr_lb", "lb@example.de");
-    const la = await createProfile(t.db, { userId: "usr_la", firstName: "Lena", lastName: "Anders", primaryGroupId: "grp_a" });
-    await createProfile(t.db, { userId: "usr_lb", firstName: "Tom", lastName: "Berg", primaryGroupId: "grp_b" });
+    const la = await createProfile(t.db, {
+      userId: "usr_la",
+      firstName: "Lena",
+      lastName: "Anders",
+      primaryGroupId: "grp_a",
+    });
+    await createProfile(t.db, {
+      userId: "usr_lb",
+      firstName: "Tom",
+      lastName: "Berg",
+      primaryGroupId: "grp_b",
+    });
     await approveMember(t.db, la.id, BOARD); // la → active; tom stays pending
 
     const all = await listMembers(t.db, {});
@@ -316,8 +326,18 @@ describeIfDb("members integration", () => {
     await createGroup("grp_a", "aachen");
     await createUser("usr_s1", "s1@example.de");
     await createUser("usr_s2", "s2@example.de");
-    const s1 = await createProfile(t.db, { userId: "usr_s1", firstName: "A", lastName: "A", primaryGroupId: "grp_a" });
-    await createProfile(t.db, { userId: "usr_s2", firstName: "B", lastName: "B", primaryGroupId: "grp_a" });
+    const s1 = await createProfile(t.db, {
+      userId: "usr_s1",
+      firstName: "A",
+      lastName: "A",
+      primaryGroupId: "grp_a",
+    });
+    await createProfile(t.db, {
+      userId: "usr_s2",
+      firstName: "B",
+      lastName: "B",
+      primaryGroupId: "grp_a",
+    });
     await approveMember(t.db, s1.id, BOARD);
 
     const counts = await countMembersByStatus(t.db, {});
@@ -385,15 +405,20 @@ describeIfDb("members integration", () => {
     await expect(
       grantRole(t.db, member.id, "local_board_lead", leadActor, "grp_a"),
     ).rejects.toMatchObject({ code: "FORBIDDEN" });
-    await expect(
-      grantRole(t.db, member.id, "federal_board", leadActor),
-    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    await expect(grantRole(t.db, member.id, "federal_board", leadActor)).rejects.toMatchObject({
+      code: "FORBIDDEN",
+    });
   });
 
   it("listRoleHolders and listGrantAudit expose roster + history", async () => {
     await createGroup("grp_a", "aachen");
     await createUser("usr_h1", "h1@example.de");
-    const m = await createProfile(t.db, { userId: "usr_h1", firstName: "Lena", lastName: "Hofer", primaryGroupId: "grp_a" });
+    const m = await createProfile(t.db, {
+      userId: "usr_h1",
+      firstName: "Lena",
+      lastName: "Hofer",
+      primaryGroupId: "grp_a",
+    });
     await approveMember(t.db, m.id, BOARD);
     await grantRole(t.db, m.id, "local_board_lead", BOARD, "grp_a");
     await grantRole(t.db, m.id, "local_board", BOARD, "grp_a");

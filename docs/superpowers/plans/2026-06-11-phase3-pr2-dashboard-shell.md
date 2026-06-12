@@ -4,7 +4,7 @@
 
 **Goal:** Stand up the board cockpit chrome inside `apps/web`: a `(board)` route group with a sidebar + scope-switcher, a scope-landing page, and per-scope access gates — no data pages yet (those are PRs 3–6).
 
-**Architecture:** A new framework-agnostic module `modules/dashboard-shell` owns the *pure* shell logic — the `Scope` model, deriving a user's scopes from their grants, and the access predicates — with its own vitest tests. The Next.js glue (route-group layouts that call those predicates then `redirect`, plus the React sidebar/switcher components) lives in `apps/web/app/(board)/`. The module owns no tables (spec §13) and depends only on the `members` and `groups` type interfaces.
+**Architecture:** A new framework-agnostic module `modules/dashboard-shell` owns the _pure_ shell logic — the `Scope` model, deriving a user's scopes from their grants, and the access predicates — with its own vitest tests. The Next.js glue (route-group layouts that call those predicates then `redirect`, plus the React sidebar/switcher components) lives in `apps/web/app/(board)/`. The module owns no tables (spec §13) and depends only on the `members` and `groups` type interfaces.
 
 **Tech Stack:** TypeScript, Next.js 14 App Router (Server Components, `force-dynamic`), Tailwind via `core/design-system` tokens, Vitest, Playwright (e2e smoke).
 
@@ -62,6 +62,7 @@ e2e/board-shell.spec.ts                                NEW  Playwright smoke
 ## Task 1: Add the `dashboard` feature flag + web helper
 
 **Files:**
+
 - Modify: `core/feature-flags/src/index.ts` (the `FLAGS` array)
 - Test: `core/feature-flags/src/index.test.ts` (if it exists; else skip the test step)
 - Create: `apps/web/app/_dashboard/flag.ts`
@@ -120,6 +121,7 @@ git commit -m "$(printf 'feat(feature-flags): add dashboard flag + web guard\n\n
 ## Task 2: Scaffold `modules/dashboard-shell` + the Scope model
 
 **Files:**
+
 - Create: `modules/dashboard-shell/package.json`, `tsconfig.json`, `vitest.config.ts`, `README.md`
 - Create: `modules/dashboard-shell/src/index.ts`, `src/scope.ts`
 - Test: `modules/dashboard-shell/src/scope.test.ts`
@@ -149,7 +151,13 @@ import type { Grant } from "@bdas/members";
 import type { GroupSummary } from "@bdas/groups";
 
 const groups: GroupSummary[] = [
-  { id: "grp_mg", slug: "moenchengladbach", name: "HG Mönchengladbach", city: "MG", status: "active" },
+  {
+    id: "grp_mg",
+    slug: "moenchengladbach",
+    name: "HG Mönchengladbach",
+    city: "MG",
+    status: "active",
+  },
   { id: "grp_ac", slug: "aachen", name: "HG Aachen", city: "Aachen", status: "active" },
 ];
 
@@ -211,7 +219,12 @@ import type { GroupSummary } from "@bdas/groups";
  *  a group scope is one Hochschulgruppe. */
 export type Scope =
   | { readonly kind: "federal" }
-  | { readonly kind: "group"; readonly groupId: string; readonly slug: string; readonly name: string };
+  | {
+      readonly kind: "group";
+      readonly groupId: string;
+      readonly slug: string;
+      readonly name: string;
+    };
 
 /**
  * The scopes a user may switch between, derived from their grants (ADR 0007 /
@@ -259,11 +272,7 @@ Create `modules/dashboard-shell/src/index.ts`:
  * layouts live in apps/web and consume this surface.
  */
 export { boardScopes, type Scope } from "./scope";
-export {
-  canAdministerBoard,
-  canSeeFederalScope,
-  canSeeGroupScope,
-} from "./access";
+export { canAdministerBoard, canSeeFederalScope, canSeeGroupScope } from "./access";
 ```
 
 (`./access` is created in Task 3. If the test run in Step 5 errors on the missing `./access` import, comment those two lines out, run Step 5, then restore them in Task 3 — but prefer doing Task 3 immediately after so the surface stays whole. For now, to keep Step 5 green, create a temporary `src/access.ts` containing only `export {};` and replace it in Task 3.)
@@ -306,6 +315,7 @@ git commit -m "$(printf 'feat(dashboard-shell): scaffold module + scope model\n\
 ## Task 3: Access predicates
 
 **Files:**
+
 - Replace: `modules/dashboard-shell/src/access.ts` (was the temporary stub)
 - Test: `modules/dashboard-shell/src/access.test.ts`
 
@@ -363,8 +373,7 @@ import type { Grant } from "@bdas/members";
  *  board, or lead) qualifies; a plain member does not. */
 export function canAdministerBoard(grants: ReadonlyArray<Grant>): boolean {
   return grants.some(
-    (g) =>
-      g.role === "federal_board" || g.role === "local_board" || g.role === "local_board_lead",
+    (g) => g.role === "federal_board" || g.role === "local_board" || g.role === "local_board_lead",
   );
 }
 
@@ -399,6 +408,7 @@ git commit -m "$(printf 'feat(dashboard-shell): board access predicates\n\nCo-Au
 ## Task 4: `(board)` group gate (Next glue) + nav definitions
 
 **Files:**
+
 - Create: `apps/web/app/_dashboard/session.ts`
 - Create: `apps/web/app/(board)/nav.ts`
 
@@ -412,11 +422,7 @@ Create `apps/web/app/_dashboard/session.ts`:
 import { redirect } from "next/navigation";
 
 import { getDb } from "@bdas/db";
-import {
-  canAdministerBoard,
-  canSeeFederalScope,
-  canSeeGroupScope,
-} from "@bdas/dashboard-shell";
+import { canAdministerBoard, canSeeFederalScope, canSeeGroupScope } from "@bdas/dashboard-shell";
 import { getCurrentMember, type CurrentMember } from "@bdas/members";
 import { getGroupBySlug } from "@bdas/groups";
 
@@ -501,6 +507,7 @@ git commit -m "$(printf 'feat(web): board scope gates + nav definitions\n\nCo-Au
 ## Task 5: Shell frame — `(board)` layout, ScopeSwitcher, Sidebar, scope landing
 
 **Files:**
+
 - Create: `apps/web/app/(board)/layout.tsx`, `ScopeSwitcher.tsx`, `Sidebar.tsx`, `page.tsx`
 
 - [ ] **Step 1: ScopeSwitcher (client component)**
@@ -785,14 +792,14 @@ export default function Page() {
 }
 ```
 
-| Folder | Title |
-|---|---|
-| `overview` | Übersicht |
-| `members` | Mitglieder |
-| `events` | Events |
-| `groups` | Gruppen |
-| `roles` | Rollen & Vorstände |
-| `files` | Dateien |
+| Folder     | Title              |
+| ---------- | ------------------ |
+| `overview` | Übersicht          |
+| `members`  | Mitglieder         |
+| `events`   | Events             |
+| `groups`   | Gruppen            |
+| `roles`    | Rollen & Vorstände |
+| `files`    | Dateien            |
 
 - [ ] **Step 3: Group scope layout**
 
@@ -821,14 +828,14 @@ export default async function GroupLayout({
 
 For each of `overview, members, events, vorstand, profile, files`, create `apps/web/app/(board)/gruppe/[slug]/<name>/page.tsx` using the SAME template as Step 2 (title from the table). For `vorstand`, add a one-line note that lead-only gating arrives with the roles PR:
 
-| Folder | Title |
-|---|---|
-| `overview` | Übersicht |
-| `members` | Mitglieder |
-| `events` | Events |
-| `vorstand` | Vorstand |
-| `profile` | Profil |
-| `files` | Dateien |
+| Folder     | Title      |
+| ---------- | ---------- |
+| `overview` | Übersicht  |
+| `members`  | Mitglieder |
+| `events`   | Events     |
+| `vorstand` | Vorstand   |
+| `profile`  | Profil     |
+| `files`    | Dateien    |
 
 - [ ] **Step 5: Build the web app**
 
@@ -847,6 +854,7 @@ git commit -m "$(printf 'feat(web): board scope layouts + placeholder pages\n\nC
 ## Task 7: Wire the new module into the workspace + manifest sanity
 
 **Files:**
+
 - Verify: root `pnpm-workspace.yaml` already globs `modules/*` (it does) — no edit needed; run `pnpm install` to link `@bdas/dashboard-shell`.
 - Note: `dashboard-shell` owns **no migrations**, so it is NOT added to `infra/migrations/src/manifest.ts`. Confirm this is intentional (the module owns no tables).
 
@@ -872,6 +880,7 @@ git commit -m "$(printf 'chore: link @bdas/dashboard-shell workspace package\n\n
 ## Task 8: e2e smoke — gates redirect, board user sees the shell
 
 **Files:**
+
 - Create: `e2e/board-shell.spec.ts`
 
 Inspect an existing spec in `e2e/` first to copy the project's helpers (base URL, how they create a logged-in session / seed a board user). Match those patterns exactly; do NOT invent a new login mechanism.
@@ -926,4 +935,7 @@ git commit -m "$(printf 'test(e2e): board shell access redirects\n\nCo-Authored-
 - **No new tables / no manifest entry** for `dashboard-shell` (spec §13: the dashboard owns no tables).
 - **Tokens only:** components use `bdas-*` utility classes; the single accent hex lives in a `:root` CSS variable, not inline in a component.
 - **Security:** authorization is enforced in the `(board)` layouts via the pure predicates; `middleware.ts` does not gate. The federal/group layouts re-gate independently so a deep link cannot bypass a parent.
+
+```
+
 ```

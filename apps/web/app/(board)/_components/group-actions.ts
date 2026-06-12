@@ -13,7 +13,11 @@ async function assertFederal() {
   requireFederalBoard(me); // throws ForbiddenError if not federal_board
 }
 
-export async function createGroupAction(input: { name: string; city: string; slug: string }): Promise<void> {
+export async function createGroupAction(input: {
+  name: string;
+  city: string;
+  slug: string;
+}): Promise<void> {
   await assertFederal();
   await createGroup(getDb(), input);
   revalidatePath("/federal/groups");

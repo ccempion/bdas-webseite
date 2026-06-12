@@ -34,14 +34,14 @@ tile, table, and chart calls a typed read method on a module's `index.ts`.
 
 **Deferred** (depend on unbuilt work; not in this phase):
 
-| Surface / feature | Blocked on |
-|---|---|
-| Payments tab, dues/donations tiles, payments chart | `payments` module (Phase 6) |
-| Decide group-change requests | `group_change_requests` table (Phase 6) |
-| Join-policy editor | `groups.join_fee_*` columns (Phase 6) |
-| Broadcasts (federal + local) | deferred per Phase 2 notes |
-| Handover, Projects tabs | no module exists |
-| Notification-log surfacing | optional; deferred |
+| Surface / feature                                  | Blocked on                              |
+| -------------------------------------------------- | --------------------------------------- |
+| Payments tab, dues/donations tiles, payments chart | `payments` module (Phase 6)             |
+| Decide group-change requests                       | `group_change_requests` table (Phase 6) |
+| Join-policy editor                                 | `groups.join_fee_*` columns (Phase 6)   |
+| Broadcasts (federal + local)                       | deferred per Phase 2 notes              |
+| Handover, Projects tabs                            | no module exists                        |
+| Notification-log surfacing                         | optional; deferred                      |
 
 ## 4. Locked design decisions
 
@@ -66,7 +66,7 @@ tile, table, and chart calls a typed read method on a module's `index.ts`.
 
 **Intent:** the federal board no longer grants every `local_board` centrally.
 Instead it appoints **local board leads** per group; a lead manages their own
-group's `local_board` roster. Federal retains control of *who the leads are* and of
+group's `local_board` roster. Federal retains control of _who the leads are_ and of
 `federal_board`.
 
 - New scoped grant **`local_board_lead`** (group-scoped, like `local_board`).
@@ -93,14 +93,14 @@ The "who may grant" decision lives in a single chokepoint, `requireBoard(actor)`
 `modules/members/src/services/roles.ts`. No other module is affected
 (`canManageGroup`, approvals, files, events already handle local scope correctly).
 
-| # | Change | Notes |
-|---|---|---|
-| 1 | `modules/auth/src/sso.ts` — add `local_board_lead` to the `Role` union | 1 line |
-| 2 | `modules/members/src/roles.ts` — add to `ALL_ROLES`; new predicate `canGrantLocalBoard(grants, groupId)` = federal **or** `local_board_lead:[group]` | ~6 lines |
-| 3 | `modules/members/src/services/roles.ts` — replace `requireBoard` with a scope-aware `requireCanGrant(actor, role, groupId)`; appointing a lead or `federal_board` stays federal-only; `requireValidScope` treats `local_board_lead` as group-scoped | ~15 lines |
-| 4 | Migration in `modules/members/migrations/` — drop + recreate `member_role_grants_role_check` to allow `'local_board_lead'` | trivial; no enum churn (role is `text` + CHECK) |
-| 5 | Tests — update `index.test.ts:203` ("federal-only" assertion is now conditional); add lead-grants-local-board and lead-cannot-cross-group tests | — |
-| 6 | New ADR — reverses the "only `federal_board` may grant" statement in ADR 0007 and the `roles.ts` header (CLAUDE.md §4 requires the decision be recorded) | doc |
+| #   | Change                                                                                                                                                                                                                                              | Notes                                           |
+| --- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------- |
+| 1   | `modules/auth/src/sso.ts` — add `local_board_lead` to the `Role` union                                                                                                                                                                              | 1 line                                          |
+| 2   | `modules/members/src/roles.ts` — add to `ALL_ROLES`; new predicate `canGrantLocalBoard(grants, groupId)` = federal **or** `local_board_lead:[group]`                                                                                                | ~6 lines                                        |
+| 3   | `modules/members/src/services/roles.ts` — replace `requireBoard` with a scope-aware `requireCanGrant(actor, role, groupId)`; appointing a lead or `federal_board` stays federal-only; `requireValidScope` treats `local_board_lead` as group-scoped | ~15 lines                                       |
+| 4   | Migration in `modules/members/migrations/` — drop + recreate `member_role_grants_role_check` to allow `'local_board_lead'`                                                                                                                          | trivial; no enum churn (role is `text` + CHECK) |
+| 5   | Tests — update `index.test.ts:203` ("federal-only" assertion is now conditional); add lead-grants-local-board and lead-cannot-cross-group tests                                                                                                     | —                                               |
+| 6   | New ADR — reverses the "only `federal_board` may grant" statement in ADR 0007 and the `roles.ts` header (CLAUDE.md §4 requires the decision be recorded)                                                                                            | doc                                             |
 
 Existing grants are unaffected; leads are purely additive. No data backfill.
 

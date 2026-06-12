@@ -4,8 +4,4 @@
  * layouts live in apps/web and consume this surface.
  */
 export { boardScopes, type Scope } from "./scope";
-export {
-  canAdministerBoard,
-  canSeeFederalScope,
-  canSeeGroupScope,
-} from "./access";
+export { canAdministerBoard, canSeeFederalScope, canSeeGroupScope } from "./access";

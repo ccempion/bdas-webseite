@@ -13,7 +13,10 @@ export const metadata = { title: "Events" };
 export default async function FederalEventsPage() {
   const db = getDb();
   const me = await getCurrentMember(db, readSessionCookie());
-  const [events, groups] = await Promise.all([listManagedEvents(db, viewerFrom(me)), listGroups(db)]);
+  const [events, groups] = await Promise.all([
+    listManagedEvents(db, viewerFrom(me)),
+    listGroups(db),
+  ]);
   const groupNames = Object.fromEntries(groups.map((g) => [g.id, g.name]));
   return (
     <section className="flex flex-col gap-4">

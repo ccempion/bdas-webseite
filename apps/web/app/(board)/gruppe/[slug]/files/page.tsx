@@ -11,7 +11,10 @@ export const metadata = { title: "Dateien" };
 export default async function GroupFilesPage({ params }: { params: { slug: string } }) {
   const { me, groupId } = await requireGroupScope(params.slug);
   const db = getDb();
-  const [folders, group] = await Promise.all([listFolders(db, me), getGroupBySlug(db, params.slug)]);
+  const [folders, group] = await Promise.all([
+    listFolders(db, me),
+    getGroupBySlug(db, params.slug),
+  ]);
   const groupFolders = folders.filter((f) => f.groupId === groupId);
   return (
     <section className="flex flex-col gap-4">

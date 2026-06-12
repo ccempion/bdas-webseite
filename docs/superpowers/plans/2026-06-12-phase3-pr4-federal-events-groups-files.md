@@ -42,6 +42,7 @@ A `local_board_lead` boards its group and must see its events (matters for PR 6;
 - [ ] **Step 2: Typecheck + commit**
 
 Run: `pnpm --filter @bdas/web typecheck` → PASS.
+
 ```bash
 git add apps/web/lib/event-viewer.ts
 git commit -m "$(printf 'fix(web): event viewer includes local_board_lead group scope\n\nCo-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>')"
@@ -52,6 +53,7 @@ git commit -m "$(printf 'fix(web): event viewer includes local_board_lead group 
 ## Task 2: Federal events table + page
 
 **Files:**
+
 - Create: `apps/web/app/(board)/_components/EventsTable.tsx`
 - Replace placeholder: `apps/web/app/(board)/federal/events/page.tsx`
 
@@ -80,23 +82,43 @@ const FILTERS: ReadonlyArray<{ key: "all" | EventStatus; label: string }> = [
   { key: "cancelled", label: "Abgesagt" },
 ];
 
-export function EventsTable({ events, groupNames }: { events: Row[]; groupNames: Record<string, string> }) {
+export function EventsTable({
+  events,
+  groupNames,
+}: {
+  events: Row[];
+  groupNames: Record<string, string>;
+}) {
   const [filter, setFilter] = useState<"all" | EventStatus>("all");
   const [q, setQ] = useState("");
   const rows = useMemo(
-    () => events.filter((e) => (filter === "all" || e.status === filter) && (q.trim() === "" || e.title.toLowerCase().includes(q.toLowerCase()))),
+    () =>
+      events.filter(
+        (e) =>
+          (filter === "all" || e.status === filter) &&
+          (q.trim() === "" || e.title.toLowerCase().includes(q.toLowerCase())),
+      ),
     [events, filter, q],
   );
   return (
     <div className="overflow-hidden rounded-bdas border border-bdas-soft bg-bdas-surface shadow-bdas-card">
       <div className="flex flex-wrap items-center gap-2 border-b border-bdas-soft p-3">
         {FILTERS.map((f) => (
-          <button key={f.key} type="button" onClick={() => setFilter(f.key)}
-            className={`rounded-bdas-pill px-3 py-1 text-sm transition-colors ${filter === f.key ? "bg-bdas-red text-bdas-surface" : "border border-bdas-soft text-bdas-ink-body hover:bg-bdas-surface-hover"}`}>
+          <button
+            key={f.key}
+            type="button"
+            onClick={() => setFilter(f.key)}
+            className={`rounded-bdas-pill px-3 py-1 text-sm transition-colors ${filter === f.key ? "bg-bdas-red text-bdas-surface" : "border border-bdas-soft text-bdas-ink-body hover:bg-bdas-surface-hover"}`}
+          >
             {f.label}
           </button>
         ))}
-        <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Suche…" className="ml-auto rounded-bdas-sm border border-bdas-soft px-3 py-1 text-bdas-ink-body" />
+        <input
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          placeholder="Suche…"
+          className="ml-auto rounded-bdas-sm border border-bdas-soft px-3 py-1 text-bdas-ink-body"
+        />
       </div>
       <table className="w-full text-sm">
         <thead>
@@ -112,13 +134,30 @@ export function EventsTable({ events, groupNames }: { events: Row[]; groupNames:
           {rows.map((e) => (
             <tr key={e.id} className="border-t border-bdas-soft hover:bg-bdas-surface-hover">
               <td className="p-3 text-bdas-ink">{e.title}</td>
-              <td className="p-3 text-bdas-ink-body">{e.groupId ? groupNames[e.groupId] ?? "—" : "Bundesweit"}</td>
-              <td className="p-3 text-bdas-ink-body">{new Date(e.startsAt).toLocaleDateString("de-DE")}</td>
-              <td className="p-3"><span className="rounded-bdas-pill bg-bdas-surface-hover px-2 py-0.5 text-xs font-semibold text-bdas-ink-body">{STATUS_LABEL[e.status]}</span></td>
-              <td className="p-3 text-bdas-ink-body">{e.confirmedCount}{e.capacity ? ` / ${e.capacity}` : ""}</td>
+              <td className="p-3 text-bdas-ink-body">
+                {e.groupId ? (groupNames[e.groupId] ?? "—") : "Bundesweit"}
+              </td>
+              <td className="p-3 text-bdas-ink-body">
+                {new Date(e.startsAt).toLocaleDateString("de-DE")}
+              </td>
+              <td className="p-3">
+                <span className="rounded-bdas-pill bg-bdas-surface-hover px-2 py-0.5 text-xs font-semibold text-bdas-ink-body">
+                  {STATUS_LABEL[e.status]}
+                </span>
+              </td>
+              <td className="p-3 text-bdas-ink-body">
+                {e.confirmedCount}
+                {e.capacity ? ` / ${e.capacity}` : ""}
+              </td>
             </tr>
           ))}
-          {rows.length === 0 && <tr><td colSpan={5} className="p-6 text-center text-bdas-ink-muted">Keine Events.</td></tr>}
+          {rows.length === 0 && (
+            <tr>
+              <td colSpan={5} className="p-6 text-center text-bdas-ink-muted">
+                Keine Events.
+              </td>
+            </tr>
+          )}
         </tbody>
       </table>
     </div>
@@ -146,7 +185,10 @@ export const metadata = { title: "Events" };
 export default async function FederalEventsPage() {
   const db = getDb();
   const me = await getCurrentMember(db, readSessionCookie());
-  const [events, groups] = await Promise.all([listManagedEvents(db, viewerFrom(me)), listGroups(db)]);
+  const [events, groups] = await Promise.all([
+    listManagedEvents(db, viewerFrom(me)),
+    listGroups(db),
+  ]);
   const groupNames = Object.fromEntries(groups.map((g) => [g.id, g.name]));
   return (
     <section className="flex flex-col gap-4">
@@ -162,6 +204,7 @@ export default async function FederalEventsPage() {
 - [ ] **Step 3: Typecheck + commit**
 
 Run: `pnpm --filter @bdas/web typecheck` → PASS.
+
 ```bash
 git add "apps/web/app/(board)/_components/EventsTable.tsx" "apps/web/app/(board)/federal/events/page.tsx"
 git commit -m "$(printf 'feat(web): federal events table page\n\nCo-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>')"
@@ -172,6 +215,7 @@ git commit -m "$(printf 'feat(web): federal events table page\n\nCo-Authored-By:
 ## Task 3: Federal groups table + create/archive actions
 
 **Files:**
+
 - Create: `apps/web/app/(board)/_components/group-actions.ts` (server actions)
 - Create: `apps/web/app/(board)/_components/GroupsTable.tsx` (client)
 - Create: `apps/web/app/(board)/_components/CreateGroupForm.tsx` (client)
@@ -197,7 +241,11 @@ async function assertFederal() {
   requireFederalBoard(me); // throws ForbiddenError if not federal_board
 }
 
-export async function createGroupAction(input: { name: string; city: string; slug: string }): Promise<void> {
+export async function createGroupAction(input: {
+  name: string;
+  city: string;
+  slug: string;
+}): Promise<void> {
   await assertFederal();
   await createGroup(getDb(), input);
   revalidatePath("/federal/groups");
@@ -231,7 +279,11 @@ export function CreateGroupForm() {
 
   if (!open) {
     return (
-      <button type="button" onClick={() => setOpen(true)} className="self-start rounded-bdas-sm bg-bdas-red px-3 py-2 text-sm font-semibold text-bdas-surface">
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="self-start rounded-bdas-sm bg-bdas-red px-3 py-2 text-sm font-semibold text-bdas-surface"
+      >
         + Gruppe anlegen
       </button>
     );
@@ -255,11 +307,28 @@ export function CreateGroupForm() {
       {(["name", "city", "slug"] as const).map((k) => (
         <label key={k} className="flex flex-col text-xs text-bdas-ink-muted">
           {k === "name" ? "Name" : k === "city" ? "Stadt" : "Slug"}
-          <input required value={form[k]} onChange={(e) => setForm({ ...form, [k]: e.target.value })} className="rounded-bdas-sm border border-bdas-soft px-2 py-1 text-bdas-ink" />
+          <input
+            required
+            value={form[k]}
+            onChange={(e) => setForm({ ...form, [k]: e.target.value })}
+            className="rounded-bdas-sm border border-bdas-soft px-2 py-1 text-bdas-ink"
+          />
         </label>
       ))}
-      <button type="submit" disabled={pending} className="rounded-bdas-sm bg-bdas-red px-3 py-1.5 text-sm font-semibold text-bdas-surface">Anlegen</button>
-      <button type="button" onClick={() => setOpen(false)} className="rounded-bdas-sm border border-bdas-soft px-3 py-1.5 text-sm">Abbrechen</button>
+      <button
+        type="submit"
+        disabled={pending}
+        className="rounded-bdas-sm bg-bdas-red px-3 py-1.5 text-sm font-semibold text-bdas-surface"
+      >
+        Anlegen
+      </button>
+      <button
+        type="button"
+        onClick={() => setOpen(false)}
+        className="rounded-bdas-sm border border-bdas-soft px-3 py-1.5 text-sm"
+      >
+        Abbrechen
+      </button>
       {error && <span className="w-full text-xs text-bdas-red">{error}</span>}
     </form>
   );
@@ -299,15 +368,36 @@ export function GroupsTable({ groups }: { groups: GroupSummary[] }) {
             <tr key={g.id} className="border-t border-bdas-soft hover:bg-bdas-surface-hover">
               <td className="p-3 text-bdas-ink">{g.name}</td>
               <td className="p-3 text-bdas-ink-body">{g.city}</td>
-              <td className="p-3"><span className="rounded-bdas-pill bg-bdas-surface-hover px-2 py-0.5 text-xs font-semibold text-bdas-ink-body">{STATUS_LABEL[g.status] ?? g.status}</span></td>
+              <td className="p-3">
+                <span className="rounded-bdas-pill bg-bdas-surface-hover px-2 py-0.5 text-xs font-semibold text-bdas-ink-body">
+                  {STATUS_LABEL[g.status] ?? g.status}
+                </span>
+              </td>
               <td className="p-3">
                 {g.status === "active" && (
-                  <button type="button" disabled={pending} onClick={() => start(() => { void archiveGroupAction(g.id); })} className="rounded-bdas-sm border border-bdas-soft px-2 py-1 text-xs">Archivieren</button>
+                  <button
+                    type="button"
+                    disabled={pending}
+                    onClick={() =>
+                      start(() => {
+                        void archiveGroupAction(g.id);
+                      })
+                    }
+                    className="rounded-bdas-sm border border-bdas-soft px-2 py-1 text-xs"
+                  >
+                    Archivieren
+                  </button>
                 )}
               </td>
             </tr>
           ))}
-          {groups.length === 0 && <tr><td colSpan={4} className="p-6 text-center text-bdas-ink-muted">Keine Gruppen.</td></tr>}
+          {groups.length === 0 && (
+            <tr>
+              <td colSpan={4} className="p-6 text-center text-bdas-ink-muted">
+                Keine Gruppen.
+              </td>
+            </tr>
+          )}
         </tbody>
       </table>
     </div>
@@ -344,6 +434,7 @@ export default async function FederalGroupsPage() {
 - [ ] **Step 5: Typecheck + commit**
 
 Run: `pnpm --filter @bdas/web typecheck` → PASS.
+
 ```bash
 git add "apps/web/app/(board)/_components/group-actions.ts" "apps/web/app/(board)/_components/GroupsTable.tsx" "apps/web/app/(board)/_components/CreateGroupForm.tsx" "apps/web/app/(board)/federal/groups/page.tsx"
 git commit -m "$(printf 'feat(web): federal groups table + create/archive actions\n\nCo-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>')"
@@ -354,6 +445,7 @@ git commit -m "$(printf 'feat(web): federal groups table + create/archive action
 ## Task 4: Federal files (folders) page
 
 **Files:**
+
 - Create: `apps/web/app/(board)/_components/FoldersTable.tsx`
 - Replace placeholder: `apps/web/app/(board)/federal/files/page.tsx`
 
@@ -371,7 +463,13 @@ const SCOPE_LABEL: Record<Folder["scope"], string> = {
   federal_board: "Bundesvorstand",
 };
 
-export function FoldersTable({ folders, groupNames }: { folders: Folder[]; groupNames: Record<string, string> }) {
+export function FoldersTable({
+  folders,
+  groupNames,
+}: {
+  folders: Folder[];
+  groupNames: Record<string, string>;
+}) {
   return (
     <div className="overflow-hidden rounded-bdas border border-bdas-soft bg-bdas-surface shadow-bdas-card">
       <table className="w-full text-sm">
@@ -387,10 +485,18 @@ export function FoldersTable({ folders, groupNames }: { folders: Folder[]; group
             <tr key={f.id} className="border-t border-bdas-soft">
               <td className="p-3 text-bdas-ink">{f.name}</td>
               <td className="p-3 text-bdas-ink-body">{SCOPE_LABEL[f.scope]}</td>
-              <td className="p-3 text-bdas-ink-body">{f.groupId ? groupNames[f.groupId] ?? "—" : "—"}</td>
+              <td className="p-3 text-bdas-ink-body">
+                {f.groupId ? (groupNames[f.groupId] ?? "—") : "—"}
+              </td>
             </tr>
           ))}
-          {folders.length === 0 && <tr><td colSpan={3} className="p-6 text-center text-bdas-ink-muted">Keine Ordner.</td></tr>}
+          {folders.length === 0 && (
+            <tr>
+              <td colSpan={3} className="p-6 text-center text-bdas-ink-muted">
+                Keine Ordner.
+              </td>
+            </tr>
+          )}
         </tbody>
       </table>
     </div>
@@ -434,6 +540,7 @@ export default async function FederalFilesPage() {
 - [ ] **Step 3: Typecheck + commit**
 
 Run: `pnpm --filter @bdas/web typecheck` → PASS.
+
 ```bash
 git add "apps/web/app/(board)/_components/FoldersTable.tsx" "apps/web/app/(board)/federal/files/page.tsx"
 git commit -m "$(printf 'feat(web): federal files (folders) page\n\nCo-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>')"
@@ -461,20 +568,23 @@ import { viewerFrom } from "../../../../lib/event-viewer";
 In the component, after the existing `Promise.all`, add an events fetch and compute upcoming:
 
 ```tsx
-  const me = await getCurrentMember(db, readSessionCookie());
-  const events = await listManagedEvents(db, viewerFrom(me));
-  const upcoming = events.filter((e) => e.status === "published" && new Date(e.startsAt) > new Date()).length;
+const me = await getCurrentMember(db, readSessionCookie());
+const events = await listManagedEvents(db, viewerFrom(me));
+const upcoming = events.filter(
+  (e) => e.status === "published" && new Date(e.startsAt) > new Date(),
+).length;
 ```
 
 And add a tile in the tiles row:
 
 ```tsx
-        <Tile value={String(upcoming)} label="Anstehende Events" />
+<Tile value={String(upcoming)} label="Anstehende Events" />
 ```
 
 - [ ] **Step 2: Build + commit**
 
 Run: `pnpm --filter @bdas/web build` → PASS.
+
 ```bash
 git add "apps/web/app/(board)/federal/overview/page.tsx"
 git commit -m "$(printf 'feat(web): upcoming-events tile on federal overview\n\nCo-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>')"
@@ -497,4 +607,7 @@ git commit -m "$(printf 'feat(web): upcoming-events tile on federal overview\n\n
 - **Tokens only**; status pills use neutral `bg-bdas-surface-hover` (brand red reserved for active filter / primary buttons).
 - **viewerFrom fix** makes a `local_board_lead` see its group's events (needed by PR 6; correct now).
 - **Deferred (not this PR):** event create/edit migration from `/admin/events`, file upload/download UI, access-log surfacing, per-group member-count columns — later refinements.
+
+```
+
 ```

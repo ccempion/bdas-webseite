@@ -34,14 +34,27 @@ export default async function VorstandPage({
         <h1 className="text-2xl font-semibold text-bdas-ink">Vorstand</h1>
         <GrantRoleModal
           title="Vorstand hinzufügen"
-          candidates={groupMembers.map((m) => ({ memberId: m.id, name: `${m.firstName} ${m.lastName}` }))}
+          candidates={groupMembers.map((m) => ({
+            memberId: m.id,
+            name: `${m.firstName} ${m.lastName}`,
+          }))}
           roleOptions={[{ role: "local_board", label: "Vorstand", groupId }]}
           revalidatePath={revalidate}
         />
       </div>
       <nav className="flex gap-2 text-sm">
-        <a href={revalidate} className={!showAudit ? "font-bold text-bdas-red" : "text-bdas-ink-body"}>Vorstand</a>
-        <a href={`${revalidate}?tab=audit`} className={showAudit ? "font-bold text-bdas-red" : "text-bdas-ink-body"}>Audit-Log</a>
+        <a
+          href={revalidate}
+          className={!showAudit ? "font-bold text-bdas-red" : "text-bdas-ink-body"}
+        >
+          Vorstand
+        </a>
+        <a
+          href={`${revalidate}?tab=audit`}
+          className={showAudit ? "font-bold text-bdas-red" : "text-bdas-ink-body"}
+        >
+          Audit-Log
+        </a>
       </nav>
       {showAudit ? (
         <AuditLog entries={audit} groupNames={{}} />

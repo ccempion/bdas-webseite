@@ -7,7 +7,13 @@ const SCOPE_LABEL: Record<Folder["scope"], string> = {
   federal_board: "Bundesvorstand",
 };
 
-export function FoldersTable({ folders, groupNames }: { folders: Folder[]; groupNames: Record<string, string> }) {
+export function FoldersTable({
+  folders,
+  groupNames,
+}: {
+  folders: Folder[];
+  groupNames: Record<string, string>;
+}) {
   return (
     <div className="overflow-hidden rounded-bdas border border-bdas-soft bg-bdas-surface shadow-bdas-card">
       <table className="w-full text-sm">
@@ -23,10 +29,18 @@ export function FoldersTable({ folders, groupNames }: { folders: Folder[]; group
             <tr key={f.id} className="border-t border-bdas-soft">
               <td className="p-3 text-bdas-ink">{f.name}</td>
               <td className="p-3 text-bdas-ink-body">{SCOPE_LABEL[f.scope]}</td>
-              <td className="p-3 text-bdas-ink-body">{f.groupId ? groupNames[f.groupId] ?? "—" : "—"}</td>
+              <td className="p-3 text-bdas-ink-body">
+                {f.groupId ? (groupNames[f.groupId] ?? "—") : "—"}
+              </td>
             </tr>
           ))}
-          {folders.length === 0 && <tr><td colSpan={3} className="p-6 text-center text-bdas-ink-muted">Keine Ordner.</td></tr>}
+          {folders.length === 0 && (
+            <tr>
+              <td colSpan={3} className="p-6 text-center text-bdas-ink-muted">
+                Keine Ordner.
+              </td>
+            </tr>
+          )}
         </tbody>
       </table>
     </div>

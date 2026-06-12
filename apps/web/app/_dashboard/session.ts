@@ -1,11 +1,7 @@
 import { redirect } from "next/navigation";
 
 import { getDb } from "@bdas/db";
-import {
-  canAdministerBoard,
-  canSeeFederalScope,
-  canSeeGroupScope,
-} from "@bdas/dashboard-shell";
+import { canAdministerBoard, canSeeFederalScope, canSeeGroupScope } from "@bdas/dashboard-shell";
 import { canGrantLocalBoard, getCurrentMember, type CurrentMember } from "@bdas/members";
 import { getGroupBySlug } from "@bdas/groups";
 

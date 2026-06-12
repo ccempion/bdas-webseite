@@ -50,13 +50,19 @@ export default async function GroupOverviewPage({ params }: { params: { slug: st
     listManagedEvents(db, viewerFrom(me)),
   ]);
   const groupEvents = events.filter((e) => e.groupId === groupId);
-  const upcoming = groupEvents.filter((e) => e.status === "published" && e.startsAt > new Date()).length;
+  const upcoming = groupEvents.filter(
+    (e) => e.status === "published" && e.startsAt > new Date(),
+  ).length;
   const newSignups = signups.reduce((n, p) => n + p.count, 0);
 
   return (
     <section className="flex flex-col gap-5">
       <h1 className="text-2xl font-semibold text-bdas-ink">Übersicht</h1>
-      <ActionStrip items={[{ count: counts.pending, label: "Freigaben", href: `/gruppe/${params.slug}/members` }]} />
+      <ActionStrip
+        items={[
+          { count: counts.pending, label: "Freigaben", href: `/gruppe/${params.slug}/members` },
+        ]}
+      />
       <div className="flex flex-wrap gap-3">
         <Tile value={String(counts.active)} label="Aktive Mitglieder" />
         <Tile value={`+${newSignups}`} label="Neu (30 T.)" />
@@ -71,6 +77,7 @@ export default async function GroupOverviewPage({ params }: { params: { slug: st
 - [ ] **Step 2: Typecheck + commit**
 
 `pnpm --filter @bdas/web typecheck` → PASS (fix `../` depths if flagged).
+
 ```bash
 git add "apps/web/app/(board)/gruppe/[slug]/overview/page.tsx"
 git commit -m "$(printf 'feat(web): local group overview page\n\nCo-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>')"
@@ -81,6 +88,7 @@ git commit -m "$(printf 'feat(web): local group overview page\n\nCo-Authored-By:
 ## Task 2: Local members + events pages
 
 **Files:**
+
 - Replace: `apps/web/app/(board)/gruppe/[slug]/members/page.tsx`
 - Replace: `apps/web/app/(board)/gruppe/[slug]/events/page.tsx`
 
@@ -100,7 +108,10 @@ export const metadata = { title: "Mitglieder" };
 export default async function GroupMembersPage({ params }: { params: { slug: string } }) {
   const { groupId } = await requireGroupScope(params.slug);
   const db = getDb();
-  const [members, group] = await Promise.all([listMembers(db, { groupId }), getGroupBySlug(db, params.slug)]);
+  const [members, group] = await Promise.all([
+    listMembers(db, { groupId }),
+    getGroupBySlug(db, params.slug),
+  ]);
   return (
     <section className="flex flex-col gap-4">
       <h1 className="text-2xl font-semibold text-bdas-ink">Mitglieder</h1>
@@ -131,7 +142,10 @@ export const metadata = { title: "Events" };
 export default async function GroupEventsPage({ params }: { params: { slug: string } }) {
   const { me, groupId } = await requireGroupScope(params.slug);
   const db = getDb();
-  const [events, group] = await Promise.all([listManagedEvents(db, viewerFrom(me)), getGroupBySlug(db, params.slug)]);
+  const [events, group] = await Promise.all([
+    listManagedEvents(db, viewerFrom(me)),
+    getGroupBySlug(db, params.slug),
+  ]);
   const groupEvents = events.filter((e) => e.groupId === groupId);
   return (
     <section className="flex flex-col gap-4">
@@ -147,6 +161,7 @@ export default async function GroupEventsPage({ params }: { params: { slug: stri
 - [ ] **Step 3: Typecheck + commit**
 
 `pnpm --filter @bdas/web typecheck` → PASS.
+
 ```bash
 git add "apps/web/app/(board)/gruppe/[slug]/members/page.tsx" "apps/web/app/(board)/gruppe/[slug]/events/page.tsx"
 git commit -m "$(printf 'feat(web): local members + events pages\n\nCo-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>')"
@@ -157,6 +172,7 @@ git commit -m "$(printf 'feat(web): local members + events pages\n\nCo-Authored-
 ## Task 3: Group profile editor
 
 **Files:**
+
 - Create: `apps/web/app/(board)/_components/group-profile-actions.ts`
 - Create: `apps/web/app/(board)/_components/GroupProfileForm.tsx`
 - Replace: `apps/web/app/(board)/gruppe/[slug]/profile/page.tsx`
@@ -236,13 +252,29 @@ export function GroupProfileForm({
     >
       <label className="flex flex-col gap-1 text-sm text-bdas-ink-muted">
         Name
-        <input required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="rounded-bdas-sm border border-bdas-soft px-3 py-2 text-bdas-ink" />
+        <input
+          required
+          value={form.name}
+          onChange={(e) => setForm({ ...form, name: e.target.value })}
+          className="rounded-bdas-sm border border-bdas-soft px-3 py-2 text-bdas-ink"
+        />
       </label>
       <label className="flex flex-col gap-1 text-sm text-bdas-ink-muted">
         Stadt
-        <input required value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} className="rounded-bdas-sm border border-bdas-soft px-3 py-2 text-bdas-ink" />
+        <input
+          required
+          value={form.city}
+          onChange={(e) => setForm({ ...form, city: e.target.value })}
+          className="rounded-bdas-sm border border-bdas-soft px-3 py-2 text-bdas-ink"
+        />
       </label>
-      <button type="submit" disabled={pending} className="self-start rounded-bdas-sm bg-bdas-red px-3 py-2 text-sm font-semibold text-bdas-surface disabled:opacity-40">Speichern</button>
+      <button
+        type="submit"
+        disabled={pending}
+        className="self-start rounded-bdas-sm bg-bdas-red px-3 py-2 text-sm font-semibold text-bdas-surface disabled:opacity-40"
+      >
+        Speichern
+      </button>
       {msg && <p className="text-sm text-bdas-ink-body">{msg}</p>}
     </form>
   );
@@ -283,6 +315,7 @@ export default async function GroupProfilePage({ params }: { params: { slug: str
 - [ ] **Step 4: Typecheck + commit**
 
 `pnpm --filter @bdas/web typecheck` → PASS.
+
 ```bash
 git add "apps/web/app/(board)/_components/group-profile-actions.ts" "apps/web/app/(board)/_components/GroupProfileForm.tsx" "apps/web/app/(board)/gruppe/[slug]/profile/page.tsx"
 git commit -m "$(printf 'feat(web): group profile editor\n\nCo-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>')"
@@ -310,7 +343,10 @@ export const metadata = { title: "Dateien" };
 export default async function GroupFilesPage({ params }: { params: { slug: string } }) {
   const { me, groupId } = await requireGroupScope(params.slug);
   const db = getDb();
-  const [folders, group] = await Promise.all([listFolders(db, me), getGroupBySlug(db, params.slug)]);
+  const [folders, group] = await Promise.all([
+    listFolders(db, me),
+    getGroupBySlug(db, params.slug),
+  ]);
   const groupFolders = folders.filter((f) => f.groupId === groupId);
   return (
     <section className="flex flex-col gap-4">
@@ -326,6 +362,7 @@ export default async function GroupFilesPage({ params }: { params: { slug: strin
 - [ ] **Step 2: Build + commit**
 
 `pnpm --filter @bdas/web build` → PASS (all gruppe pages dynamic).
+
 ```bash
 git add "apps/web/app/(board)/gruppe/[slug]/files/page.tsx"
 git commit -m "$(printf 'feat(web): local files (folders) page\n\nCo-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>')"
@@ -349,4 +386,7 @@ git commit -m "$(printf 'feat(web): local files (folders) page\n\nCo-Authored-By
 - **A lead counts as managing its group** for profile editing — consistent with the design spec's local-scope access (`local_board`/`local_board_lead`/federal).
 - **Events/files narrowing is page-side filtering** of already-permission-checked reads — display narrowing, not an authorization boundary.
 - Deferred (Phase 6 / later): join-policy editor, group-change decisions, broadcasts, handover, projects, event create/edit in dashboard, file upload UI.
+
+```
+
 ```

@@ -5,7 +5,12 @@ import type { GroupSummary } from "@bdas/groups";
  *  a group scope is one Hochschulgruppe. */
 export type Scope =
   | { readonly kind: "federal" }
-  | { readonly kind: "group"; readonly groupId: string; readonly slug: string; readonly name: string };
+  | {
+      readonly kind: "group";
+      readonly groupId: string;
+      readonly slug: string;
+      readonly name: string;
+    };
 
 /**
  * The scopes a user may switch between, derived from their grants (ADR 0007 /

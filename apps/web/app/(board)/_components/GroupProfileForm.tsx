@@ -29,13 +29,29 @@ export function GroupProfileForm({
     >
       <label className="flex flex-col gap-1 text-sm text-bdas-ink-muted">
         Name
-        <input required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="rounded-bdas-sm border border-bdas-soft px-3 py-2 text-bdas-ink" />
+        <input
+          required
+          value={form.name}
+          onChange={(e) => setForm({ ...form, name: e.target.value })}
+          className="rounded-bdas-sm border border-bdas-soft px-3 py-2 text-bdas-ink"
+        />
       </label>
       <label className="flex flex-col gap-1 text-sm text-bdas-ink-muted">
         Stadt
-        <input required value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} className="rounded-bdas-sm border border-bdas-soft px-3 py-2 text-bdas-ink" />
+        <input
+          required
+          value={form.city}
+          onChange={(e) => setForm({ ...form, city: e.target.value })}
+          className="rounded-bdas-sm border border-bdas-soft px-3 py-2 text-bdas-ink"
+        />
       </label>
-      <button type="submit" disabled={pending} className="self-start rounded-bdas-sm bg-bdas-red px-3 py-2 text-sm font-semibold text-bdas-surface disabled:opacity-40">Speichern</button>
+      <button
+        type="submit"
+        disabled={pending}
+        className="self-start rounded-bdas-sm bg-bdas-red px-3 py-2 text-sm font-semibold text-bdas-surface disabled:opacity-40"
+      >
+        Speichern
+      </button>
       {msg && <p className="text-sm text-bdas-ink-body">{msg}</p>}
     </form>
   );
