@@ -27,6 +27,14 @@ export {
   canApproveMember,
 } from "./roles";
 
+export { listMembers, type MemberQuery } from "./services/list-members";
+export {
+  countMembersByStatus,
+  signupsOverTime,
+  type StatusCounts,
+  type SignupPoint,
+} from "./services/stats";
+
 export type { Member, MemberStatus, PendingMember, Grant } from "./types";
 export type {
   MembersEvent,

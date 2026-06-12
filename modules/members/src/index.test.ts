@@ -18,6 +18,8 @@ import { approveMember, transitionStatus } from "./services/status";
 import { grantRole, revokeRole } from "./services/roles";
 import { listPendingMembers } from "./services/list-pending";
 import { getGrants } from "./services/get";
+import { listMembers } from "./services/list-members";
+import { countMembersByStatus, signupsOverTime } from "./services/stats";
 import type { Grant } from "./types";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -284,6 +286,49 @@ describeIfDb("members integration", () => {
       role: "local_board_lead",
       groupId: "grp_a",
     });
+  });
+
+  it("listMembers filters by group, status, and search", async () => {
+    await createGroup("grp_a", "aachen");
+    await createGroup("grp_b", "bonn");
+    await createUser("usr_la", "la@example.de");
+    await createUser("usr_lb", "lb@example.de");
+    const la = await createProfile(t.db, { userId: "usr_la", firstName: "Lena", lastName: "Anders", primaryGroupId: "grp_a" });
+    await createProfile(t.db, { userId: "usr_lb", firstName: "Tom", lastName: "Berg", primaryGroupId: "grp_b" });
+    await approveMember(t.db, la.id, BOARD); // la → active; tom stays pending
+
+    const all = await listMembers(t.db, {});
+    expect(all.length).toBe(2);
+
+    const groupA = await listMembers(t.db, { groupId: "grp_a" });
+    expect(groupA.map((m) => m.id)).toEqual([la.id]);
+
+    const pending = await listMembers(t.db, { status: "pending" });
+    expect(pending.every((m) => m.status === "pending")).toBe(true);
+
+    const search = await listMembers(t.db, { search: "lena" });
+    expect(search.map((m) => m.id)).toEqual([la.id]);
+  });
+
+  it("countMembersByStatus and signupsOverTime aggregate, group-scopable", async () => {
+    await createGroup("grp_a", "aachen");
+    await createUser("usr_s1", "s1@example.de");
+    await createUser("usr_s2", "s2@example.de");
+    const s1 = await createProfile(t.db, { userId: "usr_s1", firstName: "A", lastName: "A", primaryGroupId: "grp_a" });
+    await createProfile(t.db, { userId: "usr_s2", firstName: "B", lastName: "B", primaryGroupId: "grp_a" });
+    await approveMember(t.db, s1.id, BOARD);
+
+    const counts = await countMembersByStatus(t.db, {});
+    expect(counts.active).toBe(1);
+    expect(counts.pending).toBe(1);
+
+    const series = await signupsOverTime(t.db, { days: 30 });
+    const total = series.reduce((n, p) => n + p.count, 0);
+    expect(total).toBe(2); // both created within the window
+    expect(series.length).toBe(30); // one bucket per day, zero-filled
+
+    const scoped = await countMembersByStatus(t.db, { groupId: "grp_a" });
+    expect(scoped.active + scoped.pending).toBe(2);
   });
 
   it("a local_board_lead grants local_board within its group, but not across groups or higher roles", async () => {
