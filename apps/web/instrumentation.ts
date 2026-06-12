@@ -12,6 +12,9 @@ export async function register(): Promise<void> {
     // crashes startup, surfacing the misconfig before any request is served.
     bootNotifications();
     const { bootFiles } = await import("./lib/files-bootstrap");
+    // Throws only on deterministic env misconfig; transient DB failures during
+    // folder provisioning degrade gracefully instead of 500ing the instance
+    // (ADR 0014).
     await bootFiles();
   }
 }
