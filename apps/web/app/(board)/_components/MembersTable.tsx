@@ -31,6 +31,7 @@ export function MembersTable({
   const [filter, setFilter] = useState<"all" | MemberStatus>("all");
   const [q, setQ] = useState("");
   const [selected, setSelected] = useState<Member | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [pending, start] = useTransition();
 
   const rows = useMemo(
@@ -69,6 +70,11 @@ export function MembersTable({
             className="ml-auto rounded-bdas-sm border border-bdas-soft px-3 py-1 text-bdas-ink-body"
           />
         </div>
+        {error && (
+          <p className="border-b border-bdas-soft bg-bdas-surface-hover p-3 text-sm text-bdas-red">
+            {error}
+          </p>
+        )}
         <table className="w-full text-sm">
           <thead>
             <tr className="text-bdas-ink-muted">
@@ -105,8 +111,9 @@ export function MembersTable({
                         type="button"
                         disabled={pending}
                         onClick={() =>
-                          start(() => {
-                            void approveMemberAction(m.id, revalidatePath);
+                          start(async () => {
+                            const res = await approveMemberAction(m.id, revalidatePath);
+                            setError(res.ok ? null : (res.error ?? "Fehler"));
                           })
                         }
                         className="rounded-bdas-sm bg-bdas-red px-2 py-1 text-xs font-semibold text-bdas-surface"
@@ -117,8 +124,9 @@ export function MembersTable({
                         type="button"
                         disabled={pending}
                         onClick={() =>
-                          start(() => {
-                            void rejectMemberAction(m.id, revalidatePath);
+                          start(async () => {
+                            const res = await rejectMemberAction(m.id, revalidatePath);
+                            setError(res.ok ? null : (res.error ?? "Fehler"));
                           })
                         }
                         className="rounded-bdas-sm border border-bdas-soft px-2 py-1 text-xs"
