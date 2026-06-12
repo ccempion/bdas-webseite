@@ -29,6 +29,12 @@ export {
 
 export { listMembers, type MemberQuery } from "./services/list-members";
 export {
+  listRoleHolders,
+  listGrantAudit,
+  type RoleHolder,
+  type GrantAuditEntry,
+} from "./services/role-views";
+export {
   countMembersByStatus,
   signupsOverTime,
   type StatusCounts,

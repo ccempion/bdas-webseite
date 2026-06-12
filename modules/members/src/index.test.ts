@@ -20,6 +20,7 @@ import { listPendingMembers } from "./services/list-pending";
 import { getGrants } from "./services/get";
 import { listMembers } from "./services/list-members";
 import { countMembersByStatus, signupsOverTime } from "./services/stats";
+import { listGrantAudit, listRoleHolders } from "./services/role-views";
 import type { Grant } from "./types";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -386,5 +387,36 @@ describeIfDb("members integration", () => {
     await expect(
       grantRole(t.db, member.id, "federal_board", leadActor),
     ).rejects.toMatchObject({ code: "FORBIDDEN" });
+  });
+
+  it("listRoleHolders and listGrantAudit expose roster + history", async () => {
+    await createGroup("grp_a", "aachen");
+    await createUser("usr_h1", "h1@example.de");
+    const m = await createProfile(t.db, { userId: "usr_h1", firstName: "Lena", lastName: "Hofer", primaryGroupId: "grp_a" });
+    await approveMember(t.db, m.id, BOARD);
+    await grantRole(t.db, m.id, "local_board_lead", BOARD, "grp_a");
+    await grantRole(t.db, m.id, "local_board", BOARD, "grp_a");
+    await revokeRole(t.db, m.id, "local_board", BOARD, "grp_a");
+
+    const holders = await listRoleHolders(t.db);
+    // Only ACTIVE board grants; the revoked local_board is gone.
+    expect(holders).toEqual([
+      expect.objectContaining({
+        memberId: m.id,
+        firstName: "Lena",
+        lastName: "Hofer",
+        role: "local_board_lead",
+        groupId: "grp_a",
+      }),
+    ]);
+
+    const audit = await listGrantAudit(t.db, {});
+    // Newest-first; includes the revoked row with revokedAt set.
+    expect(audit.length).toBe(2);
+    expect(audit.some((a) => a.role === "local_board" && a.revokedAt !== null)).toBe(true);
+    expect(audit.every((a) => a.firstName === "Lena")).toBe(true);
+
+    const scoped = await listGrantAudit(t.db, { groupId: "grp_a" });
+    expect(scoped.length).toBe(2);
   });
 });
