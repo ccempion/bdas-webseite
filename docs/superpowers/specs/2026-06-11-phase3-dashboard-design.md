@@ -129,6 +129,16 @@ A new `requireRoleGrant` / `requireManageGroup` helper lands beside the existing
 matching the established `/admin/*` pattern. `/security-review` is required on the
 roles and enforcement PRs (CLAUDE.md §4).
 
+**Deferred follow-up (post-merge scope, LOW):** the "local boards may not manage an
+archived group" rule (ADR-0013 / product decision 2026-06-12) is enforced only on the
+read/scope path — `canSeeGroupScope` + `boardScopes`. The **write actions**
+(`updateGroupProfileAction`, `grantRoleAction`/`revokeRoleAction` via
+`canGrantLocalBoard`/`canManageGroup`) do not yet check group status, so a lead of a
+since-archived group can still edit its profile or hand out `local_board` within it by
+calling the action directly. Low impact (no cross-group escalation, defunct group only).
+Fix when convenient: thread group status into `canManageGroup`/`canGrantLocalBoard` so
+the rule holds in the service, not just the UI gate.
+
 ## 7. Data layer — read methods added to module surfaces
 
 `Scope = { kind: 'federal' } | { kind: 'group'; groupId: string }`, so one dashboard
