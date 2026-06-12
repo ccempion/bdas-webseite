@@ -7,6 +7,11 @@ import { getCurrentMember, grantRole, revokeRole } from "@bdas/members";
 
 import { readSessionCookie } from "../../../lib/auth-cookie";
 
+/** Server Actions are public endpoints; only ever revalidate board routes. */
+function safeRevalidate(path: string): void {
+  if (path.startsWith("/federal/") || path.startsWith("/gruppe/")) revalidatePath(path);
+}
+
 async function actor() {
   const me = await getCurrentMember(getDb(), readSessionCookie());
   if (!me) throw new Error("Nicht angemeldet.");
@@ -26,7 +31,7 @@ export async function grantRoleAction(
 ): Promise<{ ok: boolean; error?: string }> {
   try {
     await grantRole(getDb(), memberId, role, await actor(), groupId);
-    revalidatePath(revalidate);
+    safeRevalidate(revalidate);
     return { ok: true };
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : "Fehler" };
@@ -41,7 +46,7 @@ export async function revokeRoleAction(
 ): Promise<{ ok: boolean; error?: string }> {
   try {
     await revokeRole(getDb(), memberId, role, await actor(), groupId);
-    revalidatePath(revalidate);
+    safeRevalidate(revalidate);
     return { ok: true };
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : "Fehler" };

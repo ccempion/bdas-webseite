@@ -74,6 +74,7 @@ describeIfDb("members integration", () => {
       ["..", "migrations", "0001_init.sql"],
       ["..", "migrations", "0002_role_grants.sql"],
       ["..", "migrations", "0003_local_board_lead.sql"],
+      ["..", "migrations", "0004_revoked_by.sql"],
     ]) {
       const sql = await fs.readFile(path.join(__dirname, ...file), "utf8");
       await t.client.unsafe(sql);
@@ -414,6 +415,8 @@ describeIfDb("members integration", () => {
     // Newest-first; includes the revoked row with revokedAt set.
     expect(audit.length).toBe(2);
     expect(audit.some((a) => a.role === "local_board" && a.revokedAt !== null)).toBe(true);
+    const revoked = audit.find((a) => a.role === "local_board" && a.revokedAt !== null);
+    expect(revoked?.revokedBy).toBe(BOARD.userId);
     expect(audit.every((a) => a.firstName === "Lena")).toBe(true);
 
     const scoped = await listGrantAudit(t.db, { groupId: "grp_a" });

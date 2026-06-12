@@ -42,6 +42,7 @@ export async function listRoleHolders(db: Db): Promise<RoleHolder[]> {
 export type GrantAuditEntry = RoleHolder & {
   readonly grantedBy: string;
   readonly revokedAt: Date | null;
+  readonly revokedBy: string | null;
 };
 
 export async function listGrantAudit(
@@ -60,6 +61,7 @@ export async function listGrantAudit(
       grantedAt: memberRoleGrants.grantedAt,
       grantedBy: memberRoleGrants.grantedBy,
       revokedAt: memberRoleGrants.revokedAt,
+      revokedBy: memberRoleGrants.revokedBy,
     })
     .from(memberRoleGrants)
     .innerJoin(members, eq(members.id, memberRoleGrants.memberId))

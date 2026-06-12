@@ -132,7 +132,7 @@ export async function revokeRole(
 
     const updated = await tx
       .update(memberRoleGrants)
-      .set({ revokedAt: sql`now()` })
+      .set({ revokedAt: sql`now()`, revokedBy: actor.userId })
       .where(
         and(
           eq(memberRoleGrants.memberId, memberId),
