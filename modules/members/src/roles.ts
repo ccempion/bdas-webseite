@@ -2,7 +2,13 @@ import type { Role } from "@bdas/auth";
 
 import type { Grant, Member, MemberStatus } from "./types";
 
-const ALL_ROLES: ReadonlyArray<Role> = ["member", "local_board", "federal_board", "alumnus"];
+const ALL_ROLES: ReadonlyArray<Role> = [
+  "member",
+  "local_board",
+  "local_board_lead",
+  "federal_board",
+  "alumnus",
+];
 
 export function isRole(value: string): value is Role {
   return (ALL_ROLES as ReadonlyArray<string>).includes(value);
@@ -52,6 +58,18 @@ export function canManageGroup(grants: ReadonlyArray<Grant>, groupId: string | n
   if (isFederalBoard(grants)) return true;
   if (groupId === null) return false;
   return grants.some((g) => g.role === "local_board" && g.groupId === groupId);
+}
+
+/**
+ * May the actor grant/revoke `local_board` for this group (ADR 0013)? Federal
+ * board → any group. A `local_board_lead` → only the group its lead grant is
+ * scoped to. A null groupId is never delegable — only federal (handled above).
+ * Note: a plain `local_board` grant does NOT confer this; only a lead does.
+ */
+export function canGrantLocalBoard(grants: ReadonlyArray<Grant>, groupId: string | null): boolean {
+  if (isFederalBoard(grants)) return true;
+  if (groupId === null) return false;
+  return grants.some((g) => g.role === "local_board_lead" && g.groupId === groupId);
 }
 
 /** Approving/transitioning a member is "do you manage their group?". */

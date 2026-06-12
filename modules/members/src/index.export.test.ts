@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { canManageGroup, isFederalBoard } from "./index";
+import { canGrantLocalBoard, canManageGroup, isFederalBoard, isRole } from "./index";
 import type { Grant } from "./index";
 
 describe("members public role primitives", () => {
@@ -17,5 +17,20 @@ describe("members public role primitives", () => {
     expect(canManageGroup(localMuc, "grp_muc")).toBe(true);
     expect(canManageGroup(localMuc, "grp_other")).toBe(false);
     expect(canManageGroup(localMuc, null)).toBe(false);
+  });
+
+  it("isRole accepts local_board_lead", () => {
+    // isRole is re-exported from the module surface.
+    expect(isRole("local_board_lead")).toBe(true);
+    expect(isRole("not_a_role")).toBe(false);
+  });
+
+  it("canGrantLocalBoard: federal anywhere; a lead only its own group", () => {
+    const lead: Grant[] = [{ role: "local_board_lead", groupId: "grp_muc" }];
+    expect(canGrantLocalBoard(federal, "grp_xyz")).toBe(true); // federal: any group
+    expect(canGrantLocalBoard(lead, "grp_muc")).toBe(true); // lead of this group
+    expect(canGrantLocalBoard(lead, "grp_other")).toBe(false); // lead, wrong group
+    expect(canGrantLocalBoard(lead, null)).toBe(false); // unscoped is never delegable
+    expect(canGrantLocalBoard(localMuc, "grp_muc")).toBe(false); // plain local_board ≠ lead
   });
 });

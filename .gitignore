@@ -21,3 +21,6 @@ playwright-report
 
 # Local Claude Code config
 .claude/
+
+# Superpowers brainstorming (local mockups, not committed)
+.superpowers/

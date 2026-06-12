@@ -9,6 +9,7 @@
 **Tech Stack:** Vercel CLI (`vercel env`, `vercel redeploy`), Supabase (SQL via MCP or dashboard), `tsx` for a throwaway real-bucket smoke script.
 
 **Prod facts gathered 2026-06-11 (do not re-derive):**
+
 - Supabase project: `rcfvsglohtearizdcaxp` (BDAS Webseite, eu-west-1).
 - `storage.buckets` is empty — the bucket must be created.
 - Prod env has: `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, `BDAS_FLAG_AUTH/MEMBERS/GROUPS/EVENTS/CONTENT_BRIDGE`, `DATABASE_URL`.
@@ -123,7 +124,7 @@ Expected: both rows present, environment `Production`.
 
 ### Task 4: Notifications flag (DECISION-GATED — confirm with the user first)
 
-`BDAS_FLAG_NOTIFICATIONS` is also unset in prod, so the notifications module (merged 2026-06-09) has never been live; spec §22's "phase N in production" gate needs it on. `bootNotifications()` requires `RESEND_API_KEY` + `RESEND_FROM_EMAIL` — both already set in prod — and fail-louds if misconfigured, so the flag is the only missing piece. CLAUDE.md §3 says a flag goes on when the module is *acceptance-complete*: that is the federation's/user's call, not the executor's.
+`BDAS_FLAG_NOTIFICATIONS` is also unset in prod, so the notifications module (merged 2026-06-09) has never been live; spec §22's "phase N in production" gate needs it on. `bootNotifications()` requires `RESEND_API_KEY` + `RESEND_FROM_EMAIL` — both already set in prod — and fail-louds if misconfigured, so the flag is the only missing piece. CLAUDE.md §3 says a flag goes on when the module is _acceptance-complete_: that is the federation's/user's call, not the executor's.
 
 - [ ] **Step 1: Ask the user**
 
@@ -185,12 +186,12 @@ select scope, count(*) from public.folders group by scope order by scope;
 
 Expected exactly:
 
-| scope | count |
-|---|---|
-| federal_board | 1 |
-| group_members | 2 |
-| local_board | 2 |
-| members_all | 1 |
+| scope         | count |
+| ------------- | ----- |
+| federal_board | 1     |
+| group_members | 2     |
+| local_board   | 2     |
+| members_all   | 1     |
 
 If 0 rows: `bootFiles()` did not run or threw — check Vercel runtime logs (`vercel logs <deployment-url>` or the Vercel MCP `get_runtime_logs`) for `[files]` errors and for the fail-loud bootstrap throw, fix, redeploy.
 
@@ -233,6 +234,7 @@ SUPABASE_URL=<prod value> SUPABASE_SERVICE_ROLE_KEY=<prod value> pnpm exec tsx /
 Pull the two values with `vercel env pull /tmp/prod.env --environment production` (delete `/tmp/prod.env` afterwards).
 
 Expected output:
+
 ```
 PUT 200
 stat { sizeBytes: 11 }

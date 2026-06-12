@@ -16,7 +16,7 @@ export const TOKEN_VERSION = 1;
 export const COOKIE_NAME = "bdas_session";
 export const COOKIE_MAX_AGE_SECONDS = 60 * 60 * 24 * 7; // 7 days
 
-export type Role = "member" | "local_board" | "federal_board" | "alumnus";
+export type Role = "member" | "local_board" | "local_board_lead" | "federal_board" | "alumnus";
 
 export type SsoClaims = {
   readonly iss: "bdas";

@@ -17,6 +17,7 @@ export const FLAGS = [
   "projects",
   "handover",
   "payments",
+  "dashboard",
 ] as const;
 
 export type FlagName = (typeof FLAGS)[number];

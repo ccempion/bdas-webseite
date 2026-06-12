@@ -48,6 +48,7 @@ export default defineConfig({
       BDAS_FLAG_AUTH: "true",
       BDAS_FLAG_MEMBERS: "true",
       BDAS_FLAG_GROUPS: "true",
+      BDAS_FLAG_DASHBOARD: "true",
     },
   },
 });

@@ -12,7 +12,7 @@ export function viewerFrom(me: CurrentMember | null): Viewer {
     memberGroupIds: me.member?.primaryGroupId ? [me.member.primaryGroupId] : [],
     isFederal: isFederalBoard(me.grants),
     boardGroupIds: me.grants
-      .filter((g) => g.role === "local_board" && g.groupId)
+      .filter((g) => (g.role === "local_board" || g.role === "local_board_lead") && g.groupId)
       .map((g) => g.groupId as string),
   };
 }

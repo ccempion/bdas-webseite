@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@bdas/auth": "workspace:*",
+    "@bdas/dashboard-shell": "workspace:*",
     "@bdas/db": "workspace:*",
     "@bdas/design-system": "workspace:*",
     "@bdas/errors": "workspace:*",

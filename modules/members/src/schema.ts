@@ -36,6 +36,7 @@ export const memberRoleGrants = pgTable(
     grantedAt: timestamp("granted_at", { withTimezone: true }).notNull().defaultNow(),
     grantedBy: text("granted_by").notNull(),
     revokedAt: timestamp("revoked_at", { withTimezone: true }),
+    revokedBy: text("revoked_by"),
   },
   (t) => ({
     activeUq: uniqueIndex("member_role_grants_active_uq")

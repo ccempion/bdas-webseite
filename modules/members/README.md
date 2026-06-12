@@ -75,14 +75,18 @@ predicates — never inspect a raw role list:
   scoped to `groupId`.
 - `canApproveMember(grants, member)` — `canManageGroup` of the member's
   primary group.
+- `canGrantLocalBoard(grants, groupId)` — federal_board (any) **or**
+  `local_board_lead` scoped to `groupId`.
 
 Grants are resolved from the DB on every request, **not** carried in the JWT
 (ADR 0007 §2) — a revoked grant takes effect immediately and ADR 0002 / the
 WordPress SSO plugin are untouched.
 
-`grantRole` / `revokeRole` are `federal_board`-only (the Bundesvorstand sets
-and unsets the local board role). `local_board` grants require a `groupId`;
-`federal_board` grants must be unscoped.
+`grantRole` / `revokeRole` (ADR 0007, amended by ADR 0013): `federal_board`
+may grant any role. `local_board` grants require a `groupId`; `federal_board`
+grants must be unscoped. `local_board_lead` (ADR 0013): federal board appoints
+leads per group (several allowed); a lead grants/revokes `local_board` within
+its own group only.
 
 ## Status transitions
 

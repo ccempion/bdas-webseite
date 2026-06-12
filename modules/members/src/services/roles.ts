@@ -1,8 +1,8 @@
 /**
- * Role grant / revoke (ADR 0007). Writes scoped rows to `member_role_grants`.
- * Only federal_board may grant or revoke — the spec gives the Bundesvorstand
- * sole authority to set/unset the local board role. `local_board` grants must
- * be group-scoped; `federal_board` must be unscoped.
+ * Role grant / revoke (ADR 0007, amended by ADR 0013). Writes scoped rows to
+ * `member_role_grants`. Federal board may grant any role; a `local_board_lead`
+ * may grant/revoke `local_board` within its own group only (see requireCanGrant).
+ * `local_board` and `local_board_lead` are group-scoped; `federal_board` is unscoped.
  */
 import { and, eq, isNull, sql } from "drizzle-orm";
 import type { PostgresJsDatabase } from "drizzle-orm/postgres-js";
@@ -13,7 +13,7 @@ import { getEventBus } from "@bdas/events";
 import { createId } from "@bdas/id";
 
 import type { RoleGranted, RoleRevoked } from "../events";
-import { isFederalBoard, isRole } from "../roles";
+import { canGrantLocalBoard, isFederalBoard, isRole } from "../roles";
 import { members, memberRoleGrants } from "../schema";
 import type { Member } from "../types";
 
@@ -22,9 +22,23 @@ import type { Actor } from "./status";
 
 export type Db = PostgresJsDatabase<Record<string, never>>;
 
-function requireBoard(actor: Actor): void {
+/**
+ * Who may grant/revoke (ADR 0013, supersedes the federal-only rule):
+ *  - `local_board`              → federal_board OR a local_board_lead of that group
+ *  - everything else            → federal_board only
+ *    (appointing leads and federal_board stays central; member/alumnus are
+ *     edge grants the federation owns).
+ * `role` must already be validated to a known Role and `groupId` to its scope.
+ */
+function requireCanGrant(actor: Actor, role: Role, groupId: string | null): void {
+  if (role === "local_board") {
+    if (canGrantLocalBoard(actor.grants, groupId)) return;
+    throw new ForbiddenError(
+      "Nur der Bundesvorstand oder ein Vorstands-Lead dieser Gruppe darf local_board vergeben.",
+    );
+  }
   if (!isFederalBoard(actor.grants)) {
-    throw new ForbiddenError("Nur der Bundesvorstand darf Rollen vergeben.");
+    throw new ForbiddenError("Nur der Bundesvorstand darf diese Rolle vergeben.");
   }
 }
 
@@ -34,10 +48,10 @@ function requireValidRole(role: string): asserts role is Role {
   }
 }
 
-/** local_board is always group-scoped; federal_board is always unscoped. */
+/** local_board and local_board_lead are group-scoped; federal_board is unscoped. */
 function requireValidScope(role: Role, groupId: string | null): void {
-  if (role === "local_board" && groupId === null) {
-    throw new ValidationError("local_board erfordert eine Gruppe.");
+  if ((role === "local_board" || role === "local_board_lead") && groupId === null) {
+    throw new ValidationError(`${role} erfordert eine Gruppe.`);
   }
   if (role === "federal_board" && groupId !== null) {
     throw new ValidationError("federal_board ist nicht gruppengebunden.");
@@ -51,9 +65,9 @@ export async function grantRole(
   actor: Actor,
   groupId: string | null = null,
 ): Promise<Member> {
-  requireBoard(actor);
   requireValidRole(role);
   requireValidScope(role, groupId);
+  requireCanGrant(actor, role, groupId);
 
   return db.transaction(async (tx) => {
     const rows = await tx.select().from(members).where(eq(members.id, memberId)).limit(1);
@@ -106,8 +120,9 @@ export async function revokeRole(
   actor: Actor,
   groupId: string | null = null,
 ): Promise<Member> {
-  requireBoard(actor);
   requireValidRole(role);
+  requireValidScope(role, groupId);
+  requireCanGrant(actor, role, groupId);
 
   return db.transaction(async (tx) => {
     const rows = await tx.select().from(members).where(eq(members.id, memberId)).limit(1);
@@ -117,7 +132,7 @@ export async function revokeRole(
 
     const updated = await tx
       .update(memberRoleGrants)
-      .set({ revokedAt: sql`now()` })
+      .set({ revokedAt: sql`now()`, revokedBy: actor.userId })
       .where(
         and(
           eq(memberRoleGrants.memberId, memberId),
