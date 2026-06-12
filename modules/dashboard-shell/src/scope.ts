@@ -39,9 +39,11 @@ export function boardScopes(
   }
 
   for (const g of groups) {
-    if (wanted.has(g.id)) {
-      out.push({ kind: "group", groupId: g.id, slug: g.slug, name: g.name });
-    }
+    if (!wanted.has(g.id)) continue;
+    // A local board may not manage an archived group; only federal winds it down
+    // (and the federal branch above already restricts to active groups anyway).
+    if (!isFederal && g.status === "archived") continue;
+    out.push({ kind: "group", groupId: g.id, slug: g.slug, name: g.name });
   }
   return out;
 }

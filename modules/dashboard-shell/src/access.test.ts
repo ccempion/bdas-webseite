@@ -21,10 +21,18 @@ describe("board access predicates", () => {
   });
 
   it("canSeeGroupScope: federal sees any group; local only its own", () => {
-    expect(canSeeGroupScope(federal, "grp_ac")).toBe(true);
-    expect(canSeeGroupScope(federal, "grp_other")).toBe(true);
-    expect(canSeeGroupScope(localAc, "grp_ac")).toBe(true);
-    expect(canSeeGroupScope(localAc, "grp_other")).toBe(false);
-    expect(canSeeGroupScope(member, "grp_ac")).toBe(false);
+    const ac = { id: "grp_ac", status: "active" } as const;
+    const other = { id: "grp_other", status: "active" } as const;
+    expect(canSeeGroupScope(federal, ac)).toBe(true);
+    expect(canSeeGroupScope(federal, other)).toBe(true);
+    expect(canSeeGroupScope(localAc, ac)).toBe(true);
+    expect(canSeeGroupScope(localAc, other)).toBe(false);
+    expect(canSeeGroupScope(member, ac)).toBe(false);
+  });
+
+  it("canSeeGroupScope: a local board may NOT manage an archived group; federal still can", () => {
+    const acArchived = { id: "grp_ac", status: "archived" } as const;
+    expect(canSeeGroupScope(localAc, acArchived)).toBe(false);
+    expect(canSeeGroupScope(federal, acArchived)).toBe(true); // federal winds groups down
   });
 });

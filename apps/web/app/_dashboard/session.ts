@@ -30,7 +30,7 @@ export async function requireGroupScope(
   const me = await requireBoardAccess();
   const group = await getGroupBySlug(getDb(), slug);
   if (!group) redirect("/account");
-  if (!canSeeGroupScope(me.grants, group.id)) redirect("/account");
+  if (!canSeeGroupScope(me.grants, group)) redirect("/account");
   return { me, groupId: group.id };
 }
 

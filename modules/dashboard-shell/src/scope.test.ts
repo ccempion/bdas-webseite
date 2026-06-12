@@ -13,6 +13,7 @@ const groups: GroupSummary[] = [
     status: "active",
   },
   { id: "grp_ac", slug: "aachen", name: "HG Aachen", city: "Aachen", status: "active" },
+  { id: "grp_old", slug: "altstadt", name: "HG Altstadt", city: "Köln", status: "archived" },
 ];
 
 describe("boardScopes", () => {
@@ -38,6 +39,11 @@ describe("boardScopes", () => {
     expect(boardScopes(grants, groups)).toEqual<Scope[]>([
       { kind: "group", groupId: "grp_mg", slug: "moenchengladbach", name: "HG Mönchengladbach" },
     ]);
+  });
+
+  it("a local_board of an archived group gets no scope (federation winds it down)", () => {
+    const grants: Grant[] = [{ role: "local_board", groupId: "grp_old" }];
+    expect(boardScopes(grants, groups)).toEqual<Scope[]>([]);
   });
 
   it("a plain member has no board scopes", () => {
