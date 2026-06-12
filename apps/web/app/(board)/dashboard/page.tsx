@@ -4,7 +4,7 @@ import { getDb } from "@bdas/db";
 import { boardScopes } from "@bdas/dashboard-shell";
 import { listGroups } from "@bdas/groups";
 
-import { requireBoardAccess } from "../_dashboard/session";
+import { requireBoardAccess } from "../../_dashboard/session";
 
 export const dynamic = "force-dynamic";
 
