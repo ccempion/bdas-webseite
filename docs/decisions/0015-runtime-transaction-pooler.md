@@ -29,8 +29,7 @@ compatible with transaction pooling.
 
 ## Decision
 
-The **runtime** connects through the Supabase **transaction pooler (port
-6543)**. The Vercel production `DATABASE_URL` is set to the transaction-pooler
+The **runtime** connects through the Supabase **transaction pooler (port 6543)**. The Vercel production `DATABASE_URL` is set to the transaction-pooler
 URI.
 
 - `core/db` sets `prepare: false`: postgres.js uses prepared statements by
