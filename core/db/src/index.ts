@@ -21,8 +21,14 @@ export function getDb(): Db {
       "DATABASE_URL is not set. Copy .env.example to .env.local and start the local DB with `pnpm db:up`.",
     );
   }
+  // Runtime connects through Supabase's transaction pooler (port 6543), which
+  // does not support prepared statements and recycles server connections per
+  // transaction. Serverless keeps many warm instances, each with its own pool,
+  // so the per-instance ceiling stays low to avoid exhausting the pooler. See
+  // ADR 0015. Migrations use the session pooler via their own client.
   _client = postgres(url, {
-    max: process.env["NODE_ENV"] === "production" ? 10 : 5,
+    max: process.env["NODE_ENV"] === "production" ? 3 : 5,
+    prepare: false,
     onnotice: () => {},
   });
   _db = drizzle(_client);
