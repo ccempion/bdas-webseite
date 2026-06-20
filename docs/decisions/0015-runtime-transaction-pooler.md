@@ -74,10 +74,12 @@ were unaffected, which is why only the cockpit appeared "stuck loading".
 - `connect_timeout: 10` (s) — give up acquiring a connection after 10s.
 - `idle_timeout: 20` (s) — recycle idle connections so stale pooler sockets do
   not accumulate.
-- `connection: { statement_timeout: 8000 }` (ms) — cap any single statement.
-  Sent in the startup packet; the transaction pooler forwards it. If the pooler
-  ever rejects it, drop this option and set the GUC on the role instead
-  (`ALTER ROLE ... SET statement_timeout = '8s'`).
+- `statement_timeout` is **not** set as a client startup parameter: the
+  transaction pooler can reject unknown startup params and drop every
+  connection. Cap query time on the role instead
+  (`ALTER ROLE ... SET statement_timeout = '8s'`). The two timeouts above are
+  what resolve the 504 — the stall is in connection acquisition, not a running
+  query — so this split keeps the runtime client free of pooler-rejection risk.
 
 Independently, the `(board)` render called `getCurrentMember` ~3× (two nested
 layouts + the page). It is now wrapped in React `cache()` in

@@ -35,10 +35,11 @@ export function getDb(): Db {
     // board pages issue ~10 round-trips, so they hit the stall first. See ADR 0015.
     connect_timeout: 10, // s — give up acquiring a connection after 10s
     idle_timeout: 20, // s — drop idle connections so stale pooler sockets get recycled
-    // statement_timeout is a Postgres GUC (ms): caps any single query so a stuck
-    // statement can't pin the function. Sent via the startup packet; Supabase's
-    // transaction pooler forwards it. Verify on a preview deploy before prod.
-    connection: { statement_timeout: 8000 },
+    // statement_timeout is deliberately NOT set as a client startup parameter:
+    // the transaction pooler can reject unknown startup params and drop every
+    // connection. Cap query time on the role instead (ALTER ROLE ... SET
+    // statement_timeout = '8s'). The two timeouts above resolve the 504 hang —
+    // the stall is in connection acquisition, not in a running query.
     onnotice: () => {},
   });
   _db = drizzle(_client);
