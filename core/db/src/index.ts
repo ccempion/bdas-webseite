@@ -29,6 +29,16 @@ export function getDb(): Db {
   _client = postgres(url, {
     max: process.env["NODE_ENV"] === "production" ? 3 : 5,
     prepare: false,
+    // Fail fast instead of blocking the serverless function to its 504 timeout.
+    // Without these, a connection (or transaction-pooler server slot) that never
+    // becomes available makes the request hang until Vercel kills it — heavy
+    // board pages issue ~10 round-trips, so they hit the stall first. See ADR 0015.
+    connect_timeout: 10, // s — give up acquiring a connection after 10s
+    idle_timeout: 20, // s — drop idle connections so stale pooler sockets get recycled
+    // statement_timeout is a Postgres GUC (ms): caps any single query so a stuck
+    // statement can't pin the function. Sent via the startup packet; Supabase's
+    // transaction pooler forwards it. Verify on a preview deploy before prod.
+    connection: { statement_timeout: 8000 },
     onnotice: () => {},
   });
   _db = drizzle(_client);

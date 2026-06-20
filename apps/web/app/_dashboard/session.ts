@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { redirect } from "next/navigation";
 
 import { getDb } from "@bdas/db";
@@ -7,13 +8,22 @@ import { getGroupBySlug } from "@bdas/groups";
 
 import { readSessionCookie } from "../../lib/auth-cookie";
 
+/** Resolve the current member, deduplicated per request. A board render touches
+ *  this ~3× (the (board) layout, the scope layout, and the page); `cache()`
+ *  collapses them into a single DB read, cutting the connection pressure that
+ *  was tipping heavy board pages into 504 timeouts. Pages that need `me` should
+ *  call this, not `getCurrentMember` directly. */
+export const loadCurrentMember = cache(
+  (): Promise<CurrentMember | null> => getCurrentMember(getDb(), readSessionCookie()),
+);
+
 /** Resolve the signed-in board user, or redirect. Used by the (board) layout. */
-export async function requireBoardAccess(): Promise<CurrentMember> {
-  const me = await getCurrentMember(getDb(), readSessionCookie());
+export const requireBoardAccess = cache(async (): Promise<CurrentMember> => {
+  const me = await loadCurrentMember();
   if (!me) redirect("/anmelden");
   if (!canAdministerBoard(me.grants)) redirect("/account");
   return me;
-}
+});
 
 /** Federal scope gate. Assumes requireBoardAccess already ran in a parent layout. */
 export async function requireFederalScope(): Promise<CurrentMember> {

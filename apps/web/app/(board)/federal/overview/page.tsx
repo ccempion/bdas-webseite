@@ -1,10 +1,10 @@
 import { getDb } from "@bdas/db";
 import { listManagedEvents } from "@bdas/events-module";
 import { listGroups } from "@bdas/groups";
-import { countMembersByStatus, getCurrentMember, signupsOverTime } from "@bdas/members";
+import { countMembersByStatus, signupsOverTime } from "@bdas/members";
 
-import { readSessionCookie } from "../../../../lib/auth-cookie";
 import { viewerFrom } from "../../../../lib/event-viewer";
+import { loadCurrentMember } from "../../../_dashboard/session";
 import { ActionStrip } from "../../_components/ActionStrip";
 import { Sparkline } from "../../_components/Sparkline";
 import { Tile } from "../../_components/Tile";
@@ -14,7 +14,7 @@ export const metadata = { title: "Übersicht" };
 
 export default async function FederalOverviewPage() {
   const db = getDb();
-  const me = await getCurrentMember(db, readSessionCookie());
+  const me = await loadCurrentMember();
   const [counts, signups, groups, events] = await Promise.all([
     countMembersByStatus(db, {}),
     signupsOverTime(db, { days: 30 }),
