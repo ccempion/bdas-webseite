@@ -29,6 +29,17 @@ export function getDb(): Db {
   _client = postgres(url, {
     max: process.env["NODE_ENV"] === "production" ? 3 : 5,
     prepare: false,
+    // Fail fast instead of blocking the serverless function to its 504 timeout.
+    // Without these, a connection (or transaction-pooler server slot) that never
+    // becomes available makes the request hang until Vercel kills it — heavy
+    // board pages issue ~10 round-trips, so they hit the stall first. See ADR 0015.
+    connect_timeout: 10, // s — give up acquiring a connection after 10s
+    idle_timeout: 20, // s — drop idle connections so stale pooler sockets get recycled
+    // statement_timeout is deliberately NOT set as a client startup parameter:
+    // the transaction pooler can reject unknown startup params and drop every
+    // connection. Cap query time on the role instead (ALTER ROLE ... SET
+    // statement_timeout = '8s'). The two timeouts above resolve the 504 hang —
+    // the stall is in connection acquisition, not in a running query.
     onnotice: () => {},
   });
   _db = drizzle(_client);

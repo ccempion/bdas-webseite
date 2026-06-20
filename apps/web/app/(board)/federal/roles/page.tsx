@@ -1,8 +1,8 @@
 import { getDb } from "@bdas/db";
 import { listGroups } from "@bdas/groups";
-import { getCurrentMember, listGrantAudit, listMembers, listRoleHolders } from "@bdas/members";
+import { listGrantAudit, listMembers, listRoleHolders } from "@bdas/members";
 
-import { readSessionCookie } from "../../../../lib/auth-cookie";
+import { loadCurrentMember } from "../../../_dashboard/session";
 import { AuditLog } from "../../_components/AuditLog";
 import { GrantRoleModal, type RoleOption } from "../../_components/GrantRoleModal";
 import { RoleRoster } from "../../_components/RoleRoster";
@@ -16,7 +16,7 @@ export default async function FederalRolesPage({
   searchParams: { [key: string]: string | string[] | undefined };
 }) {
   const db = getDb();
-  const me = await getCurrentMember(db, readSessionCookie());
+  const me = await loadCurrentMember();
   const [holders, audit, groups, activeMembers] = await Promise.all([
     listRoleHolders(db),
     listGrantAudit(db, {}),

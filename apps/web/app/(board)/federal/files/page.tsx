@@ -1,9 +1,8 @@
 import { getDb } from "@bdas/db";
 import { listFolders } from "@bdas/files";
 import { listGroups } from "@bdas/groups";
-import { getCurrentMember } from "@bdas/members";
 
-import { readSessionCookie } from "../../../../lib/auth-cookie";
+import { loadCurrentMember } from "../../../_dashboard/session";
 import { FoldersTable } from "../../_components/FoldersTable";
 
 export const dynamic = "force-dynamic";
@@ -11,7 +10,7 @@ export const metadata = { title: "Dateien" };
 
 export default async function FederalFilesPage() {
   const db = getDb();
-  const me = await getCurrentMember(db, readSessionCookie());
+  const me = await loadCurrentMember();
   if (!me) return null; // the (board) layout already gated; this satisfies the type
   const [folders, groups] = await Promise.all([listFolders(db, me), listGroups(db)]);
   const groupNames = Object.fromEntries(groups.map((g) => [g.id, g.name]));

@@ -1,10 +1,9 @@
 import { getDb } from "@bdas/db";
 import { listManagedEvents } from "@bdas/events-module";
 import { listGroups } from "@bdas/groups";
-import { getCurrentMember } from "@bdas/members";
 
-import { readSessionCookie } from "../../../../lib/auth-cookie";
 import { viewerFrom } from "../../../../lib/event-viewer";
+import { loadCurrentMember } from "../../../_dashboard/session";
 import { EventsTable } from "../../_components/EventsTable";
 
 export const dynamic = "force-dynamic";
@@ -12,7 +11,7 @@ export const metadata = { title: "Events" };
 
 export default async function FederalEventsPage() {
   const db = getDb();
-  const me = await getCurrentMember(db, readSessionCookie());
+  const me = await loadCurrentMember();
   const [events, groups] = await Promise.all([
     listManagedEvents(db, viewerFrom(me)),
     listGroups(db),

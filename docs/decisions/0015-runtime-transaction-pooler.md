@@ -59,3 +59,29 @@ password as before, but port **6543** (Supabase Dashboard → Database →
 Connection string → **Transaction** mode → URI). Redeploy production for the
 change to take effect. Leave `PRODUCTION_DATABASE_URL` (GitHub `production`
 environment) on port 5432.
+
+## Amendment (2026-06-20) — fail-fast timeouts
+
+The original client set no timeouts. When the transaction pooler could not hand
+back a server slot, `postgres.js` waited indefinitely: the serverless function
+blocked until Vercel killed it with a **504 `FUNCTION_INVOCATION_TIMEOUT`**
+rather than failing fast. Heavy board pages (`/federal/*`) issue ~10 DB
+round-trips per render and hit the stall first; light pages (`/`, `/account`)
+were unaffected, which is why only the cockpit appeared "stuck loading".
+
+`core/db` now sets:
+
+- `connect_timeout: 10` (s) — give up acquiring a connection after 10s.
+- `idle_timeout: 20` (s) — recycle idle connections so stale pooler sockets do
+  not accumulate.
+- `statement_timeout` is **not** set as a client startup parameter: the
+  transaction pooler can reject unknown startup params and drop every
+  connection. Cap query time on the role instead
+  (`ALTER ROLE ... SET statement_timeout = '8s'`). The two timeouts above are
+  what resolve the 504 — the stall is in connection acquisition, not a running
+  query — so this split keeps the runtime client free of pooler-rejection risk.
+
+Independently, the `(board)` render called `getCurrentMember` ~3× (two nested
+layouts + the page). It is now wrapped in React `cache()` in
+`app/_dashboard/session.ts` (`loadCurrentMember` / `requireBoardAccess`) so each
+request reads the member once, cutting the round-trip count that fed the stall.
