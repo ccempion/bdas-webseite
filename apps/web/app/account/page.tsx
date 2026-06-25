@@ -14,7 +14,7 @@ import { ProfileForm } from "./ProfileForm";
 export const metadata = { title: "Mein Konto" };
 
 const STATUS_LABEL: Record<string, string> = {
-  pending: "Warte auf Freigabe durch den Bundesvorstand.",
+  pending: "Warte auf Freigabe durch den lokalen Vorstand.",
   active: "Aktives Mitglied.",
   inactive: "Inaktiv.",
   alumnus: "Alumnus.",
