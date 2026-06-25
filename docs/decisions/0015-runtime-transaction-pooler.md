@@ -1,9 +1,9 @@
 # ADR 0015 — Runtime connects through the Supabase transaction pooler
 
-- **Status:** Accepted
+- **Status:** Superseded
 - **Date:** 2026-06-14
 - **Supersedes:** —
-- **Superseded by:** —
+- **Superseded by:** 0016
 
 ## Context
 

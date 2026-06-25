@@ -7,11 +7,13 @@ export {
   requestUpload,
   confirmUpload,
   listFiles,
+  folderFileCounts,
   getDownloadUrl,
   deleteFile,
   sweepStalePendingUploads,
 } from "./services/files";
 export { registerFilesSubscribers, unregisterFilesSubscribers } from "./subscribers";
+export { canRead as canReadFolder, canWrite as canWriteFolder } from "./permissions";
 export type {
   Folder,
   FileMeta,

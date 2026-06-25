@@ -21,6 +21,7 @@ import { fileAccessLog, files, folders } from "./schema";
 import {
   confirmUpload,
   deleteFile,
+  folderFileCounts,
   getDownloadUrl,
   listFiles,
   requestUpload,
@@ -59,6 +60,7 @@ async function applyMigrations(t: TestDb): Promise<void> {
     ["..", "..", "groups", "migrations", "0001_init.sql"],
     ["..", "..", "members", "migrations", "0001_init.sql"],
     ["..", "migrations", "0001_init.sql"],
+    ["..", "migrations", "0002_rls_lockdown.sql"],
   ]) {
     const sql = await fs.readFile(path.join(__dirname, ...file), "utf8");
     await t.client.unsafe(sql);
@@ -529,5 +531,111 @@ describeIfDb("group.created subscriber", () => {
     expect((await t.db.select().from(folders)).filter((f) => f.groupId === "grp_new")).toHaveLength(
       2,
     );
+  });
+});
+
+describeIfDb("row-level security lockdown", () => {
+  let t: TestDb;
+
+  beforeEach(async () => {
+    t = await createTestDb();
+    await applyMigrations(t);
+  });
+  afterEach(async () => {
+    await t.cleanup();
+  });
+
+  it("enables row-level security on all three files tables", async () => {
+    const rows = await t.client<{ relname: string; relrowsecurity: boolean }[]>`
+      SELECT c.relname, c.relrowsecurity
+      FROM pg_class c
+      JOIN pg_namespace n ON c.relnamespace = n.oid
+      WHERE c.relname IN ('folders', 'files', 'file_access_log')
+        AND c.relkind = 'r'
+        AND n.nspname = ${t.schema}
+      ORDER BY c.relname
+    `;
+    expect(rows.map((r) => `${r.relname}:${r.relrowsecurity}`)).toEqual([
+      "file_access_log:true",
+      "files:true",
+      "folders:true",
+    ]);
+  });
+});
+
+describeIfDb("folderFileCounts", () => {
+  let t: TestDb;
+  const boardMe = () =>
+    meWith([{ role: "local_board", groupId: "grp_muc" }], {
+      id: "mbr_1",
+      userId: "usr_1",
+      firstName: "T",
+      lastName: "M",
+      primaryGroupId: "grp_muc",
+      status: "active",
+      joinedAt: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+  const plainMe = () =>
+    meWith([{ role: "member", groupId: null }], {
+      id: "mbr_1",
+      userId: "usr_1",
+      firstName: "T",
+      lastName: "M",
+      primaryGroupId: "grp_muc",
+      status: "active",
+      joinedAt: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+  const folderId = async (scope: string) => {
+    const rows = await t.db.select().from(folders);
+    return rows.find((f) => f.scope === scope && (f.groupId === "grp_muc" || f.groupId === null))!.id;
+  };
+
+  beforeEach(async () => {
+    t = await createTestDb();
+    await applyMigrations(t);
+    setStorage(fakeStorage({ statObject: async () => ({ sizeBytes: 5 }) }));
+    await seedGroupAndMember(t, { groupId: "grp_muc", memberId: "mbr_1", userId: "usr_1" });
+    await ensureFolders(t.db);
+  });
+  afterEach(async () => {
+    resetEventBus();
+    await t.cleanup();
+  });
+
+  it("counts only ready files, per readable folder", async () => {
+    const local = await folderId("local_board");
+    // two ready files in the local_board folder
+    for (const name of ["a.pdf", "b.pdf"]) {
+      const { fileId } = await requestUpload(
+        t.db,
+        local,
+        { filename: name, mimeType: "application/pdf", sizeBytes: 5 },
+        boardMe(),
+      );
+      await confirmUpload(t.db, fileId, boardMe());
+    }
+    // one pending file (must NOT be counted)
+    await requestUpload(
+      t.db,
+      local,
+      { filename: "draft.pdf", mimeType: "application/pdf", sizeBytes: 5 },
+      boardMe(),
+    );
+    const membersAll = await folderId("members_all");
+
+    const counts = await folderFileCounts(t.db, [local, membersAll], boardMe());
+    expect(counts[local]).toBe(2);
+    expect(counts[membersAll]).toBe(0); // readable, but empty
+  });
+
+  it("omits folders the member cannot read", async () => {
+    const local = await folderId("local_board"); // plain member cannot read this
+    const counts = await folderFileCounts(t.db, [local], plainMe());
+    expect(counts[local]).toBeUndefined();
   });
 });

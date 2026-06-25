@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import type { CurrentMember, Grant, Member } from "@bdas/members";
 
 import { canRead, canWrite } from "./permissions";
+import { canReadFolder, canWriteFolder } from "./index";
 import type { Folder } from "./types";
 
 function folder(scope: Folder["scope"], groupId: string | null): Folder {
@@ -83,5 +84,19 @@ describe("canWrite", () => {
     expect(canWrite(folder("local_board", "grp_muc"), me(LOCAL_MUC))).toBe(true);
     expect(canWrite(folder("group_members", "grp_muc"), me(FED))).toBe(true);
     expect(canWrite(folder("group_members", "grp_muc"), me(PLAIN))).toBe(false);
+  });
+});
+
+describe("public folder predicates (re-exported)", () => {
+  it("canReadFolder / canWriteFolder match the internal predicates", () => {
+    const f = folder("local_board", "grp_muc");
+    expect(canReadFolder(f, me(LOCAL_MUC))).toBe(true);
+    expect(canWriteFolder(f, me(LOCAL_MUC))).toBe(true);
+  });
+
+  it("a plain member can neither read nor write a local_board folder", () => {
+    const f = folder("local_board", "grp_muc");
+    expect(canReadFolder(f, me(PLAIN))).toBe(false);
+    expect(canWriteFolder(f, me(PLAIN))).toBe(false);
   });
 });
