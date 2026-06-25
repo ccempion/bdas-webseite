@@ -1,4 +1,4 @@
-import { and, eq, lt, sql } from "drizzle-orm";
+import { and, eq, inArray, lt, sql } from "drizzle-orm";
 
 import type { Db } from "@bdas/db";
 import { ForbiddenError, NotFoundError, ValidationError } from "@bdas/errors";
@@ -8,10 +8,10 @@ import { getStorage, type SignedUrl } from "@bdas/storage";
 
 import { ALLOWED_MIME, FOLDER_QUOTA_BYTES, MAX_FILE_BYTES } from "../constants";
 import { canRead, canWrite } from "../permissions";
-import { fileAccessLog, files } from "../schema";
+import { fileAccessLog, files, folders } from "../schema";
 import type { AccessAction, FileMeta, UploadRequest } from "../types";
 
-import { getFolder } from "./folders";
+import { getFolder, rowToFolder } from "./folders";
 
 type FileRow = typeof files.$inferSelect;
 
@@ -166,6 +166,36 @@ export async function listFiles(
     .from(files)
     .where(and(eq(files.folderId, folderId), eq(files.status, "ready")));
   return rows.map(rowToFileMeta);
+}
+
+/**
+ * Count of ready files per folder, restricted to folders the member may read.
+ * One grouped query (no N+1). Non-readable or unknown ids are omitted; a
+ * readable folder with no files maps to 0. Powers the folder-index file counts.
+ */
+export async function folderFileCounts(
+  db: Db,
+  folderIds: string[],
+  forMember: CurrentMember,
+): Promise<Record<string, number>> {
+  if (folderIds.length === 0) return {};
+  const folderRows = await db.select().from(folders).where(inArray(folders.id, folderIds));
+  const readable = folderRows
+    .map(rowToFolder)
+    .filter((f) => canRead(f, forMember))
+    .map((f) => f.id);
+  if (readable.length === 0) return {};
+
+  const rows = await db
+    .select({ folderId: files.folderId, n: sql<number>`count(*)::int` })
+    .from(files)
+    .where(and(inArray(files.folderId, readable), eq(files.status, "ready")))
+    .groupBy(files.folderId);
+
+  const out: Record<string, number> = {};
+  for (const id of readable) out[id] = 0;
+  for (const r of rows) out[r.folderId] = r.n;
+  return out;
 }
 
 /** Signed download URL for one ready file. Read-gated; logs a 'download' row. */

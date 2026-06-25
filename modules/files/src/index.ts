@@ -7,6 +7,7 @@ export {
   requestUpload,
   confirmUpload,
   listFiles,
+  folderFileCounts,
   getDownloadUrl,
   deleteFile,
   sweepStalePendingUploads,
