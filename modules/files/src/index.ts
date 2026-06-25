@@ -13,6 +13,7 @@ export {
   sweepStalePendingUploads,
 } from "./services/files";
 export { registerFilesSubscribers, unregisterFilesSubscribers } from "./subscribers";
+export { canRead as canReadFolder, canWrite as canWriteFolder } from "./permissions";
 export type {
   Folder,
   FileMeta,
