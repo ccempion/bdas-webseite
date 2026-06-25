@@ -59,6 +59,7 @@ async function applyMigrations(t: TestDb): Promise<void> {
     ["..", "..", "groups", "migrations", "0001_init.sql"],
     ["..", "..", "members", "migrations", "0001_init.sql"],
     ["..", "migrations", "0001_init.sql"],
+    ["..", "migrations", "0002_rls_lockdown.sql"],
   ]) {
     const sql = await fs.readFile(path.join(__dirname, ...file), "utf8");
     await t.client.unsafe(sql);
@@ -529,5 +530,34 @@ describeIfDb("group.created subscriber", () => {
     expect((await t.db.select().from(folders)).filter((f) => f.groupId === "grp_new")).toHaveLength(
       2,
     );
+  });
+});
+
+describeIfDb("row-level security lockdown", () => {
+  let t: TestDb;
+
+  beforeEach(async () => {
+    t = await createTestDb();
+    await applyMigrations(t);
+  });
+  afterEach(async () => {
+    await t.cleanup();
+  });
+
+  it("enables row-level security on all three files tables", async () => {
+    const rows = await t.client<{ relname: string; relrowsecurity: boolean }[]>`
+      SELECT c.relname, c.relrowsecurity
+      FROM pg_class c
+      JOIN pg_namespace n ON c.relnamespace = n.oid
+      WHERE c.relname IN ('folders', 'files', 'file_access_log')
+        AND c.relkind = 'r'
+        AND n.nspname = ${t.schema}
+      ORDER BY c.relname
+    `;
+    expect(rows.map((r) => `${r.relname}:${r.relrowsecurity}`)).toEqual([
+      "file_access_log:true",
+      "files:true",
+      "folders:true",
+    ]);
   });
 });
