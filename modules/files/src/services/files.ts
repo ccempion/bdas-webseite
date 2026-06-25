@@ -178,6 +178,7 @@ export async function folderFileCounts(
   folderIds: string[],
   forMember: CurrentMember,
 ): Promise<Record<string, number>> {
+  requireActingMember(forMember);
   if (folderIds.length === 0) return {};
   const folderRows = await db.select().from(folders).where(inArray(folders.id, folderIds));
   const readable = folderRows
