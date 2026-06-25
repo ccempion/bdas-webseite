@@ -16,6 +16,7 @@ import { getEventBus, resetEventBus } from "@bdas/events";
 
 import type { EventsEvent } from "./events";
 import { getEvent, type Viewer } from "./services/get";
+import { listManagedEvents } from "./services/list";
 import { createEvent, publishEvent } from "./services/manage";
 import { cancelRegistration, getMyRegistration, registerMember } from "./services/registration";
 
@@ -52,6 +53,12 @@ const ANON_VIEWER: Viewer = {
   isActiveMember: false,
   memberGroupIds: [],
   isFederal: false,
+  boardGroupIds: [],
+};
+const FEDERAL: Viewer = {
+  isActiveMember: true,
+  memberGroupIds: [],
+  isFederal: true,
   boardGroupIds: [],
 };
 
@@ -174,6 +181,38 @@ describeIfDb("events integration", () => {
     );
     await registerMember(t.db, open.id, "mem1");
     await expect(registerMember(t.db, open.id, "mem1")).rejects.toMatchObject({ code: "CONFLICT" });
+  });
+
+  it("listManagedEvents returns per-event confirmed/waitlist counts in one grouped query", async () => {
+    for (const m of ["mem1", "mem2", "mem3"]) await createMember(m, null);
+
+    // Event A: 2 confirmed, 0 waitlist, plus one cancelled seat that must NOT count.
+    const a = await publishEvent(
+      t.db,
+      (await createEvent(t.db, { title: "Event A", startsAt: future(1), capacity: 10 }, "usr_c")).id,
+    );
+    await registerMember(t.db, a.id, "mem1");
+    await registerMember(t.db, a.id, "mem2");
+    await registerMember(t.db, a.id, "mem3");
+    await cancelRegistration(t.db, a.id, "mem3"); // no waitlist to promote → stays cancelled
+
+    // Event B: capacity 1 → 1 confirmed + 1 waitlisted.
+    const b = await publishEvent(
+      t.db,
+      (await createEvent(t.db, { title: "Event B", startsAt: future(2), capacity: 1 }, "usr_c")).id,
+    );
+    await registerMember(t.db, b.id, "mem1");
+    await registerMember(t.db, b.id, "mem2");
+
+    // Event C: a draft with zero registrations (federal viewer still sees it).
+    const c = await createEvent(t.db, { title: "Event C", startsAt: future(3) }, "usr_c");
+
+    const managed = await listManagedEvents(t.db, FEDERAL);
+    const byId = new Map(managed.map((e) => [e.id, e]));
+
+    expect(byId.get(a.id)).toMatchObject({ confirmedCount: 2, waitlistCount: 0 });
+    expect(byId.get(b.id)).toMatchObject({ confirmedCount: 1, waitlistCount: 1 });
+    expect(byId.get(c.id)).toMatchObject({ confirmedCount: 0, waitlistCount: 0 });
   });
 
   it("visibility: members_only is hidden from anon, public is visible", async () => {
