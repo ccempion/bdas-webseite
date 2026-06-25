@@ -1,14 +1,16 @@
 import { getDb } from "@bdas/db";
-import { listFolders } from "@bdas/files";
+import { folderFileCounts, listFolders } from "@bdas/files";
 import { getGroupBySlug } from "@bdas/groups";
 
 import { requireGroupScope } from "../../../../_dashboard/session";
-import { FoldersTable } from "../../../_components/FoldersTable";
+import { requireFilesFlag } from "../../../../_files/flag";
+import { FolderIndex } from "../../../../_files/FolderIndex";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Dateien" };
 
 export default async function GroupFilesPage({ params }: { params: { slug: string } }) {
+  requireFilesFlag();
   const { me, groupId } = await requireGroupScope(params.slug);
   const db = getDb();
   const [folders, group] = await Promise.all([
@@ -16,10 +18,20 @@ export default async function GroupFilesPage({ params }: { params: { slug: strin
     getGroupBySlug(db, params.slug),
   ]);
   const groupFolders = folders.filter((f) => f.groupId === groupId);
+  const counts = await folderFileCounts(
+    db,
+    groupFolders.map((f) => f.id),
+    me,
+  );
   return (
     <section className="flex flex-col gap-4">
       <h1 className="text-2xl font-semibold text-bdas-ink">Dateien</h1>
-      <FoldersTable folders={groupFolders} groupNames={group ? { [group.id]: group.name } : {}} />
+      <FolderIndex
+        folders={groupFolders}
+        groupNames={group ? { [group.id]: group.name } : {}}
+        counts={counts}
+        hrefBase={`/gruppe/${params.slug}/files`}
+      />
     </section>
   );
 }
