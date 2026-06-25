@@ -14,6 +14,7 @@ export {
 } from "./services/files";
 export { registerFilesSubscribers, unregisterFilesSubscribers } from "./subscribers";
 export { canRead as canReadFolder, canWrite as canWriteFolder } from "./permissions";
+export { ALLOWED_MIME, MAX_FILE_BYTES } from "./constants";
 export type {
   Folder,
   FileMeta,

@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { getDb } from "@bdas/db";
-import { listFiles, listFolders } from "@bdas/files";
+import { canWriteFolder, listFiles, listFolders } from "@bdas/files";
 
 import { loadCurrentMember } from "../../../../_dashboard/session";
 import { requireFilesFlag } from "../../../../_files/flag";
@@ -29,7 +29,7 @@ export default async function FederalFolderPage({ params }: { params: { folderId
       </Link>
       <h1 className="text-2xl font-semibold text-bdas-ink">{folder.name}</h1>
       {folder.description ? <p className="text-bdas-ink-body">{folder.description}</p> : null}
-      <FileList files={files} />
+      <FileList files={files} folderId={params.folderId} canWrite={canWriteFolder(folder, me)} />
     </section>
   );
 }

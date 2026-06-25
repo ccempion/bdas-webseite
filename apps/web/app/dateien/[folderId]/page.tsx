@@ -34,7 +34,7 @@ export default async function DateiOrdnerPage({ params }: { params: { folderId: 
         <h1 className="text-3xl font-semibold text-bdas-ink">{folder.name}</h1>
         {folder.description ? <p className="text-bdas-ink-body">{folder.description}</p> : null}
       </header>
-      <FileList files={files} />
+      <FileList files={files} folderId={params.folderId} canWrite={false} />
     </main>
   );
 }
