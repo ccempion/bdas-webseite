@@ -58,6 +58,10 @@ const localBoardOf = (userId: string, groupId: string) => ({
   userId,
   grants: [{ role: "local_board", groupId }] as ReadonlyArray<Grant>,
 });
+const leadOf = (userId: string, groupId: string) => ({
+  userId,
+  grants: [{ role: "local_board_lead", groupId }] as ReadonlyArray<Grant>,
+});
 
 describeIfDb("members integration", () => {
   let t: TestDb;
@@ -160,6 +164,36 @@ describeIfDb("members integration", () => {
     });
   });
 
+  it("local_board_lead may approve only members of its own group (ADR 0013)", async () => {
+    await createGroup("grp_a", "aachen");
+    await createGroup("grp_b", "berlin");
+    await createUser("usr_lin_a", "la@example.de");
+    await createUser("usr_lin_b", "lb@example.de");
+    const inA = await createProfile(t.db, {
+      userId: "usr_lin_a",
+      firstName: "LeadInA",
+      lastName: "x",
+      primaryGroupId: "grp_a",
+    });
+    const inB = await createProfile(t.db, {
+      userId: "usr_lin_b",
+      firstName: "LeadInB",
+      lastName: "x",
+      primaryGroupId: "grp_b",
+    });
+
+    const leadA = leadOf("usr_lead_a", "grp_a");
+
+    // Same group → allowed.
+    const approved = await approveMember(t.db, inA.id, leadA);
+    expect(approved.status).toBe("active");
+
+    // Other group → forbidden.
+    await expect(approveMember(t.db, inB.id, leadA)).rejects.toMatchObject({
+      code: "FORBIDDEN",
+    });
+  });
+
   it("a member with no group can only be transitioned by federal_board", async () => {
     await createUser("usr_nogroup", "n@example.de");
     const m = await createProfile(t.db, {
@@ -190,6 +224,10 @@ describeIfDb("members integration", () => {
 
     const onlyA = await listPendingMembers(t.db, localBoardOf("usr_ba", "grp_a"));
     expect(onlyA.map((m) => m.firstName)).toEqual(["usr_pa"]);
+
+    // A lead of grp_a sees its group's pending members too (ADR 0013).
+    const leadOnlyA = await listPendingMembers(t.db, leadOf("usr_la", "grp_a"));
+    expect(leadOnlyA.map((m) => m.firstName)).toEqual(["usr_pa"]);
 
     await expect(listPendingMembers(t.db, PEASANT)).rejects.toMatchObject({
       code: "FORBIDDEN",

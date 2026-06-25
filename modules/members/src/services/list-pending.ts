@@ -14,14 +14,15 @@ export type Db = PostgresJsDatabase<Record<string, never>>;
 
 /**
  * Pending members the actor may decide on (ADR 0007): federal_board sees all;
- * a local_board sees only pending members of the groups it is scoped to.
+ * a local_board (or local_board_lead, which manages its group too per ADR 0013)
+ * sees only pending members of the groups it is scoped to.
  */
 export async function listPendingMembers(db: Db, actor: Actor): Promise<Member[]> {
   const federal = isFederalBoard(actor.grants);
   const scopedGroupIds = actor.grants
     .filter(
-      (g): g is { role: "local_board"; groupId: string } =>
-        g.role === "local_board" && g.groupId !== null,
+      (g): g is { role: "local_board" | "local_board_lead"; groupId: string } =>
+        (g.role === "local_board" || g.role === "local_board_lead") && g.groupId !== null,
     )
     .map((g) => g.groupId);
 

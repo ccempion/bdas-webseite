@@ -6,6 +6,7 @@ import type { Grant } from "./index";
 describe("members public role primitives", () => {
   const federal: Grant[] = [{ role: "federal_board", groupId: null }];
   const localMuc: Grant[] = [{ role: "local_board", groupId: "grp_muc" }];
+  const leadMuc: Grant[] = [{ role: "local_board_lead", groupId: "grp_muc" }];
 
   it("isFederalBoard is true only with a federal_board grant", () => {
     expect(isFederalBoard(federal)).toBe(true);
@@ -17,6 +18,12 @@ describe("members public role primitives", () => {
     expect(canManageGroup(localMuc, "grp_muc")).toBe(true);
     expect(canManageGroup(localMuc, "grp_other")).toBe(false);
     expect(canManageGroup(localMuc, null)).toBe(false);
+  });
+
+  it("canManageGroup: a lead manages its own group (ADR 0013), not others", () => {
+    expect(canManageGroup(leadMuc, "grp_muc")).toBe(true);
+    expect(canManageGroup(leadMuc, "grp_other")).toBe(false);
+    expect(canManageGroup(leadMuc, null)).toBe(false);
   });
 
   it("isRole accepts local_board_lead", () => {

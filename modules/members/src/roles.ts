@@ -50,14 +50,18 @@ export function isFederalBoard(grants: ReadonlyArray<Grant>): boolean {
 }
 
 /**
- * May the actor manage this group? Federal board → any group. Local board →
- * only the group its grant is scoped to. A null groupId is manageable only by
- * federal board (a member with no primary group).
+ * May the actor manage this group? Federal board → any group. A `local_board`
+ * or `local_board_lead` → only the group its grant is scoped to (a lead is the
+ * group's highest-trust role and manages it too, per ADR 0013). A null groupId
+ * is manageable only by federal board (a member with no primary group).
  */
 export function canManageGroup(grants: ReadonlyArray<Grant>, groupId: string | null): boolean {
   if (isFederalBoard(grants)) return true;
   if (groupId === null) return false;
-  return grants.some((g) => g.role === "local_board" && g.groupId === groupId);
+  return grants.some(
+    (g) =>
+      (g.role === "local_board" || g.role === "local_board_lead") && g.groupId === groupId,
+  );
 }
 
 /**
