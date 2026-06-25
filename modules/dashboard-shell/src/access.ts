@@ -18,14 +18,12 @@ export function canSeeFederalScope(grants: ReadonlyArray<Grant>): boolean {
 /** A `/gruppe/[slug]` scope: federal (superset — incl. archived groups, which it
  *  winds down) or a board of that group. A local board may NOT manage an
  *  archived group; only federal can. `canManageGroup` encodes "federal OR
- *  local_board of this group"; a lead also manages its group, so include it
- *  explicitly. */
+ *  local_board / local_board_lead of this group". */
 export function canSeeGroupScope(
   grants: ReadonlyArray<Grant>,
   group: { readonly id: string; readonly status: GroupStatus },
 ): boolean {
   if (isFederalBoard(grants)) return true;
   if (group.status === "archived") return false;
-  if (canManageGroup(grants, group.id)) return true;
-  return grants.some((g) => g.role === "local_board_lead" && g.groupId === group.id);
+  return canManageGroup(grants, group.id);
 }
