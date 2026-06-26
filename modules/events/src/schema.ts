@@ -8,6 +8,7 @@ import {
   text,
   timestamp,
 } from "drizzle-orm/pg-core";
+import type { EventContent } from "./types";
 
 // Drizzle table definitions for query building. The authoritative DDL — FKs,
 // CHECKs, partial unique indexes — lives in migrations/0001_init.sql.
@@ -24,7 +25,7 @@ export const events = pgTable(
     endsAt: timestamp("ends_at", { withTimezone: true }),
     location: text("location"),
     locationUrl: text("location_url"),
-    content: jsonb("content").$type<import("./types").EventContent>(),
+    content: jsonb("content").$type<EventContent>(),
     coverImageKey: text("cover_image_key"),
     summary: text("summary"),
     registrationDeadline: timestamp("registration_deadline", { withTimezone: true }),

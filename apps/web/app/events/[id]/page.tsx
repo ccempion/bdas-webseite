@@ -39,7 +39,6 @@ export default async function EventDetailPage({ params }: { params: { id: string
   return (
     <main className="mx-auto flex max-w-3xl flex-col gap-6 px-4 py-12">
       {event.coverImageKey ? (
-        // eslint-disable-next-line @next/next/no-img-element
         <img
           src={getEventMediaStorage().publicUrl(event.coverImageKey)}
           alt=""
