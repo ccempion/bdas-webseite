@@ -232,6 +232,7 @@ describeIfDb("events integration", () => {
       },
       "usr_c",
     );
+    await publishEvent(t.db, ev.id);
     const got = await getEvent(t.db, ev.id, ACTIVE);
     expect(got?.summary).toBe("Ein Rundgang durch die Altstadt");
     expect(got?.coverImageKey).toBe("evt_x/cover.jpg");
