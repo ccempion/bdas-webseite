@@ -3,8 +3,9 @@ import { notFound } from "next/navigation";
 
 import { getDb } from "@bdas/db";
 import { Alert, Card } from "@bdas/design-system";
-import { getEvent, getMyRegistration } from "@bdas/events-module";
+import { getEvent, getMyRegistration, renderEventContentHtml } from "@bdas/events-module";
 import { getCurrentMember } from "@bdas/members";
+import { getEventMediaStorage } from "@bdas/storage";
 
 import { requireEventsFlag } from "../../_events/flag";
 import { readSessionCookie } from "../../../lib/auth-cookie";
@@ -13,6 +14,17 @@ import { formatDateTime } from "../../../lib/format";
 import { RegisterControls } from "./RegisterControls";
 
 export const metadata = { title: "Veranstaltung" };
+
+function renderSlot(heading: string, doc: Parameters<typeof renderEventContentHtml>[0]) {
+  const html = renderEventContentHtml(doc);
+  if (!html) return null;
+  return (
+    <Card flat className="p-6">
+      <h2 className="mb-2 text-lg font-semibold text-bdas-ink">{heading}</h2>
+      <div className="prose max-w-none text-bdas-ink-body" dangerouslySetInnerHTML={{ __html: html }} />
+    </Card>
+  );
+}
 
 export default async function EventDetailPage({ params }: { params: { id: string } }) {
   requireEventsFlag();
@@ -26,20 +38,47 @@ export default async function EventDetailPage({ params }: { params: { id: string
 
   return (
     <main className="mx-auto flex max-w-3xl flex-col gap-6 px-4 py-12">
+      {event.coverImageKey ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={getEventMediaStorage().publicUrl(event.coverImageKey)}
+          alt=""
+          className="mb-2 w-full rounded-bdas object-cover"
+        />
+      ) : null}
+
+      {event.status !== "published" ? (
+        <Alert variant="info" title="Vorschau">
+          Diese Veranstaltung ist noch nicht veröffentlicht. Nur Verwalter sehen diese Seite.
+        </Alert>
+      ) : null}
+
       <header className="flex flex-col gap-2">
         <p className="text-sm text-bdas-ink-muted">
           {formatDateTime(event.startsAt)}
           {event.endsAt ? ` – ${formatDateTime(event.endsAt)}` : ""}
         </p>
         <h1 className="text-3xl font-semibold text-bdas-ink">{event.title}</h1>
-        {event.location ? <p className="text-bdas-ink-body">{event.location}</p> : null}
+        {event.locationName ? (
+          <a
+            href={
+              event.locationLat !== null && event.locationLng !== null
+                ? `https://www.google.com/maps/search/?api=1&query=${event.locationLat},${event.locationLng}`
+                : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(event.locationName)}`
+            }
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex w-fit items-center gap-1 rounded-bdas border border-bdas-soft px-3 py-1.5 text-sm text-bdas-ink-body hover:bg-bdas-overlay-hover"
+          >
+            📍 {event.locationName} — Route öffnen
+          </a>
+        ) : null}
       </header>
 
-      {event.descriptionMd ? (
-        <Card flat className="p-6">
-          <p className="whitespace-pre-wrap text-bdas-ink-body">{event.descriptionMd}</p>
-        </Card>
-      ) : null}
+      {renderSlot("Beschreibung", event.content?.body)}
+      {renderSlot("Ablauf", event.content?.agenda)}
+      {renderSlot("Anfahrt", event.content?.directions)}
+      {renderSlot("Mitbringen", event.content?.bring)}
 
       <Card flat className="p-6">
         <p className="mb-4 text-sm text-bdas-ink-muted">
@@ -66,6 +105,8 @@ export default async function EventDetailPage({ params }: { params: { id: string
             </Link>
             , um dich anzumelden.
           </Alert>
+        ) : event.registrationDeadline && event.registrationDeadline < new Date() ? (
+          <Alert variant="info">Die Anmeldefrist ist abgelaufen.</Alert>
         ) : (
           <RegisterControls
             eventId={event.id}
@@ -73,6 +114,10 @@ export default async function EventDetailPage({ params }: { params: { id: string
             waitlistPosition={myReg?.waitlistPosition ?? null}
           />
         )}
+
+        <a href={`/events/${event.id}/ics`} className="mt-4 block text-sm text-bdas-red hover:underline">
+          Zum Kalender hinzufügen
+        </a>
       </Card>
     </main>
   );
