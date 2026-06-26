@@ -6,6 +6,17 @@
  * DOM `Event` in consuming web components.
  */
 
+/** A Tiptap/ProseMirror document node. Opaque to consumers; rendered server-side. */
+export type TiptapDoc = { readonly type: "doc"; readonly content?: ReadonlyArray<unknown> };
+
+/** Structured rich content for an event. Empty slots are omitted on render. */
+export type EventContent = {
+  readonly body?: TiptapDoc | null;
+  readonly agenda?: TiptapDoc | null;
+  readonly directions?: TiptapDoc | null;
+  readonly bring?: TiptapDoc | null;
+};
+
 export type EventStatus = "draft" | "published" | "cancelled";
 export type EventVisibility = "public" | "members_only" | "group_only";
 
@@ -19,6 +30,14 @@ export type EventItem = {
   readonly endsAt: Date | null;
   readonly location: string | null;
   readonly locationUrl: string | null;
+  readonly content: EventContent | null;
+  readonly coverImageKey: string | null;
+  readonly summary: string | null;
+  readonly registrationDeadline: Date | null;
+  readonly locationName: string | null;
+  readonly locationAddress: string | null;
+  readonly locationLat: number | null;
+  readonly locationLng: number | null;
   /** null = unlimited capacity. */
   readonly capacity: number | null;
   readonly visibility: EventVisibility;

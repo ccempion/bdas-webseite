@@ -77,6 +77,7 @@ describeIfDb("events integration", () => {
       ["..", "..", "members", "migrations", "0001_init.sql"],
       ["..", "..", "members", "migrations", "0002_role_grants.sql"],
       ["..", "migrations", "0001_init.sql"],
+      ["..", "migrations", "0002_event_pages.sql"],
     ]) {
       const sql = await fs.readFile(path.join(__dirname, ...file), "utf8");
       await t.client.unsafe(sql);
@@ -214,6 +215,28 @@ describeIfDb("events integration", () => {
     expect(byId.get(a.id)).toMatchObject({ confirmedCount: 2, waitlistCount: 0 });
     expect(byId.get(b.id)).toMatchObject({ confirmedCount: 1, waitlistCount: 1 });
     expect(byId.get(c.id)).toMatchObject({ confirmedCount: 0, waitlistCount: 0 });
+  });
+
+  it("stores and reads structured content + cover + location", async () => {
+    const ev = await createEvent(
+      t.db,
+      {
+        title: "Stadtführung",
+        startsAt: future(),
+        summary: "Ein Rundgang durch die Altstadt",
+        content: { body: { type: "doc", content: [] } },
+        coverImageKey: "evt_x/cover.jpg",
+        locationName: "Rathaus",
+        locationLat: 51.18,
+        locationLng: 6.44,
+      },
+      "usr_c",
+    );
+    const got = await getEvent(t.db, ev.id, ACTIVE);
+    expect(got?.summary).toBe("Ein Rundgang durch die Altstadt");
+    expect(got?.coverImageKey).toBe("evt_x/cover.jpg");
+    expect(got?.locationName).toBe("Rathaus");
+    expect(got?.locationLat).toBeCloseTo(51.18);
   });
 
   it("visibility: members_only is hidden from anon, public is visible", async () => {

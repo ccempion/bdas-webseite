@@ -1,4 +1,13 @@
-import { boolean, index, integer, pgTable, text, timestamp } from "drizzle-orm/pg-core";
+import {
+  boolean,
+  doublePrecision,
+  index,
+  integer,
+  jsonb,
+  pgTable,
+  text,
+  timestamp,
+} from "drizzle-orm/pg-core";
 
 // Drizzle table definitions for query building. The authoritative DDL — FKs,
 // CHECKs, partial unique indexes — lives in migrations/0001_init.sql.
@@ -15,6 +24,14 @@ export const events = pgTable(
     endsAt: timestamp("ends_at", { withTimezone: true }),
     location: text("location"),
     locationUrl: text("location_url"),
+    content: jsonb("content").$type<import("./types").EventContent>(),
+    coverImageKey: text("cover_image_key"),
+    summary: text("summary"),
+    registrationDeadline: timestamp("registration_deadline", { withTimezone: true }),
+    locationName: text("location_name"),
+    locationAddress: text("location_address"),
+    locationLat: doublePrecision("location_lat"),
+    locationLng: doublePrecision("location_lng"),
     // null capacity = unlimited.
     capacity: integer("capacity"),
     visibility: text("visibility").notNull().default("members_only"),
