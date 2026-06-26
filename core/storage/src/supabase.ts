@@ -69,4 +69,8 @@ export class SupabaseStorageClient implements StorageClient {
     const { error } = await this.client.storage.from(this.bucket).remove([storageKey]);
     if (error) throw new Error(error.message);
   }
+
+  publicUrl(storageKey: string): string {
+    return this.client.storage.from(this.bucket).getPublicUrl(storageKey).data.publicUrl;
+  }
 }

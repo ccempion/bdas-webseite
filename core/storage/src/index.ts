@@ -85,4 +85,21 @@ export function setStorage(client: StorageClient): void {
   _client = client;
 }
 
+let _eventMedia: SupabaseStorageClient | null = null;
+
+/** Storage client for the public `event-media` bucket (event covers + inline images). */
+export function getEventMediaStorage(): SupabaseStorageClient {
+  if (_eventMedia) return _eventMedia;
+  const url = process.env["SUPABASE_URL"];
+  const serviceRoleKey = process.env["SUPABASE_SERVICE_ROLE_KEY"];
+  const bucket = process.env["SUPABASE_EVENT_MEDIA_BUCKET"] ?? "event-media";
+  if (!url || !serviceRoleKey) {
+    throw new Error(
+      "event-media storage is not configured (need SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY).",
+    );
+  }
+  _eventMedia = new SupabaseStorageClient({ url, serviceRoleKey, bucket });
+  return _eventMedia;
+}
+
 export { SupabaseStorageClient };
