@@ -8,8 +8,8 @@ import { Button } from "@bdas/design-system";
 import { deleteFileAction } from "./file-actions";
 
 /**
- * Per-row delete with an inline two-step confirm (mirrors the GrantRoleModal /
- * DownloadButton idiom — no overlay primitive). On success refreshes the route
+ * Per-row delete with an inline two-step confirm (mirrors the GrantRoleModal
+ * idiom — no overlay primitive). On success refreshes the route
  * so the server-rendered list re-fetches; surfaces the service's German error.
  */
 export function DeleteFileButton({ fileId, filename }: { fileId: string; filename: string }) {
