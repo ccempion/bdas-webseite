@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { getEventBus, resetEventBus } from "./index";
 
 type FooEvent = { type: "foo.happened"; payload: { id: string } };
@@ -57,5 +57,23 @@ describe("InProcessEventBus", () => {
     await expect(
       bus.publish<FooEvent>({ type: "foo.happened", payload: { id: "x" } }),
     ).rejects.toThrow(/boom/);
+  });
+
+  // Regression: instrumentation.ts and route handlers are bundled separately, so
+  // the module is evaluated more than once. A subscriber wired by one copy must
+  // still receive events published by the other (globalThis-backed singleton).
+  it("shares one bus across separate module evaluations", async () => {
+    const first = await import("./index");
+    let received = 0;
+    first.getEventBus().subscribe<FooEvent>("foo.happened", () => {
+      received++;
+    });
+
+    vi.resetModules(); // force a fresh module instance, as a separate bundle would be
+    const second = await import("./index");
+    expect(second.getEventBus()).toBe(first.getEventBus()); // same instance via globalThis
+    await second.getEventBus().publish<FooEvent>({ type: "foo.happened", payload: { id: "x" } });
+
+    expect(received).toBe(1); // subscriber from the first copy saw the second copy's publish
   });
 });

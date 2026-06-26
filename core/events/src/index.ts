@@ -49,18 +49,34 @@ class InProcessEventBus implements EventBus {
   }
 }
 
-let _bus: EventBus = new InProcessEventBus();
+/**
+ * The bus is a process-wide singleton stored on `globalThis`. Next.js can bundle
+ * `instrumentation.ts` and route handlers as SEPARATE module instances; a plain
+ * module-level `let` gives each its own bus, so subscribers wired at boot
+ * (instrumentation) never see events published from route handlers — silently
+ * dropping every cross-module reaction (notifications, folder provisioning).
+ * A `globalThis` slot keyed by a global-registry symbol (`Symbol.for`, identical
+ * across bundles) makes all copies share one bus in the same runtime.
+ */
+const BUS_KEY = Symbol.for("@bdas/events:bus");
+
+type BusGlobal = { [BUS_KEY]?: EventBus };
+
+function busStore(): BusGlobal {
+  return globalThis as unknown as BusGlobal;
+}
 
 export function getEventBus(): EventBus {
-  return _bus;
+  const store = busStore();
+  return (store[BUS_KEY] ??= new InProcessEventBus());
 }
 
 /** Test helper: replace the bus. */
 export function setEventBus(bus: EventBus): void {
-  _bus = bus;
+  busStore()[BUS_KEY] = bus;
 }
 
 /** Test helper: reset to a fresh in-process bus. */
 export function resetEventBus(): void {
-  _bus = new InProcessEventBus();
+  busStore()[BUS_KEY] = new InProcessEventBus();
 }
