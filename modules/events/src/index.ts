@@ -13,6 +13,9 @@ export { getEvent, canView, canManage, ANON, type Viewer } from "./services/get"
 export { createEvent, updateEvent, publishEvent, cancelEvent, EventInput } from "./services/manage";
 export { registerMember, cancelRegistration, getMyRegistration } from "./services/registration";
 
+export { renderEventContentHtml, plainTextToDoc } from "./content";
+export type { TiptapDoc, EventContent } from "./types";
+
 export type {
   EventItem,
   EventRegistration,
