@@ -50,7 +50,9 @@ export function bootNotifications(): void {
     },
   });
 
-  registerNotificationSubscribers(getDb());
+  registerNotificationSubscribers(getDb(), {
+    siteUrl: process.env["PUBLIC_SITE_URL"] ?? "http://localhost:3000",
+  });
 
   booted = true;
 }

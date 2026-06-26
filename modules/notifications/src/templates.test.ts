@@ -52,3 +52,43 @@ describe("render", () => {
     expect(out.text).toContain("<img");
   });
 });
+
+describe("render — event manage/cancel link", () => {
+  const url = "https://dashboard.bdas.de/events/evt_123";
+
+  it("adds the event link to the registration confirmation", () => {
+    const out = render("event_registration_confirmed", {
+      firstName: "Mara",
+      eventTitle: "Sommerfest",
+      eventUrl: url,
+    });
+    expect(out.text).toContain(url);
+    expect(out.text).toContain("abmelden");
+    expect(out.html).toContain(`href="${url}"`);
+  });
+
+  it("adds the link to waitlisted and waitlist-promoted emails", () => {
+    for (const t of ["event_waitlisted", "event_waitlist_promoted"] as const) {
+      const out = render(t, { firstName: "Mara", eventTitle: "Sommerfest", eventUrl: url });
+      expect(out.text).toContain(url);
+    }
+  });
+
+  it("omits the link on the deregistration confirmation (already left)", () => {
+    const out = render("event_deregistration_confirmed", {
+      firstName: "Mara",
+      eventTitle: "Sommerfest",
+      eventUrl: url,
+    });
+    expect(out.text).not.toContain(url);
+    expect(out.html).not.toContain("href=");
+  });
+
+  it("omits the link when no eventUrl is supplied", () => {
+    const out = render("event_registration_confirmed", {
+      firstName: "Mara",
+      eventTitle: "Sommerfest",
+    });
+    expect(out.html).not.toContain("href=");
+  });
+});

@@ -159,7 +159,7 @@ describeIfDb("notifications integration", () => {
     const memberId = await seedMember();
 
     resetEventBus();
-    registerNotificationSubscribers(t.db);
+    registerNotificationSubscribers(t.db, { siteUrl: "https://dashboard.bdas.de" });
     await getEventBus().publish({
       type: "events.event.registered",
       eventId: "evt_1",
@@ -170,6 +170,9 @@ describeIfDb("notifications integration", () => {
 
     expect(sent).toHaveLength(1);
     expect(sent[0]?.subject).toContain("Warteliste");
+    // The subscriber builds the event link from siteUrl + eventId and threads it
+    // through to the rendered email so the recipient can cancel their spot.
+    expect(sent[0]?.text).toContain("https://dashboard.bdas.de/events/evt_1");
 
     const rows = await t.db.select().from(notificationLog);
     expect(rows).toHaveLength(1);

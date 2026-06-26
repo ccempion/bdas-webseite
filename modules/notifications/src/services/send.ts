@@ -26,12 +26,20 @@ export async function sendTransactional(
   db: Db,
   template: TransactionalTemplate,
   toMemberId: string,
-  extra: { readonly eventTitle: string; readonly eventId?: string },
+  extra: {
+    readonly eventTitle: string;
+    readonly eventId?: string;
+    readonly eventUrl?: string | undefined;
+  },
 ): Promise<SendResult | null> {
   const contact = await getRecipientResolver().resolve(db, toMemberId);
   if (!contact) return null; // unresolvable recipient — nothing to send, nothing to log
 
-  const data: TemplateData = { firstName: contact.firstName, eventTitle: extra.eventTitle };
+  const data: TemplateData = {
+    firstName: contact.firstName,
+    eventTitle: extra.eventTitle,
+    eventUrl: extra.eventUrl,
+  };
   const email = render(template, data);
   const id = createId("ntfy");
 

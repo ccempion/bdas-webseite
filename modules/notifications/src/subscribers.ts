@@ -58,9 +58,20 @@ async function eventTitle(db: Db, eventId: string): Promise<string> {
 /**
  * Wire the bus → send handlers. Closes over `db` (core/db has no test-injection
  * seam, and every service here takes an explicit db). Idempotent.
+ *
+ * `opts.siteUrl` is the public base URL (e.g. https://dashboard.bdas.de),
+ * supplied by the app at composition time — the module never reads env itself.
+ * When present, the "you're on the event" emails carry a link to the event page
+ * so the recipient can cancel their registration there. The deregistration
+ * email gets no link (they have already left).
  */
-export function registerNotificationSubscribers(db: Db): void {
+export function registerNotificationSubscribers(db: Db, opts: { siteUrl?: string } = {}): void {
   if (subs.length > 0) return;
+
+  const eventUrl = (eventId: string): string | undefined =>
+    opts.siteUrl
+      ? `${opts.siteUrl.replace(/\/$/, "")}/events/${encodeURIComponent(eventId)}`
+      : undefined;
 
   subs = [
     getEventBus().subscribe<EventRegistered>(
@@ -71,7 +82,7 @@ export function registerNotificationSubscribers(db: Db): void {
           db,
           e.waitlisted ? "event_waitlisted" : "event_registration_confirmed",
           e.memberId,
-          { eventTitle: title, eventId: e.eventId },
+          { eventTitle: title, eventId: e.eventId, eventUrl: eventUrl(e.eventId) },
         );
       }),
     ),
@@ -92,6 +103,7 @@ export function registerNotificationSubscribers(db: Db): void {
         await sendTransactional(db, "event_waitlist_promoted", e.memberId, {
           eventTitle: title,
           eventId: e.eventId,
+          eventUrl: eventUrl(e.eventId),
         });
       }),
     ),

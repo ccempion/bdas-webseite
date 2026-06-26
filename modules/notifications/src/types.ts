@@ -15,6 +15,9 @@ export type TemplateData = {
   readonly firstName: string;
   /** Human-readable event title. */
   readonly eventTitle: string;
+  /** Absolute URL of the event page, for the "manage/cancel registration" link.
+   * Omitted on the deregistration email and when no site URL is configured. */
+  readonly eventUrl?: string | undefined;
 };
 
 /** Outcome of a send attempt, returned by sendTransactional. */
