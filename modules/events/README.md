@@ -15,8 +15,28 @@ Event creation, registration, and waitlisting (spec §10, Phase 2 core slice).
 | `event_registrations` | One active row per member; `waitlist_position` null = confirmed |
 | `event_attendance`    | Day-of check-in (table only this PR; service/UI deferred)       |
 
-Migration: `migrations/0001_init.sql`, run after `groups` + `members` (the FK
-targets) per `infra/migrations` manifest.
+Migrations:
+- `migrations/0001_init.sql` — base schema, run after `groups` + `members`
+- `migrations/0002_event_page_fields.sql` — adds `content`, `cover_image_key`,
+  `summary`, `registration_deadline`, `location_name`, `location_address`,
+  `location_lat`, `location_lng`
+
+### Event page columns (added in Slice 1)
+
+| Column                  | Type                   | Purpose                                                        |
+| ----------------------- | ---------------------- | -------------------------------------------------------------- |
+| `content`               | `jsonb`                | Structured Tiptap JSON: `{ body, agenda?, directions?, bring? }` — each slot is an independent Tiptap doc |
+| `cover_image_key`       | `text`                 | Storage key in the `event-media` bucket for the cover image    |
+| `summary`               | `text`                 | Short plain-text teaser (shown on cards + `<meta>` description) |
+| `registration_deadline` | `timestamptz`          | UI-only gate this slice; server-side enforcement lands in Slice 2 |
+| `location_name`         | `text`                 | Human-readable venue name (e.g. "Stadtbibliothek München")     |
+| `location_address`      | `text`                 | Full street address (drives the Google Maps button)            |
+| `location_lat`          | `double precision`     | Latitude from Photon geocoder                                  |
+| `location_lng`          | `double precision`     | Longitude from Photon geocoder                                 |
+
+> **Deploy note:** `description_md` is retained in the schema (nullable, no
+> longer written by new code). A cleanup migration that drops it is deferred to
+> after all active deployments have flushed old writes (ADR 0010 deploy safety).
 
 ## Public surface
 
@@ -41,15 +61,79 @@ import {
   canManage,
   ANON,
   type Viewer,
+  // rich content (Slice 1)
+  renderEventContentHtml,
+  plainTextToDoc,
+  eventToIcs,
   // types
   type EventItem,
   type EventWithCounts,
   type RegistrationResult,
   type EventsEvent,
+  type TiptapDoc,
+  type EventContent,
 } from "@bdas/events-module";
 ```
 
 Anything not re-exported from `src/index.ts` is private (rule 8).
+
+### `renderEventContentHtml(doc: TiptapDoc | null | undefined): string`
+
+Server-side Tiptap→HTML renderer. Converts a single content slot (e.g.
+`event.content.body`) to sanitized HTML safe for `dangerouslySetInnerHTML`.
+Allowed tags: `p br strong em u s h2 h3 h4 ul ol li blockquote a img hr`.
+Returns `""` for null/empty docs.
+
+### `plainTextToDoc(text: string): TiptapDoc`
+
+Wraps a plain string in a single-paragraph Tiptap doc. Useful for seeds and
+preview fixtures.
+
+### `eventToIcs(event): string`
+
+Produces a minimal RFC 5545 VCALENDAR string for a single event (uses `id`,
+`title`, `summary`, `startsAt`, `endsAt`, `locationName`, `locationAddress`).
+Serve as `text/calendar; charset=utf-8` with a `.ics` filename.
+
+### `EventContent`
+
+```ts
+type EventContent = {
+  body?: TiptapDoc | null;
+  agenda?: TiptapDoc | null;
+  directions?: TiptapDoc | null;
+  bring?: TiptapDoc | null;
+};
+```
+
+Each slot is rendered independently with `renderEventContentHtml`. Omitted
+slots produce no section on the public page.
+
+## `event-media` storage bucket
+
+Cover images and inline body images are stored in a **public** Supabase Storage
+bucket. The bucket must be created manually in Supabase before enabling the
+event-pages feature.
+
+**Manual Supabase setup (once per environment):**
+
+1. In Supabase → Storage → New bucket, create `event-media`.
+2. Set **Public** = on (anonymous GET is allowed; no signed download needed).
+3. Under Policies, restrict uploads to service-role only (the route handler
+   uses the service-role key).
+4. Set allowed MIME types: `image/*`.
+5. Set max upload size: **10 MB**.
+
+**Environment variable:**
+
+```
+SUPABASE_EVENT_MEDIA_BUCKET=event-media   # optional; this is the default
+```
+
+`getEventMediaStorage()` (from `@bdas/storage`) returns the Supabase driver
+wired to this bucket. It reads `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` —
+same keys used by the files module. `publicUrl(key)` returns the stable CDN URL
+for a stored image (no expiry, since the bucket is public).
 
 ## Authorization
 
@@ -81,11 +165,23 @@ seat opened before the event starts, auto-promotes the waitlist head (emitting
 
 ## Testing
 
-`src/index.test.ts` is a Postgres integration test (no DB mocks, per §4). It
-applies the auth + groups + members + events migrations into a throwaway schema
-and exercises create → publish → register → waitlist → cancel → auto-promote.
+Integration tests (no DB mocks, per §4) run against a real Postgres instance.
+Each test file creates a throwaway schema and tears it down after:
+
+| File                  | Covers                                                     |
+| --------------------- | ---------------------------------------------------------- |
+| `src/index.test.ts`   | create → publish → register → waitlist → cancel → auto-promote |
+| `src/content.test.ts` | `renderEventContentHtml` + `plainTextToDoc` round-trips    |
+| `src/ics.test.ts`     | `eventToIcs` RFC 5545 output                               |
+
+Set `DATABASE_URL=postgres://…` to run the DB-backed tests. Without it they
+skip gracefully. In CI, Postgres is provided by the GitHub Actions service.
 
 ## Deferred (future events PRs)
 
-ICS feeds, check-in/attendance marking, post-event metrics (dashboard, Phase 3),
-richer filtering.
+- `description_md` column drop (cleanup migration, after deploy-safety window per ADR 0010)
+- Registration-deadline server-side enforcement in `registerMember` (Slice 2)
+- Roster management, CSV export, change notifications (Slice 2)
+- `event_organizer` role (Slice 3)
+- Guest registration / `allow_guest_registration` flag (Slice 4)
+- Check-in / attendance marking, post-event metrics (Phase 3)
