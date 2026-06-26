@@ -3,12 +3,22 @@
  *
  * The interface is defined in Sprint 0 so module schemas and service
  * contracts can reference it without waiting for the Supabase Storage
- * driver. The real implementation lands in Phase 2 — until then,
- * `getStorage()` returns a stub that throws on call.
+ * driver. The real implementation lands in Phase 2.
+ *
+ * `getStorage()` lazily self-initializes from the environment on first use:
+ * with SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY it returns the Supabase driver,
+ * otherwise a stub that throws on call. This matters because Next.js can bundle
+ * `instrumentation.ts` and route handlers as SEPARATE module instances, so a
+ * `setStorage()` wired at boot in one is invisible to `getStorage()` in the
+ * other. Self-wiring from env makes every copy configure itself identically;
+ * `setStorage()` still wins when an explicit client (e.g. a test fake) is
+ * injected.
  *
  * Hard rule (per spec §11): the app never proxies file bytes. All
  * uploads and downloads use signed URLs minted server-side here.
  */
+
+import { SupabaseStorageClient } from "./supabase";
 
 export type SignedUrl = {
   readonly url: string;
@@ -52,15 +62,27 @@ class NotConfiguredStorageClient implements StorageClient {
   }
 }
 
-let _client: StorageClient = new NotConfiguredStorageClient();
+/** Build the default client from the environment (Supabase driver or stub). */
+function clientFromEnv(): StorageClient {
+  const url = process.env["SUPABASE_URL"];
+  const serviceRoleKey = process.env["SUPABASE_SERVICE_ROLE_KEY"];
+  const bucket = process.env["SUPABASE_STORAGE_BUCKET"] ?? "files";
+  if (url && serviceRoleKey) {
+    return new SupabaseStorageClient({ url, serviceRoleKey, bucket });
+  }
+  return new NotConfiguredStorageClient();
+}
+
+let _client: StorageClient | null = null;
 
 export function getStorage(): StorageClient {
+  if (_client === null) _client = clientFromEnv();
   return _client;
 }
 
-/** Composition-time wiring (called by app bootstrap, not by modules). */
+/** Composition-time wiring (tests inject a fake; boot may pre-wire). */
 export function setStorage(client: StorageClient): void {
   _client = client;
 }
 
-export { SupabaseStorageClient } from "./supabase";
+export { SupabaseStorageClient };
