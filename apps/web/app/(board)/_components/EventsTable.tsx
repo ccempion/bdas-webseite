@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
 
 import type { EventStatus, EventWithCounts } from "@bdas/events-module";
 
@@ -69,7 +70,11 @@ export function EventsTable({
         <tbody>
           {rows.map((e) => (
             <tr key={e.id} className="border-t border-bdas-soft hover:bg-bdas-surface-hover">
-              <td className="p-3 text-bdas-ink">{e.title}</td>
+              <td className="p-3">
+                <Link href={`/admin/events/${e.id}`} className="text-bdas-red hover:underline">
+                  {e.title}
+                </Link>
+              </td>
               <td className="p-3 text-bdas-ink-body">
                 {e.groupId ? (groupNames[e.groupId] ?? "—") : "Bundesweit"}
               </td>
