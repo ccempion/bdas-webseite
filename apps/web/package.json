@@ -8,7 +8,8 @@
     "build": "next build",
     "start": "next start -p 3000",
     "typecheck": "tsc --noEmit",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test": "vitest run --dir app"
   },
   "dependencies": {
     "@tiptap/extension-image": "^2.10.0",
