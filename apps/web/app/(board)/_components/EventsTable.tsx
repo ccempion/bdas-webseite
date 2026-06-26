@@ -70,7 +70,7 @@ export function EventsTable({
         <tbody>
           {rows.map((e) => (
             <tr key={e.id} className="border-t border-bdas-soft hover:bg-bdas-surface-hover">
-              <td className="p-3">
+              <td className="p-3 text-bdas-ink">
                 <Link href={`/admin/events/${e.id}`} className="text-bdas-red hover:underline">
                   {e.title}
                 </Link>
