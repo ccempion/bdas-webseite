@@ -102,4 +102,15 @@ export function getEventMediaStorage(): SupabaseStorageClient {
   return _eventMedia;
 }
 
+/** Deterministic public URL for an event-media object. Needs only SUPABASE_URL
+ *  (no service-role key) — safe to call on public read paths. */
+export function eventMediaPublicUrl(storageKey: string): string {
+  const url = process.env["SUPABASE_URL"];
+  const bucket = process.env["SUPABASE_EVENT_MEDIA_BUCKET"] ?? "event-media";
+  if (!url) {
+    throw new Error("event-media public URL needs SUPABASE_URL.");
+  }
+  return `${url.replace(/\/$/, "")}/storage/v1/object/public/${bucket}/${storageKey}`;
+}
+
 export { SupabaseStorageClient };

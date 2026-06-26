@@ -5,7 +5,7 @@ import { getDb } from "@bdas/db";
 import { Alert, Card } from "@bdas/design-system";
 import { getEvent, getMyRegistration, renderEventContentHtml } from "@bdas/events-module";
 import { getCurrentMember } from "@bdas/members";
-import { getEventMediaStorage } from "@bdas/storage";
+import { eventMediaPublicUrl } from "@bdas/storage";
 
 import { requireEventsFlag } from "../../_events/flag";
 import { readSessionCookie } from "../../../lib/auth-cookie";
@@ -40,7 +40,7 @@ export default async function EventDetailPage({ params }: { params: { id: string
     <main className="mx-auto flex max-w-3xl flex-col gap-6 px-4 py-12">
       {event.coverImageKey ? (
         <img
-          src={getEventMediaStorage().publicUrl(event.coverImageKey)}
+          src={eventMediaPublicUrl(event.coverImageKey)}
           alt=""
           className="mb-2 w-full rounded-bdas object-cover"
         />
