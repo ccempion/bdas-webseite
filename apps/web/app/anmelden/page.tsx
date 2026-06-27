@@ -1,14 +1,17 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 
 import { Card } from "@bdas/design-system";
 
 import { requireAuthFlag } from "../_auth/flag";
+import { loadViewer } from "../_dashboard/session";
 import { AnmeldenForm } from "./AnmeldenForm";
 
 export const metadata = { title: "Anmelden" };
 
-export default function AnmeldenPage() {
+export default async function AnmeldenPage() {
   requireAuthFlag();
+  if (await loadViewer()) redirect("/account");
 
   return (
     <main className="mx-auto flex max-w-md flex-col gap-6 px-4 py-12">

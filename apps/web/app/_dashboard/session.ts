@@ -1,12 +1,23 @@
 import { cache } from "react";
 import { redirect } from "next/navigation";
 
+import { getCurrentUser, type CurrentUser } from "@bdas/auth";
 import { getDb } from "@bdas/db";
 import { canAdministerBoard, canSeeFederalScope, canSeeGroupScope } from "@bdas/dashboard-shell";
+import { isFlagOn } from "@bdas/feature-flags";
 import { canGrantLocalBoard, getCurrentMember, type CurrentMember } from "@bdas/members";
 import { getGroupBySlug } from "@bdas/groups";
 
 import { readSessionCookie } from "../../lib/auth-cookie";
+
+/** Lightweight "is anyone signed in?" read for public/guest surfaces, deduped
+ *  per request. Unlike {@link loadCurrentMember} it resolves only the auth
+ *  user (no grants join), which is all guest-only gating needs. Returns null
+ *  when the auth module is flagged off. */
+export const loadViewer = cache(
+  (): Promise<CurrentUser | null> =>
+    isFlagOn("auth") ? getCurrentUser(getDb(), readSessionCookie()) : Promise.resolve(null),
+);
 
 /** Resolve the current member, deduplicated per request. A board render touches
  *  this ~3× (the (board) layout, the scope layout, and the page); `cache()`

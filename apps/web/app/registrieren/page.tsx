@@ -1,16 +1,19 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 
 import { PASSWORD_RULE_HINT } from "@bdas/auth";
 import { Card } from "@bdas/design-system";
 
 import { requireAuthFlag } from "../_auth/flag";
+import { loadViewer } from "../_dashboard/session";
 import { legalUrls } from "../../lib/legal";
 import { RegistrierenForm } from "./RegistrierenForm";
 
 export const metadata = { title: "Registrieren" };
 
-export default function RegistrierenPage() {
+export default async function RegistrierenPage() {
   requireAuthFlag();
+  if (await loadViewer()) redirect("/account");
   const { privacy } = legalUrls();
 
   return (

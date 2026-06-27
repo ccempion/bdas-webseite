@@ -30,10 +30,7 @@ export function groupNav(slug: string): ReadonlyArray<NavItem> {
  *  group when the viewer has it; everything else falls back to the federal
  *  scope (or the first available scope). Pure so the client sidebar can derive
  *  the active scope from `usePathname()` on every soft navigation. */
-export function activeScope(
-  scopes: ReadonlyArray<Scope>,
-  pathname: string,
-): Scope | undefined {
+export function activeScope(scopes: ReadonlyArray<Scope>, pathname: string): Scope | undefined {
   if (pathname.startsWith("/gruppe/")) {
     const slug = pathname.split("/")[2];
     const g = scopes.find((s) => s.kind === "group" && s.slug === slug);
