@@ -41,14 +41,14 @@ Go-live is `BDAS_FLAG_FILES=true` in production. (Board file pages today ride
 only the dashboard flag; they will also gate on the files flag so the whole
 surface flips atomically.)
 
-| Surface | Route | Purpose |
-|---|---|---|
-| Member | `/dateien` | Folder index — all readable folders (`members_all` + the member's group) via `listFolders` |
-| Member | `/dateien/[folderId]` | File list, read/download only |
-| Board | `(board)/federal/files` *(exists)* | Folder index (federal: all folders) |
-| Board | `(board)/federal/files/[folderId]` | File list + upload/delete |
-| Board | `(board)/gruppe/[slug]/files` *(exists)* | Folder index (that group's folders) |
-| Board | `(board)/gruppe/[slug]/files/[folderId]` | File list + upload/delete |
+| Surface | Route                                    | Purpose                                                                                    |
+| ------- | ---------------------------------------- | ------------------------------------------------------------------------------------------ |
+| Member  | `/dateien`                               | Folder index — all readable folders (`members_all` + the member's group) via `listFolders` |
+| Member  | `/dateien/[folderId]`                    | File list, read/download only                                                              |
+| Board   | `(board)/federal/files` _(exists)_       | Folder index (federal: all folders)                                                        |
+| Board   | `(board)/federal/files/[folderId]`       | File list + upload/delete                                                                  |
+| Board   | `(board)/gruppe/[slug]/files` _(exists)_ | Folder index (that group's folders)                                                        |
+| Board   | `(board)/gruppe/[slug]/files/[folderId]` | File list + upload/delete                                                                  |
 
 **Session & permission.** Member pages load the member with
 `getCurrentMember(db, readSessionCookie())`; board pages keep `loadCurrentMember`
@@ -68,7 +68,7 @@ Two small additions, keeping all permission and table logic inside the module
 
 - `canWriteFolder(folder, member): boolean` — a pure predicate (no database
   access) so the UI can render write affordances truthfully. Example: the
-  federal board may *read* a group's `local_board` folder but not write it, so
+  federal board may _read_ a group's `local_board` folder but not write it, so
   it must not see upload/delete controls there. Read-only routes do not need it.
 - `folderFileCounts(db, folderIds, forMember): Record<id, number>` — a single
   grouped query (no N+1) powering the file counts shown on the folder index.

@@ -12,9 +12,7 @@ describe("mimeCategory", () => {
     expect(mimeCategory("application/msword")).toBe("document");
     expect(mimeCategory("text/plain")).toBe("document");
     expect(
-      mimeCategory(
-        "application/vnd.openxmlformats-officedocument.presentationml.presentation",
-      ),
+      mimeCategory("application/vnd.openxmlformats-officedocument.presentationml.presentation"),
     ).toBe("document");
   });
 

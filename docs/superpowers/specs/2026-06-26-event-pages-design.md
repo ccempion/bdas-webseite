@@ -13,7 +13,7 @@ Event organizers cannot build a real event page. The `events` table has a single
 `description_md` field that the public page renders as **plain text**
 (`whitespace-pre-wrap`) — no formatting, no images. There is no cover image, no
 structured location, and no way for a non-board member to be delegated the running
-of a single event. The board dashboard shows event *counts* but no way to drill into
+of a single event. The board dashboard shows event _counts_ but no way to drill into
 an event or see who registered.
 
 This design delivers: a formatted, image-capable event page; a single operational
@@ -59,20 +59,20 @@ roster.
 
 ## 4. Locked decisions
 
-| Decision | Choice | Rationale |
-|----------|--------|-----------|
-| Rich-text engine | **Tiptap** | Constrained, batteries-included (image/link extensions), first-class server-side `generateHTML` for RSC rendering; perf gap vs Lexical irrelevant at event-content sizes. |
-| Page model | **Cover image + rich body + optional named prose slots + functional fields** | "Proper page" without a full builder; empty slots don't render. |
-| Image storage | **Separate public-read bucket (`event-media`)** via `core/storage` | Event pages are public + cacheable → plain public URLs, not per-render signed GETs. Distinct from the private `files` bucket. |
-| Body content storage | **`content` jsonb** holding Tiptap docs; retire `description_md` | One extensible column; adding/removing a slot is a shape change, not a migration. |
-| Location search | **Photon (keyless OSM geocoder), type-ahead** | Free, no API key, no Google cookies/consent. |
-| Location button | **Keyless Google Maps directions URL** (`maps/search/?api=1&query=<lat>,<lng>`) | Familiar Google directions on click without any API key. |
-| Management home | **`/admin/events/<id>`**, gated **board OR `event_organizer:<id>`** | The `(board)` dashboard requires board grants, so non-board organizers can't live there. Co-locates manage with create. |
-| Organizer delegation | **New scoped role `event_organizer:<event_id>`** (ADR 0007 pattern) | Rides existing grant/audit machinery; scoped to one event. |
-| Organizer notification | **`organizer.granted` event → `notifications` email** with deep link to editor | Matches existing event-email pattern. |
-| Organizer permission boundary | **`event_organizer` may edit page + manage roster + email registrants + export; cancel/delete the event and grant co-organizers are board-only** | Delegation without handing over destructive or escalation powers. |
-| Guest registration | **Per-event opt-in `allow_guest_registration`; member-less registration via name + email** | Some events don't require membership; default stays member-only. |
-| Registrant changes | **`event.updated` event on date/time/location change + cancellation → `notifications`** | Registrants (members and guests) hear about material changes. |
+| Decision                      | Choice                                                                                                                                           | Rationale                                                                                                                                                                 |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Rich-text engine              | **Tiptap**                                                                                                                                       | Constrained, batteries-included (image/link extensions), first-class server-side `generateHTML` for RSC rendering; perf gap vs Lexical irrelevant at event-content sizes. |
+| Page model                    | **Cover image + rich body + optional named prose slots + functional fields**                                                                     | "Proper page" without a full builder; empty slots don't render.                                                                                                           |
+| Image storage                 | **Separate public-read bucket (`event-media`)** via `core/storage`                                                                               | Event pages are public + cacheable → plain public URLs, not per-render signed GETs. Distinct from the private `files` bucket.                                             |
+| Body content storage          | **`content` jsonb** holding Tiptap docs; retire `description_md`                                                                                 | One extensible column; adding/removing a slot is a shape change, not a migration.                                                                                         |
+| Location search               | **Photon (keyless OSM geocoder), type-ahead**                                                                                                    | Free, no API key, no Google cookies/consent.                                                                                                                              |
+| Location button               | **Keyless Google Maps directions URL** (`maps/search/?api=1&query=<lat>,<lng>`)                                                                  | Familiar Google directions on click without any API key.                                                                                                                  |
+| Management home               | **`/admin/events/<id>`**, gated **board OR `event_organizer:<id>`**                                                                              | The `(board)` dashboard requires board grants, so non-board organizers can't live there. Co-locates manage with create.                                                   |
+| Organizer delegation          | **New scoped role `event_organizer:<event_id>`** (ADR 0007 pattern)                                                                              | Rides existing grant/audit machinery; scoped to one event.                                                                                                                |
+| Organizer notification        | **`organizer.granted` event → `notifications` email** with deep link to editor                                                                   | Matches existing event-email pattern.                                                                                                                                     |
+| Organizer permission boundary | **`event_organizer` may edit page + manage roster + email registrants + export; cancel/delete the event and grant co-organizers are board-only** | Delegation without handing over destructive or escalation powers.                                                                                                         |
+| Guest registration            | **Per-event opt-in `allow_guest_registration`; member-less registration via name + email**                                                       | Some events don't require membership; default stays member-only.                                                                                                          |
+| Registrant changes            | **`event.updated` event on date/time/location change + cancellation → `notifications`**                                                          | Registrants (members and guests) hear about material changes.                                                                                                             |
 
 ## 5. Data model changes (`events` module owns these)
 

@@ -2,12 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import type { FileMeta } from "@bdas/files";
 
-import {
-  runUploads,
-  validateFile,
-  type UploadDeps,
-  type UploadInput,
-} from "./upload-manager";
+import { runUploads, validateFile, type UploadDeps, type UploadInput } from "./upload-manager";
 
 const KB = 1024;
 const MB = 1024 * KB;

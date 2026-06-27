@@ -592,7 +592,8 @@ describeIfDb("folderFileCounts", () => {
 
   const folderId = async (scope: string) => {
     const rows = await t.db.select().from(folders);
-    return rows.find((f) => f.scope === scope && (f.groupId === "grp_muc" || f.groupId === null))!.id;
+    return rows.find((f) => f.scope === scope && (f.groupId === "grp_muc" || f.groupId === null))!
+      .id;
   };
 
   beforeEach(async () => {

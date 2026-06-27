@@ -59,8 +59,7 @@ export function canManageGroup(grants: ReadonlyArray<Grant>, groupId: string | n
   if (isFederalBoard(grants)) return true;
   if (groupId === null) return false;
   return grants.some(
-    (g) =>
-      (g.role === "local_board" || g.role === "local_board_lead") && g.groupId === groupId,
+    (g) => (g.role === "local_board" || g.role === "local_board_lead") && g.groupId === groupId,
   );
 }
 

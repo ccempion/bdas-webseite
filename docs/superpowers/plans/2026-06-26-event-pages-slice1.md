@@ -26,6 +26,7 @@
 ## File map
 
 **`modules/events/` (the module — owns data + serialization):**
+
 - Create `migrations/0002_event_pages.sql` — add `content jsonb`, `cover_image_key`, `summary`, `registration_deadline`, `location_name/_address/_lat/_lng`; backfill `content.body` from `description_md`.
 - Modify `src/schema.ts` — add the new columns to the Drizzle table.
 - Modify `src/types.ts` — add `TiptapDoc`, `EventContent`, extend `EventItem`.
@@ -36,11 +37,13 @@
 - Tests: `src/content.test.ts`, `src/ics.test.ts`, and additions to `src/index.test.ts`.
 
 **`core/storage/` (shared concern — public bucket support):**
+
 - Modify `src/supabase.ts` — add `publicUrl(storageKey)` to `SupabaseStorageClient`.
 - Modify `src/index.ts` — add `getEventMediaStorage()` accessor (cached, bucket `event-media`).
 - Test: `src/event-media.test.ts`.
 
 **`apps/web/` (consumer UI):**
+
 - Create `app/api/events/[id]/upload-url/route.ts` — POST → signed upload URL into `event-media` (auth-gated by `canManage`).
 - Create `app/admin/events/_editor/RichTextEditor.tsx` — Tiptap client editor + toolbar + image upload.
 - Create `app/admin/events/_editor/LocationPicker.tsx` — Photon search client component.
@@ -54,6 +57,7 @@
 - Create `app/lib/photon.ts` — typed Photon fetch + result mapping (shared, server-usable).
 
 **Dependencies to add** (`modules/events/package.json` and `apps/web/package.json` as noted per task):
+
 - `@tiptap/html`, `@tiptap/pm`, `@tiptap/starter-kit`, `@tiptap/extension-image`, `@tiptap/extension-link`, `sanitize-html` → events module (server render) + `@tiptap/react` → apps/web (client editor).
 
 ---
@@ -61,12 +65,14 @@
 ## Task 1: DB migration + schema + types for the new fields
 
 **Files:**
+
 - Create: `modules/events/migrations/0002_event_pages.sql`
 - Modify: `modules/events/src/schema.ts`
 - Modify: `modules/events/src/types.ts`
 - Test: `modules/events/src/index.test.ts` (new case)
 
 **Interfaces:**
+
 - Produces: new `events` columns `content` (jsonb), `cover_image_key`, `summary`, `registration_deadline`, `location_name`, `location_address`, `location_lat`, `location_lng`. Drizzle fields `content`, `coverImageKey`, `summary`, `registrationDeadline`, `locationName`, `locationAddress`, `locationLat`, `locationLng`. Types `TiptapDoc`, `EventContent`, extended `EventItem`.
 
 - [ ] **Step 1: Write the migration SQL**
@@ -177,27 +183,27 @@ Extend `EventItem` (add after `locationUrl`):
 Add to `modules/events/src/index.test.ts` (apply the new migration in `beforeEach` — add `["..", "migrations", "0002_event_pages.sql"]` to the file list after `0001_init.sql`):
 
 ```typescript
-  it("stores and reads structured content + cover + location", async () => {
-    const ev = await createEvent(
-      t.db,
-      {
-        title: "Stadtführung",
-        startsAt: future(),
-        summary: "Ein Rundgang durch die Altstadt",
-        content: { body: { type: "doc", content: [] } },
-        coverImageKey: "evt_x/cover.jpg",
-        locationName: "Rathaus",
-        locationLat: 51.18,
-        locationLng: 6.44,
-      },
-      "usr_c",
-    );
-    const got = await getEvent(t.db, ev.id, ACTIVE);
-    expect(got?.summary).toBe("Ein Rundgang durch die Altstadt");
-    expect(got?.coverImageKey).toBe("evt_x/cover.jpg");
-    expect(got?.locationName).toBe("Rathaus");
-    expect(got?.locationLat).toBeCloseTo(51.18);
-  });
+it("stores and reads structured content + cover + location", async () => {
+  const ev = await createEvent(
+    t.db,
+    {
+      title: "Stadtführung",
+      startsAt: future(),
+      summary: "Ein Rundgang durch die Altstadt",
+      content: { body: { type: "doc", content: [] } },
+      coverImageKey: "evt_x/cover.jpg",
+      locationName: "Rathaus",
+      locationLat: 51.18,
+      locationLng: 6.44,
+    },
+    "usr_c",
+  );
+  const got = await getEvent(t.db, ev.id, ACTIVE);
+  expect(got?.summary).toBe("Ein Rundgang durch die Altstadt");
+  expect(got?.coverImageKey).toBe("evt_x/cover.jpg");
+  expect(got?.locationName).toBe("Rathaus");
+  expect(got?.locationLat).toBeCloseTo(51.18);
+});
 ```
 
 - [ ] **Step 5: Run the test — expect FAIL**
@@ -217,10 +223,12 @@ git commit -m "feat(events): schema + types for event page fields (content, cove
 ## Task 2: Service layer — accept and return the new fields
 
 **Files:**
+
 - Modify: `modules/events/src/services/manage.ts`
 - Test: `modules/events/src/index.test.ts` (the Task 1 case now passes)
 
 **Interfaces:**
+
 - Consumes: schema columns + `EventContent`/`EventItem` from Task 1.
 - Produces: `EventInput` accepts `content`, `coverImageKey`, `summary`, `registrationDeadline`, `locationName`, `locationAddress`, `locationLat`, `locationLng`; `createEvent`/`updateEvent` persist them; `rowToEvent` returns them.
 
@@ -304,12 +312,14 @@ git commit -m "feat(events): persist event page fields through create/update ser
 ## Task 3: Server-side content rendering (Tiptap JSON → sanitized HTML)
 
 **Files:**
+
 - Modify: `modules/events/package.json` (add deps)
 - Create: `modules/events/src/content.ts`
 - Modify: `modules/events/src/index.ts`
 - Test: `modules/events/src/content.test.ts`
 
 **Interfaces:**
+
 - Produces: `renderEventContentHtml(doc: TiptapDoc | null | undefined): string` (returns sanitized HTML, `""` for empty); `plainTextToDoc(text: string): TiptapDoc`. Both re-exported from `index.ts`.
 
 - [ ] **Step 1: Add dependencies**
@@ -355,7 +365,13 @@ describe("renderEventContentHtml", () => {
       content: [
         {
           type: "paragraph",
-          content: [{ type: "text", text: "x", marks: [{ type: "link", attrs: { href: "javascript:alert(1)" } }] }],
+          content: [
+            {
+              type: "text",
+              text: "x",
+              marks: [{ type: "link", attrs: { href: "javascript:alert(1)" } }],
+            },
+          ],
         },
       ],
     } as const;
@@ -395,8 +411,22 @@ const EXTENSIONS = [StarterKit, Image, Link.configure({ openOnClick: false })];
 
 const SANITIZE_OPTS: sanitizeHtml.IOptions = {
   allowedTags: [
-    "p", "br", "strong", "em", "u", "s", "h2", "h3", "h4",
-    "ul", "ol", "li", "blockquote", "a", "img", "hr",
+    "p",
+    "br",
+    "strong",
+    "em",
+    "u",
+    "s",
+    "h2",
+    "h3",
+    "h4",
+    "ul",
+    "ol",
+    "li",
+    "blockquote",
+    "a",
+    "img",
+    "hr",
   ],
   allowedAttributes: {
     a: ["href", "target", "rel"],
@@ -455,12 +485,14 @@ git commit -m "feat(events): server-side sanitized rendering of event content"
 ## Task 4: Single-event ICS serializer + route
 
 **Files:**
+
 - Create: `modules/events/src/ics.ts`
 - Modify: `modules/events/src/index.ts`
 - Create: `apps/web/app/events/[id]/ics/route.ts`
 - Test: `modules/events/src/ics.test.ts`
 
 **Interfaces:**
+
 - Consumes: `EventItem` (Task 1/2).
 - Produces: `eventToIcs(event: Pick<EventItem, "id"|"title"|"summary"|"startsAt"|"endsAt"|"locationName"|"locationAddress">): string` → a valid single-VEVENT iCalendar string. Re-exported from `index.ts`.
 
@@ -530,7 +562,10 @@ type IcsInput = Pick<
 
 function fmt(d: Date): string {
   // UTC basic format: YYYYMMDDTHHMMSSZ
-  return d.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}Z$/, "Z");
+  return d
+    .toISOString()
+    .replace(/[-:]/g, "")
+    .replace(/\.\d{3}Z$/, "Z");
 }
 
 function esc(s: string): string {
@@ -619,11 +654,13 @@ git commit -m "feat(events): single-event ICS download"
 ## Task 5: Public `event-media` bucket support in core/storage
 
 **Files:**
+
 - Modify: `core/storage/src/supabase.ts`
 - Modify: `core/storage/src/index.ts`
 - Test: `core/storage/src/event-media.test.ts`
 
 **Interfaces:**
+
 - Produces: `SupabaseStorageClient.publicUrl(storageKey: string): string`; `getEventMediaStorage(): SupabaseStorageClient` (cached; bucket from `SUPABASE_EVENT_MEDIA_BUCKET ?? "event-media"`; throws a clear error if `SUPABASE_URL`/`SUPABASE_SERVICE_ROLE_KEY` missing).
 
 - [ ] **Step 1: Write the failing test**
@@ -716,10 +753,12 @@ git commit -m "feat(storage): public event-media bucket accessor + publicUrl"
 ## Task 6: Signed upload-URL route for event images
 
 **Files:**
+
 - Create: `apps/web/app/api/events/[id]/upload-url/route.ts`
 - Test: covered by manual verification (route is thin glue over `getEventMediaStorage` + `canManage`, both unit-tested already).
 
 **Interfaces:**
+
 - Consumes: `getEventMediaStorage()` (Task 5), `canManage` + `getEvent` + `viewerFrom`.
 - Produces: `POST /api/events/:id/upload-url` body `{ filename, mimeType, sizeBytes }` → `{ uploadUrl, publicUrl, storageKey }`. Used by the editor (Task 7).
 
@@ -754,9 +793,11 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     return Response.json({ error: "Keine Berechtigung." }, { status: 403 });
   }
 
-  const body = (await req.json().catch(() => null)) as
-    | { filename?: string; mimeType?: string; sizeBytes?: number }
-    | null;
+  const body = (await req.json().catch(() => null)) as {
+    filename?: string;
+    mimeType?: string;
+    sizeBytes?: number;
+  } | null;
   if (!body?.mimeType || !ALLOWED.has(body.mimeType)) {
     return Response.json({ error: "Nur Bilddateien (JPG, PNG, WebP, AVIF)." }, { status: 422 });
   }
@@ -797,11 +838,13 @@ git commit -m "feat(web): signed upload-url route for event images (board/manage
 ## Task 7: Tiptap rich-text editor component
 
 **Files:**
+
 - Modify: `apps/web/package.json` (add `@tiptap/react`, `@tiptap/starter-kit`, `@tiptap/extension-image`, `@tiptap/extension-link`, `@tiptap/pm`)
 - Create: `apps/web/app/admin/events/_editor/RichTextEditor.tsx`
 - Test: manual (client component; behavior verified in browser at Task 11).
 
 **Interfaces:**
+
 - Produces: `RichTextEditor({ name, defaultDoc, eventId })` — a controlled editor that writes its Tiptap JSON into a hidden `<input name={name}>` as a JSON string on every change, so the surrounding `<form>` submits it. Uses `POST /api/events/:eventId/upload-url` for image insertion.
 
 - [ ] **Step 1: Add deps**
@@ -896,22 +939,59 @@ export function RichTextEditor({
     <div className="flex flex-col gap-2">
       <input type="hidden" name={name} value={json} />
       <div className="flex flex-wrap gap-1 border-b border-bdas-soft pb-2">
-        <button type="button" className={BTN} data-active={editor.isActive("bold")}
-          onClick={() => editor.chain().focus().toggleBold().run()}>Fett</button>
-        <button type="button" className={BTN} data-active={editor.isActive("italic")}
-          onClick={() => editor.chain().focus().toggleItalic().run()}>Kursiv</button>
-        <button type="button" className={BTN} data-active={editor.isActive("heading", { level: 2 })}
-          onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}>H2</button>
-        <button type="button" className={BTN} data-active={editor.isActive("heading", { level: 3 })}
-          onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}>H3</button>
-        <button type="button" className={BTN} data-active={editor.isActive("bulletList")}
-          onClick={() => editor.chain().focus().toggleBulletList().run()}>Liste</button>
-        <button type="button" className={BTN}
+        <button
+          type="button"
+          className={BTN}
+          data-active={editor.isActive("bold")}
+          onClick={() => editor.chain().focus().toggleBold().run()}
+        >
+          Fett
+        </button>
+        <button
+          type="button"
+          className={BTN}
+          data-active={editor.isActive("italic")}
+          onClick={() => editor.chain().focus().toggleItalic().run()}
+        >
+          Kursiv
+        </button>
+        <button
+          type="button"
+          className={BTN}
+          data-active={editor.isActive("heading", { level: 2 })}
+          onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
+        >
+          H2
+        </button>
+        <button
+          type="button"
+          className={BTN}
+          data-active={editor.isActive("heading", { level: 3 })}
+          onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
+        >
+          H3
+        </button>
+        <button
+          type="button"
+          className={BTN}
+          data-active={editor.isActive("bulletList")}
+          onClick={() => editor.chain().focus().toggleBulletList().run()}
+        >
+          Liste
+        </button>
+        <button
+          type="button"
+          className={BTN}
           onClick={() => {
             const url = window.prompt("Link-URL (https://…)") ?? "";
             if (url) editor.chain().focus().setLink({ href: url }).run();
-          }}>Link</button>
-        <button type="button" className={BTN} onClick={addImage}>Bild</button>
+          }}
+        >
+          Link
+        </button>
+        <button type="button" className={BTN} onClick={addImage}>
+          Bild
+        </button>
       </div>
       <EditorContent editor={editor} />
     </div>
@@ -938,11 +1018,13 @@ git commit -m "feat(web): Tiptap rich-text editor with image upload for events"
 ## Task 8: Location picker (Photon) component + shared fetch helper
 
 **Files:**
+
 - Create: `apps/web/app/lib/photon.ts`
 - Create: `apps/web/app/admin/events/_editor/LocationPicker.tsx`
 - Test: `apps/web/app/lib/photon.test.ts`
 
 **Interfaces:**
+
 - Produces: `searchPlaces(query: string, signal?: AbortSignal): Promise<PlaceResult[]>` where `PlaceResult = { name: string; address: string; lat: number; lng: number }`; `LocationPicker({ defaultValue })` writing hidden inputs `locationName`, `locationAddress`, `locationLat`, `locationLng`.
 
 - [ ] **Step 1: Write the failing test for the result mapper**
@@ -1056,7 +1138,12 @@ export function LocationPicker({
 }) {
   const [selected, setSelected] = useState<PlaceResult | null>(
     defaultValue && defaultValue.lat !== null && defaultValue.lng !== null
-      ? { name: defaultValue.name, address: defaultValue.address, lat: defaultValue.lat, lng: defaultValue.lng }
+      ? {
+          name: defaultValue.name,
+          address: defaultValue.address,
+          lat: defaultValue.lat,
+          lng: defaultValue.lng,
+        }
       : null,
   );
   const [results, setResults] = useState<PlaceResult[]>([]);
@@ -1072,7 +1159,11 @@ export function LocationPicker({
   }
 
   return (
-    <Field label="Ort (suchen)" htmlFor="locationSearch" hint="Adresse oder Ort eingeben und auswählen.">
+    <Field
+      label="Ort (suchen)"
+      htmlFor="locationSearch"
+      hint="Adresse oder Ort eingeben und auswählen."
+    >
       <Input
         id="locationSearch"
         value={q}
@@ -1100,7 +1191,10 @@ export function LocationPicker({
         </ul>
       ) : null}
       {selected ? (
-        <p className="mt-1 text-sm text-bdas-ink-muted">📍 {selected.name}{selected.address ? `, ${selected.address}` : ""}</p>
+        <p className="mt-1 text-sm text-bdas-ink-muted">
+          📍 {selected.name}
+          {selected.address ? `, ${selected.address}` : ""}
+        </p>
       ) : null}
       <input type="hidden" name="locationName" value={selected?.name ?? ""} />
       <input type="hidden" name="locationAddress" value={selected?.address ?? ""} />
@@ -1126,6 +1220,7 @@ git commit -m "feat(web): keyless Photon location search + picker"
 ## Task 9: Wire create + edit forms to the new fields
 
 **Files:**
+
 - Create: `apps/web/app/admin/events/_editor/EventFields.tsx`
 - Modify: `apps/web/app/admin/events/EventForm.tsx`
 - Modify: `apps/web/app/admin/events/actions.ts`
@@ -1133,6 +1228,7 @@ git commit -m "feat(web): keyless Photon location search + picker"
 - Modify: `apps/web/app/admin/events/[id]/page.tsx`
 
 **Interfaces:**
+
 - Consumes: `RichTextEditor`, `LocationPicker` (Tasks 7–8); `updateEvent`, `EventInput` (Task 2).
 - Produces: `EventFields({ eventId, defaults })` shared field set; `updateEventAction(prev, fd)` server action; the edit page route.
 
@@ -1187,7 +1283,10 @@ Replace the inline object in `createEventAction`'s `createEvent(getDb(), {...}, 
 Add the update action:
 
 ```typescript
-export async function updateEventAction(_prev: EventFormState, fd: FormData): Promise<EventFormState> {
+export async function updateEventAction(
+  _prev: EventFormState,
+  fd: FormData,
+): Promise<EventFormState> {
   if (!isFlagOn("events")) return { error: "Nicht verfügbar." };
   const eventId = s(fd, "eventId");
   try {
@@ -1279,49 +1378,103 @@ export function EventFields({ d }: { d: EventDefaults }) {
         <Input id="title" name="title" defaultValue={d.title} required />
       </Field>
 
-      <Field label="Kurzbeschreibung (optional)" htmlFor="summary" hint="1–2 Sätze für die Übersicht.">
+      <Field
+        label="Kurzbeschreibung (optional)"
+        htmlFor="summary"
+        hint="1–2 Sätze für die Übersicht."
+      >
         <Input id="summary" name="summary" defaultValue={d.summary ?? ""} maxLength={300} />
       </Field>
 
       <Field label="Titelbild (optional)" htmlFor="cover">
-        <input id="cover" type="file" accept="image/*" disabled={coverBusy}
-          onChange={(e) => { const f = e.target.files?.[0]; if (f) void uploadCover(f); }} />
+        <input
+          id="cover"
+          type="file"
+          accept="image/*"
+          disabled={coverBusy}
+          onChange={(e) => {
+            const f = e.target.files?.[0];
+            if (f) void uploadCover(f);
+          }}
+        />
         <input type="hidden" name="coverImageKey" value={coverKey} />
         {coverKey ? <p className="mt-1 text-sm text-bdas-ink-muted">Bild gespeichert.</p> : null}
       </Field>
 
       <Field label="Beginn" htmlFor="startsAt" error={d.errors?.["startsAt"]}>
-        <Input id="startsAt" name="startsAt" type="datetime-local" defaultValue={d.startsAtLocal} required />
+        <Input
+          id="startsAt"
+          name="startsAt"
+          type="datetime-local"
+          defaultValue={d.startsAtLocal}
+          required
+        />
       </Field>
       <Field label="Ende (optional)" htmlFor="endsAt" error={d.errors?.["endsAt"]}>
         <Input id="endsAt" name="endsAt" type="datetime-local" defaultValue={d.endsAtLocal} />
       </Field>
       <Field label="Anmeldeschluss (optional)" htmlFor="registrationDeadline">
-        <Input id="registrationDeadline" name="registrationDeadline" type="datetime-local"
-          defaultValue={d.registrationDeadlineLocal} />
+        <Input
+          id="registrationDeadline"
+          name="registrationDeadline"
+          type="datetime-local"
+          defaultValue={d.registrationDeadlineLocal}
+        />
       </Field>
 
       <LocationPicker defaultValue={d.location} />
 
       <Field label="Beschreibung" htmlFor="content.body">
-        <RichTextEditor name="content.body" eventId={d.eventId} defaultDoc={d.content?.body ?? null} />
+        <RichTextEditor
+          name="content.body"
+          eventId={d.eventId}
+          defaultDoc={d.content?.body ?? null}
+        />
       </Field>
       <Field label="Ablauf (optional)" htmlFor="content.agenda">
-        <RichTextEditor name="content.agenda" eventId={d.eventId} defaultDoc={d.content?.agenda ?? null} />
+        <RichTextEditor
+          name="content.agenda"
+          eventId={d.eventId}
+          defaultDoc={d.content?.agenda ?? null}
+        />
       </Field>
       <Field label="Anfahrt (optional)" htmlFor="content.directions">
-        <RichTextEditor name="content.directions" eventId={d.eventId} defaultDoc={d.content?.directions ?? null} />
+        <RichTextEditor
+          name="content.directions"
+          eventId={d.eventId}
+          defaultDoc={d.content?.directions ?? null}
+        />
       </Field>
       <Field label="Mitbringen (optional)" htmlFor="content.bring">
-        <RichTextEditor name="content.bring" eventId={d.eventId} defaultDoc={d.content?.bring ?? null} />
+        <RichTextEditor
+          name="content.bring"
+          eventId={d.eventId}
+          defaultDoc={d.content?.bring ?? null}
+        />
       </Field>
 
-      <Field label="Kapazität (optional)" htmlFor="capacity" hint="Leer lassen = unbegrenzt." error={d.errors?.["capacity"]}>
-        <Input id="capacity" name="capacity" type="number" min={1} defaultValue={d.capacity ?? ""} />
+      <Field
+        label="Kapazität (optional)"
+        htmlFor="capacity"
+        hint="Leer lassen = unbegrenzt."
+        error={d.errors?.["capacity"]}
+      >
+        <Input
+          id="capacity"
+          name="capacity"
+          type="number"
+          min={1}
+          defaultValue={d.capacity ?? ""}
+        />
       </Field>
 
       <Field label="Sichtbarkeit" htmlFor="visibility" error={d.errors?.["visibility"]}>
-        <select id="visibility" name="visibility" defaultValue={d.visibility} className={SELECT_CLASS}>
+        <select
+          id="visibility"
+          name="visibility"
+          defaultValue={d.visibility}
+          className={SELECT_CLASS}
+        >
           <option value="public">Öffentlich</option>
           <option value="members_only">Nur Mitglieder</option>
           <option value="group_only">Nur Gruppe</option>
@@ -1329,9 +1482,18 @@ export function EventFields({ d }: { d: EventDefaults }) {
       </Field>
 
       <Field label="Gruppe" htmlFor="groupId" error={d.errors?.["groupId"]}>
-        <select id="groupId" name="groupId" defaultValue={d.groupId ?? (d.allowFederation ? "" : d.groups[0]?.id ?? "")} className={SELECT_CLASS}>
+        <select
+          id="groupId"
+          name="groupId"
+          defaultValue={d.groupId ?? (d.allowFederation ? "" : (d.groups[0]?.id ?? ""))}
+          className={SELECT_CLASS}
+        >
           {d.allowFederation ? <option value="">Föderationsweit</option> : null}
-          {d.groups.map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}
+          {d.groups.map((g) => (
+            <option key={g.id} value={g.id}>
+              {g.name}
+            </option>
+          ))}
         </select>
       </Field>
     </>
@@ -1382,7 +1544,9 @@ export default async function EditEventPage({ params }: { params: { id: string }
   if (!event || !canManage(viewer, event)) notFound();
 
   const allGroups = await listGroups(db, { status: "active" });
-  const groups = viewer.isFederal ? allGroups : allGroups.filter((g) => viewer.boardGroupIds.includes(g.id));
+  const groups = viewer.isFederal
+    ? allGroups
+    : allGroups.filter((g) => viewer.boardGroupIds.includes(g.id));
 
   return (
     <main className="mx-auto flex max-w-2xl flex-col gap-6 px-4 py-12">
@@ -1401,7 +1565,12 @@ export default async function EditEventPage({ params }: { params: { id: string }
             capacity: event.capacity,
             visibility: event.visibility,
             location: event.locationName
-              ? { name: event.locationName, address: event.locationAddress ?? "", lat: event.locationLat, lng: event.locationLng }
+              ? {
+                  name: event.locationName,
+                  address: event.locationAddress ?? "",
+                  lat: event.locationLat,
+                  lng: event.locationLng,
+                }
               : null,
             groups: groups.map((g) => ({ id: g.id, name: g.name })),
             allowFederation: viewer.isFederal,
@@ -1440,7 +1609,11 @@ export function EventEditForm({ d }: { d: Omit<EventDefaults, "errors"> }) {
 
 function Submit() {
   const { pending } = useFormStatus();
-  return <Button type="submit" disabled={pending}>{pending ? "Wird gespeichert…" : "Speichern"}</Button>;
+  return (
+    <Button type="submit" disabled={pending}>
+      {pending ? "Wird gespeichert…" : "Speichern"}
+    </Button>
+  );
 }
 ```
 
@@ -1449,14 +1622,14 @@ function Submit() {
 In `apps/web/app/admin/events/[id]/page.tsx`, add inside the manage card (above `ManageButtons`):
 
 ```tsx
-      <div className="flex gap-3">
-        <Link href={`/admin/events/${event.id}/edit`} className="text-sm text-bdas-red hover:underline">
-          Bearbeiten
-        </Link>
-        <Link href={`/events/${event.id}?vorschau=1`} className="text-sm text-bdas-red hover:underline">
-          Vorschau ansehen
-        </Link>
-      </div>
+<div className="flex gap-3">
+  <Link href={`/admin/events/${event.id}/edit`} className="text-sm text-bdas-red hover:underline">
+    Bearbeiten
+  </Link>
+  <Link href={`/events/${event.id}?vorschau=1`} className="text-sm text-bdas-red hover:underline">
+    Vorschau ansehen
+  </Link>
+</div>
 ```
 
 - [ ] **Step 6: Typecheck the web app**
@@ -1476,9 +1649,11 @@ git commit -m "feat(web): event create/edit forms with rich content, cover, loca
 ## Task 10: Public event page — render cover, content, location button, ICS, preview
 
 **Files:**
+
 - Modify: `apps/web/app/events/[id]/page.tsx`
 
 **Interfaces:**
+
 - Consumes: `renderEventContentHtml`, `getEventMediaStorage().publicUrl`, `eventToIcs` route, `canManage`, draft preview via `?vorschau=1`.
 
 - [ ] **Step 1: Replace the plain-text description block with rendered content + cover + location**
@@ -1495,33 +1670,45 @@ import { getEventMediaStorage } from "@bdas/storage";
 2. Cover image (above the header):
 
 ```tsx
-      {event.coverImageKey ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={getEventMediaStorage().publicUrl(event.coverImageKey)}
-          alt=""
-          className="mb-2 w-full rounded-bdas-card object-cover"
-        />
-      ) : null}
+{
+  event.coverImageKey ? (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={getEventMediaStorage().publicUrl(event.coverImageKey)}
+      alt=""
+      className="mb-2 w-full rounded-bdas-card object-cover"
+    />
+  ) : null;
+}
 ```
 
 3. Draft banner:
 
 ```tsx
-      {event.status !== "published" ? (
-        <Alert variant="info" title="Vorschau">
-          Diese Veranstaltung ist noch nicht veröffentlicht. Nur Verwalter sehen diese Seite.
-        </Alert>
-      ) : null}
+{
+  event.status !== "published" ? (
+    <Alert variant="info" title="Vorschau">
+      Diese Veranstaltung ist noch nicht veröffentlicht. Nur Verwalter sehen diese Seite.
+    </Alert>
+  ) : null;
+}
 ```
 
 4. Replace the existing description card with rendered slots:
 
 ```tsx
-      {renderSlot("Beschreibung", event.content?.body)}
-      {renderSlot("Ablauf", event.content?.agenda)}
-      {renderSlot("Anfahrt", event.content?.directions)}
-      {renderSlot("Mitbringen", event.content?.bring)}
+{
+  renderSlot("Beschreibung", event.content?.body);
+}
+{
+  renderSlot("Ablauf", event.content?.agenda);
+}
+{
+  renderSlot("Anfahrt", event.content?.directions);
+}
+{
+  renderSlot("Mitbringen", event.content?.bring);
+}
 ```
 
 where, near the top of the module (server component file), define:
@@ -1533,7 +1720,10 @@ function renderSlot(heading: string, doc: Parameters<typeof renderEventContentHt
   return (
     <Card flat className="p-6">
       <h2 className="mb-2 text-lg font-semibold text-bdas-ink">{heading}</h2>
-      <div className="prose max-w-none text-bdas-ink-body" dangerouslySetInnerHTML={{ __html: html }} />
+      <div
+        className="prose max-w-none text-bdas-ink-body"
+        dangerouslySetInnerHTML={{ __html: html }}
+      />
     </Card>
   );
 }
@@ -1544,28 +1734,30 @@ function renderSlot(heading: string, doc: Parameters<typeof renderEventContentHt
 5. Location button (in the header area, replacing the bare `event.location` line):
 
 ```tsx
-        {event.locationName ? (
-          <a
-            href={
-              event.locationLat !== null && event.locationLng !== null
-                ? `https://www.google.com/maps/search/?api=1&query=${event.locationLat},${event.locationLng}`
-                : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(event.locationName)}`
-            }
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex w-fit items-center gap-1 rounded-bdas border border-bdas-soft px-3 py-1.5 text-sm text-bdas-ink-body hover:bg-bdas-soft/40"
-          >
-            📍 {event.locationName} — Route öffnen
-          </a>
-        ) : null}
+{
+  event.locationName ? (
+    <a
+      href={
+        event.locationLat !== null && event.locationLng !== null
+          ? `https://www.google.com/maps/search/?api=1&query=${event.locationLat},${event.locationLng}`
+          : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(event.locationName)}`
+      }
+      target="_blank"
+      rel="noopener noreferrer"
+      className="inline-flex w-fit items-center gap-1 rounded-bdas border border-bdas-soft px-3 py-1.5 text-sm text-bdas-ink-body hover:bg-bdas-soft/40"
+    >
+      📍 {event.locationName} — Route öffnen
+    </a>
+  ) : null;
+}
 ```
 
 6. "Add to calendar" link (near the registration card):
 
 ```tsx
-        <a href={`/events/${event.id}/ics`} className="text-sm text-bdas-red hover:underline">
-          Zum Kalender hinzufügen
-        </a>
+<a href={`/events/${event.id}/ics`} className="text-sm text-bdas-red hover:underline">
+  Zum Kalender hinzufügen
+</a>
 ```
 
 - [ ] **Step 2: Honor the registration deadline (display + gate)**
@@ -1599,9 +1791,11 @@ git commit -m "feat(web): rich public event page — cover, content slots, locat
 ## Task 11: Dashboard event rows link into the manage home
 
 **Files:**
+
 - Modify: `apps/web/app/(board)/_components/EventsTable.tsx`
 
 **Interfaces:**
+
 - Produces: each event row links to `/admin/events/<id>`.
 
 - [ ] **Step 1: Make the title cell a link**
@@ -1613,11 +1807,11 @@ import Link from "next/link";
 ```
 
 ```tsx
-              <td className="p-3">
-                <Link href={`/admin/events/${e.id}`} className="text-bdas-red hover:underline">
-                  {e.title}
-                </Link>
-              </td>
+<td className="p-3">
+  <Link href={`/admin/events/${e.id}`} className="text-bdas-red hover:underline">
+    {e.title}
+  </Link>
+</td>
 ```
 
 (Match the existing row/column structure — replace only the title `<td>` body.)
@@ -1637,6 +1831,7 @@ git commit -m "feat(web): link dashboard event rows into the manage page"
 ## Task 12: Module README + full-suite verification
 
 **Files:**
+
 - Modify: `modules/events/README.md`
 - Verify: whole workspace.
 
@@ -1647,6 +1842,7 @@ Add to `modules/events/README.md`: the new `content`/cover/location/deadline col
 - [ ] **Step 2: Run the full gates**
 
 Run:
+
 ```bash
 pnpm -w typecheck
 pnpm -w lint
@@ -1654,6 +1850,7 @@ pnpm --filter @bdas/events-module test
 pnpm --filter @bdas/storage test
 pnpm --filter web test
 ```
+
 Expected: all PASS (DB-backed tests skip gracefully if no `DATABASE_URL`, run in CI with Postgres).
 
 - [ ] **Step 3: Manual browser verification (record findings in the PR)**
