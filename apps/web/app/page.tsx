@@ -3,8 +3,11 @@ import Link from "next/link";
 import { Card } from "@bdas/design-system";
 import { isFlagOn } from "@bdas/feature-flags";
 
-export default function HomePage() {
+import { loadViewer } from "./_dashboard/session";
+
+export default async function HomePage() {
   const groupsOn = isFlagOn("groups");
+  const me = await loadViewer();
 
   return (
     <main className="mx-auto flex max-w-3xl flex-col gap-8 px-4 py-12">
@@ -29,23 +32,37 @@ export default function HomePage() {
 
       <Card className="p-6">
         <h2 className="mb-2 text-xl font-semibold text-bdas-ink">Mitgliederbereich</h2>
-        <p className="mb-4 text-bdas-ink-body">
-          Für den Mitgliederbereich anmelden oder ein neues Konto erstellen.
-        </p>
-        <div className="flex gap-3">
-          <Link
-            href="/anmelden"
-            className="inline-flex items-center justify-center gap-2 rounded-bdas bg-bdas-red px-4 py-2.5 font-medium text-white transition-colors duration-bdas-quick ease-bdas hover:brightness-110"
-          >
-            Anmelden
-          </Link>
-          <Link
-            href="/registrieren"
-            className="inline-flex items-center justify-center gap-2 rounded-bdas border border-bdas-soft bg-bdas-surface px-4 py-2.5 font-medium text-bdas-ink transition-colors duration-bdas-quick ease-bdas hover:bg-bdas-overlay-hover"
-          >
-            Registrieren
-          </Link>
-        </div>
+        {me ? (
+          <>
+            <p className="mb-4 text-bdas-ink-body">Du bist angemeldet.</p>
+            <Link
+              href="/account"
+              className="inline-flex items-center justify-center gap-2 rounded-bdas bg-bdas-red px-4 py-2.5 font-medium text-white transition-colors duration-bdas-quick ease-bdas hover:brightness-110"
+            >
+              Zu meinem Konto
+            </Link>
+          </>
+        ) : (
+          <>
+            <p className="mb-4 text-bdas-ink-body">
+              Für den Mitgliederbereich anmelden oder ein neues Konto erstellen.
+            </p>
+            <div className="flex gap-3">
+              <Link
+                href="/anmelden"
+                className="inline-flex items-center justify-center gap-2 rounded-bdas bg-bdas-red px-4 py-2.5 font-medium text-white transition-colors duration-bdas-quick ease-bdas hover:brightness-110"
+              >
+                Anmelden
+              </Link>
+              <Link
+                href="/registrieren"
+                className="inline-flex items-center justify-center gap-2 rounded-bdas border border-bdas-soft bg-bdas-surface px-4 py-2.5 font-medium text-bdas-ink transition-colors duration-bdas-quick ease-bdas hover:bg-bdas-overlay-hover"
+              >
+                Registrieren
+              </Link>
+            </div>
+          </>
+        )}
       </Card>
     </main>
   );
