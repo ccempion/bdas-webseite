@@ -88,7 +88,9 @@ export function EventsTable({
               <td className="p-3 text-bdas-ink-body">
                 {e.groupId ? (groupNames[e.groupId] ?? "—") : "Bundesweit"}
               </td>
-              <td className="p-3 text-bdas-ink-body">{e.startsAt.toLocaleDateString("de-DE")}</td>
+              <td className="p-3 text-bdas-ink-body">
+                {e.startsAt.toLocaleDateString("de-DE", { timeZone: "Europe/Berlin" })}
+              </td>
               <td className="p-3">
                 <span className="rounded-bdas-pill bg-bdas-surface-hover px-2 py-0.5 text-xs font-semibold text-bdas-ink-body">
                   {STATUS_LABEL[e.status]}

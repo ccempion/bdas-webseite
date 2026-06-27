@@ -19,6 +19,7 @@ import { canManageGroup, getCurrentMember, isFederalBoard } from "@bdas/members"
 
 import { readSessionCookie } from "../../../lib/auth-cookie";
 import { viewerFrom } from "../../../lib/event-viewer";
+import { berlinLocalToUtc } from "../../lib/datetime";
 
 export type EventFormState = {
   readonly error?: string;
@@ -51,6 +52,14 @@ function numOpt(fd: FormData, k: string): string | null {
   const v = s(fd, k);
   return v === "" ? null : v;
 }
+/** datetime-local field → UTC instant, interpreting the wall time as Europe/Berlin. */
+function berlinDate(fd: FormData, k: string): Date {
+  return berlinLocalToUtc(s(fd, k));
+}
+function berlinDateOpt(fd: FormData, k: string): Date | null {
+  const v = s(fd, k);
+  return v === "" ? null : berlinLocalToUtc(v);
+}
 
 function eventFieldsFromForm(fd: FormData, groupId: string | null) {
   return {
@@ -63,9 +72,9 @@ function eventFieldsFromForm(fd: FormData, groupId: string | null) {
       bring: jsonOpt(fd, "content.bring"),
     },
     coverImageKey: opt(fd, "coverImageKey"),
-    startsAt: s(fd, "startsAt"),
-    endsAt: opt(fd, "endsAt"),
-    registrationDeadline: opt(fd, "registrationDeadline"),
+    startsAt: berlinDate(fd, "startsAt"),
+    endsAt: berlinDateOpt(fd, "endsAt"),
+    registrationDeadline: berlinDateOpt(fd, "registrationDeadline"),
     locationName: opt(fd, "locationName"),
     locationAddress: opt(fd, "locationAddress"),
     locationLat: numOpt(fd, "locationLat"),
