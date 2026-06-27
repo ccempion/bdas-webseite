@@ -112,6 +112,13 @@ export async function createEventAction(
   const gErr = groupAuthError(me, groupId);
   if (gErr) return { error: gErr };
 
+  // New events may not start in the past. (Editing keeps past starts editable.)
+  const startsAt = berlinDate(fd, "startsAt");
+  if (!Number.isNaN(startsAt.getTime()) && startsAt.getTime() < Date.now()) {
+    const msg = "Startdatum darf nicht in der Vergangenheit liegen.";
+    return { error: msg, fields: { startsAt: msg } };
+  }
+
   let createdId: string;
   try {
     const created = await createEvent(getDb(), eventFieldsFromForm(fd, groupId), me.user.id);
