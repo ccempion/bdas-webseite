@@ -32,4 +32,15 @@ describe("rosterToCsv", () => {
   it("returns just the header for an empty roster", () => {
     expect(rosterToCsv([])).toBe("Name,E-Mail,Status,Angemeldet am\r\n");
   });
+
+  it("neutralizes formula-leading cells against CSV injection", () => {
+    const csv = rosterToCsv([
+      row({ name: '=HYPERLINK("http://evil","x")', email: "+1@example.org" }),
+    ]);
+    // `=` cell gains a guard quote and is then RFC-quoted (contains a comma);
+    // `+`-leading email is guarded too.
+    expect(csv).toContain("\"'=HYPERLINK(");
+    expect(csv).toContain("'+1@example.org");
+    expect(csv).not.toMatch(/(^|,)=HYPERLINK/);
+  });
 });

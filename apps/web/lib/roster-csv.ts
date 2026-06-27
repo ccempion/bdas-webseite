@@ -15,10 +15,14 @@ const STATUS_LABEL: Record<RosterStatus, string> = {
   waitlisted: "Warteliste",
 };
 
-/** RFC-4180-ish quoting: wrap in quotes and double internal quotes when the
- *  cell contains a quote, comma, or newline. */
+/** Serialize one cell. Two concerns:
+ *  1. Formula injection — a cell beginning with `= + - @` (or a tab/CR) is
+ *     treated as a formula by Excel/Sheets/Numbers. Member names are
+ *     user-controlled with no charset restriction, so prefix a guard `'` to
+ *     force text. 2. RFC-4180 quoting for embedded quote/comma/newline. */
 function cell(value: string): string {
-  return /["\n,]/.test(value) ? `"${value.replace(/"/g, '""')}"` : value;
+  const guarded = /^[=+\-@\t\r]/.test(value) ? `'${value}` : value;
+  return /["\n,]/.test(guarded) ? `"${guarded.replace(/"/g, '""')}"` : guarded;
 }
 
 /** Serialize a roster to CSV with a header row. Pure — no DB, no I/O. */
