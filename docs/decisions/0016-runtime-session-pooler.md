@@ -42,7 +42,7 @@ the session pool cap. **`max: 3` is what actually cured it.** The session pooler
 was never the problem; the 5432→6543 swap that rode along is what introduced the
 concurrency hang.
 
-The app uses no session-pinned features that would *require* the transaction
+The app uses no session-pinned features that would _require_ the transaction
 pooler's per-transaction recycling (no `LISTEN`, no advisory locks, no
 session-level `SET`, no cross-request prepared statements), so the session
 pooler is fully compatible.

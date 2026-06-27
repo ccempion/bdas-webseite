@@ -26,10 +26,12 @@
 Turn Row-Level Security ON for the three files tables with no permissive policy, so every role except the table owner / `BYPASSRLS` service-role (the only path the app uses) is denied. Wire the new migration into the test harness so the whole suite runs against the locked-down schema.
 
 **Files:**
+
 - Create: `modules/files/migrations/0002_rls_lockdown.sql`
 - Modify: `modules/files/src/index.test.ts` (the `applyMigrations` file list, ~lines 64-74; add one test)
 
 **Interfaces:**
+
 - Consumes: nothing new.
 - Produces: nothing importable (data-definition migration only). Later tasks and PRs rely on the migration being in the manifest module `files` (it already is — `infra/migrations/src/manifest.ts` lists `"files"`, and the runner executes every `*.sql` in that folder in lexical order, so `0002` is picked up automatically).
 
@@ -131,11 +133,13 @@ Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
 A single grouped query returning the count of ready files per folder, restricted to folders the member may read. Powers the file counts on the PR 2 folder index without an N+1.
 
 **Files:**
+
 - Modify: `modules/files/src/services/files.ts` (imports + new exported function)
 - Modify: `modules/files/src/index.ts` (re-export)
 - Modify: `modules/files/src/index.test.ts` (add a `describe` block)
 
 **Interfaces:**
+
 - Consumes: `rowToFolder` and `folders` (existing in the module); `canRead` (already imported in `files.ts`).
 - Produces: `folderFileCounts(db: Db, folderIds: string[], forMember: CurrentMember): Promise<Record<string, number>>` — keys are the readable folder ids among `folderIds`; value is the count of `status='ready'` files; non-readable or unknown ids are omitted; readable folders with zero files map to `0`.
 
@@ -173,7 +177,8 @@ describeIfDb("folderFileCounts", () => {
 
   const folderId = async (scope: string) => {
     const rows = await t.db.select().from(folders);
-    return rows.find((f) => f.scope === scope && (f.groupId === "grp_muc" || f.groupId === null))!.id;
+    return rows.find((f) => f.scope === scope && (f.groupId === "grp_muc" || f.groupId === null))!
+      .id;
   };
 
   beforeEach(async () => {
@@ -250,9 +255,11 @@ First extend the imports. Change the drizzle import and the schema/folders impor
 ```ts
 import { and, eq, inArray, lt, sql } from "drizzle-orm";
 ```
+
 ```ts
 import { fileAccessLog, files, folders } from "../schema";
 ```
+
 ```ts
 import { getFolder, rowToFolder } from "./folders";
 ```
@@ -335,10 +342,12 @@ Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
 The PR 2/3 UI must render write affordances truthfully (e.g. a board that can read but not write a folder shows no upload/delete). Expose the existing pure predicates on the public surface under descriptive names.
 
 **Files:**
+
 - Modify: `modules/files/src/index.ts` (re-export)
 - Modify: `modules/files/src/permissions.test.ts` (add the motivating case + a re-export assertion)
 
 **Interfaces:**
+
 - Consumes: `canRead`, `canWrite` from `./permissions` (existing).
 - Produces: `canReadFolder(folder: Folder, me: CurrentMember): boolean` and `canWriteFolder(folder: Folder, me: CurrentMember): boolean` on the module's public surface (aliases of `canRead`/`canWrite`).
 
@@ -400,11 +409,13 @@ Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
 A secret-gated route handler the Vercel scheduler calls once a day; it clears `pending` upload rows older than 24h via the existing `sweepStalePendingUploads`. This is the first API route in the app, so it establishes the pattern.
 
 **Files:**
+
 - Create: `apps/web/app/api/cron/files-sweep/route.ts`
 - Create: `apps/web/app/api/cron/files-sweep/route.test.ts`
 - Create: `vercel.json` (repo root)
 
 **Interfaces:**
+
 - Consumes: `sweepStalePendingUploads` (`@bdas/files`), `isFlagOn` (`@bdas/feature-flags`), `getDb` (`@bdas/db`), `bootFiles` (`apps/web/lib/files-bootstrap.ts`).
 - Produces: `GET(req: Request): Promise<Response>` — `401` without a valid `Bearer ${CRON_SECRET}`; `200 {"skipped":"files flag off"}` when the flag is off; `200 {"swept":<number>}` otherwise.
 
@@ -545,6 +556,6 @@ Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
 
 ## Notes for PR 2 / PR 3 (not built here)
 
-- The integration harness already injects a per-test `fakeStorage`; no separate in-memory storage *module* was needed (the spec's PR-1 "in-memory storage driver" item was already satisfied by the existing test fake + the CI `test` job running against real PostgreSQL).
+- The integration harness already injects a per-test `fakeStorage`; no separate in-memory storage _module_ was needed (the spec's PR-1 "in-memory storage driver" item was already satisfied by the existing test fake + the CI `test` job running against real PostgreSQL).
 - PR 3's end-to-end upload coverage (Playwright) will need real object storage in the e2e job, or a deliberately-skipped upload E2E — decide when planning PR 3.
 - `CRON_SECRET` must be set in Vercel before go-live (PR 4 / flag flip).
