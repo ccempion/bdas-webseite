@@ -21,6 +21,8 @@ export type Viewer = {
   readonly isFederal: boolean;
   /** Groups the viewer is local board of (sees drafts + manages those events). */
   readonly boardGroupIds: ReadonlyArray<string>;
+  /** Groups the viewer is an event_organizer of (manages those events; ADR 0017). */
+  readonly organizerGroupIds: ReadonlyArray<string>;
 };
 
 export const ANON: Viewer = {
@@ -28,12 +30,14 @@ export const ANON: Viewer = {
   memberGroupIds: [],
   isFederal: false,
   boardGroupIds: [],
+  organizerGroupIds: [],
 };
 
-/** Whether the viewer may create/edit/publish/cancel this event. */
+/** Whether the viewer may create/edit/publish/cancel/delete this event. */
 export function canManage(v: Viewer, event: Pick<EventItem, "groupId">): boolean {
   if (v.isFederal) return true;
-  return event.groupId !== null && v.boardGroupIds.includes(event.groupId);
+  if (event.groupId === null) return false;
+  return v.boardGroupIds.includes(event.groupId) || v.organizerGroupIds.includes(event.groupId);
 }
 
 /** Whether the viewer may see this event at all. */
