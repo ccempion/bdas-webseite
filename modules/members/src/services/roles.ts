@@ -31,10 +31,10 @@ export type Db = PostgresJsDatabase<Record<string, never>>;
  * `role` must already be validated to a known Role and `groupId` to its scope.
  */
 function requireCanGrant(actor: Actor, role: Role, groupId: string | null): void {
-  if (role === "local_board") {
+  if (role === "local_board" || role === "event_organizer") {
     if (canGrantLocalBoard(actor.grants, groupId)) return;
     throw new ForbiddenError(
-      "Nur der Bundesvorstand oder ein Vorstands-Lead dieser Gruppe darf local_board vergeben.",
+      "Nur der Bundesvorstand oder ein Vorstands-Lead dieser Gruppe darf diese Rolle vergeben.",
     );
   }
   if (!isFederalBoard(actor.grants)) {
@@ -48,9 +48,12 @@ function requireValidRole(role: string): asserts role is Role {
   }
 }
 
-/** local_board and local_board_lead are group-scoped; federal_board is unscoped. */
+/** local_board, local_board_lead and event_organizer are group-scoped; federal_board is unscoped. */
 function requireValidScope(role: Role, groupId: string | null): void {
-  if ((role === "local_board" || role === "local_board_lead") && groupId === null) {
+  if (
+    (role === "local_board" || role === "local_board_lead" || role === "event_organizer") &&
+    groupId === null
+  ) {
     throw new ValidationError(`${role} erfordert eine Gruppe.`);
   }
   if (role === "federal_board" && groupId !== null) {
