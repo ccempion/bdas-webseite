@@ -31,8 +31,8 @@ export function EventForm({
     <Form action={action}>
       {state.error ? <Alert variant="error">{state.error}</Alert> : null}
       <p className="text-sm text-bdas-ink-muted">
-        Lege zuerst die Eckdaten an. Titelbild, Beschreibung, Bilder und Ort fügst du anschließend im
-        Bearbeiten-Schritt hinzu.
+        Lege zuerst die Eckdaten an. Titelbild, Beschreibung, Bilder und Ort fügst du anschließend
+        im Bearbeiten-Schritt hinzu.
       </p>
 
       <Field label="Titel" htmlFor="title" {...err("title")}>
