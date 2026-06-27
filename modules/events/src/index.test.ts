@@ -189,7 +189,8 @@ describeIfDb("events integration", () => {
     // Event A: 2 confirmed, 0 waitlist, plus one cancelled seat that must NOT count.
     const a = await publishEvent(
       t.db,
-      (await createEvent(t.db, { title: "Event A", startsAt: future(1), capacity: 10 }, "usr_c")).id,
+      (await createEvent(t.db, { title: "Event A", startsAt: future(1), capacity: 10 }, "usr_c"))
+        .id,
     );
     await registerMember(t.db, a.id, "mem1");
     await registerMember(t.db, a.id, "mem2");
