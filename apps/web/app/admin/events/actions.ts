@@ -68,6 +68,21 @@ function eventFieldsFromForm(fd: FormData, groupId: string | null) {
   };
 }
 
+/** Authorize the caller may target this group: group-scoped → canManageGroup; federation-wide (null) → federal board. */
+function groupAuthError(
+  me: Awaited<ReturnType<typeof currentMember>>,
+  groupId: string | null,
+): string | null {
+  if (groupId) {
+    if (!canManageGroup(me.grants, groupId)) {
+      return "Du darfst für diese Gruppe keine Veranstaltung anlegen.";
+    }
+  } else if (!isFederalBoard(me.grants)) {
+    return "Nur der Bundesvorstand darf föderationsweite Veranstaltungen anlegen.";
+  }
+  return null;
+}
+
 /** Create (as draft). group-scoped → canManageGroup; federation-wide → federal. */
 export async function createEventAction(
   _prev: EventFormState,
@@ -77,13 +92,8 @@ export async function createEventAction(
   const me = await currentMember();
   const groupId = opt(fd, "groupId");
 
-  if (groupId) {
-    if (!canManageGroup(me.grants, groupId)) {
-      return { error: "Du darfst für diese Gruppe keine Veranstaltung anlegen." };
-    }
-  } else if (!isFederalBoard(me.grants)) {
-    return { error: "Nur der Bundesvorstand darf föderationsweite Veranstaltungen anlegen." };
-  }
+  const gErr = groupAuthError(me, groupId);
+  if (gErr) return { error: gErr };
 
   try {
     await createEvent(getDb(), eventFieldsFromForm(fd, groupId), me.user.id);
@@ -107,8 +117,10 @@ export async function updateEventAction(
   if (!isFlagOn("events")) return { error: "Nicht verfügbar." };
   const eventId = s(fd, "eventId");
   try {
-    await assertManageable(eventId);
+    const me = await assertManageable(eventId);
     const groupId = opt(fd, "groupId");
+    const gErr = groupAuthError(me, groupId);
+    if (gErr) return { error: gErr };
     await updateEvent(getDb(), eventId, eventFieldsFromForm(fd, groupId));
   } catch (err) {
     if (isAppError(err)) {
@@ -123,14 +135,15 @@ export async function updateEventAction(
   redirect(`/admin/events/${eventId}`);
 }
 
-/** Authorize that the caller may manage this event, returning nothing. */
-async function assertManageable(eventId: string): Promise<void> {
+/** Authorize that the caller may manage this event; returns the loaded member. */
+async function assertManageable(eventId: string): Promise<Awaited<ReturnType<typeof currentMember>>> {
   const me = await currentMember();
   const viewer = viewerFrom(me);
   const event = await getEvent(getDb(), eventId, viewer);
   if (!event || !canManage(viewer, event)) {
     throw new ForbiddenError("Du darfst diese Veranstaltung nicht verwalten.");
   }
+  return me;
 }
 
 export async function publishEventAction(_prev: ActionState, fd: FormData): Promise<ActionState> {
