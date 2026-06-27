@@ -1,10 +1,10 @@
-import { and, asc, eq, gte, inArray, isNull } from "drizzle-orm";
+import { and, asc, eq, gte, inArray, isNull, sql } from "drizzle-orm";
 import type { PostgresJsDatabase } from "drizzle-orm/postgres-js";
 
-import { events } from "../schema";
+import { eventRegistrations, events } from "../schema";
 import type { EventWithCounts } from "../types";
 
-import { canView, countsFor, type Viewer } from "./get";
+import { canView, type Viewer } from "./get";
 import { rowToEvent } from "./manage";
 
 export type Db = PostgresJsDatabase<Record<string, never>>;
@@ -14,13 +14,33 @@ export type ListOpts = {
   readonly groupId?: string | null;
 };
 
+/**
+ * Attach confirmed/waitlist counts to a set of events with a single grouped
+ * aggregate (one round-trip) rather than two count() queries per event — the
+ * latter fanned out to 1 + 2N serialized queries and timed out the federal
+ * board views. Matches the partial index event_registrations_event_idx.
+ */
 async function withCounts(db: Db, rows: ReadonlyArray<typeof events.$inferSelect>) {
-  const out: EventWithCounts[] = [];
-  for (const r of rows) {
-    const c = await countsFor(db, r.id);
-    out.push({ ...rowToEvent(r), confirmedCount: c.confirmed, waitlistCount: c.waitlist });
-  }
-  return out;
+  if (rows.length === 0) return [];
+  const ids = rows.map((r) => r.id);
+  const counts = await db
+    .select({
+      eventId: eventRegistrations.eventId,
+      confirmed: sql<number>`count(*) filter (where ${eventRegistrations.waitlistPosition} is null)`,
+      waitlist: sql<number>`count(*) filter (where ${eventRegistrations.waitlistPosition} is not null)`,
+    })
+    .from(eventRegistrations)
+    .where(and(inArray(eventRegistrations.eventId, ids), isNull(eventRegistrations.cancelledAt)))
+    .groupBy(eventRegistrations.eventId);
+  const byId = new Map(counts.map((c) => [c.eventId, c]));
+  return rows.map((r) => {
+    const c = byId.get(r.id);
+    return {
+      ...rowToEvent(r),
+      confirmedCount: Number(c?.confirmed ?? 0),
+      waitlistCount: Number(c?.waitlist ?? 0),
+    } satisfies EventWithCounts;
+  });
 }
 
 /**
