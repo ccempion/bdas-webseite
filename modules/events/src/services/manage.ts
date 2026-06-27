@@ -14,7 +14,7 @@ import { ConflictError, NotFoundError, ValidationError } from "@bdas/errors";
 import { getEventBus } from "@bdas/events";
 import { createId } from "@bdas/id";
 
-import type { EventCancelled, EventPublished } from "../events";
+import type { EventCancelled, EventChange, EventPublished, EventUpdated } from "../events";
 import { events } from "../schema";
 import type { EventContent, EventItem, EventStatus, EventVisibility } from "../types";
 
@@ -156,6 +156,10 @@ export async function updateEvent(db: Db, id: string, input: unknown): Promise<E
   const v = parseOrThrow(EventInput, input);
   validateInput(v);
 
+  // Detect material changes *before* writing, so published registrants can be
+  // notified of date/time/location edits (notifications consumes event.updated).
+  const changed = materialChanges(existing, v);
+
   await db
     .update(events)
     .set({
@@ -179,7 +183,41 @@ export async function updateEvent(db: Db, id: string, input: unknown): Promise<E
     })
     .where(eq(events.id, id));
 
+  // Only published events have registrants to notify; drafts emit nothing.
+  if (existing.status === "published" && changed.length > 0) {
+    const event: EventUpdated = {
+      type: "events.event.updated",
+      eventId: id,
+      changed,
+      at: new Date(),
+    };
+    await getEventBus().publish(event);
+  }
+
   return rowToEvent(await loadOrThrow(db, id));
+}
+
+/** Which of {time, location} an edit materially altered. */
+function materialChanges(existing: typeof events.$inferSelect, v: EventInput): EventChange[] {
+  const sameInstant = (a: Date | null, b: Date | null): boolean =>
+    (a?.getTime() ?? null) === (b?.getTime() ?? null);
+  const changed: EventChange[] = [];
+  if (
+    !sameInstant(existing.startsAt, v.startsAt) ||
+    !sameInstant(existing.endsAt, v.endsAt ?? null)
+  ) {
+    changed.push("time");
+  }
+  if (
+    existing.location !== (v.location ?? null) ||
+    existing.locationName !== (v.locationName ?? null) ||
+    existing.locationAddress !== (v.locationAddress ?? null) ||
+    existing.locationLat !== (v.locationLat ?? null) ||
+    existing.locationLng !== (v.locationLng ?? null)
+  ) {
+    changed.push("location");
+  }
+  return changed;
 }
 
 /** Draft → published. Emits `events.event.published`. */

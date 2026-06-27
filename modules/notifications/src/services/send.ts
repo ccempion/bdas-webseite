@@ -5,7 +5,7 @@ import { getNotifier } from "../notifier";
 import { getRecipientResolver } from "../resolver";
 import { notificationLog } from "../schema";
 import { render } from "../templates";
-import type { SendResult, TemplateData, TransactionalTemplate } from "../types";
+import type { EventChangeKind, SendResult, TemplateData, TransactionalTemplate } from "../types";
 
 /**
  * Resolve the recipient, render the template, send via the composed Notifier,
@@ -28,8 +28,11 @@ export async function sendTransactional(
   toMemberId: string,
   extra: {
     readonly eventTitle: string;
-    readonly eventId?: string;
+    readonly eventId?: string | undefined;
     readonly eventUrl?: string | undefined;
+    readonly changes?: ReadonlyArray<EventChangeKind> | undefined;
+    readonly subject?: string | undefined;
+    readonly messageBody?: string | undefined;
   },
 ): Promise<SendResult | null> {
   const contact = await getRecipientResolver().resolve(db, toMemberId);
@@ -39,6 +42,9 @@ export async function sendTransactional(
     firstName: contact.firstName,
     eventTitle: extra.eventTitle,
     eventUrl: extra.eventUrl,
+    changes: extra.changes,
+    subject: extra.subject,
+    messageBody: extra.messageBody,
   };
   const email = render(template, data);
   const id = createId("ntfy");

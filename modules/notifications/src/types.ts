@@ -7,7 +7,13 @@ export type TransactionalTemplate =
   | "event_registration_confirmed"
   | "event_waitlisted"
   | "event_deregistration_confirmed"
-  | "event_waitlist_promoted";
+  | "event_waitlist_promoted"
+  | "event_changed"
+  | "event_cancelled"
+  | "event_organizer_message";
+
+/** Which aspects of an event changed, for the `event_changed` email. */
+export type EventChangeKind = "time" | "location";
 
 /** Data interpolated into a transactional template. */
 export type TemplateData = {
@@ -18,6 +24,11 @@ export type TemplateData = {
   /** Absolute URL of the event page, for the "manage/cancel registration" link.
    * Omitted on the deregistration email and when no site URL is configured. */
   readonly eventUrl?: string | undefined;
+  /** `event_changed`: which aspects changed, to phrase the email. */
+  readonly changes?: ReadonlyArray<EventChangeKind> | undefined;
+  /** `event_organizer_message`: organizer-authored subject + body. */
+  readonly subject?: string | undefined;
+  readonly messageBody?: string | undefined;
 };
 
 /** Outcome of a send attempt, returned by sendTransactional. */

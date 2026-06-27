@@ -17,6 +17,16 @@ export type EventCancelled = {
   readonly at: Date;
 };
 
+/** What materially changed on an edit, for registrant change-notifications. */
+export type EventChange = "time" | "location";
+
+export type EventUpdated = {
+  readonly type: "events.event.updated";
+  readonly eventId: string;
+  readonly changed: ReadonlyArray<EventChange>;
+  readonly at: Date;
+};
+
 export type EventRegistered = {
   readonly type: "events.event.registered";
   readonly eventId: string;
@@ -42,6 +52,7 @@ export type WaitlistPromoted = {
 export type EventsEvent =
   | EventPublished
   | EventCancelled
+  | EventUpdated
   | EventRegistered
   | EventDeregistered
   | WaitlistPromoted;

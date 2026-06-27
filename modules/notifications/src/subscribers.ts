@@ -15,8 +15,14 @@
  */
 import type { Db } from "@bdas/db";
 import { getEventBus, type AnyEvent, type EventHandler, type Subscription } from "@bdas/events";
-import { getEvent, type Viewer } from "@bdas/events-module";
-import type { EventRegistered, EventDeregistered, WaitlistPromoted } from "@bdas/events-module";
+import { getEvent, listRegistrations, type Viewer } from "@bdas/events-module";
+import type {
+  EventCancelled,
+  EventDeregistered,
+  EventRegistered,
+  EventUpdated,
+  WaitlistPromoted,
+} from "@bdas/events-module";
 
 import { sendTransactional } from "./services/send";
 
@@ -105,6 +111,37 @@ export function registerNotificationSubscribers(db: Db, opts: { siteUrl?: string
           eventId: e.eventId,
           eventUrl: eventUrl(e.eventId),
         });
+      }),
+    ),
+    // A published event's date/time/location changed — notify every active
+    // registrant (confirmed + waitlist).
+    getEventBus().subscribe<EventUpdated>(
+      "events.event.updated",
+      safe<EventUpdated>(async (e) => {
+        const title = await eventTitle(db, e.eventId);
+        const roster = await listRegistrations(db, e.eventId);
+        for (const r of roster) {
+          await sendTransactional(db, "event_changed", r.memberId, {
+            eventTitle: title,
+            eventId: e.eventId,
+            eventUrl: eventUrl(e.eventId),
+            changes: e.changed,
+          });
+        }
+      }),
+    ),
+    // The event was cancelled — notify every active registrant.
+    getEventBus().subscribe<EventCancelled>(
+      "events.event.cancelled",
+      safe<EventCancelled>(async (e) => {
+        const title = await eventTitle(db, e.eventId);
+        const roster = await listRegistrations(db, e.eventId);
+        for (const r of roster) {
+          await sendTransactional(db, "event_cancelled", r.memberId, {
+            eventTitle: title,
+            eventId: e.eventId,
+          });
+        }
       }),
     ),
   ];

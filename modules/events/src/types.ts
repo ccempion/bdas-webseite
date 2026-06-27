@@ -60,6 +60,20 @@ export type RegistrationResult = {
   readonly waitlistPosition: number | null;
 };
 
+export type RosterStatus = "confirmed" | "waitlisted";
+
+/** One active registration as the manage roster sees it. Identity (name/email)
+ *  is resolved by the app via members/auth — this module owns only `memberId`
+ *  (CLAUDE.md §1 rule 1). */
+export type RosterRow = {
+  readonly registrationId: string;
+  readonly memberId: string;
+  readonly status: RosterStatus;
+  /** null = confirmed; >=1 = waitlisted at that rank. */
+  readonly waitlistPosition: number | null;
+  readonly registeredAt: Date;
+};
+
 /** Per-event counts for list/detail rendering. */
 export type EventWithCounts = EventItem & {
   readonly confirmedCount: number;

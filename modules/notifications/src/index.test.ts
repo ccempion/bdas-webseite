@@ -19,6 +19,7 @@ import { getEventBus, resetEventBus } from "@bdas/events";
 import { setNotifier, type OutboundEmail } from "./notifier";
 import { setRecipientResolver } from "./resolver";
 import { notificationLog } from "./schema";
+import { sendOrganizerMessage } from "./services/broadcast";
 import { sendTransactional } from "./services/send";
 import { registerNotificationSubscribers, unregisterNotificationSubscribers } from "./subscribers";
 import type { RecipientContact } from "./types";
@@ -56,6 +57,10 @@ describeIfDb("notifications integration", () => {
       ["..", "..", "auth", "migrations", "0001_init.sql"],
       ["..", "..", "groups", "migrations", "0001_init.sql"],
       ["..", "..", "members", "migrations", "0001_init.sql"],
+      // The change/cancellation subscribers read the events roster, so this
+      // suite needs the events tables too.
+      ["..", "..", "events", "migrations", "0001_init.sql"],
+      ["..", "..", "events", "migrations", "0002_event_pages.sql"],
       ["..", "migrations", "0001_init.sql"],
     ]) {
       const sql = await fs.readFile(path.join(__dirname, ...file), "utf8");
@@ -179,6 +184,92 @@ describeIfDb("notifications integration", () => {
     expect(rows[0]?.template).toBe("event_waitlisted");
 
     unregisterNotificationSubscribers();
+  });
+
+  /** Seed an auth_user + member with a unique suffix. */
+  async function seedMemberN(n: number): Promise<string> {
+    const userId = `usr_r_${n}`;
+    const memberId = `mbr_r_${n}`;
+    await t.client`
+      INSERT INTO auth_users (id, email_normalized, email_display, status)
+      VALUES (${userId}, ${`r${n}@example.org`}, ${`r${n}@example.org`}, 'active')`;
+    await t.client`
+      INSERT INTO members (id, user_id, first_name, last_name, status)
+      VALUES (${memberId}, ${userId}, 'R', ${String(n)}, 'active')`;
+    return memberId;
+  }
+
+  /** Seed a published event with one confirmed + one waitlisted registration. */
+  async function seedRoster(eventId: string): Promise<string[]> {
+    await t.client`
+      INSERT INTO events (id, title, starts_at, status, visibility, created_by)
+      VALUES (${eventId}, 'Sommerfest', now() + interval '7 days', 'published', 'public', 'usr_seed')`;
+    const m1 = await seedMemberN(1);
+    const m2 = await seedMemberN(2);
+    await t.client`
+      INSERT INTO event_registrations (id, event_id, member_id, waitlist_position)
+      VALUES ('ereg_1', ${eventId}, ${m1}, NULL)`;
+    await t.client`
+      INSERT INTO event_registrations (id, event_id, member_id, waitlist_position)
+      VALUES ('ereg_2', ${eventId}, ${m2}, 1)`;
+    return [m1, m2];
+  }
+
+  it("event.updated fans out an event_changed email to every active registrant", async () => {
+    const eventId = "evt_upd";
+    await seedRoster(eventId);
+
+    resetEventBus();
+    registerNotificationSubscribers(t.db, { siteUrl: "https://dashboard.bdas.de" });
+    await getEventBus().publish({
+      type: "events.event.updated",
+      eventId,
+      changed: ["time"],
+      at: new Date(),
+    });
+
+    expect(sent).toHaveLength(2);
+    expect(sent[0]?.subject).toContain("Änderung");
+    const rows = await t.db.select().from(notificationLog);
+    expect(rows).toHaveLength(2);
+    expect(rows.every((r) => r.template === "event_changed")).toBe(true);
+
+    unregisterNotificationSubscribers();
+  });
+
+  it("event.cancelled fans out an event_cancelled email to every active registrant", async () => {
+    const eventId = "evt_cxl";
+    await seedRoster(eventId);
+
+    resetEventBus();
+    registerNotificationSubscribers(t.db);
+    await getEventBus().publish({ type: "events.event.cancelled", eventId, at: new Date() });
+
+    expect(sent).toHaveLength(2);
+    expect(sent[0]?.subject).toContain("abgesagt");
+    const rows = await t.db.select().from(notificationLog);
+    expect(rows.every((r) => r.template === "event_cancelled")).toBe(true);
+
+    unregisterNotificationSubscribers();
+  });
+
+  it("sendOrganizerMessage sends one logged email per member id", async () => {
+    const ids = [await seedMemberN(1), await seedMemberN(2)];
+
+    const result = await sendOrganizerMessage(t.db, {
+      memberIds: ids,
+      eventTitle: "Sommerfest",
+      eventId: "evt_1",
+      subject: "Wichtige Info",
+      body: "Bitte denkt an euren Ausweis.",
+    });
+
+    expect(result).toMatchObject({ sent: 2, failed: 0, skipped: 0 });
+    expect(sent).toHaveLength(2);
+    expect(sent[0]?.subject).toBe("Wichtige Info");
+    const rows = await t.db.select().from(notificationLog);
+    expect(rows).toHaveLength(2);
+    expect(rows.every((r) => r.template === "event_organizer_message")).toBe(true);
   });
 
   it("a failing handler does not reject the bus publish (producer is protected)", async () => {

@@ -15,7 +15,7 @@ import { createId } from "@bdas/id";
 
 import type { EventDeregistered, EventRegistered, EventsEvent, WaitlistPromoted } from "../events";
 import { eventRegistrations, events } from "../schema";
-import type { EventRegistration, RegistrationResult } from "../types";
+import type { EventRegistration, RegistrationResult, RosterRow } from "../types";
 
 export type Db = PostgresJsDatabase<Record<string, never>>;
 
@@ -48,6 +48,26 @@ export async function getMyRegistration(
     )
     .limit(1);
   return rows[0] ? toReg(rows[0]) : null;
+}
+
+/** The active roster for an event: confirmed first, then the waitlist in rank
+ *  order. Identity is resolved by the caller (rule 1 — events owns only memberId). */
+export async function listRegistrations(db: Db, eventId: string): Promise<RosterRow[]> {
+  const rows = await db
+    .select()
+    .from(eventRegistrations)
+    .where(and(eq(eventRegistrations.eventId, eventId), isNull(eventRegistrations.cancelledAt)))
+    .orderBy(
+      sql`${eventRegistrations.waitlistPosition} asc nulls first`,
+      asc(eventRegistrations.registeredAt),
+    );
+  return rows.map((r) => ({
+    registrationId: r.id,
+    memberId: r.memberId,
+    status: r.waitlistPosition === null ? "confirmed" : "waitlisted",
+    waitlistPosition: r.waitlistPosition,
+    registeredAt: r.registeredAt,
+  }));
 }
 
 /** Register the member: confirmed if capacity allows, else waitlisted. */
@@ -128,7 +148,87 @@ export async function registerMember(
   return result;
 }
 
-/** Cancel the member's registration; auto-promote the waitlist head if a
+type Tx = Parameters<Parameters<Db["transaction"]>[0]>[0];
+type RegRow = typeof eventRegistrations.$inferSelect;
+type EventRow = typeof events.$inferSelect;
+
+/** Soft-cancel one registration and rebalance the waitlist, returning the events
+ *  to publish. Shared by member self-cancel and organizer cancel-for. */
+async function cancelRegistrationRow(tx: Tx, ev: EventRow, reg: RegRow): Promise<EventsEvent[]> {
+  const now = new Date();
+  await tx
+    .update(eventRegistrations)
+    .set({ cancelledAt: now })
+    .where(eq(eventRegistrations.id, reg.id));
+
+  const emit: EventsEvent[] = [];
+  if (reg.waitlistPosition === null) {
+    // A confirmed seat opened — promote the head of the waitlist.
+    if (ev.startsAt > now) {
+      const head = (
+        await tx
+          .select()
+          .from(eventRegistrations)
+          .where(
+            and(
+              eq(eventRegistrations.eventId, ev.id),
+              isNull(eventRegistrations.cancelledAt),
+              isNotNull(eventRegistrations.waitlistPosition),
+            ),
+          )
+          .orderBy(asc(eventRegistrations.waitlistPosition))
+          .limit(1)
+      )[0];
+      if (head) {
+        const headPos = head.waitlistPosition ?? 0;
+        await tx
+          .update(eventRegistrations)
+          .set({ waitlistPosition: null })
+          .where(eq(eventRegistrations.id, head.id));
+        await tx
+          .update(eventRegistrations)
+          .set({ waitlistPosition: sql`${eventRegistrations.waitlistPosition} - 1` })
+          .where(
+            and(
+              eq(eventRegistrations.eventId, ev.id),
+              isNull(eventRegistrations.cancelledAt),
+              isNotNull(eventRegistrations.waitlistPosition),
+              gt(eventRegistrations.waitlistPosition, headPos),
+            ),
+          );
+        emit.push({
+          type: "events.waitlist.promoted",
+          eventId: ev.id,
+          memberId: head.memberId,
+          at: now,
+        } satisfies WaitlistPromoted);
+      }
+    }
+  } else {
+    // A waitlisted spot freed — close the gap for those behind it.
+    await tx
+      .update(eventRegistrations)
+      .set({ waitlistPosition: sql`${eventRegistrations.waitlistPosition} - 1` })
+      .where(
+        and(
+          eq(eventRegistrations.eventId, ev.id),
+          isNull(eventRegistrations.cancelledAt),
+          isNotNull(eventRegistrations.waitlistPosition),
+          gt(eventRegistrations.waitlistPosition, reg.waitlistPosition),
+        ),
+      );
+  }
+
+  emit.push({
+    type: "events.event.deregistered",
+    eventId: ev.id,
+    memberId: reg.memberId,
+    at: now,
+  } satisfies EventDeregistered);
+  return emit;
+}
+
+/** Cancel the member's own registration; auto-promote the waitlist head if a
  *  confirmed seat opened before the event starts. */
 export async function cancelRegistration(db: Db, eventId: string, memberId: string): Promise<void> {
   const toEmit = await db.transaction(async (tx) => {
@@ -150,79 +250,40 @@ export async function cancelRegistration(db: Db, eventId: string, memberId: stri
     )[0];
     if (!reg) throw new NotFoundError("Keine aktive Anmeldung gefunden.");
 
-    const now = new Date();
-    await tx
-      .update(eventRegistrations)
-      .set({ cancelledAt: now })
-      .where(eq(eventRegistrations.id, reg.id));
+    return cancelRegistrationRow(tx, ev, reg);
+  });
 
-    const emit: EventsEvent[] = [];
-    if (reg.waitlistPosition === null) {
-      // A confirmed seat opened — promote the head of the waitlist.
-      if (ev.startsAt > now) {
-        const head = (
-          await tx
-            .select()
-            .from(eventRegistrations)
-            .where(
-              and(
-                eq(eventRegistrations.eventId, eventId),
-                isNull(eventRegistrations.cancelledAt),
-                isNotNull(eventRegistrations.waitlistPosition),
-              ),
-            )
-            .orderBy(asc(eventRegistrations.waitlistPosition))
-            .limit(1)
-        )[0];
-        if (head) {
-          const headPos = head.waitlistPosition ?? 0;
-          await tx
-            .update(eventRegistrations)
-            .set({ waitlistPosition: null })
-            .where(eq(eventRegistrations.id, head.id));
-          await tx
-            .update(eventRegistrations)
-            .set({ waitlistPosition: sql`${eventRegistrations.waitlistPosition} - 1` })
-            .where(
-              and(
-                eq(eventRegistrations.eventId, eventId),
-                isNull(eventRegistrations.cancelledAt),
-                isNotNull(eventRegistrations.waitlistPosition),
-                gt(eventRegistrations.waitlistPosition, headPos),
-              ),
-            );
-          const promoted: WaitlistPromoted = {
-            type: "events.waitlist.promoted",
-            eventId,
-            memberId: head.memberId,
-            at: now,
-          };
-          emit.push(promoted);
-        }
-      }
-    } else {
-      // A waitlisted spot freed — close the gap for those behind it.
+  for (const e of toEmit) await getEventBus().publish(e);
+}
+
+/** Organizer cancel-for: cancel a specific registration by id. The `eventId`
+ *  binds the registration to the event the caller is authorized for — a
+ *  registration belonging to another event is treated as not found. */
+export async function cancelRegistrationById(
+  db: Db,
+  eventId: string,
+  registrationId: string,
+): Promise<void> {
+  const toEmit = await db.transaction(async (tx) => {
+    const reg = (
       await tx
-        .update(eventRegistrations)
-        .set({ waitlistPosition: sql`${eventRegistrations.waitlistPosition} - 1` })
+        .select()
+        .from(eventRegistrations)
         .where(
           and(
+            eq(eventRegistrations.id, registrationId),
             eq(eventRegistrations.eventId, eventId),
             isNull(eventRegistrations.cancelledAt),
-            isNotNull(eventRegistrations.waitlistPosition),
-            gt(eventRegistrations.waitlistPosition, reg.waitlistPosition),
           ),
-        );
-    }
+        )
+        .limit(1)
+    )[0];
+    if (!reg) throw new NotFoundError("Keine aktive Anmeldung gefunden.");
 
-    const deregistered: EventDeregistered = {
-      type: "events.event.deregistered",
-      eventId,
-      memberId,
-      at: now,
-    };
-    emit.push(deregistered);
-    return emit;
+    const ev = (await tx.select().from(events).where(eq(events.id, reg.eventId)).limit(1))[0];
+    if (!ev) throw new NotFoundError("Veranstaltung nicht gefunden.");
+
+    return cancelRegistrationRow(tx, ev, reg);
   });
 
   for (const e of toEmit) await getEventBus().publish(e);

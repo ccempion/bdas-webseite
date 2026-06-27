@@ -17,8 +17,14 @@ import { getEventBus, resetEventBus } from "@bdas/events";
 import type { EventsEvent } from "./events";
 import { getEvent, type Viewer } from "./services/get";
 import { listManagedEvents } from "./services/list";
-import { createEvent, deleteEvent, publishEvent } from "./services/manage";
-import { cancelRegistration, getMyRegistration, registerMember } from "./services/registration";
+import { createEvent, deleteEvent, publishEvent, updateEvent } from "./services/manage";
+import {
+  cancelRegistration,
+  cancelRegistrationById,
+  getMyRegistration,
+  listRegistrations,
+  registerMember,
+} from "./services/registration";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DEFAULT_URL = "postgres://bdas:bdas@localhost:5432/bdas";
@@ -281,5 +287,99 @@ describeIfDb("events integration", () => {
     expect(await getEvent(t.db, membersOnly.id, ANON_VIEWER)).toBeNull();
     expect(await getEvent(t.db, membersOnly.id, ACTIVE)).not.toBeNull();
     expect(await getEvent(t.db, pub.id, ANON_VIEWER)).not.toBeNull();
+  });
+
+  it("listRegistrations returns confirmed first, then the waitlist in rank order", async () => {
+    for (const m of ["mem1", "mem2", "mem3"]) await createMember(m, null);
+    const ev = await publishEvent(
+      t.db,
+      (await createEvent(t.db, { title: "Roster", startsAt: future(), capacity: 2 }, "usr_c")).id,
+    );
+    await registerMember(t.db, ev.id, "mem1");
+    await registerMember(t.db, ev.id, "mem2");
+    await registerMember(t.db, ev.id, "mem3"); // waitlisted
+
+    const roster = await listRegistrations(t.db, ev.id);
+    expect(roster).toHaveLength(3);
+    expect(roster.map((r) => r.status)).toEqual(["confirmed", "confirmed", "waitlisted"]);
+    expect(roster[2]).toMatchObject({ memberId: "mem3", waitlistPosition: 1 });
+
+    // Cancelled registrations drop out of the roster.
+    await cancelRegistration(t.db, ev.id, "mem3");
+    expect(await listRegistrations(t.db, ev.id)).toHaveLength(2);
+  });
+
+  it("cancelRegistrationById cancels a specific seat and auto-promotes; rejects a foreign event", async () => {
+    for (const m of ["mem1", "mem2"]) await createMember(m, null);
+    const ev = await publishEvent(
+      t.db,
+      (await createEvent(t.db, { title: "Cancel", startsAt: future(), capacity: 1 }, "usr_c")).id,
+    );
+    await registerMember(t.db, ev.id, "mem1"); // confirmed
+    await registerMember(t.db, ev.id, "mem2"); // waitlist 1
+    const mem1Reg = (await listRegistrations(t.db, ev.id)).find((r) => r.memberId === "mem1")!;
+
+    const promoted = capture("events.waitlist.promoted");
+
+    // The eventId binds the registration to the event the caller authorized; a
+    // mismatched event must not cancel it.
+    await expect(
+      cancelRegistrationById(t.db, "evt_other", mem1Reg.registrationId),
+    ).rejects.toMatchObject({ code: "NOT_FOUND" });
+
+    await cancelRegistrationById(t.db, ev.id, mem1Reg.registrationId);
+    expect(await getMyRegistration(t.db, ev.id, "mem1")).toBeNull();
+    expect((await getMyRegistration(t.db, ev.id, "mem2"))?.waitlistPosition).toBeNull(); // promoted
+    expect(promoted).toHaveLength(1);
+    expect(promoted[0]).toMatchObject({ memberId: "mem2" });
+  });
+
+  it("updateEvent emits event.updated only on a material change to a published event", async () => {
+    const ev = await publishEvent(
+      t.db,
+      (
+        await createEvent(
+          t.db,
+          { title: "Stammtisch", startsAt: future(5), locationName: "Aula" },
+          "usr_c",
+        )
+      ).id,
+    );
+    const original = await getEvent(t.db, ev.id, FEDERAL);
+    const updated = capture("events.event.updated");
+
+    // No-op for notifications: same time + location, only the title differs.
+    await updateEvent(t.db, ev.id, {
+      title: "Stammtisch v2",
+      startsAt: original!.startsAt,
+      locationName: "Aula",
+    });
+    expect(updated).toHaveLength(0);
+
+    // Time change.
+    await updateEvent(t.db, ev.id, {
+      title: "Stammtisch v2",
+      startsAt: future(8),
+      locationName: "Aula",
+    });
+    expect(updated).toHaveLength(1);
+    expect(updated[0]).toMatchObject({ type: "events.event.updated", changed: ["time"] });
+
+    // Location-only change (reuse the stored start so time is unchanged).
+    const afterTime = await getEvent(t.db, ev.id, FEDERAL);
+    await updateEvent(t.db, ev.id, {
+      title: "Stammtisch v2",
+      startsAt: afterTime!.startsAt,
+      locationName: "Mensa",
+    });
+    expect(updated).toHaveLength(2);
+    expect(updated[1]).toMatchObject({ changed: ["location"] });
+  });
+
+  it("updateEvent on a draft never emits event.updated", async () => {
+    const draft = await createEvent(t.db, { title: "Entwurf", startsAt: future(5) }, "usr_c");
+    const updated = capture("events.event.updated");
+    await updateEvent(t.db, draft.id, { title: "Entwurf", startsAt: future(9) });
+    expect(updated).toHaveLength(0);
   });
 });

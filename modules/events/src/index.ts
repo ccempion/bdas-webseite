@@ -18,7 +18,13 @@ export {
   deleteEvent,
   EventInput,
 } from "./services/manage";
-export { registerMember, cancelRegistration, getMyRegistration } from "./services/registration";
+export {
+  registerMember,
+  cancelRegistration,
+  cancelRegistrationById,
+  getMyRegistration,
+  listRegistrations,
+} from "./services/registration";
 
 export { eventToIcs } from "./ics";
 export { renderEventContentHtml, plainTextToDoc } from "./content";
@@ -31,11 +37,15 @@ export type {
   EventVisibility,
   RegistrationResult,
   EventWithCounts,
+  RosterRow,
+  RosterStatus,
 } from "./types";
 export type {
   EventsEvent,
   EventPublished,
   EventCancelled,
+  EventUpdated,
+  EventChange,
   EventRegistered,
   EventDeregistered,
   WaitlistPromoted,

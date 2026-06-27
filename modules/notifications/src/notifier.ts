@@ -24,13 +24,21 @@ export const consoleNotifier: Notifier = {
   },
 };
 
-let _notifier: Notifier = consoleNotifier;
+// Backed by globalThis (Symbol.for), not a module-level `let`. Next.js bundles
+// `instrumentation.ts` separately from route handlers/server actions, so a
+// plain module singleton wired at boot would be invisible to a direct send from
+// a Server Action — the same gotcha that forced the event bus onto globalThis.
+const NOTIFIER_KEY = Symbol.for("@bdas/notifications:notifier");
+type NotifierStore = { [NOTIFIER_KEY]?: Notifier };
+function notifierStore(): NotifierStore {
+  return globalThis as unknown as NotifierStore;
+}
 
 export function getNotifier(): Notifier {
-  return _notifier;
+  return notifierStore()[NOTIFIER_KEY] ?? consoleNotifier;
 }
 
 /** Composition-time wiring. apps/web calls this at boot. */
 export function setNotifier(n: Notifier): void {
-  _notifier = n;
+  notifierStore()[NOTIFIER_KEY] = n;
 }

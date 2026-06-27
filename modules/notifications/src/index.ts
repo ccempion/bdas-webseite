@@ -6,6 +6,11 @@
  */
 
 export { sendTransactional } from "./services/send";
+export {
+  sendOrganizerMessage,
+  type OrganizerMessage,
+  type BroadcastResult,
+} from "./services/broadcast";
 export { registerNotificationSubscribers } from "./subscribers";
 
 export {

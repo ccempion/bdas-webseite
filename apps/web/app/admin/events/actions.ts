@@ -8,14 +8,17 @@ import { ForbiddenError, isAppError } from "@bdas/errors";
 import {
   canManage,
   cancelEvent,
+  cancelRegistrationById,
   createEvent,
   deleteEvent,
   getEvent,
+  listRegistrations,
   publishEvent,
   updateEvent,
 } from "@bdas/events-module";
 import { isFlagOn } from "@bdas/feature-flags";
 import { canManageGroup, getCurrentMember, isFederalBoard } from "@bdas/members";
+import { sendOrganizerMessage } from "@bdas/notifications";
 
 import { readSessionCookie } from "../../../lib/auth-cookie";
 import { viewerFrom } from "../../../lib/event-viewer";
@@ -26,6 +29,17 @@ export type EventFormState = {
   readonly fields?: Record<string, string>;
 };
 export type ActionState = { readonly error?: string };
+export type EmailRegistrantsState = {
+  readonly error?: string;
+  readonly ok?: boolean;
+  readonly count?: number;
+};
+
+/** Public base URL for links in outbound email; mirrors the bootstrap default. */
+function eventPublicUrl(eventId: string): string {
+  const base = process.env["PUBLIC_SITE_URL"] ?? "http://localhost:3000";
+  return `${base.replace(/\/$/, "")}/events/${encodeURIComponent(eventId)}`;
+}
 
 async function currentMember() {
   const me = await getCurrentMember(getDb(), readSessionCookie());
@@ -222,4 +236,65 @@ export async function deleteEventAction(_prev: ActionState, fd: FormData): Promi
   revalidatePath("/admin/events");
   revalidatePath("/events");
   redirect("/admin/events");
+}
+
+/** Organizer cancels a registration on a registrant's behalf. The event id is
+ *  authorized via `assertManageable`; passing it to the service binds the
+ *  registration to that event so a foreign registration id is rejected. */
+export async function cancelRegistrationAction(
+  _prev: ActionState,
+  fd: FormData,
+): Promise<ActionState> {
+  if (!isFlagOn("events")) return { error: "Nicht verfügbar." };
+  const eventId = s(fd, "eventId");
+  const registrationId = s(fd, "registrationId");
+  try {
+    await assertManageable(eventId);
+    await cancelRegistrationById(getDb(), eventId, registrationId);
+  } catch (err) {
+    if (isAppError(err)) return { error: err.message };
+    throw err;
+  }
+  revalidatePath(`/admin/events/${eventId}`);
+  return {};
+}
+
+/** Email all confirmed registrants a one-off organizer message. */
+export async function emailRegistrantsAction(
+  _prev: EmailRegistrantsState,
+  fd: FormData,
+): Promise<EmailRegistrantsState> {
+  if (!isFlagOn("events")) return { error: "Nicht verfügbar." };
+  const eventId = s(fd, "eventId");
+  const subject = s(fd, "subject");
+  const messageBody = s(fd, "body");
+  if (!subject || !messageBody) {
+    return { error: "Betreff und Nachricht dürfen nicht leer sein." };
+  }
+  try {
+    const me = await assertManageable(eventId);
+    const db = getDb();
+    const event = await getEvent(db, eventId, viewerFrom(me));
+    if (!event) return { error: "Veranstaltung nicht gefunden." };
+
+    const confirmed = (await listRegistrations(db, eventId))
+      .filter((r) => r.status === "confirmed")
+      .map((r) => r.memberId);
+    if (confirmed.length === 0) {
+      return { error: "Es gibt keine bestätigten Teilnehmenden." };
+    }
+
+    const result = await sendOrganizerMessage(db, {
+      memberIds: confirmed,
+      eventTitle: event.title,
+      eventId,
+      eventUrl: eventPublicUrl(eventId),
+      subject,
+      body: messageBody,
+    });
+    return { ok: true, count: result.sent };
+  } catch (err) {
+    if (isAppError(err)) return { error: err.message };
+    throw err;
+  }
 }
