@@ -1,3 +1,5 @@
+import type { Scope } from "@bdas/dashboard-shell";
+
 /** Sidebar nav items per scope kind. Hrefs are relative to the scope root.
  *  Pages that depend on unbuilt modules (payments, broadcasts, handover,
  *  projects, join-policy, group-change) are intentionally absent — PR 3+. */
@@ -22,4 +24,27 @@ export function groupNav(slug: string): ReadonlyArray<NavItem> {
     { href: `${base}/profile`, label: "Profil" },
     { href: `${base}/files`, label: "Dateien" },
   ];
+}
+
+/** The scope a pathname belongs to: a `/gruppe/<slug>/…` path selects that
+ *  group when the viewer has it; everything else falls back to the federal
+ *  scope (or the first available scope). Pure so the client sidebar can derive
+ *  the active scope from `usePathname()` on every soft navigation. */
+export function activeScope(
+  scopes: ReadonlyArray<Scope>,
+  pathname: string,
+): Scope | undefined {
+  if (pathname.startsWith("/gruppe/")) {
+    const slug = pathname.split("/")[2];
+    const g = scopes.find((s) => s.kind === "group" && s.slug === slug);
+    if (g) return g;
+  }
+  return scopes.find((s) => s.kind === "federal") ?? scopes[0];
+}
+
+/** Whether a nav item is the active one for the current path. Matches the item
+ *  exactly or any nested route under it (e.g. `/federal/files/<id>` keeps
+ *  "Dateien" active) without bleeding across sibling items. */
+export function isNavItemActive(pathname: string, href: string): boolean {
+  return pathname === href || pathname.startsWith(`${href}/`);
 }
