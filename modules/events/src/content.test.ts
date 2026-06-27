@@ -34,7 +34,13 @@ describe("renderEventContentHtml", () => {
       content: [
         {
           type: "paragraph",
-          content: [{ type: "text", text: "x", marks: [{ type: "link", attrs: { href: "javascript:alert(1)" } }] }],
+          content: [
+            {
+              type: "text",
+              text: "x",
+              marks: [{ type: "link", attrs: { href: "javascript:alert(1)" } }],
+            },
+          ],
         },
         {
           type: "image",

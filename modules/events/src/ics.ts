@@ -8,7 +8,10 @@ type IcsInput = Pick<
 
 function fmt(d: Date): string {
   // UTC basic format: YYYYMMDDTHHMMSSZ
-  return d.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}Z$/, "Z");
+  return d
+    .toISOString()
+    .replace(/[-:]/g, "")
+    .replace(/\.\d{3}Z$/, "Z");
 }
 
 function esc(s: string): string {

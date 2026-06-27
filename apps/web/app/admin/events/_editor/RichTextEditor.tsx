@@ -71,22 +71,59 @@ export function RichTextEditor({
     <div className="flex flex-col gap-2">
       <input type="hidden" name={name} value={json} />
       <div className="flex flex-wrap gap-1 border-b border-bdas-soft pb-2">
-        <button type="button" className={BTN} data-active={editor.isActive("bold")}
-          onClick={() => editor.chain().focus().toggleBold().run()}>Fett</button>
-        <button type="button" className={BTN} data-active={editor.isActive("italic")}
-          onClick={() => editor.chain().focus().toggleItalic().run()}>Kursiv</button>
-        <button type="button" className={BTN} data-active={editor.isActive("heading", { level: 2 })}
-          onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}>H2</button>
-        <button type="button" className={BTN} data-active={editor.isActive("heading", { level: 3 })}
-          onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}>H3</button>
-        <button type="button" className={BTN} data-active={editor.isActive("bulletList")}
-          onClick={() => editor.chain().focus().toggleBulletList().run()}>Liste</button>
-        <button type="button" className={BTN}
+        <button
+          type="button"
+          className={BTN}
+          data-active={editor.isActive("bold")}
+          onClick={() => editor.chain().focus().toggleBold().run()}
+        >
+          Fett
+        </button>
+        <button
+          type="button"
+          className={BTN}
+          data-active={editor.isActive("italic")}
+          onClick={() => editor.chain().focus().toggleItalic().run()}
+        >
+          Kursiv
+        </button>
+        <button
+          type="button"
+          className={BTN}
+          data-active={editor.isActive("heading", { level: 2 })}
+          onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
+        >
+          H2
+        </button>
+        <button
+          type="button"
+          className={BTN}
+          data-active={editor.isActive("heading", { level: 3 })}
+          onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
+        >
+          H3
+        </button>
+        <button
+          type="button"
+          className={BTN}
+          data-active={editor.isActive("bulletList")}
+          onClick={() => editor.chain().focus().toggleBulletList().run()}
+        >
+          Liste
+        </button>
+        <button
+          type="button"
+          className={BTN}
           onClick={() => {
             const url = window.prompt("Link-URL (https://…)") ?? "";
             if (url) editor.chain().focus().setLink({ href: url }).run();
-          }}>Link</button>
-        <button type="button" className={BTN} onClick={addImage}>Bild</button>
+          }}
+        >
+          Link
+        </button>
+        <button type="button" className={BTN} onClick={addImage}>
+          Bild
+        </button>
       </div>
       <EditorContent editor={editor} />
     </div>

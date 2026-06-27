@@ -21,7 +21,10 @@ function renderSlot(heading: string, doc: Parameters<typeof renderEventContentHt
   return (
     <Card flat className="p-6">
       <h2 className="mb-2 text-lg font-semibold text-bdas-ink">{heading}</h2>
-      <div className="prose max-w-none text-bdas-ink-body" dangerouslySetInnerHTML={{ __html: html }} />
+      <div
+        className="prose max-w-none text-bdas-ink-body"
+        dangerouslySetInnerHTML={{ __html: html }}
+      />
     </Card>
   );
 }
@@ -114,7 +117,10 @@ export default async function EventDetailPage({ params }: { params: { id: string
           />
         )}
 
-        <a href={`/events/${event.id}/ics`} className="mt-4 block text-sm text-bdas-red hover:underline">
+        <a
+          href={`/events/${event.id}/ics`}
+          className="mt-4 block text-sm text-bdas-red hover:underline"
+        >
           Zum Kalender hinzufügen
         </a>
       </Card>

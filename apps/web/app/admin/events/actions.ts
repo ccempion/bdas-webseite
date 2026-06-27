@@ -5,7 +5,14 @@ import { redirect } from "next/navigation";
 
 import { getDb } from "@bdas/db";
 import { ForbiddenError, isAppError } from "@bdas/errors";
-import { canManage, cancelEvent, createEvent, getEvent, publishEvent, updateEvent } from "@bdas/events-module";
+import {
+  canManage,
+  cancelEvent,
+  createEvent,
+  getEvent,
+  publishEvent,
+  updateEvent,
+} from "@bdas/events-module";
 import { isFlagOn } from "@bdas/feature-flags";
 import { canManageGroup, getCurrentMember, isFederalBoard } from "@bdas/members";
 
@@ -136,7 +143,9 @@ export async function updateEventAction(
 }
 
 /** Authorize that the caller may manage this event; returns the loaded member. */
-async function assertManageable(eventId: string): Promise<Awaited<ReturnType<typeof currentMember>>> {
+async function assertManageable(
+  eventId: string,
+): Promise<Awaited<ReturnType<typeof currentMember>>> {
   const me = await currentMember();
   const viewer = viewerFrom(me);
   const event = await getEvent(getDb(), eventId, viewer);

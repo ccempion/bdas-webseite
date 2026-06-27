@@ -13,7 +13,12 @@ export function LocationPicker({
 }) {
   const [selected, setSelected] = useState<PlaceResult | null>(
     defaultValue && defaultValue.lat !== null && defaultValue.lng !== null
-      ? { name: defaultValue.name, address: defaultValue.address, lat: defaultValue.lat, lng: defaultValue.lng }
+      ? {
+          name: defaultValue.name,
+          address: defaultValue.address,
+          lat: defaultValue.lat,
+          lng: defaultValue.lng,
+        }
       : null,
   );
   const [results, setResults] = useState<PlaceResult[]>([]);
@@ -29,7 +34,11 @@ export function LocationPicker({
   }
 
   return (
-    <Field label="Ort (suchen)" htmlFor="locationSearch" hint="Adresse oder Ort eingeben und auswählen.">
+    <Field
+      label="Ort (suchen)"
+      htmlFor="locationSearch"
+      hint="Adresse oder Ort eingeben und auswählen."
+    >
       <Input
         id="locationSearch"
         value={q}
@@ -57,7 +66,10 @@ export function LocationPicker({
         </ul>
       ) : null}
       {selected ? (
-        <p className="mt-1 text-sm text-bdas-ink-muted">📍 {selected.name}{selected.address ? `, ${selected.address}` : ""}</p>
+        <p className="mt-1 text-sm text-bdas-ink-muted">
+          📍 {selected.name}
+          {selected.address ? `, ${selected.address}` : ""}
+        </p>
       ) : null}
       <input type="hidden" name="locationName" value={selected?.name ?? ""} />
       <input type="hidden" name="locationAddress" value={selected?.address ?? ""} />

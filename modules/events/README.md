@@ -16,6 +16,7 @@ Event creation, registration, and waitlisting (spec §10, Phase 2 core slice).
 | `event_attendance`    | Day-of check-in (table only this PR; service/UI deferred)       |
 
 Migrations:
+
 - `migrations/0001_init.sql` — base schema, run after `groups` + `members`
 - `migrations/0002_event_page_fields.sql` — adds `content`, `cover_image_key`,
   `summary`, `registration_deadline`, `location_name`, `location_address`,
@@ -23,16 +24,16 @@ Migrations:
 
 ### Event page columns (added in Slice 1)
 
-| Column                  | Type                   | Purpose                                                        |
-| ----------------------- | ---------------------- | -------------------------------------------------------------- |
-| `content`               | `jsonb`                | Structured Tiptap JSON: `{ body, agenda?, directions?, bring? }` — each slot is an independent Tiptap doc |
-| `cover_image_key`       | `text`                 | Storage key in the `event-media` bucket for the cover image    |
-| `summary`               | `text`                 | Short plain-text teaser (shown on cards + `<meta>` description) |
-| `registration_deadline` | `timestamptz`          | UI-only gate this slice; server-side enforcement lands in Slice 2 |
-| `location_name`         | `text`                 | Human-readable venue name (e.g. "Stadtbibliothek München")     |
-| `location_address`      | `text`                 | Full street address (drives the Google Maps button)            |
-| `location_lat`          | `double precision`     | Latitude from Photon geocoder                                  |
-| `location_lng`          | `double precision`     | Longitude from Photon geocoder                                 |
+| Column                  | Type               | Purpose                                                                                                   |
+| ----------------------- | ------------------ | --------------------------------------------------------------------------------------------------------- |
+| `content`               | `jsonb`            | Structured Tiptap JSON: `{ body, agenda?, directions?, bring? }` — each slot is an independent Tiptap doc |
+| `cover_image_key`       | `text`             | Storage key in the `event-media` bucket for the cover image                                               |
+| `summary`               | `text`             | Short plain-text teaser (shown on cards + `<meta>` description)                                           |
+| `registration_deadline` | `timestamptz`      | UI-only gate this slice; server-side enforcement lands in Slice 2                                         |
+| `location_name`         | `text`             | Human-readable venue name (e.g. "Stadtbibliothek München")                                                |
+| `location_address`      | `text`             | Full street address (drives the Google Maps button)                                                       |
+| `location_lat`          | `double precision` | Latitude from Photon geocoder                                                                             |
+| `location_lng`          | `double precision` | Longitude from Photon geocoder                                                                            |
 
 > **Deploy note:** `description_md` is retained in the schema (nullable, no
 > longer written by new code). A cleanup migration that drops it is deferred to
@@ -168,11 +169,11 @@ seat opened before the event starts, auto-promotes the waitlist head (emitting
 Integration tests (no DB mocks, per §4) run against a real Postgres instance.
 Each test file creates a throwaway schema and tears it down after:
 
-| File                  | Covers                                                     |
-| --------------------- | ---------------------------------------------------------- |
+| File                  | Covers                                                         |
+| --------------------- | -------------------------------------------------------------- |
 | `src/index.test.ts`   | create → publish → register → waitlist → cancel → auto-promote |
-| `src/content.test.ts` | `renderEventContentHtml` + `plainTextToDoc` round-trips    |
-| `src/ics.test.ts`     | `eventToIcs` RFC 5545 output                               |
+| `src/content.test.ts` | `renderEventContentHtml` + `plainTextToDoc` round-trips        |
+| `src/ics.test.ts`     | `eventToIcs` RFC 5545 output                                   |
 
 Set `DATABASE_URL=postgres://…` to run the DB-backed tests. Without it they
 skip gracefully. In CI, Postgres is provided by the GitHub Actions service.

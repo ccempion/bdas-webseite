@@ -24,9 +24,11 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     return Response.json({ error: "Keine Berechtigung." }, { status: 403 });
   }
 
-  const body = (await req.json().catch(() => null)) as
-    | { filename?: string; mimeType?: string; sizeBytes?: number }
-    | null;
+  const body = (await req.json().catch(() => null)) as {
+    filename?: string;
+    mimeType?: string;
+    sizeBytes?: number;
+  } | null;
   if (!body?.mimeType || !ALLOWED.has(body.mimeType)) {
     return Response.json({ error: "Nur Bilddateien (JPG, PNG, WebP, AVIF)." }, { status: 422 });
   }

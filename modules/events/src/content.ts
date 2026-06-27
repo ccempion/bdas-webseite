@@ -17,8 +17,22 @@ const EXTENSIONS = [StarterKit, Image, Link.configure({ openOnClick: false })];
 
 const SANITIZE_OPTS: sanitizeHtml.IOptions = {
   allowedTags: [
-    "p", "br", "strong", "em", "u", "s", "h2", "h3", "h4",
-    "ul", "ol", "li", "blockquote", "a", "img", "hr",
+    "p",
+    "br",
+    "strong",
+    "em",
+    "u",
+    "s",
+    "h2",
+    "h3",
+    "h4",
+    "ul",
+    "ol",
+    "li",
+    "blockquote",
+    "a",
+    "img",
+    "hr",
   ],
   allowedAttributes: {
     a: ["href", "target", "rel"],

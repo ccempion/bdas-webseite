@@ -64,7 +64,11 @@ export function EventFields({ d }: { d: EventDefaults }) {
         <Input id="title" name="title" defaultValue={d.title} required />
       </Field>
 
-      <Field label="Kurzbeschreibung (optional)" htmlFor="summary" hint="1–2 Sätze für die Übersicht.">
+      <Field
+        label="Kurzbeschreibung (optional)"
+        htmlFor="summary"
+        hint="1–2 Sätze für die Übersicht."
+      >
         <Input id="summary" name="summary" defaultValue={d.summary ?? ""} maxLength={300} />
       </Field>
 
@@ -86,7 +90,13 @@ export function EventFields({ d }: { d: EventDefaults }) {
       )}
 
       <Field label="Beginn" htmlFor="startsAt" error={d.errors?.["startsAt"]}>
-        <Input id="startsAt" name="startsAt" type="datetime-local" defaultValue={d.startsAtLocal} required />
+        <Input
+          id="startsAt"
+          name="startsAt"
+          type="datetime-local"
+          defaultValue={d.startsAtLocal}
+          required
+        />
       </Field>
       <Field label="Ende (optional)" htmlFor="endsAt" error={d.errors?.["endsAt"]}>
         <Input id="endsAt" name="endsAt" type="datetime-local" defaultValue={d.endsAtLocal} />
@@ -109,10 +119,18 @@ export function EventFields({ d }: { d: EventDefaults }) {
       )}
 
       <Field label="Beschreibung" htmlFor="content.body">
-        <RichTextEditor name="content.body" eventId={d.eventId} defaultDoc={d.content?.body ?? null} />
+        <RichTextEditor
+          name="content.body"
+          eventId={d.eventId}
+          defaultDoc={d.content?.body ?? null}
+        />
       </Field>
       <Field label="Ablauf (optional)" htmlFor="content.agenda">
-        <RichTextEditor name="content.agenda" eventId={d.eventId} defaultDoc={d.content?.agenda ?? null} />
+        <RichTextEditor
+          name="content.agenda"
+          eventId={d.eventId}
+          defaultDoc={d.content?.agenda ?? null}
+        />
       </Field>
       <Field label="Anfahrt (optional)" htmlFor="content.directions">
         <RichTextEditor
@@ -122,7 +140,11 @@ export function EventFields({ d }: { d: EventDefaults }) {
         />
       </Field>
       <Field label="Mitbringen (optional)" htmlFor="content.bring">
-        <RichTextEditor name="content.bring" eventId={d.eventId} defaultDoc={d.content?.bring ?? null} />
+        <RichTextEditor
+          name="content.bring"
+          eventId={d.eventId}
+          defaultDoc={d.content?.bring ?? null}
+        />
       </Field>
 
       <Field
@@ -131,11 +153,22 @@ export function EventFields({ d }: { d: EventDefaults }) {
         hint="Leer lassen = unbegrenzt."
         error={d.errors?.["capacity"]}
       >
-        <Input id="capacity" name="capacity" type="number" min={1} defaultValue={d.capacity ?? ""} />
+        <Input
+          id="capacity"
+          name="capacity"
+          type="number"
+          min={1}
+          defaultValue={d.capacity ?? ""}
+        />
       </Field>
 
       <Field label="Sichtbarkeit" htmlFor="visibility" error={d.errors?.["visibility"]}>
-        <select id="visibility" name="visibility" defaultValue={d.visibility} className={SELECT_CLASS}>
+        <select
+          id="visibility"
+          name="visibility"
+          defaultValue={d.visibility}
+          className={SELECT_CLASS}
+        >
           <option value="public">Öffentlich</option>
           <option value="members_only">Nur Mitglieder</option>
           <option value="group_only">Nur Gruppe</option>
