@@ -103,8 +103,10 @@ export async function createEventAction(
   const gErr = groupAuthError(me, groupId);
   if (gErr) return { error: gErr };
 
+  let createdId: string;
   try {
-    await createEvent(getDb(), eventFieldsFromForm(fd, groupId), me.user.id);
+    const created = await createEvent(getDb(), eventFieldsFromForm(fd, groupId), me.user.id);
+    createdId = created.id;
   } catch (err) {
     if (isAppError(err)) {
       const fields = "fields" in err && (err as { fields?: Record<string, string> }).fields;
@@ -113,9 +115,11 @@ export async function createEventAction(
     throw err;
   }
 
+  // Land on the edit page so the organizer can add cover + inline images
+  // against the now-existing event id.
   revalidatePath("/admin/events");
   revalidatePath("/events");
-  redirect("/admin/events");
+  redirect(`/admin/events/${createdId}/edit`);
 }
 
 export async function updateEventAction(
