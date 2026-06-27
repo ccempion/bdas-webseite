@@ -61,6 +61,19 @@ export function render(template: TransactionalTemplate, data: TemplateData): Ren
       const subject = data.subject?.trim() || `BDAS — Nachricht zu „${eventTitle}“`;
       return body(subject, firstName, data.messageBody ?? "", details);
     }
+    case "event_organizer_granted":
+      return body(
+        "BDAS — Du bist jetzt Veranstaltungs-Organisator:in",
+        firstName,
+        `du wurdest als Organisator:in für die Gruppe „${data.groupName ?? "deine Gruppe"}“ eingetragen. Du kannst ab sofort die Veranstaltungen dieser Gruppe anlegen und verwalten.`,
+        eventUrl ? { label: "Zur Veranstaltungsverwaltung:", url: eventUrl } : undefined,
+      );
+    case "event_organizer_revoked":
+      return body(
+        "BDAS — Organisator:innen-Rolle entzogen",
+        firstName,
+        `deine Organisator:innen-Rolle für die Gruppe „${data.groupName ?? "deine Gruppe"}“ wurde entzogen. Du kannst die Veranstaltungen dieser Gruppe nicht mehr verwalten.`,
+      );
   }
 }
 

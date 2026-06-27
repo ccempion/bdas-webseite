@@ -27,12 +27,13 @@ export async function sendTransactional(
   template: TransactionalTemplate,
   toMemberId: string,
   extra: {
-    readonly eventTitle: string;
+    readonly eventTitle?: string | undefined;
     readonly eventId?: string | undefined;
     readonly eventUrl?: string | undefined;
     readonly changes?: ReadonlyArray<EventChangeKind> | undefined;
     readonly subject?: string | undefined;
     readonly messageBody?: string | undefined;
+    readonly groupName?: string | undefined;
   },
 ): Promise<SendResult | null> {
   const contact = await getRecipientResolver().resolve(db, toMemberId);
@@ -40,11 +41,12 @@ export async function sendTransactional(
 
   const data: TemplateData = {
     firstName: contact.firstName,
-    eventTitle: extra.eventTitle,
+    eventTitle: extra.eventTitle ?? "",
     eventUrl: extra.eventUrl,
     changes: extra.changes,
     subject: extra.subject,
     messageBody: extra.messageBody,
+    groupName: extra.groupName,
   };
   const email = render(template, data);
   const id = createId("ntfy");

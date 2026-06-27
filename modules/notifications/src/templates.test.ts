@@ -51,6 +51,29 @@ describe("render", () => {
     // text part is plain text (clients do not render it) — left raw
     expect(out.text).toContain("<img");
   });
+
+  it("organizer-granted names the group and links to management", () => {
+    const out = render("event_organizer_granted", {
+      firstName: "Mara",
+      eventTitle: "",
+      eventUrl: "https://dashboard.bdas.de/admin/events",
+      groupName: "Aachen",
+    });
+    expect(out.subject).toContain("Organisator");
+    expect(out.text).toContain("Mara");
+    expect(out.text).toContain("Aachen");
+    expect(out.html).toContain("https://dashboard.bdas.de/admin/events");
+  });
+
+  it("organizer-revoked signals the role was removed", () => {
+    const out = render("event_organizer_revoked", {
+      firstName: "Mara",
+      eventTitle: "",
+      groupName: "Aachen",
+    });
+    expect(out.subject).toContain("entzogen");
+    expect(out.text).toContain("Aachen");
+  });
 });
 
 describe("render — event manage/cancel link", () => {
