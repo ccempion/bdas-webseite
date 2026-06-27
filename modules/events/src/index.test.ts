@@ -184,16 +184,20 @@ describeIfDb("events integration", () => {
     await expect(registerMember(t.db, open.id, "mem1")).rejects.toMatchObject({ code: "CONFLICT" });
   });
 
-  it("deleteEvent removes a draft and refuses a published event", async () => {
+  it("deleteEvent removes an event of any status, cascading its registrations", async () => {
     const draft = await createEvent(t.db, { title: "Wegwerf", startsAt: future() }, "usr_c");
     await deleteEvent(t.db, draft.id);
     expect(await getEvent(t.db, draft.id, FEDERAL)).toBeNull();
 
+    await createMember("mem1", null);
     const pub = await publishEvent(
       t.db,
-      (await createEvent(t.db, { title: "Bleibt", startsAt: future() }, "usr_c")).id,
+      (await createEvent(t.db, { title: "Auch weg", startsAt: future() }, "usr_c")).id,
     );
-    await expect(deleteEvent(t.db, pub.id)).rejects.toMatchObject({ code: "CONFLICT" });
+    await registerMember(t.db, pub.id, "mem1");
+    await deleteEvent(t.db, pub.id);
+    expect(await getEvent(t.db, pub.id, FEDERAL)).toBeNull();
+    expect(await getMyRegistration(t.db, pub.id, "mem1")).toBeNull(); // cascaded
   });
 
   it("listManagedEvents returns per-event confirmed/waitlist counts in one grouped query", async () => {
