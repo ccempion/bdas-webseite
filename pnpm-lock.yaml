@@ -418,6 +418,33 @@ importers:
         specifier: ^4.19.1
         version: 4.21.0
 
+  modules/projects:
+    dependencies:
+      '@bdas/db':
+        specifier: workspace:*
+        version: link:../../core/db
+      '@bdas/errors':
+        specifier: workspace:*
+        version: link:../../core/errors
+      '@bdas/events':
+        specifier: workspace:*
+        version: link:../../core/events
+      '@bdas/groups':
+        specifier: workspace:*
+        version: link:../groups
+      '@bdas/id':
+        specifier: workspace:*
+        version: link:../../core/id
+      drizzle-orm:
+        specifier: ^0.36.0
+        version: 0.36.4(@types/react@18.3.28)(postgres@3.4.9)(react@18.3.1)
+      postgres:
+        specifier: ^3.4.5
+        version: 3.4.9
+      zod:
+        specifier: ^3.23.8
+        version: 3.25.76
+
 packages:
 
   '@alloc/quick-lru@5.2.0':
