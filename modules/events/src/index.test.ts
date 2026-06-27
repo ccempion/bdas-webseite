@@ -17,7 +17,7 @@ import { getEventBus, resetEventBus } from "@bdas/events";
 import type { EventsEvent } from "./events";
 import { getEvent, type Viewer } from "./services/get";
 import { listManagedEvents } from "./services/list";
-import { createEvent, publishEvent } from "./services/manage";
+import { createEvent, deleteEvent, publishEvent } from "./services/manage";
 import { cancelRegistration, getMyRegistration, registerMember } from "./services/registration";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -182,6 +182,18 @@ describeIfDb("events integration", () => {
     );
     await registerMember(t.db, open.id, "mem1");
     await expect(registerMember(t.db, open.id, "mem1")).rejects.toMatchObject({ code: "CONFLICT" });
+  });
+
+  it("deleteEvent removes a draft and refuses a published event", async () => {
+    const draft = await createEvent(t.db, { title: "Wegwerf", startsAt: future() }, "usr_c");
+    await deleteEvent(t.db, draft.id);
+    expect(await getEvent(t.db, draft.id, FEDERAL)).toBeNull();
+
+    const pub = await publishEvent(
+      t.db,
+      (await createEvent(t.db, { title: "Bleibt", startsAt: future() }, "usr_c")).id,
+    );
+    await expect(deleteEvent(t.db, pub.id)).rejects.toMatchObject({ code: "CONFLICT" });
   });
 
   it("listManagedEvents returns per-event confirmed/waitlist counts in one grouped query", async () => {

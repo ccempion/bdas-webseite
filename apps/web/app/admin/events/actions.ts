@@ -9,6 +9,7 @@ import {
   canManage,
   cancelEvent,
   createEvent,
+  deleteEvent,
   getEvent,
   publishEvent,
   updateEvent,
@@ -185,4 +186,20 @@ export async function cancelEventAction(_prev: ActionState, fd: FormData): Promi
   revalidatePath("/admin/events");
   revalidatePath("/events");
   return {};
+}
+
+/** Hard-delete a draft event, then return to the list (the event page is gone). */
+export async function deleteEventAction(_prev: ActionState, fd: FormData): Promise<ActionState> {
+  if (!isFlagOn("events")) return { error: "Nicht verfügbar." };
+  const eventId = s(fd, "eventId");
+  try {
+    await assertManageable(eventId);
+    await deleteEvent(getDb(), eventId);
+  } catch (err) {
+    if (isAppError(err)) return { error: err.message };
+    throw err;
+  }
+  revalidatePath("/admin/events");
+  revalidatePath("/events");
+  redirect("/admin/events");
 }
