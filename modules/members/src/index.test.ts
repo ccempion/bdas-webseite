@@ -496,6 +496,24 @@ describeIfDb("members integration", () => {
     ).rejects.toMatchObject({ code: "FORBIDDEN" });
   });
 
+  it("listRoleHolders includes event_organizer grants", async () => {
+    await createGroup("grp_a", "aachen");
+    await createUser("usr_org3", "org3@example.de");
+    const m = await createProfile(t.db, {
+      userId: "usr_org3",
+      firstName: "Org",
+      lastName: "Anita",
+      primaryGroupId: "grp_a",
+    });
+    await approveMember(t.db, m.id, BOARD);
+    await grantRole(t.db, m.id, "event_organizer", BOARD, "grp_a");
+
+    const holders = await listRoleHolders(t.db);
+    expect(holders).toContainEqual(
+      expect.objectContaining({ memberId: m.id, role: "event_organizer", groupId: "grp_a" }),
+    );
+  });
+
   it("listRoleHolders and listGrantAudit expose roster + history", async () => {
     await createGroup("grp_a", "aachen");
     await createUser("usr_h1", "h1@example.de");

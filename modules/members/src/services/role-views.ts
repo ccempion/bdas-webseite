@@ -7,7 +7,14 @@ import { members, memberRoleGrants } from "../schema";
 
 export type Db = PostgresJsDatabase<Record<string, never>>;
 
-const BOARD_ROLES = ["federal_board", "local_board_lead", "local_board"] as const;
+// Roles surfaced in the group roster + audit views. event_organizer is a
+// group-scoped events delegate (ADR 0017); it appears alongside the board roles.
+const ROSTER_ROLES = [
+  "federal_board",
+  "local_board_lead",
+  "local_board",
+  "event_organizer",
+] as const;
 
 /** An active board grant joined with the holder's name, for the roster views. */
 export type RoleHolder = {
@@ -32,7 +39,7 @@ export async function listRoleHolders(db: Db): Promise<RoleHolder[]> {
     .from(memberRoleGrants)
     .innerJoin(members, eq(members.id, memberRoleGrants.memberId))
     .where(
-      and(isNull(memberRoleGrants.revokedAt), inArray(memberRoleGrants.role, [...BOARD_ROLES])),
+      and(isNull(memberRoleGrants.revokedAt), inArray(memberRoleGrants.role, [...ROSTER_ROLES])),
     )
     .orderBy(memberRoleGrants.role, members.lastName);
   return rows.map((r) => ({ ...r, role: r.role as Role }));
@@ -49,7 +56,7 @@ export async function listGrantAudit(
   db: Db,
   q: { readonly groupId?: string; readonly limit?: number } = {},
 ): Promise<GrantAuditEntry[]> {
-  const conds: SQL[] = [inArray(memberRoleGrants.role, [...BOARD_ROLES])];
+  const conds: SQL[] = [inArray(memberRoleGrants.role, [...ROSTER_ROLES])];
   if (q.groupId) conds.push(eq(memberRoleGrants.groupId, q.groupId));
   const rows = await db
     .select({
