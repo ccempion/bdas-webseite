@@ -16,7 +16,7 @@ import { createId } from "@bdas/id";
 
 import type { EventCancelled, EventPublished } from "../events";
 import { events } from "../schema";
-import type { EventItem, EventStatus, EventVisibility } from "../types";
+import type { EventContent, EventItem, EventStatus, EventVisibility } from "../types";
 
 export type Db = PostgresJsDatabase<Record<string, never>>;
 
@@ -30,6 +30,23 @@ export const EventInput = z.object({
   endsAt: z.coerce.date().optional().nullable(),
   location: z.string().max(240).optional().nullable(),
   locationUrl: z.string().url("Ungültige URL").max(500).optional().nullable(),
+  summary: z.string().max(300).optional().nullable(),
+  // Opaque Tiptap docs; validated structurally, rendered/sanitized at read time.
+  content: z
+    .object({
+      body: z.any().optional().nullable(),
+      agenda: z.any().optional().nullable(),
+      directions: z.any().optional().nullable(),
+      bring: z.any().optional().nullable(),
+    })
+    .optional()
+    .nullable(),
+  coverImageKey: z.string().max(400).optional().nullable(),
+  registrationDeadline: z.coerce.date().optional().nullable(),
+  locationName: z.string().max(240).optional().nullable(),
+  locationAddress: z.string().max(400).optional().nullable(),
+  locationLat: z.coerce.number().min(-90).max(90).optional().nullable(),
+  locationLng: z.coerce.number().min(-180).max(180).optional().nullable(),
   capacity: z.coerce
     .number()
     .int("Kapazität muss eine ganze Zahl sein")
@@ -62,6 +79,15 @@ export function rowToEvent(r: typeof events.$inferSelect): EventItem {
     endsAt: r.endsAt,
     location: r.location,
     locationUrl: r.locationUrl,
+    // New event-page fields — Task 2 reads these from the row properly.
+    content: (r.content as EventContent | null) ?? null,
+    coverImageKey: r.coverImageKey ?? null,
+    summary: r.summary ?? null,
+    registrationDeadline: r.registrationDeadline ?? null,
+    locationName: r.locationName ?? null,
+    locationAddress: r.locationAddress ?? null,
+    locationLat: r.locationLat ?? null,
+    locationLng: r.locationLng ?? null,
     capacity: r.capacity,
     visibility: r.visibility as EventVisibility,
     status: r.status as EventStatus,
@@ -104,6 +130,14 @@ export async function createEvent(db: Db, input: unknown, createdBy: string): Pr
     endsAt: v.endsAt ?? null,
     location: v.location ?? null,
     locationUrl: v.locationUrl ?? null,
+    summary: v.summary ?? null,
+    content: v.content ?? null,
+    coverImageKey: v.coverImageKey ?? null,
+    registrationDeadline: v.registrationDeadline ?? null,
+    locationName: v.locationName ?? null,
+    locationAddress: v.locationAddress ?? null,
+    locationLat: v.locationLat ?? null,
+    locationLng: v.locationLng ?? null,
     capacity: v.capacity ?? null,
     visibility: v.visibility,
     status: "draft",
@@ -131,6 +165,14 @@ export async function updateEvent(db: Db, id: string, input: unknown): Promise<E
       endsAt: v.endsAt ?? null,
       location: v.location ?? null,
       locationUrl: v.locationUrl ?? null,
+      summary: v.summary ?? null,
+      content: v.content ?? null,
+      coverImageKey: v.coverImageKey ?? null,
+      registrationDeadline: v.registrationDeadline ?? null,
+      locationName: v.locationName ?? null,
+      locationAddress: v.locationAddress ?? null,
+      locationLat: v.locationLat ?? null,
+      locationLng: v.locationLng ?? null,
       capacity: v.capacity ?? null,
       visibility: v.visibility,
       groupId: v.groupId ?? null,

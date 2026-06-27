@@ -48,6 +48,20 @@ export default async function ManageEventPage({ params }: { params: { id: string
       </Card>
 
       <Card flat className="p-6">
+        <div className="flex gap-3 mb-4">
+          <Link
+            href={`/admin/events/${event.id}/edit`}
+            className="text-sm text-bdas-red hover:underline"
+          >
+            Bearbeiten
+          </Link>
+          <Link
+            href={`/events/${event.id}?vorschau=1`}
+            className="text-sm text-bdas-red hover:underline"
+          >
+            Vorschau ansehen
+          </Link>
+        </div>
         <ManageButtons eventId={event.id} status={event.status} />
       </Card>
 

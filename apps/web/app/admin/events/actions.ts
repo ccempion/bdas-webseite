@@ -5,7 +5,14 @@ import { redirect } from "next/navigation";
 
 import { getDb } from "@bdas/db";
 import { ForbiddenError, isAppError } from "@bdas/errors";
-import { canManage, cancelEvent, createEvent, getEvent, publishEvent } from "@bdas/events-module";
+import {
+  canManage,
+  cancelEvent,
+  createEvent,
+  getEvent,
+  publishEvent,
+  updateEvent,
+} from "@bdas/events-module";
 import { isFlagOn } from "@bdas/feature-flags";
 import { canManageGroup, getCurrentMember, isFederalBoard } from "@bdas/members";
 
@@ -30,6 +37,58 @@ function opt(fd: FormData, k: string): string | null {
   const v = s(fd, k);
   return v === "" ? null : v;
 }
+function jsonOpt(fd: FormData, k: string): unknown {
+  const v = s(fd, k);
+  if (!v) return null;
+  try {
+    return JSON.parse(v);
+  } catch {
+    return null;
+  }
+}
+function numOpt(fd: FormData, k: string): string | null {
+  const v = s(fd, k);
+  return v === "" ? null : v;
+}
+
+function eventFieldsFromForm(fd: FormData, groupId: string | null) {
+  return {
+    title: s(fd, "title"),
+    summary: opt(fd, "summary"),
+    content: {
+      body: jsonOpt(fd, "content.body"),
+      agenda: jsonOpt(fd, "content.agenda"),
+      directions: jsonOpt(fd, "content.directions"),
+      bring: jsonOpt(fd, "content.bring"),
+    },
+    coverImageKey: opt(fd, "coverImageKey"),
+    startsAt: s(fd, "startsAt"),
+    endsAt: opt(fd, "endsAt"),
+    registrationDeadline: opt(fd, "registrationDeadline"),
+    locationName: opt(fd, "locationName"),
+    locationAddress: opt(fd, "locationAddress"),
+    locationLat: numOpt(fd, "locationLat"),
+    locationLng: numOpt(fd, "locationLng"),
+    capacity: opt(fd, "capacity"),
+    visibility: s(fd, "visibility") || "members_only",
+    groupId,
+  };
+}
+
+/** Authorize the caller may target this group: group-scoped → canManageGroup; federation-wide (null) → federal board. */
+function groupAuthError(
+  me: Awaited<ReturnType<typeof currentMember>>,
+  groupId: string | null,
+): string | null {
+  if (groupId) {
+    if (!canManageGroup(me.grants, groupId)) {
+      return "Du darfst für diese Gruppe keine Veranstaltung anlegen.";
+    }
+  } else if (!isFederalBoard(me.grants)) {
+    return "Nur der Bundesvorstand darf föderationsweite Veranstaltungen anlegen.";
+  }
+  return null;
+}
 
 /** Create (as draft). group-scoped → canManageGroup; federation-wide → federal. */
 export async function createEventAction(
@@ -40,30 +99,11 @@ export async function createEventAction(
   const me = await currentMember();
   const groupId = opt(fd, "groupId");
 
-  if (groupId) {
-    if (!canManageGroup(me.grants, groupId)) {
-      return { error: "Du darfst für diese Gruppe keine Veranstaltung anlegen." };
-    }
-  } else if (!isFederalBoard(me.grants)) {
-    return { error: "Nur der Bundesvorstand darf föderationsweite Veranstaltungen anlegen." };
-  }
+  const gErr = groupAuthError(me, groupId);
+  if (gErr) return { error: gErr };
 
   try {
-    await createEvent(
-      getDb(),
-      {
-        title: s(fd, "title"),
-        descriptionMd: opt(fd, "descriptionMd"),
-        startsAt: s(fd, "startsAt"),
-        endsAt: opt(fd, "endsAt"),
-        location: opt(fd, "location"),
-        locationUrl: opt(fd, "locationUrl"),
-        capacity: opt(fd, "capacity"),
-        visibility: s(fd, "visibility") || "members_only",
-        groupId,
-      },
-      me.user.id,
-    );
+    await createEvent(getDb(), eventFieldsFromForm(fd, groupId), me.user.id);
   } catch (err) {
     if (isAppError(err)) {
       const fields = "fields" in err && (err as { fields?: Record<string, string> }).fields;
@@ -77,14 +117,42 @@ export async function createEventAction(
   redirect("/admin/events");
 }
 
-/** Authorize that the caller may manage this event, returning nothing. */
-async function assertManageable(eventId: string): Promise<void> {
+export async function updateEventAction(
+  _prev: EventFormState,
+  fd: FormData,
+): Promise<EventFormState> {
+  if (!isFlagOn("events")) return { error: "Nicht verfügbar." };
+  const eventId = s(fd, "eventId");
+  try {
+    const me = await assertManageable(eventId);
+    const groupId = opt(fd, "groupId");
+    const gErr = groupAuthError(me, groupId);
+    if (gErr) return { error: gErr };
+    await updateEvent(getDb(), eventId, eventFieldsFromForm(fd, groupId));
+  } catch (err) {
+    if (isAppError(err)) {
+      const fields = "fields" in err && (err as { fields?: Record<string, string> }).fields;
+      return fields ? { error: err.message, fields } : { error: err.message };
+    }
+    throw err;
+  }
+  revalidatePath(`/admin/events/${eventId}`);
+  revalidatePath(`/events/${eventId}`);
+  revalidatePath("/events");
+  redirect(`/admin/events/${eventId}`);
+}
+
+/** Authorize that the caller may manage this event; returns the loaded member. */
+async function assertManageable(
+  eventId: string,
+): Promise<Awaited<ReturnType<typeof currentMember>>> {
   const me = await currentMember();
   const viewer = viewerFrom(me);
   const event = await getEvent(getDb(), eventId, viewer);
   if (!event || !canManage(viewer, event)) {
     throw new ForbiddenError("Du darfst diese Veranstaltung nicht verwalten.");
   }
+  return me;
 }
 
 export async function publishEventAction(_prev: ActionState, fd: FormData): Promise<ActionState> {
