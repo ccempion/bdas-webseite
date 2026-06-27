@@ -33,10 +33,11 @@ test("federal publishes an event; a member registers then deregisters", async ({
   await page.locator("#visibility").selectOption("public");
   // groupId select defaults to "Föderationsweit" (federal) — leave it.
   await page.getByRole("button", { name: "Veranstaltung anlegen" }).click();
-  await page.waitForURL("**/admin/events");
-
-  await page.getByRole("link", { name: new RegExp(title) }).click();
-  await page.waitForURL("**/admin/events/**");
+  // Create now saves a draft and lands on the edit page (so cover/inline images
+  // can be added against the new event id). Publishing lives on the manage page.
+  await page.waitForURL(/\/admin\/events\/[^/]+\/edit$/);
+  const manageUrl = page.url().replace(/\/edit$/, "");
+  await page.goto(manageUrl);
   await page.getByRole("button", { name: "Veröffentlichen" }).click();
   await expect(page.getByText("Veröffentlicht")).toBeVisible();
 

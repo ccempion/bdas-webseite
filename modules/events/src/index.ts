@@ -10,7 +10,14 @@
 
 export { listUpcomingEvents, listManagedEvents, type ListOpts } from "./services/list";
 export { getEvent, canView, canManage, ANON, type Viewer } from "./services/get";
-export { createEvent, updateEvent, publishEvent, cancelEvent, EventInput } from "./services/manage";
+export {
+  createEvent,
+  updateEvent,
+  publishEvent,
+  cancelEvent,
+  deleteEvent,
+  EventInput,
+} from "./services/manage";
 export { registerMember, cancelRegistration, getMyRegistration } from "./services/registration";
 
 export { eventToIcs } from "./ics";

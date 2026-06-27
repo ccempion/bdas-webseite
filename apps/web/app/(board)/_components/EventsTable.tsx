@@ -12,12 +12,19 @@ const STATUS_LABEL: Record<EventStatus, string> = {
   published: "Veröffentlicht",
   cancelled: "Abgesagt",
 };
-const FILTERS: ReadonlyArray<{ key: "all" | EventStatus; label: string }> = [
-  { key: "all", label: "Alle" },
+type FilterKey = "all" | EventStatus | "past";
+const FILTERS: ReadonlyArray<{ key: FilterKey; label: string }> = [
+  { key: "all", label: "Aktuelle" },
   { key: "published", label: "Veröffentlicht" },
   { key: "draft", label: "Entwurf" },
   { key: "cancelled", label: "Abgesagt" },
+  { key: "past", label: "Vergangene" },
 ];
+
+/** Past = the event's end (or start, if no end) is before now. */
+function isPast(e: Row): boolean {
+  return (e.endsAt ?? e.startsAt).getTime() < Date.now();
+}
 
 export function EventsTable({
   events,
@@ -26,15 +33,18 @@ export function EventsTable({
   events: Row[];
   groupNames: Record<string, string>;
 }) {
-  const [filter, setFilter] = useState<"all" | EventStatus>("all");
+  const [filter, setFilter] = useState<FilterKey>("all");
   const [q, setQ] = useState("");
   const rows = useMemo(
     () =>
-      events.filter(
-        (e) =>
-          (filter === "all" || e.status === filter) &&
-          (q.trim() === "" || e.title.toLowerCase().includes(q.toLowerCase())),
-      ),
+      events.filter((e) => {
+        if (q.trim() !== "" && !e.title.toLowerCase().includes(q.toLowerCase())) return false;
+        // "Vergangene" shows past events of any status; every other filter
+        // shows only current events (past ones are archived out of view).
+        if (filter === "past") return isPast(e);
+        if (isPast(e)) return false;
+        return filter === "all" || e.status === filter;
+      }),
     [events, filter, q],
   );
   return (
@@ -78,7 +88,9 @@ export function EventsTable({
               <td className="p-3 text-bdas-ink-body">
                 {e.groupId ? (groupNames[e.groupId] ?? "—") : "Bundesweit"}
               </td>
-              <td className="p-3 text-bdas-ink-body">{e.startsAt.toLocaleDateString("de-DE")}</td>
+              <td className="p-3 text-bdas-ink-body">
+                {e.startsAt.toLocaleDateString("de-DE", { timeZone: "Europe/Berlin" })}
+              </td>
               <td className="p-3">
                 <span className="rounded-bdas-pill bg-bdas-surface-hover px-2 py-0.5 text-xs font-semibold text-bdas-ink-body">
                   {STATUS_LABEL[e.status]}

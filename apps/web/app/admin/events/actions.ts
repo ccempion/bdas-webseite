@@ -9,6 +9,7 @@ import {
   canManage,
   cancelEvent,
   createEvent,
+  deleteEvent,
   getEvent,
   publishEvent,
   updateEvent,
@@ -18,6 +19,7 @@ import { canManageGroup, getCurrentMember, isFederalBoard } from "@bdas/members"
 
 import { readSessionCookie } from "../../../lib/auth-cookie";
 import { viewerFrom } from "../../../lib/event-viewer";
+import { berlinLocalToUtc } from "../../lib/datetime";
 
 export type EventFormState = {
   readonly error?: string;
@@ -50,6 +52,14 @@ function numOpt(fd: FormData, k: string): string | null {
   const v = s(fd, k);
   return v === "" ? null : v;
 }
+/** datetime-local field → UTC instant, interpreting the wall time as Europe/Berlin. */
+function berlinDate(fd: FormData, k: string): Date {
+  return berlinLocalToUtc(s(fd, k));
+}
+function berlinDateOpt(fd: FormData, k: string): Date | null {
+  const v = s(fd, k);
+  return v === "" ? null : berlinLocalToUtc(v);
+}
 
 function eventFieldsFromForm(fd: FormData, groupId: string | null) {
   return {
@@ -62,9 +72,9 @@ function eventFieldsFromForm(fd: FormData, groupId: string | null) {
       bring: jsonOpt(fd, "content.bring"),
     },
     coverImageKey: opt(fd, "coverImageKey"),
-    startsAt: s(fd, "startsAt"),
-    endsAt: opt(fd, "endsAt"),
-    registrationDeadline: opt(fd, "registrationDeadline"),
+    startsAt: berlinDate(fd, "startsAt"),
+    endsAt: berlinDateOpt(fd, "endsAt"),
+    registrationDeadline: berlinDateOpt(fd, "registrationDeadline"),
     locationName: opt(fd, "locationName"),
     locationAddress: opt(fd, "locationAddress"),
     locationLat: numOpt(fd, "locationLat"),
@@ -102,8 +112,17 @@ export async function createEventAction(
   const gErr = groupAuthError(me, groupId);
   if (gErr) return { error: gErr };
 
+  // New events may not start in the past. (Editing keeps past starts editable.)
+  const startsAt = berlinDate(fd, "startsAt");
+  if (!Number.isNaN(startsAt.getTime()) && startsAt.getTime() < Date.now()) {
+    const msg = "Startdatum darf nicht in der Vergangenheit liegen.";
+    return { error: msg, fields: { startsAt: msg } };
+  }
+
+  let createdId: string;
   try {
-    await createEvent(getDb(), eventFieldsFromForm(fd, groupId), me.user.id);
+    const created = await createEvent(getDb(), eventFieldsFromForm(fd, groupId), me.user.id);
+    createdId = created.id;
   } catch (err) {
     if (isAppError(err)) {
       const fields = "fields" in err && (err as { fields?: Record<string, string> }).fields;
@@ -112,9 +131,11 @@ export async function createEventAction(
     throw err;
   }
 
+  // Land on the edit page so the organizer can add cover + inline images
+  // against the now-existing event id.
   revalidatePath("/admin/events");
   revalidatePath("/events");
-  redirect("/admin/events");
+  redirect(`/admin/events/${createdId}/edit`);
 }
 
 export async function updateEventAction(
@@ -185,4 +206,20 @@ export async function cancelEventAction(_prev: ActionState, fd: FormData): Promi
   revalidatePath("/admin/events");
   revalidatePath("/events");
   return {};
+}
+
+/** Hard-delete a draft event, then return to the list (the event page is gone). */
+export async function deleteEventAction(_prev: ActionState, fd: FormData): Promise<ActionState> {
+  if (!isFlagOn("events")) return { error: "Nicht verfügbar." };
+  const eventId = s(fd, "eventId");
+  try {
+    await assertManageable(eventId);
+    await deleteEvent(getDb(), eventId);
+  } catch (err) {
+    if (isAppError(err)) return { error: err.message };
+    throw err;
+  }
+  revalidatePath("/admin/events");
+  revalidatePath("/events");
+  redirect("/admin/events");
 }

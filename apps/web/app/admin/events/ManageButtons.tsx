@@ -4,7 +4,12 @@ import { useFormState, useFormStatus } from "react-dom";
 
 import { Alert, Button } from "@bdas/design-system";
 
-import { type ActionState, cancelEventAction, publishEventAction } from "./actions";
+import {
+  type ActionState,
+  cancelEventAction,
+  deleteEventAction,
+  publishEventAction,
+} from "./actions";
 
 const initial: ActionState = {};
 
@@ -17,7 +22,8 @@ export function ManageButtons({
 }) {
   const [pubState, publish] = useFormState(publishEventAction, initial);
   const [cancelState, cancel] = useFormState(cancelEventAction, initial);
-  const error = pubState.error ?? cancelState.error;
+  const [deleteState, remove] = useFormState(deleteEventAction, initial);
+  const error = pubState.error ?? cancelState.error ?? deleteState.error;
 
   return (
     <div className="flex flex-col gap-3">
@@ -33,6 +39,17 @@ export function ManageButtons({
           <form action={cancel}>
             <input type="hidden" name="eventId" value={eventId} />
             <SubmitButton variant="ghost" label="Absagen" />
+          </form>
+        ) : null}
+        {status === "draft" ? (
+          <form
+            action={remove}
+            onSubmit={(e) => {
+              if (!window.confirm("Diesen Entwurf endgültig löschen?")) e.preventDefault();
+            }}
+          >
+            <input type="hidden" name="eventId" value={eventId} />
+            <SubmitButton variant="ghost" label="Löschen" />
           </form>
         ) : null}
       </div>

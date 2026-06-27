@@ -9,15 +9,14 @@ import { getCurrentMember } from "@bdas/members";
 import { requireEventsFlag } from "../../../../_events/flag";
 import { readSessionCookie } from "../../../../../lib/auth-cookie";
 import { viewerFrom } from "../../../../../lib/event-viewer";
+import { utcToBerlinLocalInput } from "../../../../lib/datetime";
 import { EventEditForm } from "./EventEditForm";
 
 export const metadata = { title: "Veranstaltung bearbeiten" };
 
+/** Prefill datetime-local inputs with the event's Europe/Berlin wall time. */
 function toLocal(d: Date | null): string {
-  if (!d) return "";
-  // datetime-local wants "YYYY-MM-DDTHH:mm" in local time.
-  const off = d.getTimezoneOffset() * 60000;
-  return new Date(d.getTime() - off).toISOString().slice(0, 16);
+  return d ? utcToBerlinLocalInput(d) : "";
 }
 
 export default async function EditEventPage({ params }: { params: { id: string } }) {
