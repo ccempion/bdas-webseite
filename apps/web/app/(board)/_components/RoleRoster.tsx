@@ -10,6 +10,7 @@ const ROLE_LABEL: Record<string, string> = {
   federal_board: "Bundesvorstand",
   local_board_lead: "Lead",
   local_board: "Vorstand",
+  event_organizer: "Organisator",
 };
 
 export function RoleRoster({

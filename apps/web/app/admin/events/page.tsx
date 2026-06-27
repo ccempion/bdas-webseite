@@ -26,7 +26,13 @@ export default async function AdminEventsPage() {
   const me = await getCurrentMember(db, readSessionCookie());
   if (!me) redirect("/anmelden");
   const viewer = viewerFrom(me);
-  if (!viewer.isFederal && viewer.boardGroupIds.length === 0) redirect("/account");
+  if (
+    !viewer.isFederal &&
+    viewer.boardGroupIds.length === 0 &&
+    viewer.organizerGroupIds.length === 0
+  ) {
+    redirect("/account");
+  }
 
   const events = await listManagedEvents(db, viewer);
 
