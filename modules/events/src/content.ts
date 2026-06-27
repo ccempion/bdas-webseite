@@ -13,7 +13,22 @@ import sanitizeHtml from "sanitize-html";
 
 import type { TiptapDoc } from "./types";
 
-const EXTENSIONS = [StarterKit, Image, Link.configure({ openOnClick: false })];
+// Images carry an optional `width` (e.g. "50%") set in the editor; teach the
+// node about it so generateHTML emits it (the editor uses the same attribute).
+const ImageWithWidth = Image.extend({
+  addAttributes() {
+    return {
+      ...this.parent?.(),
+      width: {
+        default: null,
+        renderHTML: (attrs) => (attrs["width"] ? { width: attrs["width"] } : {}),
+        parseHTML: (el) => (el as HTMLElement).getAttribute("width"),
+      },
+    };
+  },
+});
+
+const EXTENSIONS = [StarterKit, ImageWithWidth, Link.configure({ openOnClick: false })];
 
 const SANITIZE_OPTS: sanitizeHtml.IOptions = {
   allowedTags: [
@@ -36,7 +51,7 @@ const SANITIZE_OPTS: sanitizeHtml.IOptions = {
   ],
   allowedAttributes: {
     a: ["href", "target", "rel"],
-    img: ["src", "alt"],
+    img: ["src", "alt", "width"],
   },
   allowedSchemes: ["https", "http", "mailto"],
   allowedSchemesByTag: { img: ["https", "http"] },

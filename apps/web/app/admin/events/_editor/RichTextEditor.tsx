@@ -12,6 +12,22 @@ const BTN =
   "rounded-bdas-sm px-2 py-1 text-sm text-bdas-ink-body hover:bg-bdas-overlay-hover " +
   "transition-colors duration-bdas-quick ease-bdas data-[active=true]:bg-bdas-overlay-soft";
 
+// Image node with an optional `width` (e.g. "50%") so pictures can be resized.
+const ImageWithWidth = Image.extend({
+  addAttributes() {
+    return {
+      ...this.parent?.(),
+      width: {
+        default: null,
+        renderHTML: (attrs) => (attrs["width"] ? { width: attrs["width"] } : {}),
+        parseHTML: (el) => (el as HTMLElement).getAttribute("width"),
+      },
+    };
+  },
+});
+
+const IMAGE_WIDTHS = ["25%", "50%", "75%", "100%"] as const;
+
 export function RichTextEditor({
   name,
   defaultDoc,
@@ -23,7 +39,7 @@ export function RichTextEditor({
 }) {
   const [json, setJson] = useState<string>(defaultDoc ? JSON.stringify(defaultDoc) : "");
   const editor = useEditor({
-    extensions: [StarterKit, Image, Link.configure({ openOnClick: false })],
+    extensions: [StarterKit, ImageWithWidth, Link.configure({ openOnClick: false })],
     content: (defaultDoc ?? "") as Content,
     immediatelyRender: false,
     onUpdate: ({ editor }) => setJson(JSON.stringify(editor.getJSON())),
@@ -124,6 +140,21 @@ export function RichTextEditor({
         <button type="button" className={BTN} onClick={addImage}>
           Bild
         </button>
+        {editor.isActive("image") ? (
+          <>
+            <span className="self-center px-1 text-xs text-bdas-ink-muted">Bildbreite:</span>
+            {IMAGE_WIDTHS.map((w) => (
+              <button
+                key={w}
+                type="button"
+                className={BTN}
+                onClick={() => editor.chain().focus().updateAttributes("image", { width: w }).run()}
+              >
+                {w}
+              </button>
+            ))}
+          </>
+        ) : null}
       </div>
       <EditorContent editor={editor} />
     </div>
