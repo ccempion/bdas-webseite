@@ -41,17 +41,19 @@ export function ManageButtons({
             <SubmitButton variant="ghost" label="Absagen" />
           </form>
         ) : null}
-        {status === "draft" ? (
-          <form
-            action={remove}
-            onSubmit={(e) => {
-              if (!window.confirm("Diesen Entwurf endgültig löschen?")) e.preventDefault();
-            }}
-          >
-            <input type="hidden" name="eventId" value={eventId} />
-            <SubmitButton variant="ghost" label="Löschen" />
-          </form>
-        ) : null}
+        <form
+          action={remove}
+          onSubmit={(e) => {
+            const msg =
+              status === "draft"
+                ? "Diesen Entwurf endgültig löschen?"
+                : "Diese Veranstaltung und alle Anmeldungen endgültig löschen?";
+            if (!window.confirm(msg)) e.preventDefault();
+          }}
+        >
+          <input type="hidden" name="eventId" value={eventId} />
+          <SubmitButton variant="ghost" label="Löschen" />
+        </form>
       </div>
     </div>
   );

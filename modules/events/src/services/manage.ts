@@ -202,17 +202,13 @@ export async function publishEvent(db: Db, id: string): Promise<EventItem> {
 }
 
 /**
- * Hard-delete a **draft** event. Registrations/attendance cascade (ON DELETE
- * CASCADE). Published/cancelled events are kept — those must be cancelled
- * (`cancelEvent`) so registrants are preserved and notified.
+ * Hard-delete an event of any status. Registrations/attendance cascade
+ * (ON DELETE CASCADE), so a published event's roster is removed with it — the
+ * caller is expected to confirm. (Registrant notification on removal is Slice 2;
+ * cancellation does not notify today either.)
  */
 export async function deleteEvent(db: Db, id: string): Promise<void> {
-  const existing = await loadOrThrow(db, id);
-  if (existing.status !== "draft") {
-    throw new ConflictError(
-      "Nur Entwürfe können gelöscht werden; veröffentlichte Veranstaltungen müssen abgesagt werden.",
-    );
-  }
+  await loadOrThrow(db, id); // 404 if it doesn't exist
   await db.delete(events).where(eq(events.id, id));
 }
 
