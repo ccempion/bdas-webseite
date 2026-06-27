@@ -67,7 +67,7 @@ export async function listUpcomingEvents(
 
 /**
  * Every event the viewer manages (any status), for the board admin views.
- * Federal board sees all; local board sees its own groups' events.
+ * Federal board sees all; local board and event organizers see their groups' events.
  */
 export async function listManagedEvents(
   db: Db,

@@ -111,7 +111,7 @@ function groupAuthError(
     : "Nur der Bundesvorstand darf föderationsweite Veranstaltungen anlegen.";
 }
 
-/** Create (as draft). group-scoped → canManageGroup; federation-wide → federal. */
+/** Create (as draft). Authorization: federal board or organizer/board of the group; federation-wide → federal only. */
 export async function createEventAction(
   _prev: EventFormState,
   fd: FormData,
