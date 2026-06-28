@@ -8,6 +8,7 @@ const ALL_ROLES: ReadonlyArray<Role> = [
   "local_board_lead",
   "federal_board",
   "alumnus",
+  "event_organizer",
 ];
 
 export function isRole(value: string): value is Role {

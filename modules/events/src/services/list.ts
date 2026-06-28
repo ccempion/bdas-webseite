@@ -67,20 +67,22 @@ export async function listUpcomingEvents(
 
 /**
  * Every event the viewer manages (any status), for the board admin views.
- * Federal board sees all; local board sees its own groups' events.
+ * Federal board sees all; local board and event organizers see their groups' events.
  */
 export async function listManagedEvents(
   db: Db,
   viewer: Viewer,
 ): Promise<ReadonlyArray<EventWithCounts>> {
-  const rows = viewer.isFederal
-    ? await db.select().from(events).orderBy(asc(events.startsAt))
-    : viewer.boardGroupIds.length === 0
-      ? []
-      : await db
-          .select()
-          .from(events)
-          .where(inArray(events.groupId, [...viewer.boardGroupIds]))
-          .orderBy(asc(events.startsAt));
+  if (viewer.isFederal) {
+    const rows = await db.select().from(events).orderBy(asc(events.startsAt));
+    return withCounts(db, rows);
+  }
+  const manageGroupIds = [...new Set([...viewer.boardGroupIds, ...viewer.organizerGroupIds])];
+  if (manageGroupIds.length === 0) return withCounts(db, []);
+  const rows = await db
+    .select()
+    .from(events)
+    .where(inArray(events.groupId, manageGroupIds))
+    .orderBy(asc(events.startsAt));
   return withCounts(db, rows);
 }

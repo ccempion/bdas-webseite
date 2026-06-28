@@ -17,7 +17,7 @@ import {
   updateEvent,
 } from "@bdas/events-module";
 import { isFlagOn } from "@bdas/feature-flags";
-import { canManageGroup, getCurrentMember, isFederalBoard } from "@bdas/members";
+import { getCurrentMember } from "@bdas/members";
 import { sendOrganizerMessage } from "@bdas/notifications";
 
 import { readSessionCookie } from "../../../lib/auth-cookie";
@@ -99,22 +99,19 @@ function eventFieldsFromForm(fd: FormData, groupId: string | null) {
   };
 }
 
-/** Authorize the caller may target this group: group-scoped → canManageGroup; federation-wide (null) → federal board. */
+/** Authorize the caller may target this group for an event write: federal (null
+ *  group) or board/organizer of the group. Mirrors events `canManage`. */
 function groupAuthError(
   me: Awaited<ReturnType<typeof currentMember>>,
   groupId: string | null,
 ): string | null {
-  if (groupId) {
-    if (!canManageGroup(me.grants, groupId)) {
-      return "Du darfst für diese Gruppe keine Veranstaltung anlegen.";
-    }
-  } else if (!isFederalBoard(me.grants)) {
-    return "Nur der Bundesvorstand darf föderationsweite Veranstaltungen anlegen.";
-  }
-  return null;
+  if (canManage(viewerFrom(me), { groupId })) return null;
+  return groupId
+    ? "Du darfst für diese Gruppe keine Veranstaltung anlegen."
+    : "Nur der Bundesvorstand darf föderationsweite Veranstaltungen anlegen.";
 }
 
-/** Create (as draft). group-scoped → canManageGroup; federation-wide → federal. */
+/** Create (as draft). Authorization: federal board or organizer/board of the group; federation-wide → federal only. */
 export async function createEventAction(
   _prev: EventFormState,
   fd: FormData,

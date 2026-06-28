@@ -23,6 +23,8 @@ import type {
   EventUpdated,
   WaitlistPromoted,
 } from "@bdas/events-module";
+import { getGroup } from "@bdas/groups";
+import type { RoleGranted, RoleRevoked } from "@bdas/members";
 
 import { sendTransactional } from "./services/send";
 
@@ -32,6 +34,7 @@ const SYSTEM_VIEWER: Viewer = {
   memberGroupIds: [],
   isFederal: true,
   boardGroupIds: [],
+  organizerGroupIds: [],
 };
 
 let subs: Subscription[] = [];
@@ -142,6 +145,31 @@ export function registerNotificationSubscribers(db: Db, opts: { siteUrl?: string
             eventId: e.eventId,
           });
         }
+      }),
+    ),
+    // A member was granted/removed as event_organizer for a group (ADR 0017) —
+    // email only that member; ignore every other role's grant events.
+    getEventBus().subscribe<RoleGranted>(
+      "members.role.granted",
+      safe<RoleGranted>(async (e) => {
+        if (e.role !== "event_organizer" || !e.groupId) return;
+        const group = await getGroup(db, e.groupId);
+        await sendTransactional(db, "event_organizer_granted", e.memberId, {
+          groupName: group?.name,
+          eventUrl: opts.siteUrl
+            ? `${opts.siteUrl.replace(/\/$/, "")}/admin/events`
+            : undefined,
+        });
+      }),
+    ),
+    getEventBus().subscribe<RoleRevoked>(
+      "members.role.revoked",
+      safe<RoleRevoked>(async (e) => {
+        if (e.role !== "event_organizer" || !e.groupId) return;
+        const group = await getGroup(db, e.groupId);
+        await sendTransactional(db, "event_organizer_revoked", e.memberId, {
+          groupName: group?.name,
+        });
       }),
     ),
   ];

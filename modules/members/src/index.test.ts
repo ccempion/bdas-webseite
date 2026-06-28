@@ -79,6 +79,7 @@ describeIfDb("members integration", () => {
       ["..", "migrations", "0002_role_grants.sql"],
       ["..", "migrations", "0003_local_board_lead.sql"],
       ["..", "migrations", "0004_revoked_by.sql"],
+      ["..", "migrations", "0005_event_organizer.sql"],
     ]) {
       const sql = await fs.readFile(path.join(__dirname, ...file), "utf8");
       await t.client.unsafe(sql);
@@ -446,6 +447,71 @@ describeIfDb("members integration", () => {
     await expect(grantRole(t.db, member.id, "federal_board", leadActor)).rejects.toMatchObject({
       code: "FORBIDDEN",
     });
+  });
+
+  it("a lead may grant/revoke event_organizer scoped to its group (ADR 0017)", async () => {
+    await createGroup("grp_a", "aachen");
+    await createUser("usr_org", "org@example.de");
+    const m = await createProfile(t.db, {
+      userId: "usr_org",
+      firstName: "O",
+      lastName: "x",
+      primaryGroupId: "grp_a",
+    });
+    await approveMember(t.db, m.id, BOARD);
+
+    // event_organizer is group-scoped: a null scope is rejected.
+    await expect(grantRole(t.db, m.id, "event_organizer", BOARD)).rejects.toMatchObject({
+      code: "VALIDATION",
+    });
+
+    // A lead of the group may grant it.
+    await grantRole(t.db, m.id, "event_organizer", leadOf("usr_lead", "grp_a"), "grp_a");
+    expect(await getGrants(t.db, m.id)).toContainEqual({
+      role: "event_organizer",
+      groupId: "grp_a",
+    });
+
+    // ...and revoke it.
+    await revokeRole(t.db, m.id, "event_organizer", leadOf("usr_lead", "grp_a"), "grp_a");
+    expect(await getGrants(t.db, m.id)).not.toContainEqual({
+      role: "event_organizer",
+      groupId: "grp_a",
+    });
+  });
+
+  it("a plain local_board member may NOT grant event_organizer", async () => {
+    await createGroup("grp_a", "aachen");
+    await createUser("usr_org2", "org2@example.de");
+    const m = await createProfile(t.db, {
+      userId: "usr_org2",
+      firstName: "O",
+      lastName: "y",
+      primaryGroupId: "grp_a",
+    });
+    await approveMember(t.db, m.id, BOARD);
+
+    await expect(
+      grantRole(t.db, m.id, "event_organizer", localBoardOf("usr_lb", "grp_a"), "grp_a"),
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+  });
+
+  it("listRoleHolders includes event_organizer grants", async () => {
+    await createGroup("grp_a", "aachen");
+    await createUser("usr_org3", "org3@example.de");
+    const m = await createProfile(t.db, {
+      userId: "usr_org3",
+      firstName: "Org",
+      lastName: "Anita",
+      primaryGroupId: "grp_a",
+    });
+    await approveMember(t.db, m.id, BOARD);
+    await grantRole(t.db, m.id, "event_organizer", BOARD, "grp_a");
+
+    const holders = await listRoleHolders(t.db);
+    expect(holders).toContainEqual(
+      expect.objectContaining({ memberId: m.id, role: "event_organizer", groupId: "grp_a" }),
+    );
   });
 
   it("listRoleHolders and listGrantAudit expose roster + history", async () => {

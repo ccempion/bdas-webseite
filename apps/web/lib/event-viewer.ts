@@ -14,5 +14,8 @@ export function viewerFrom(me: CurrentMember | null): Viewer {
     boardGroupIds: me.grants
       .filter((g) => (g.role === "local_board" || g.role === "local_board_lead") && g.groupId)
       .map((g) => g.groupId as string),
+    organizerGroupIds: me.grants
+      .filter((g) => g.role === "event_organizer" && g.groupId)
+      .map((g) => g.groupId as string),
   };
 }

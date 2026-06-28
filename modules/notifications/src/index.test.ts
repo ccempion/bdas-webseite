@@ -272,6 +272,46 @@ describeIfDb("notifications integration", () => {
     expect(rows.every((r) => r.template === "event_organizer_message")).toBe(true);
   });
 
+  it("emails the new organizer on members.role.granted, and ignores other roles", async () => {
+    const sent: OutboundEmail[] = [];
+    setNotifier({
+      async send(m: OutboundEmail) {
+        sent.push(m);
+      },
+    });
+    setRecipientResolver({
+      async resolve() {
+        return { email: "org@example.de", firstName: "Mara" };
+      },
+    });
+    registerNotificationSubscribers(t.db, { siteUrl: "https://dashboard.bdas.de" });
+
+    // A non-organizer role grant must NOT send an organizer email.
+    await getEventBus().publish({
+      type: "members.role.granted",
+      memberId: "mem_x",
+      role: "local_board",
+      groupId: "grp_a",
+      actorUserId: "usr_lead",
+      at: new Date(),
+    });
+    expect(sent).toHaveLength(0);
+
+    await getEventBus().publish({
+      type: "members.role.granted",
+      memberId: "mem_x",
+      role: "event_organizer",
+      groupId: "grp_a",
+      actorUserId: "usr_lead",
+      at: new Date(),
+    });
+    await new Promise((r) => setTimeout(r, 0)); // let the async handler settle
+    expect(sent).toHaveLength(1);
+    expect(sent[0]!.subject).toContain("Organisator");
+
+    unregisterNotificationSubscribers();
+  });
+
   it("a failing handler does not reject the bus publish (producer is protected)", async () => {
     const memberId = await seedMember();
     setRecipientResolver({
