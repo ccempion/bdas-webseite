@@ -23,13 +23,13 @@ as **scoped to a single event** with a permission boundary that kept
 cancel/delete/grant board-only. During Slice 3 brainstorming the federation
 changed two things:
 
-| Parent spec (locked)                                              | Slice 3 (this design)                                                              |
-| ----------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
-| Scoped to one **event** (`event_organizer:<event_id>`)            | Scoped to one **group** (`event_organizer:<group_id>`) — organizes all its events |
-| Organizer may NOT cancel/delete the event                         | Organizer has **full event lifecycle**, including cancel/delete                    |
-| Granted from the event manage page by any board member            | Granted from the **group roles admin** by a **board lead** (or federal) only       |
-| Grant emits an events-module `organizer.granted` event            | Reuses the existing `members.role.granted` / `.revoked` bus events                 |
-| Email on grant only                                               | Email on **both** grant and revoke                                                 |
+| Parent spec (locked)                                   | Slice 3 (this design)                                                             |
+| ------------------------------------------------------ | --------------------------------------------------------------------------------- |
+| Scoped to one **event** (`event_organizer:<event_id>`) | Scoped to one **group** (`event_organizer:<group_id>`) — organizes all its events |
+| Organizer may NOT cancel/delete the event              | Organizer has **full event lifecycle**, including cancel/delete                   |
+| Granted from the event manage page by any board member | Granted from the **group roles admin** by a **board lead** (or federal) only      |
+| Grant emits an events-module `organizer.granted` event | Reuses the existing `members.role.granted` / `.revoked` bus events                |
+| Email on grant only                                    | Email on **both** grant and revoke                                                |
 
 The change is recorded in **ADR 0017** because it overrides a locked decision in
 an approved spec (source-of-truth precedence, CLAUDE.md §8).
@@ -61,9 +61,9 @@ synced places:
 
 | Action                                                            | federal_board | local_board / lead (of group) | **event_organizer (of group)** | member |
 | ----------------------------------------------------------------- | :-----------: | :---------------------------: | :----------------------------: | :----: |
-| create / edit / publish / **cancel / delete** event (their group) |       ✓       |               ✓               |              **✓**             |   ✗    |
-| roster: cancel-for / add walk-in / email-all / CSV export         |       ✓       |               ✓               |              **✓**             |   ✗    |
-| grant / revoke `event_organizer`                                  |       ✓       |          **lead only**        |               ✗                |   ✗    |
+| create / edit / publish / **cancel / delete** event (their group) |       ✓       |               ✓               |             **✓**              |   ✗    |
+| roster: cancel-for / add walk-in / email-all / CSV export         |       ✓       |               ✓               |             **✓**              |   ✗    |
+| grant / revoke `event_organizer`                                  |       ✓       |         **lead only**         |               ✗                |   ✗    |
 | member admin (approve members, grant other roles)                 |       ✓       |               ✓               |               ✗                |   ✗    |
 
 Two authorization rules express the whole matrix:

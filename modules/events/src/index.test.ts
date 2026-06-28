@@ -388,7 +388,11 @@ describeIfDb("events integration", () => {
 
   it("listManagedEvents includes an organizer's group events, not other groups'", async () => {
     await t.client`INSERT INTO groups (id, slug, name, city) VALUES ('grp_a', 'grp-a', 'Group A', 'Aachen'), ('grp_b', 'grp-b', 'Group B', 'Bonn')`;
-    await createEvent(t.db, { title: "Aachen-Fest", startsAt: future(), groupId: "grp_a" }, "usr_c");
+    await createEvent(
+      t.db,
+      { title: "Aachen-Fest", startsAt: future(), groupId: "grp_a" },
+      "usr_c",
+    );
     await createEvent(t.db, { title: "Bonn-Fest", startsAt: future(), groupId: "grp_b" }, "usr_c");
 
     const organizer: Viewer = {

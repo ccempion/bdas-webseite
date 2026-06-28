@@ -156,9 +156,7 @@ export function registerNotificationSubscribers(db: Db, opts: { siteUrl?: string
         const group = await getGroup(db, e.groupId);
         await sendTransactional(db, "event_organizer_granted", e.memberId, {
           groupName: group?.name,
-          eventUrl: opts.siteUrl
-            ? `${opts.siteUrl.replace(/\/$/, "")}/admin/events`
-            : undefined,
+          eventUrl: opts.siteUrl ? `${opts.siteUrl.replace(/\/$/, "")}/admin/events` : undefined,
         });
       }),
     ),

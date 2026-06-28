@@ -35,6 +35,7 @@
 ## Task 1: members — `event_organizer` role domain, scope, and grant authority
 
 **Files:**
+
 - Modify: `modules/auth/src/sso.ts:19`
 - Modify: `modules/members/src/roles.ts` (`ALL_ROLES`)
 - Modify: `modules/members/src/services/roles.ts` (`requireValidScope`, `requireCanGrant`)
@@ -42,6 +43,7 @@
 - Modify: `modules/members/src/index.test.ts` (migration list + new tests)
 
 **Interfaces:**
+
 - Consumes: existing `grantRole(db, memberId, role, actor, groupId)` / `revokeRole(...)`, `getGrants(db, memberId)`, `canGrantLocalBoard`.
 - Produces: `event_organizer` is a grantable group-scoped role; `members.role.granted`/`.revoked` (already exported from `@bdas/members`) now carry `role: "event_organizer"`.
 
@@ -144,52 +146,52 @@ In `modules/members/src/index.test.ts`, add the new migration to the `beforeEach
 Then add these tests (the `createGroup`, `createUser`, `createProfile`, `approveMember`, `grantRole`, `revokeRole`, `getGrants`, `BOARD`, `leadOf`, `localBoardOf` helpers already exist in this file):
 
 ```typescript
-  it("a lead may grant/revoke event_organizer scoped to its group (ADR 0017)", async () => {
-    await createGroup("grp_a", "aachen");
-    await createUser("usr_org", "org@example.de");
-    const m = await createProfile(t.db, {
-      userId: "usr_org",
-      firstName: "O",
-      lastName: "x",
-      primaryGroupId: "grp_a",
-    });
-    await approveMember(t.db, m.id, BOARD);
+it("a lead may grant/revoke event_organizer scoped to its group (ADR 0017)", async () => {
+  await createGroup("grp_a", "aachen");
+  await createUser("usr_org", "org@example.de");
+  const m = await createProfile(t.db, {
+    userId: "usr_org",
+    firstName: "O",
+    lastName: "x",
+    primaryGroupId: "grp_a",
+  });
+  await approveMember(t.db, m.id, BOARD);
 
-    // event_organizer is group-scoped: a null scope is rejected.
-    await expect(grantRole(t.db, m.id, "event_organizer", BOARD)).rejects.toMatchObject({
-      code: "VALIDATION",
-    });
-
-    // A lead of the group may grant it.
-    await grantRole(t.db, m.id, "event_organizer", leadOf("usr_lead", "grp_a"), "grp_a");
-    expect(await getGrants(t.db, m.id)).toContainEqual({
-      role: "event_organizer",
-      groupId: "grp_a",
-    });
-
-    // ...and revoke it.
-    await revokeRole(t.db, m.id, "event_organizer", leadOf("usr_lead", "grp_a"), "grp_a");
-    expect(await getGrants(t.db, m.id)).not.toContainEqual({
-      role: "event_organizer",
-      groupId: "grp_a",
-    });
+  // event_organizer is group-scoped: a null scope is rejected.
+  await expect(grantRole(t.db, m.id, "event_organizer", BOARD)).rejects.toMatchObject({
+    code: "VALIDATION",
   });
 
-  it("a plain local_board member may NOT grant event_organizer", async () => {
-    await createGroup("grp_a", "aachen");
-    await createUser("usr_org2", "org2@example.de");
-    const m = await createProfile(t.db, {
-      userId: "usr_org2",
-      firstName: "O",
-      lastName: "y",
-      primaryGroupId: "grp_a",
-    });
-    await approveMember(t.db, m.id, BOARD);
-
-    await expect(
-      grantRole(t.db, m.id, "event_organizer", localBoardOf("usr_lb", "grp_a"), "grp_a"),
-    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+  // A lead of the group may grant it.
+  await grantRole(t.db, m.id, "event_organizer", leadOf("usr_lead", "grp_a"), "grp_a");
+  expect(await getGrants(t.db, m.id)).toContainEqual({
+    role: "event_organizer",
+    groupId: "grp_a",
   });
+
+  // ...and revoke it.
+  await revokeRole(t.db, m.id, "event_organizer", leadOf("usr_lead", "grp_a"), "grp_a");
+  expect(await getGrants(t.db, m.id)).not.toContainEqual({
+    role: "event_organizer",
+    groupId: "grp_a",
+  });
+});
+
+it("a plain local_board member may NOT grant event_organizer", async () => {
+  await createGroup("grp_a", "aachen");
+  await createUser("usr_org2", "org2@example.de");
+  const m = await createProfile(t.db, {
+    userId: "usr_org2",
+    firstName: "O",
+    lastName: "y",
+    primaryGroupId: "grp_a",
+  });
+  await approveMember(t.db, m.id, BOARD);
+
+  await expect(
+    grantRole(t.db, m.id, "event_organizer", localBoardOf("usr_lb", "grp_a"), "grp_a"),
+  ).rejects.toMatchObject({ code: "FORBIDDEN" });
+});
 ```
 
 - [ ] **Step 6: Run the tests — expect PASS**
@@ -216,10 +218,12 @@ Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
 ## Task 2: members — surface organizers in the roster + audit views
 
 **Files:**
+
 - Modify: `modules/members/src/services/role-views.ts`
 - Modify: `modules/members/src/index.test.ts` (new test)
 
 **Interfaces:**
+
 - Consumes: `event_organizer` grants written via Task 1.
 - Produces: `listRoleHolders(db)` and `listGrantAudit(db, q)` include `event_organizer` rows (so the group roles UI can list/revoke organizers and the audit log records the grant).
 
@@ -245,23 +249,23 @@ Update both usages (`inArray(memberRoleGrants.role, [...BOARD_ROLES])` in `listR
 In `modules/members/src/index.test.ts`, add (alongside other `listRoleHolders` tests):
 
 ```typescript
-  it("listRoleHolders includes event_organizer grants", async () => {
-    await createGroup("grp_a", "aachen");
-    await createUser("usr_org3", "org3@example.de");
-    const m = await createProfile(t.db, {
-      userId: "usr_org3",
-      firstName: "Org",
-      lastName: "Anita",
-      primaryGroupId: "grp_a",
-    });
-    await approveMember(t.db, m.id, BOARD);
-    await grantRole(t.db, m.id, "event_organizer", BOARD, "grp_a");
-
-    const holders = await listRoleHolders(t.db);
-    expect(holders).toContainEqual(
-      expect.objectContaining({ memberId: m.id, role: "event_organizer", groupId: "grp_a" }),
-    );
+it("listRoleHolders includes event_organizer grants", async () => {
+  await createGroup("grp_a", "aachen");
+  await createUser("usr_org3", "org3@example.de");
+  const m = await createProfile(t.db, {
+    userId: "usr_org3",
+    firstName: "Org",
+    lastName: "Anita",
+    primaryGroupId: "grp_a",
   });
+  await approveMember(t.db, m.id, BOARD);
+  await grantRole(t.db, m.id, "event_organizer", BOARD, "grp_a");
+
+  const holders = await listRoleHolders(t.db);
+  expect(holders).toContainEqual(
+    expect.objectContaining({ memberId: m.id, role: "event_organizer", groupId: "grp_a" }),
+  );
+});
 ```
 
 - [ ] **Step 3: Run the test + typecheck — expect PASS**
@@ -283,6 +287,7 @@ Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
 ## Task 3: events — teach `Viewer`/`canManage`/`listManagedEvents` about organizer groups
 
 **Files:**
+
 - Modify: `modules/events/src/services/get.ts` (`Viewer`, `ANON`, `canManage`)
 - Modify: `modules/events/src/services/list.ts` (`listManagedEvents`)
 - Create: `modules/events/src/services/get.test.ts`
@@ -291,6 +296,7 @@ Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
 - Modify: `apps/web/lib/event-viewer.ts` (`organizerGroupIds`)
 
 **Interfaces:**
+
 - Consumes: `Viewer` from `events/services/get.ts`.
 - Produces: `Viewer.organizerGroupIds: ReadonlyArray<string>`; `canManage(v, event)` true when `event.groupId ∈ organizerGroupIds`; `listManagedEvents` returns an organizer's group events. `viewerFrom(me)` maps `event_organizer` grants into `organizerGroupIds`.
 
@@ -401,22 +407,22 @@ export async function listManagedEvents(
 In `modules/events/src/index.test.ts`, add `organizerGroupIds: []` to the `ACTIVE`, `ANON_VIEWER`, and `FEDERAL` literals (lines 52–69). Then add:
 
 ```typescript
-  it("listManagedEvents includes an organizer's group events, not other groups'", async () => {
-    await createEvent(t.db, { title: "Aachen-Fest", startsAt: future(), groupId: "grp_a" }, "usr_c");
-    await createEvent(t.db, { title: "Bonn-Fest", startsAt: future(), groupId: "grp_b" }, "usr_c");
+it("listManagedEvents includes an organizer's group events, not other groups'", async () => {
+  await createEvent(t.db, { title: "Aachen-Fest", startsAt: future(), groupId: "grp_a" }, "usr_c");
+  await createEvent(t.db, { title: "Bonn-Fest", startsAt: future(), groupId: "grp_b" }, "usr_c");
 
-    const organizer: Viewer = {
-      isActiveMember: true,
-      memberGroupIds: [],
-      isFederal: false,
-      boardGroupIds: [],
-      organizerGroupIds: ["grp_a"],
-    };
-    const managed = await listManagedEvents(t.db, organizer);
-    const titles = managed.map((e) => e.title);
-    expect(titles).toContain("Aachen-Fest");
-    expect(titles).not.toContain("Bonn-Fest");
-  });
+  const organizer: Viewer = {
+    isActiveMember: true,
+    memberGroupIds: [],
+    isFederal: false,
+    boardGroupIds: [],
+    organizerGroupIds: ["grp_a"],
+  };
+  const managed = await listManagedEvents(t.db, organizer);
+  const titles = managed.map((e) => e.title);
+  expect(titles).toContain("Aachen-Fest");
+  expect(titles).not.toContain("Bonn-Fest");
+});
 ```
 
 (`listManagedEvents` and the `Viewer` type are already imported in this test file — lines 18–19 — so no new imports are needed.)
@@ -438,17 +444,17 @@ const SYSTEM_VIEWER: Viewer = {
 In `apps/web/lib/event-viewer.ts`, map `event_organizer` grants into the viewer (mirrors the `boardGroupIds` filter):
 
 ```typescript
-  return {
-    isActiveMember: me.member?.status === "active",
-    memberGroupIds: me.member?.primaryGroupId ? [me.member.primaryGroupId] : [],
-    isFederal: isFederalBoard(me.grants),
-    boardGroupIds: me.grants
-      .filter((g) => (g.role === "local_board" || g.role === "local_board_lead") && g.groupId)
-      .map((g) => g.groupId as string),
-    organizerGroupIds: me.grants
-      .filter((g) => g.role === "event_organizer" && g.groupId)
-      .map((g) => g.groupId as string),
-  };
+return {
+  isActiveMember: me.member?.status === "active",
+  memberGroupIds: me.member?.primaryGroupId ? [me.member.primaryGroupId] : [],
+  isFederal: isFederalBoard(me.grants),
+  boardGroupIds: me.grants
+    .filter((g) => (g.role === "local_board" || g.role === "local_board_lead") && g.groupId)
+    .map((g) => g.groupId as string),
+  organizerGroupIds: me.grants
+    .filter((g) => g.role === "event_organizer" && g.groupId)
+    .map((g) => g.groupId as string),
+};
 ```
 
 - [ ] **Step 8: Add a `viewerFrom` unit test**
@@ -492,6 +498,7 @@ Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
 ## Task 4: apps/web — open the management surface to organizers + add the grant UI
 
 **Files:**
+
 - Modify: `apps/web/app/admin/events/page.tsx` (access gate)
 - Modify: `apps/web/app/admin/events/neu/page.tsx` (access gate + group list)
 - Modify: `apps/web/app/admin/events/actions.ts` (create/update authorization)
@@ -499,6 +506,7 @@ Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
 - Modify: `apps/web/app/(board)/gruppe/[slug]/vorstand/page.tsx` (grant option + roster section)
 
 **Interfaces:**
+
 - Consumes: `viewerFrom`/`canManage` (Task 3), `event_organizer` grants (Task 1), roster views (Task 2). `role-actions.ts` (`grantRoleAction`/`revokeRoleAction`) already passes `role` through to the validated `grantRole`/`revokeRole` — no change needed there.
 - Produces: organizers can reach `/admin/events`, `/admin/events/neu`, `/admin/events/<id>`; leads can grant/revoke `event_organizer` from the group `vorstand` page.
 
@@ -507,13 +515,13 @@ Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
 In `apps/web/app/admin/events/page.tsx`, replace the gate:
 
 ```typescript
-  if (
-    !viewer.isFederal &&
-    viewer.boardGroupIds.length === 0 &&
-    viewer.organizerGroupIds.length === 0
-  ) {
-    redirect("/account");
-  }
+if (
+  !viewer.isFederal &&
+  viewer.boardGroupIds.length === 0 &&
+  viewer.organizerGroupIds.length === 0
+) {
+  redirect("/account");
+}
 ```
 
 - [ ] **Step 2: Let organizers reach the create form (and pick their group)**
@@ -521,17 +529,17 @@ In `apps/web/app/admin/events/page.tsx`, replace the gate:
 In `apps/web/app/admin/events/neu/page.tsx`, replace the gate and the group filter:
 
 ```typescript
-  if (
-    !viewer.isFederal &&
-    viewer.boardGroupIds.length === 0 &&
-    viewer.organizerGroupIds.length === 0
-  ) {
-    redirect("/account");
-  }
+if (
+  !viewer.isFederal &&
+  viewer.boardGroupIds.length === 0 &&
+  viewer.organizerGroupIds.length === 0
+) {
+  redirect("/account");
+}
 
-  const allGroups = await listGroups(db, { status: "active" });
-  const manageGroupIds = new Set([...viewer.boardGroupIds, ...viewer.organizerGroupIds]);
-  const groups = viewer.isFederal ? allGroups : allGroups.filter((g) => manageGroupIds.has(g.id));
+const allGroups = await listGroups(db, { status: "active" });
+const manageGroupIds = new Set([...viewer.boardGroupIds, ...viewer.organizerGroupIds]);
+const groups = viewer.isFederal ? allGroups : allGroups.filter((g) => manageGroupIds.has(g.id));
 ```
 
 (`allowFederation={viewer.isFederal}` stays — only federal board creates federation-wide events.)
@@ -613,6 +621,7 @@ Expected: PASS (no unused-import errors from the `actions.ts` change).
 - [ ] **Step 7: Manual verification (record results in the PR)**
 
 With the events flag on and a Postgres available:
+
 1. As a lead of group A, open `/gruppe/<slug-A>/vorstand`, grant **Organisator** to member M. Confirm M appears under "Organisatoren".
 2. Sign in as M (no board role). Visit `/admin/events` → the list loads (not redirected to `/account`) and shows group A's events. Open one → the manage page loads; create a new event for group A; publish, then cancel it.
 3. Confirm M cannot see another group's events and `/admin/events/neu` only offers group A.
@@ -632,6 +641,7 @@ Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
 ## Task 5: notifications — welcome + removal emails on organizer grant/revoke
 
 **Files:**
+
 - Modify: `modules/notifications/package.json` (add `@bdas/groups`, `@bdas/members` workspace deps)
 - Modify: `modules/notifications/src/types.ts` (templates + `groupName`)
 - Modify: `modules/notifications/src/templates.ts` (two cases)
@@ -641,6 +651,7 @@ Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
 - Modify: `modules/notifications/src/index.test.ts` (subscriber routing test)
 
 **Interfaces:**
+
 - Consumes: `members.role.granted` / `members.role.revoked` (types `RoleGranted`/`RoleRevoked` exported from `@bdas/members`), `getGroup` from `@bdas/groups`, `sendTransactional`.
 - Produces: emails `event_organizer_granted` / `event_organizer_revoked` sent only for `role === "event_organizer"` role events.
 
@@ -673,28 +684,28 @@ and add an optional `groupName` to `TemplateData` (after `messageBody`):
 In `modules/notifications/src/templates.test.ts`, add:
 
 ```typescript
-  it("organizer-granted names the group and links to management", () => {
-    const out = render("event_organizer_granted", {
-      firstName: "Mara",
-      eventTitle: "",
-      eventUrl: "https://dashboard.bdas.de/admin/events",
-      groupName: "Aachen",
-    });
-    expect(out.subject).toContain("Organisator");
-    expect(out.text).toContain("Mara");
-    expect(out.text).toContain("Aachen");
-    expect(out.html).toContain("https://dashboard.bdas.de/admin/events");
+it("organizer-granted names the group and links to management", () => {
+  const out = render("event_organizer_granted", {
+    firstName: "Mara",
+    eventTitle: "",
+    eventUrl: "https://dashboard.bdas.de/admin/events",
+    groupName: "Aachen",
   });
+  expect(out.subject).toContain("Organisator");
+  expect(out.text).toContain("Mara");
+  expect(out.text).toContain("Aachen");
+  expect(out.html).toContain("https://dashboard.bdas.de/admin/events");
+});
 
-  it("organizer-revoked signals the role was removed", () => {
-    const out = render("event_organizer_revoked", {
-      firstName: "Mara",
-      eventTitle: "",
-      groupName: "Aachen",
-    });
-    expect(out.subject).toContain("entzogen");
-    expect(out.text).toContain("Aachen");
+it("organizer-revoked signals the role was removed", () => {
+  const out = render("event_organizer_revoked", {
+    firstName: "Mara",
+    eventTitle: "",
+    groupName: "Aachen",
   });
+  expect(out.subject).toContain("entzogen");
+  expect(out.text).toContain("Aachen");
+});
 ```
 
 - [ ] **Step 3: Run — expect FAIL**
@@ -739,15 +750,15 @@ In `modules/notifications/src/services/send.ts`, add `groupName` to the `extra` 
 ```
 
 ```typescript
-  const data: TemplateData = {
-    firstName: contact.firstName,
-    eventTitle: extra.eventTitle ?? "",
-    eventUrl: extra.eventUrl,
-    changes: extra.changes,
-    subject: extra.subject,
-    messageBody: extra.messageBody,
-    groupName: extra.groupName,
-  };
+const data: TemplateData = {
+  firstName: contact.firstName,
+  eventTitle: extra.eventTitle ?? "",
+  eventUrl: extra.eventUrl,
+  changes: extra.changes,
+  subject: extra.subject,
+  messageBody: extra.messageBody,
+  groupName: extra.groupName,
+};
 ```
 
 - [ ] **Step 6: Run render tests + typecheck — expect PASS**
@@ -814,45 +825,45 @@ Inside `registerNotificationSubscribers`, append to the `subs` array (after the 
 In `modules/notifications/src/index.test.ts`, add (mirroring the existing bus-publish tests — `setNotifier` captures `OutboundEmail`s, `setRecipientResolver` returns a fixed contact, `registerNotificationSubscribers`/`unregisterNotificationSubscribers` wrap the body):
 
 ```typescript
-  it("emails the new organizer on members.role.granted, and ignores other roles", async () => {
-    const sent: OutboundEmail[] = [];
-    setNotifier({
-      async send(m: OutboundEmail) {
-        sent.push(m);
-      },
-    });
-    setRecipientResolver({
-      async resolve() {
-        return { email: "org@example.de", firstName: "Mara" };
-      },
-    });
-    registerNotificationSubscribers(t.db, { siteUrl: "https://dashboard.bdas.de" });
-
-    // A non-organizer role grant must NOT send an organizer email.
-    await getEventBus().publish({
-      type: "members.role.granted",
-      memberId: "mem_x",
-      role: "local_board",
-      groupId: "grp_a",
-      actorUserId: "usr_lead",
-      at: new Date(),
-    });
-    expect(sent).toHaveLength(0);
-
-    await getEventBus().publish({
-      type: "members.role.granted",
-      memberId: "mem_x",
-      role: "event_organizer",
-      groupId: "grp_a",
-      actorUserId: "usr_lead",
-      at: new Date(),
-    });
-    await new Promise((r) => setTimeout(r, 0)); // let the async handler settle
-    expect(sent).toHaveLength(1);
-    expect(sent[0]!.subject).toContain("Organisator");
-
-    unregisterNotificationSubscribers();
+it("emails the new organizer on members.role.granted, and ignores other roles", async () => {
+  const sent: OutboundEmail[] = [];
+  setNotifier({
+    async send(m: OutboundEmail) {
+      sent.push(m);
+    },
   });
+  setRecipientResolver({
+    async resolve() {
+      return { email: "org@example.de", firstName: "Mara" };
+    },
+  });
+  registerNotificationSubscribers(t.db, { siteUrl: "https://dashboard.bdas.de" });
+
+  // A non-organizer role grant must NOT send an organizer email.
+  await getEventBus().publish({
+    type: "members.role.granted",
+    memberId: "mem_x",
+    role: "local_board",
+    groupId: "grp_a",
+    actorUserId: "usr_lead",
+    at: new Date(),
+  });
+  expect(sent).toHaveLength(0);
+
+  await getEventBus().publish({
+    type: "members.role.granted",
+    memberId: "mem_x",
+    role: "event_organizer",
+    groupId: "grp_a",
+    actorUserId: "usr_lead",
+    at: new Date(),
+  });
+  await new Promise((r) => setTimeout(r, 0)); // let the async handler settle
+  expect(sent).toHaveLength(1);
+  expect(sent[0]!.subject).toContain("Organisator");
+
+  unregisterNotificationSubscribers();
+});
 ```
 
 - [ ] **Step 10: Run notifications tests + typecheck — expect PASS**
@@ -881,4 +892,7 @@ Expected: PASS (DB-backed suites skip locally without Postgres; ensure they run 
 - [ ] **Update the README** for the events delegation surface if a per-module README documents roles (`modules/members/README.md` role list — add `event_organizer`).
 
 - [ ] **Run `/security-review`** (new authorization role, CLAUDE.md §4) and `/review`, then open the PR. Note in the PR description: overrides the parent spec's event-scoped organizer decision per **ADR 0017**; migration `members/0005_event_organizer.sql` is additive (CHECK domain only).
+
+```
+
 ```
