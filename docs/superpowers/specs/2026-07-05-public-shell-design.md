@@ -20,7 +20,9 @@ The platform (currently at dashboard.bdas.de) becomes the federation's entire we
 
 - **Phase A (now, zero risk):** back up WordPress content + media (may seed the future blog module); inventory the bdas.de DNS zone — especially MX records (mail may live at the WordPress hoster) and Resend TXT records (must stay).
 - **Phase B (at go-live, ~15 min):** add `bdas.de` + `www.bdas.de` to the Vercel project; point apex A → `76.76.21.21`, www CNAME → `cname.vercel-dns.com`; leave MX/TXT untouched. Set `PUBLIC_SITE_URL=https://bdas.de` in Vercel (and GitHub secrets if present); redeploy. Remove `dashboard.bdas.de` when ready. Known effects: all sessions invalidate (one re-login), old unclicked email links break (re-request).
-- **Phase C (later):** cancel WordPress hosting (issue #32) — only after confirming MX/email does not depend on that package.
+- **Phase C (later):** cancel WordPress hosting (issue #32) — only after confirming MX/email does not depend on that package. WordPress is fully retired; nothing of it survives.
+
+**Legacy URL redirects:** search engines keep the old WordPress URLs indexed for months after cutover. The app ships a small redirect map (in `next.config` / middleware) sending known old paths to their new equivalents (e.g. old Über-uns page → `/ueber-uns`), with unknown legacy patterns falling back to `/`. Source for the map: the WordPress export from Phase A.
 
 `PUBLIC_SITE_URL` is the only functional domain reference in the codebase. `DASHBOARD_URL` in `.env.example` is unused and should be deleted.
 
@@ -87,7 +89,7 @@ Kontakt block · quick links (Über uns, Events, Blog, Gruppen) · BDAJ + AABF l
 
 Order: **Hero → Gruppen → Aktuelles → Events-Kalender → Unsere Arbeit → BDAS-Connect → Footer.**
 
-1. **Hero** — ~80vh photo slideshow, 3–4 images cross-fading (~6s interval, 400ms fade token; static image under `prefers-reduced-motion`). Dark gradient overlay; title "Bund der Alevitischen Studierenden in Deutschland" + placeholder tagline + CTAs **Finde deine Gruppe** (→ `#gruppen` anchor) and **Mitglied werden** (→ `/registrieren`). Images: brand-toned gradient placeholders in one swappable folder.
+1. **Hero** — ~80vh photo slideshow, 3–4 images cross-fading (~6s interval, 400ms fade token; static image under `prefers-reduced-motion`; visible pause/play control per WCAG 2.2.2). Dark gradient overlay; title "Bund der Alevitischen Studierenden in Deutschland" + placeholder tagline + CTAs **Finde deine Gruppe** (→ `#gruppen` anchor) and **Mitglied werden** (→ `/registrieren`). Images: brand-toned gradient placeholders in one swappable folder.
 2. **Gruppen** — "Vor Ort an XX Hochschulen" (live count via groups module). Grid of up to ~8 group cards (name, city → `/gruppen/[slug]`) + "Alle Gruppen" → `/gruppen`. Layout reserves this block as the future map's home — map swaps in without landing redesign.
 3. **Aktuelles** — 3 news cards (image, date, title, teaser) + "Zum Blog". Fed by a typed `NewsSource` interface; placeholder array implementation in `apps/web` now, blog module implements the same interface later. Empty source ⇒ block hidden. Until the blog module ships: placeholder cards are non-clickable teasers (the board can use them for manual announcements), and the "Zum Blog" button is hidden — same mechanism as the nav item, below.
 4. **Events-Kalender** — Schedule-X island. Month grid desktop, agenda view mobile, German locale, token-themed. Filter chips above: **Alle · Bundesweit · Gruppe ▾**. Visitors see `public` events; logged-in members additionally see `members_only` + their group's `group_only` events (facets principle, server-side filtered). Event click → `/events/[id]`.
@@ -100,11 +102,13 @@ Blocks 2 + 4 are live data on day one; 1, 3, 5 are placeholder-fed.
 
 ## 5. Technical architecture
 
-- **Routing:** new `apps/web/app/(public)/` route group carrying the new header/footer layout (landing, static pages, auth pages). Board/account routes keep their layouts.
+- **Routing:** new `apps/web/app/(public)/` route group carrying the new header/footer layout. **All non-board routes adopt the new shell** — landing, static pages, auth pages, `/events`, `/gruppen`, `/impressum`, `/datenschutz`, `/account`, `/dateien` (the header's three role states handle logged-in users). Only the board cockpit (`/federal/…`, `/gruppe/[slug]/…`) keeps its own layout.
+- **Error pages:** styled `not-found.tsx` and `error.tsx` in the new shell (standard design: message + links home/to Gruppen).
 - **Components:** `apps/web/app/_public/` for app-private blocks (mirrors `_events`/`_groups` convention). Genuinely reusable primitives go to `core/design-system`: nav dropdown (20px pill radius), hero slideshow, section wrapper, filter chips. Everything consumes tokens; missing values (e.g. overlay gradient) are added to `tokens.ts`, never inlined.
 - **Data flow (rule 1):** landing is a Server Component calling only public module interfaces — `listGroups()`, `listUpcomingEvents(viewer)` with viewer built from the session, `NewsSource.listLatest(3)`. No SQL in the app layer.
 - **Schedule-X:** `@schedule-x/calendar` + React wrapper (MIT). Client component via `next/dynamic`; server HTML streams first, calendar hydrates after. Events serialized server-side, passed as props — the island makes no API calls. Themed by mapping Schedule-X CSS variables to design tokens.
 - **Feature flag:** `BDAS_FLAG_PUBLIC_SHELL` — off ⇒ current landing/header; on ⇒ new shell. Enables incremental merges to prod; flipping it on is the go-live, coordinated with DNS Phase B.
+- **SEO & metadata:** per-page titles/descriptions via the Next.js Metadata API; one shared Open-Graph image (logo on brand red) so shared links render properly in WhatsApp/Instagram/etc.; generated `sitemap.xml` (all public routes incl. published events and groups) and `robots.txt` disallowing `/federal`, `/gruppe`, `/account`, `/dateien`, `/admin`, `/api`. No analytics (owner decision 2026-07-05).
 
 ---
 
@@ -118,15 +122,18 @@ Blocks 2 + 4 are live data on day one; 1, 3, 5 are placeholder-fed.
 
 ## 7. Build order (each step mergeable behind the flag)
 
-1. Design-system additions + header/footer + `(public)` layout
-2. Static pages with placeholder copy
+1. ADR ("Public web presence lives in the platform") + design-system additions + header/footer + `(public)` layout
+2. Static pages with placeholder copy + styled 404/500 pages
 3. Landing blocks: Hero, Gruppen, AGs, Connect
 4. Aktuelles block + `NewsSource` contract
 5. Events-Kalender (Schedule-X island, filter chips, visibility serialization)
-6. E2E + Lighthouse → flip flag → DNS Phase B → bdas.de live
+6. SEO: metadata, OG image, sitemap, robots + legacy-URL redirect map
+7. E2E + Lighthouse → flip flag → DNS Phase B → bdas.de live
 
 ---
 
 ## 8. Open items (owner / board)
 
 Tagline sentence · Kurzportrait/Verbandsstruktur/BDAJ/AG copy · photo pool with publication consent · contact block details · social handles · final confirmation of "BDAS-Connect" naming.
+
+**Go-live checklist (deferred by owner decision):** Impressum/Datenschutz legal review before flipping the flag · analytics deferred entirely (a private board-only dashboard would be possible later, e.g. cookie-less Vercel Analytics — revisit if ever wanted).
