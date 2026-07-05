@@ -7,6 +7,7 @@ import { CookieNotice } from "../components/CookieNotice";
 import { SiteFooter } from "../components/SiteFooter";
 import { SiteHeader } from "../components/SiteHeader";
 import { PublicHeader } from "./_public/PublicHeader";
+import { PublicFooter } from "./_public/PublicFooter";
 import { legalUrls } from "../lib/legal";
 
 import "./globals.css";
@@ -39,7 +40,11 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <div id="inhalt" tabIndex={-1} className="flex-1 outline-none">
           {children}
         </div>
-        <SiteFooter privacyUrl={privacy} imprintUrl={imprint} />
+        {isFlagOn("public_shell") ? (
+          <PublicFooter privacyUrl={privacy} imprintUrl={imprint} />
+        ) : (
+          <SiteFooter privacyUrl={privacy} imprintUrl={imprint} />
+        )}
         <CookieNotice privacyUrl={privacy} />
       </body>
     </html>
