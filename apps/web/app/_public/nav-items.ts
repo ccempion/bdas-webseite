@@ -1,0 +1,23 @@
+import { isFlagOn } from "@bdas/feature-flags";
+
+export type NavLeaf = { label: string; href: string };
+export type NavItem = NavLeaf | { label: string; children: NavLeaf[] };
+
+/** Top navigation. Computed per-request so flags apply. */
+export function navItems(): NavItem[] {
+  const items: NavItem[] = [
+    {
+      label: "Über uns",
+      children: [
+        { label: "Kurzportrait", href: "/ueber-uns" },
+        { label: "Verbandsstruktur", href: "/ueber-uns/verbandsstruktur" },
+        { label: "Bund der Alevitischen Jugendlichen (BDAJ)", href: "/ueber-uns/bdaj" },
+      ],
+    },
+    { label: "Unsere Arbeit", href: "/unsere-arbeit" },
+  ];
+  if (isFlagOn("events")) items.push({ label: "Events", href: "/events" });
+  if (isFlagOn("blog")) items.push({ label: "Blog", href: "/blog" });
+  if (isFlagOn("groups")) items.push({ label: "Gruppen", href: "/gruppen" });
+  return items;
+}

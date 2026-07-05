@@ -1,9 +1,12 @@
 import type { ReactNode } from "react";
 import type { Metadata } from "next";
 
+import { isFlagOn } from "@bdas/feature-flags";
+
 import { CookieNotice } from "../components/CookieNotice";
 import { SiteFooter } from "../components/SiteFooter";
 import { SiteHeader } from "../components/SiteHeader";
+import { PublicHeader } from "./_public/PublicHeader";
 import { legalUrls } from "../lib/legal";
 
 import "./globals.css";
@@ -32,7 +35,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         >
           Zum Inhalt springen
         </a>
-        <SiteHeader />
+        {isFlagOn("public_shell") ? <PublicHeader /> : <SiteHeader />}
         <div id="inhalt" tabIndex={-1} className="flex-1 outline-none">
           {children}
         </div>
