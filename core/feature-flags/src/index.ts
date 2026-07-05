@@ -18,6 +18,8 @@ export const FLAGS = [
   "handover",
   "payments",
   "dashboard",
+  "blog",
+  "public_shell",
 ] as const;
 
 export type FlagName = (typeof FLAGS)[number];
