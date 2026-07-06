@@ -1,5 +1,7 @@
 import Link from "next/link";
 
+import { isFlagOn } from "@bdas/feature-flags";
+
 const LINK = "hover:text-bdas-red hover:underline";
 
 /** Public-site footer: contact, quick links, partner orgs, legal, socials.
@@ -32,12 +34,16 @@ export function PublicFooter({
           <Link href="/unsere-arbeit" className={LINK}>
             Unsere Arbeit
           </Link>
-          <Link href="/events" className={LINK}>
-            Events
-          </Link>
-          <Link href="/gruppen" className={LINK}>
-            Gruppen
-          </Link>
+          {isFlagOn("events") && (
+            <Link href="/events" className={LINK}>
+              Events
+            </Link>
+          )}
+          {isFlagOn("groups") && (
+            <Link href="/gruppen" className={LINK}>
+              Gruppen
+            </Link>
+          )}
         </nav>
         <nav aria-label="Partner" className="flex flex-col gap-2">
           <h2 className="font-semibold text-bdas-ink">Verbund</h2>

@@ -11,11 +11,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   const entries: MetadataRoute.Sitemap = [
     { url: url("/"), changeFrequency: "weekly", priority: 1 },
-    { url: url("/ueber-uns"), changeFrequency: "monthly" },
-    { url: url("/ueber-uns/verbandsstruktur"), changeFrequency: "monthly" },
-    { url: url("/ueber-uns/bdaj"), changeFrequency: "monthly" },
-    { url: url("/unsere-arbeit"), changeFrequency: "monthly" },
   ];
+
+  if (isFlagOn("public_shell")) {
+    entries.push(
+      { url: url("/ueber-uns"), changeFrequency: "monthly" },
+      { url: url("/ueber-uns/verbandsstruktur"), changeFrequency: "monthly" },
+      { url: url("/ueber-uns/bdaj"), changeFrequency: "monthly" },
+      { url: url("/unsere-arbeit"), changeFrequency: "monthly" },
+    );
+  }
 
   const db = getDb();
   if (isFlagOn("groups")) {
