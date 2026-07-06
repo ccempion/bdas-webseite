@@ -27,6 +27,13 @@ describe("isFlagOn", () => {
     process.env["BDAS_FLAG_AUTH"] = "yes";
     expect(isFlagOn("auth")).toBe(false);
   });
+
+  it("group_map maps to BDAS_FLAG_GROUP_MAP", () => {
+    delete process.env["BDAS_FLAG_GROUP_MAP"];
+    expect(isFlagOn("group_map")).toBe(false);
+    process.env["BDAS_FLAG_GROUP_MAP"] = "true";
+    expect(isFlagOn("group_map")).toBe(true);
+  });
 });
 
 describe("requireFlag", () => {
