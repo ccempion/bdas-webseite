@@ -814,6 +814,65 @@ git commit -m "feat(web): set group location from the board Profil form"
 
 ---
 
+### Task 5b: Fix — Profil save must not wipe admin-managed fields
+
+Pre-existing bug: `updateGroupProfileAction` passes only `{ name, city }` (now `+ location`) to `updateGroup`, whose full-replace semantics then null out `contactEmail`, `instagramUrl`, `websiteUrl` and reset `status` to `"active"`. A group lead saving their Profil silently destroys admin-entered contact data.
+
+**Files:**
+- Modify: `apps/web/app/(board)/_components/group-profile-actions.ts`
+
+**Interfaces:**
+- Consumes: `getGroup`, `updateGroup` from `@bdas/groups` (Task 1 shapes).
+- Produces: unchanged action signature; behavior contract: Profil save preserves `contactEmail`/`instagramUrl`/`websiteUrl`/`status` from the stored row. Behavioral regression coverage lands in Task 9's e2e.
+
+- [ ] **Step 1: Merge stored fields before updating**
+
+In `apps/web/app/(board)/_components/group-profile-actions.ts`, change the groups import to:
+
+```ts
+import { getGroup, updateGroup } from "@bdas/groups";
+```
+
+and replace the `try` block of `updateGroupProfileAction` with:
+
+```ts
+  try {
+    const db = getDb();
+    // `updateGroup` is full-replace; merge the stored admin-managed fields so
+    // a Profil save never wipes contact data or resets the status.
+    const existing = await getGroup(db, groupId);
+    if (!existing) return { ok: false, error: "Gruppe nicht gefunden." };
+    if (existing.status === "archived") {
+      return { ok: false, error: "Archivierte Gruppen können nicht bearbeitet werden." };
+    }
+    await updateGroup(db, groupId, {
+      ...input,
+      contactEmail: existing.contactEmail,
+      instagramUrl: existing.instagramUrl,
+      websiteUrl: existing.websiteUrl,
+      status: existing.status,
+    });
+    safeRevalidate(revalidate);
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Fehler" };
+  }
+```
+
+- [ ] **Step 2: Verify**
+
+Run: `pnpm typecheck && pnpm lint`
+Expected: clean. (The e2e regression assertion is added in Task 9.)
+
+- [ ] **Step 3: Commit**
+
+```bash
+git add "apps/web/app/(board)/_components/group-profile-actions.ts"
+git commit -m "fix(web): Profil save no longer wipes contact fields and status"
+```
+
+---
+
 ### Task 6: Leaflet map component + pins projection + ADR
 
 **Files:**
@@ -1235,16 +1294,29 @@ export async function seedGroup(input: {
   name: string;
   city: string;
   status?: "active" | "dormant" | "new" | "archived";
+  contactEmail?: string;
   location?: { name: string; address: string; lat: number; lng: number };
 }): Promise<string> {
   const id = `grp_e2e_${rand()}`;
   await sql`
-    INSERT INTO groups (id, slug, name, city, status,
+    INSERT INTO groups (id, slug, name, city, status, contact_email,
                         location_name, location_address, location_lat, location_lng)
     VALUES (${id}, ${input.slug}, ${input.name}, ${input.city}, ${input.status ?? "active"},
+            ${input.contactEmail ?? null},
             ${input.location?.name ?? null}, ${input.location?.address ?? null},
             ${input.location?.lat ?? null}, ${input.location?.lng ?? null})`;
   return id;
+}
+```
+
+Below it, add a read helper for the Task 5b regression assertion:
+
+```ts
+/** The stored contact email for a group (Task 5b regression check). */
+export async function groupContactEmail(slug: string): Promise<string | null> {
+  const rows = await sql<{ contact_email: string | null }[]>`
+    SELECT contact_email FROM groups WHERE slug = ${slug} LIMIT 1`;
+  return rows[0]?.contact_email ?? null;
 }
 ```
 
@@ -1261,7 +1333,7 @@ export async function seedGroup(input: {
  */
 import { expect, test } from "@playwright/test";
 
-import { grantLocalBoard, seedGroup, uniqueEmail, uniqueSlug } from "./helpers/db";
+import { grantLocalBoard, groupContactEmail, seedGroup, uniqueEmail, uniqueSlug } from "./helpers/db";
 import { createProfile, registerVerifyLogin } from "./helpers/flows";
 
 const PHOTON_FIXTURE = {
@@ -1292,6 +1364,7 @@ test("local board sets a location; the public map pin links to the group page", 
     name: "E2E Karten Gruppe",
     city: "Köln",
     status: "active",
+    contactEmail: "karte@bdas.de",
   });
 
   const email = uniqueEmail("karte");
@@ -1305,6 +1378,13 @@ test("local board sets a location; the public map pin links to the group page", 
   await page.getByRole("button", { name: /Universität zu Köln/ }).click();
   await page.getByRole("button", { name: "Änderungen speichern" }).click();
   await page.waitForURL("**/admin/gruppen");
+
+  // Task 5b regression: saving the board Profil form must preserve the
+  // admin-managed fields AND the stored location.
+  await page.goto(`/gruppe/${slug}/profile`);
+  await page.getByRole("button", { name: "Speichern" }).click();
+  await expect(page.getByText("Gespeichert.")).toBeVisible();
+  expect(await groupContactEmail(slug)).toBe("karte@bdas.de");
 
   // /gruppen renders the map; the pin's popup links to the group page.
   await page.goto("/gruppen");
