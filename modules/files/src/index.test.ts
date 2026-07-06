@@ -58,6 +58,7 @@ async function applyMigrations(t: TestDb): Promise<void> {
   for (const file of [
     ["..", "..", "auth", "migrations", "0001_init.sql"],
     ["..", "..", "groups", "migrations", "0001_init.sql"],
+    ["..", "..", "groups", "migrations", "0004_location.sql"],
     ["..", "..", "members", "migrations", "0001_init.sql"],
     ["..", "migrations", "0001_init.sql"],
     ["..", "migrations", "0002_rls_lockdown.sql"],

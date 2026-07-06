@@ -56,6 +56,7 @@ describeIfDb("notifications integration", () => {
     for (const file of [
       ["..", "..", "auth", "migrations", "0001_init.sql"],
       ["..", "..", "groups", "migrations", "0001_init.sql"],
+      ["..", "..", "groups", "migrations", "0004_location.sql"],
       ["..", "..", "members", "migrations", "0001_init.sql"],
       // The change/cancellation subscribers read the events roster, so this
       // suite needs the events tables too.
