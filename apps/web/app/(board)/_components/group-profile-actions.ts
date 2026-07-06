@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 
 import type { GroupLocation } from "@bdas/groups";
 import { getDb } from "@bdas/db";
-import { updateGroup } from "@bdas/groups";
+import { getGroup, updateGroup } from "@bdas/groups";
 import { canGrantLocalBoard, canManageGroup, getCurrentMember } from "@bdas/members";
 
 import { readSessionCookie } from "../../../lib/auth-cookie";
@@ -26,7 +26,21 @@ export async function updateGroupProfileAction(
     return { ok: false, error: "Keine Berechtigung für diese Gruppe." };
   }
   try {
-    await updateGroup(getDb(), groupId, input);
+    const db = getDb();
+    // `updateGroup` is full-replace; merge the stored admin-managed fields so
+    // a Profil save never wipes contact data or resets the status.
+    const existing = await getGroup(db, groupId);
+    if (!existing) return { ok: false, error: "Gruppe nicht gefunden." };
+    if (existing.status === "archived") {
+      return { ok: false, error: "Archivierte Gruppen können nicht bearbeitet werden." };
+    }
+    await updateGroup(db, groupId, {
+      ...input,
+      contactEmail: existing.contactEmail,
+      instagramUrl: existing.instagramUrl,
+      websiteUrl: existing.websiteUrl,
+      status: existing.status,
+    });
     safeRevalidate(revalidate);
     return { ok: true };
   } catch (e) {
