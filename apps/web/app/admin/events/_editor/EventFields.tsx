@@ -5,7 +5,7 @@ import { useState } from "react";
 import { Field, Input } from "@bdas/design-system";
 import type { EventContent } from "@bdas/events-module";
 
-import { LocationPicker } from "./LocationPicker";
+import { LocationPicker } from "../../../_components/LocationPicker";
 import { RichTextEditor } from "./RichTextEditor";
 
 const SELECT_CLASS =
