@@ -8,7 +8,7 @@ import { navItems, type NavItem } from "./nav-items";
 const PILL =
   "inline-flex items-center rounded-bdas-pill px-3 py-1.5 text-bdas-pill text-bdas-ink transition-colors duration-bdas-quick ease-bdas hover:bg-bdas-overlay-hover";
 const DROPDOWN_LINK =
-  "block rounded-bdas-sm px-3 py-2 text-bdas-dropdown-link text-bdas-ink transition-colors duration-bdas-quick ease-bdas hover:bg-bdas-hover";
+  "block rounded-bdas-sm px-3 py-2 text-bdas-dropdown-link text-bdas-ink transition-colors duration-bdas-quick ease-bdas hover:bg-bdas-surface-hover";
 
 function DesktopItem({ item }: { item: NavItem }) {
   if ("href" in item) {

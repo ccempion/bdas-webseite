@@ -22,7 +22,7 @@ export function Hero() {
           </Link>
           <Link
             href="/registrieren"
-            className="inline-flex items-center rounded-bdas border border-bdas-strong bg-bdas-surface px-5 py-2.5 font-medium text-bdas-ink transition-colors duration-bdas-quick ease-bdas hover:bg-bdas-hover"
+            className="inline-flex items-center rounded-bdas border border-bdas-strong bg-bdas-surface px-5 py-2.5 font-medium text-bdas-ink transition-colors duration-bdas-quick ease-bdas hover:bg-bdas-surface-hover"
           >
             Mitglied werden
           </Link>
