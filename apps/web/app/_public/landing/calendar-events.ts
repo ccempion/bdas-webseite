@@ -1,5 +1,7 @@
 import type { EventWithCounts } from "@bdas/events-module";
 
+import { berlinParts } from "../../lib/datetime";
+
 /** Wire shape passed from the server page into the Schedule-X client island.
  *  start/end use the "YYYY-MM-DD HH:mm" wall-clock format (Europe/Berlin) —
  *  plain strings so this crosses the RSC server→client boundary as ordinary
@@ -15,9 +17,12 @@ export type CalendarEvent = {
 
 const HOUR_MS = 60 * 60 * 1000;
 
+// Event instants must render as Europe/Berlin wall-clock regardless of the
+// runtime TZ (UTC on Vercel) — see apps/web/app/lib/datetime.ts.
 function fmt(d: Date): string {
-  const p = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
+  const p = berlinParts(d);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${p["year"]}-${pad(p["month"]!)}-${pad(p["day"]!)} ${pad(p["hour"]!)}:${pad(p["minute"]!)}`;
 }
 
 export function toCalendarEvents(events: ReadonlyArray<EventWithCounts>): CalendarEvent[] {
