@@ -74,12 +74,25 @@ export async function seedGroup(input: {
   name: string;
   city: string;
   status?: "active" | "dormant" | "new" | "archived";
+  contactEmail?: string;
+  location?: { name: string; address: string; lat: number; lng: number };
 }): Promise<string> {
   const id = `grp_e2e_${rand()}`;
   await sql`
-    INSERT INTO groups (id, slug, name, city, status)
-    VALUES (${id}, ${input.slug}, ${input.name}, ${input.city}, ${input.status ?? "active"})`;
+    INSERT INTO groups (id, slug, name, city, status, contact_email,
+                        location_name, location_address, location_lat, location_lng)
+    VALUES (${id}, ${input.slug}, ${input.name}, ${input.city}, ${input.status ?? "active"},
+            ${input.contactEmail ?? null},
+            ${input.location?.name ?? null}, ${input.location?.address ?? null},
+            ${input.location?.lat ?? null}, ${input.location?.lng ?? null})`;
   return id;
+}
+
+/** The stored contact email for a group (Task 5b regression check). */
+export async function groupContactEmail(slug: string): Promise<string | null> {
+  const rows = await sql<{ contact_email: string | null }[]>`
+    SELECT contact_email FROM groups WHERE slug = ${slug} LIMIT 1`;
+  return rows[0]?.contact_email ?? null;
 }
 
 /** The member id for a given login email (member rows are created on /account). */
