@@ -31,6 +31,21 @@ function optional(formData: FormData, key: string): string | null {
   return v === "" ? null : v;
 }
 
+/** Hidden inputs from LocationPicker; empty lat/lng = no location. */
+function locationInput(
+  formData: FormData,
+): { name: string; address: string; lat: number; lng: number } | null {
+  const lat = str(formData, "locationLat");
+  const lng = str(formData, "locationLng");
+  if (lat === "" || lng === "") return null;
+  return {
+    name: str(formData, "locationName"),
+    address: str(formData, "locationAddress"),
+    lat: Number(lat),
+    lng: Number(lng),
+  };
+}
+
 /**
  * Invalidate every view that reflects group data. The public `/gruppen`
  * list is statically renderable, so without this an archived/edited group
@@ -67,6 +82,7 @@ export async function saveGroupAction(
     instagramUrl: optional(formData, "instagramUrl"),
     websiteUrl: optional(formData, "websiteUrl"),
     status: str(formData, "status") || "active",
+    location: locationInput(formData),
   };
 
   try {

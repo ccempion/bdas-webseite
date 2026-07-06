@@ -68,6 +68,7 @@ export default async function GruppeBearbeitenPage({ params }: { params: { slug:
           instagramUrl: group.instagramUrl ?? "",
           websiteUrl: group.websiteUrl ?? "",
           status: group.status,
+          location: group.location,
         }}
       />
 
