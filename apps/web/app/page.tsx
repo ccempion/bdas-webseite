@@ -6,6 +6,7 @@ import { AktuellesBlock } from "./_public/landing/AktuellesBlock";
 import { ConnectBlock } from "./_public/landing/ConnectBlock";
 import { GruppenBlock } from "./_public/landing/GruppenBlock";
 import { Hero } from "./_public/landing/Hero";
+import { KalenderBlock } from "./_public/landing/KalenderBlock";
 import { LegacyLanding } from "./_public/landing/LegacyLanding";
 
 export default async function HomePage() {
@@ -17,7 +18,7 @@ export default async function HomePage() {
       <Hero />
       {isFlagOn("groups") ? <GruppenBlock /> : null}
       <AktuellesBlock />
-      {/* Events-Kalender block lands in Task 9 */}
+      {isFlagOn("events") ? <KalenderBlock /> : null}
       <AgBlock />
       <ConnectBlock loggedIn={me !== null} />
     </main>
