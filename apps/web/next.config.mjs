@@ -40,6 +40,21 @@ const nextConfig = {
     }
     return config;
   },
+  // Legacy WordPress paths (pre-2026 bdas.de). Seed list — extend from the
+  // WordPress export before DNS cutover (spec §1 "Legacy URL redirects").
+  async redirects() {
+    return [
+      { source: "/news", destination: "/", permanent: true },
+      { source: "/news/:slug", destination: "/", permanent: true },
+      {
+        source: "/ueber-uns/:slug((?!verbandsstruktur|bdaj).*)",
+        destination: "/ueber-uns",
+        permanent: true,
+      },
+      { source: "/kontakt", destination: "/", permanent: true },
+      { source: "/mitmachen", destination: "/registrieren", permanent: true },
+    ];
+  },
 };
 
 export default nextConfig;

@@ -18,11 +18,13 @@ import "./globals.css";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env["PUBLIC_SITE_URL"] ?? "http://localhost:3000"),
   title: {
-    default: "BDAS",
+    default: "BDAS — Bund der Alevitischen Studierenden",
     template: "%s · BDAS",
   },
-  description: "Bund der Alevitischen Studierenden — digitale Plattform.",
+  description:
+    "Der Bund der Alevitischen Studierenden in Deutschland: Hochschulgruppen, Veranstaltungen und BDAS-Connect, die Plattform für Mitglieder.",
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
