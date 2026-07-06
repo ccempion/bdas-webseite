@@ -118,3 +118,39 @@ export async function memberStatusByEmail(email: string): Promise<string | null>
     LIMIT 1`;
   return rows[0]?.status ?? null;
 }
+
+/** Force a member straight to `active`, bypassing the board-approval flow —
+ *  for tests that only need an active viewer (e.g. members_only visibility).
+ *  Returns the member id. The member row is created by the /account Server
+ *  Action just before this; poll briefly so we don't race its commit (same
+ *  race `grantLocalBoard` above guards against). */
+export async function activateMemberByEmail(email: string): Promise<string> {
+  let memberId: string | null = null;
+  for (let i = 0; i < 20 && !memberId; i++) {
+    memberId = await memberIdByEmail(email);
+    if (!memberId) await new Promise((r) => setTimeout(r, 250));
+  }
+  if (!memberId) throw new Error(`activateMemberByEmail: no member for ${email}`);
+  await sql`UPDATE members SET status = 'active' WHERE id = ${memberId}`;
+  return memberId;
+}
+
+/** Insert an event directly and return its id. `events.id` has no DB default,
+ *  so the id is generated here (same convention as `seedGroup`). Only sets
+ *  the NOT NULL columns plus what the facets test needs; `status` is always
+ *  'published' and `created_at` defaults to now() — both required for
+ *  `listUpcomingEvents` to include the row. */
+export async function seedEvent(input: {
+  title: string;
+  groupId: string | null;
+  visibility: "public" | "members_only" | "group_only";
+  startsAt: Date;
+  createdBy: string;
+}): Promise<string> {
+  const id = `evt_e2e_${rand()}`;
+  await sql`
+    INSERT INTO events (id, group_id, title, starts_at, visibility, status, created_by)
+    VALUES (${id}, ${input.groupId}, ${input.title}, ${input.startsAt},
+            ${input.visibility}, 'published', ${input.createdBy})`;
+  return id;
+}

@@ -44,9 +44,25 @@ export async function login(page: Page, email: string, password: string = PASSWO
   await page.waitForURL("**/account");
 }
 
+/** Force-open the mobile "Menü" disclosure (PublicHeader, public_shell flag)
+ *  so its links/buttons (Mein Konto, Abmelden, Anmelden, …) become actionable
+ *  on this suite's mobile viewport. Sets `.open` directly rather than
+ *  clicking the summary, so it's idempotent (no toggle-closed risk if the
+ *  menu is already open). No-op against the legacy SiteHeader, which has no
+ *  such disclosure. */
+export async function openMobileMenu(page: Page): Promise<void> {
+  const menu = page.locator('header details:has(summary[aria-label="Menü öffnen"])');
+  if (await menu.count()) {
+    await menu.evaluate((el) => {
+      (el as HTMLDetailsElement).open = true;
+    });
+  }
+}
+
 export async function logout(page: Page): Promise<void> {
   // The header (role=banner) carries the global logout; scope to it so we don't
   // collide with page-level "Abmelden" buttons (/account, event cancel).
+  await openMobileMenu(page);
   await page.getByRole("banner").getByRole("button", { name: "Abmelden" }).click();
   await page.waitForURL((url) => !url.pathname.startsWith("/account"));
 }
