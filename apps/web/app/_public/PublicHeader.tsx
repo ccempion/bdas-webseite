@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { canAdministerBoard } from "@bdas/dashboard-shell";
+import { isFederalBoard } from "@bdas/members";
 
 import { loadCurrentMember } from "../_dashboard/session";
 import { navItems, type NavItem } from "./nav-items";
@@ -43,9 +44,9 @@ function DesktopItem({ item }: { item: NavItem }) {
 }
 
 export async function PublicHeader() {
-  const items = navItems();
   const me = await loadCurrentMember();
   const isBoard = me ? canAdministerBoard(me.grants) : false;
+  const items = navItems({ isFederal: me ? isFederalBoard(me.grants) : false });
   const displayName = me?.member?.firstName ?? "Konto";
 
   return (
