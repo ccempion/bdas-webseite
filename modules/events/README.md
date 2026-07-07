@@ -45,6 +45,7 @@ Migrations:
 import {
   // reads (viewer-scoped)
   listUpcomingEvents,
+  listPastEvents,   // published events with startsAt < now, newest-first, visibility-filtered
   listManagedEvents,
   getEvent,
   getMyRegistration,
