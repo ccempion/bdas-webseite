@@ -1,6 +1,6 @@
 import { isFlagOn } from "@bdas/feature-flags";
 
-import { loadViewer } from "./_dashboard/session";
+import { loadCurrentMember } from "./_dashboard/session";
 import { AgBlock } from "./_public/landing/AgBlock";
 import { AktuellesBlock } from "./_public/landing/AktuellesBlock";
 import { ConnectBlock } from "./_public/landing/ConnectBlock";
@@ -12,15 +12,17 @@ import { LegacyLanding } from "./_public/landing/LegacyLanding";
 export default async function HomePage() {
   if (!isFlagOn("public_shell")) return <LegacyLanding />;
 
-  const me = await loadViewer();
+  const me = await loadCurrentMember();
+  const loggedIn = me !== null;
+  const hasGroup = me?.member?.primaryGroupId != null;
   return (
     <main className="flex flex-col">
-      <Hero />
+      <Hero loggedIn={loggedIn} hasGroup={hasGroup} />
       {isFlagOn("groups") ? <GruppenBlock /> : null}
       <AktuellesBlock />
       {isFlagOn("events") ? <KalenderBlock /> : null}
       <AgBlock />
-      <ConnectBlock loggedIn={me !== null} />
+      <ConnectBlock loggedIn={loggedIn} />
     </main>
   );
 }

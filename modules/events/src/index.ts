@@ -8,7 +8,7 @@
  * taken by the core event bus (core/events). See the module README.
  */
 
-export { listUpcomingEvents, listManagedEvents, type ListOpts } from "./services/list";
+export { listUpcomingEvents, listPastEvents, listManagedEvents, type ListOpts } from "./services/list";
 export { getEvent, canView, canManage, ANON, type Viewer } from "./services/get";
 export {
   createEvent,
