@@ -28,6 +28,7 @@ export function EventFilterBar({
         <div className="flex flex-wrap items-center gap-2">
           <Link
             href={buildHref(new Set(), past)}
+            aria-current={selected.size === 0 ? "true" : undefined}
             className={cx(CHIP, selected.size === 0 ? ON : OFF)}
           >
             Alle
@@ -36,6 +37,7 @@ export function EventFilterBar({
             <Link
               key={c.key}
               href={toggleHref(c.key, selected, past)}
+              aria-current={selected.has(c.key) ? "true" : undefined}
               className={cx(CHIP, selected.has(c.key) ? ON : OFF)}
             >
               {c.label}
@@ -46,6 +48,7 @@ export function EventFilterBar({
       <div>
         <Link
           href={buildHref(selected, !past)}
+          aria-current={past ? "true" : undefined}
           className={cx(CHIP, past ? ON : OFF)}
         >
           {past ? "Nur kommende" : "Vergangene anzeigen"}

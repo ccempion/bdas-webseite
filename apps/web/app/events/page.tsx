@@ -65,8 +65,11 @@ export default async function EventsPage({
   const viewer = viewerFrom(me);
   const showPast = firstParam(searchParams["past"]) === "1";
 
-  const [upcoming, groups] = await Promise.all([listUpcomingEvents(db, viewer), listGroups(db)]);
-  const pastEvents = showPast ? await listPastEvents(db, viewer) : [];
+  const [upcoming, groups, pastEvents] = await Promise.all([
+    listUpcomingEvents(db, viewer),
+    listGroups(db),
+    showPast ? listPastEvents(db, viewer) : Promise.resolve<ReadonlyArray<EventWithCounts>>([]),
+  ]);
 
   const groupById = new Map<string, GroupInfo>(
     groups.map((g) => [g.id, { name: g.name, slug: g.slug }]),
