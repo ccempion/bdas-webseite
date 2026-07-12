@@ -95,6 +95,7 @@ function eventFieldsFromForm(fd: FormData, groupId: string | null) {
     locationLng: numOpt(fd, "locationLng"),
     capacity: opt(fd, "capacity"),
     visibility: s(fd, "visibility") || "members_only",
+    allowGuestRegistration: fd.get("allowGuestRegistration") === "on",
     groupId,
   };
 }
@@ -274,15 +275,20 @@ export async function emailRegistrantsAction(
     const event = await getEvent(db, eventId, viewerFrom(me));
     if (!event) return { error: "Veranstaltung nicht gefunden." };
 
-    const confirmed = (await listRegistrations(db, eventId))
-      .filter((r) => r.status === "confirmed")
-      .map((r) => r.memberId);
-    if (confirmed.length === 0) {
+    const confirmed = (await listRegistrations(db, eventId)).filter(
+      (r) => r.status === "confirmed",
+    );
+    const memberIds = confirmed.map((r) => r.memberId).filter((id): id is string => id !== null);
+    const guests = confirmed
+      .filter((r) => r.memberId === null && r.guestEmail)
+      .map((r) => ({ email: r.guestEmail as string, name: r.guestName }));
+    if (memberIds.length === 0 && guests.length === 0) {
       return { error: "Es gibt keine bestätigten Teilnehmenden." };
     }
 
     const result = await sendOrganizerMessage(db, {
-      memberIds: confirmed,
+      memberIds,
+      guests,
       eventTitle: event.title,
       eventId,
       eventUrl: eventPublicUrl(eventId),

@@ -40,6 +40,8 @@ export type EventItem = {
   readonly locationLng: number | null;
   /** null = unlimited capacity. */
   readonly capacity: number | null;
+  /** Opt-in non-member sign-ups; only meaningful when the event is public. */
+  readonly allowGuestRegistration: boolean;
   readonly visibility: EventVisibility;
   readonly status: EventStatus;
   readonly createdBy: string;
@@ -48,7 +50,10 @@ export type EventItem = {
 export type EventRegistration = {
   readonly id: string;
   readonly eventId: string;
-  readonly memberId: string;
+  /** null for a guest registration (identified by guestEmail instead). */
+  readonly memberId: string | null;
+  readonly guestName: string | null;
+  readonly guestEmail: string | null;
   readonly registeredAt: Date;
   readonly cancelledAt: Date | null;
   /** null = confirmed; >=1 = waitlisted at that rank. */
@@ -62,12 +67,17 @@ export type RegistrationResult = {
 
 export type RosterStatus = "confirmed" | "waitlisted";
 
-/** One active registration as the manage roster sees it. Identity (name/email)
- *  is resolved by the app via members/auth — this module owns only `memberId`
- *  (CLAUDE.md §1 rule 1). */
+/** One active registration as the manage roster sees it. For members, identity
+ *  (name/email) is resolved by the app via members/auth — this module owns only
+ *  `memberId` (CLAUDE.md §1 rule 1). Guest identity, by contrast, lives on the
+ *  registration row itself (guests are not members), so it is carried here. */
 export type RosterRow = {
   readonly registrationId: string;
-  readonly memberId: string;
+  /** null for a guest registration. */
+  readonly memberId: string | null;
+  /** Set for a guest registration; null for a member. */
+  readonly guestName: string | null;
+  readonly guestEmail: string | null;
   readonly status: RosterStatus;
   /** null = confirmed; >=1 = waitlisted at that rank. */
   readonly waitlistPosition: number | null;

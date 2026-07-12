@@ -103,7 +103,12 @@ export default async function ManageEventPage({ params }: { params: { id: string
             <tbody>
               {roster.map((r) => (
                 <tr key={r.registrationId} className="border-b border-bdas-soft last:border-0">
-                  <td className="py-2 text-bdas-ink">{r.name}</td>
+                  <td className="py-2 text-bdas-ink">
+                    {r.name}
+                    {r.isGuest ? (
+                      <span className="ml-2 text-xs text-bdas-ink-muted">(Gast)</span>
+                    ) : null}
+                  </td>
                   <td className="py-2 text-bdas-ink-body">{ROSTER_STATUS_LABEL[r.status]}</td>
                   <td className="py-2 text-bdas-ink-muted">{formatDateTime(r.registeredAt)}</td>
                   <td className="py-2 text-right">

@@ -23,6 +23,7 @@ export type EventDefaults = {
   registrationDeadlineLocal: string;
   capacity: number | null;
   visibility: string;
+  allowGuestRegistration: boolean;
   location: { name: string; address: string; lat: number | null; lng: number | null } | null;
   groups: ReadonlyArray<{ id: string; name: string }>;
   allowFederation: boolean;
@@ -33,6 +34,11 @@ export type EventDefaults = {
 export function EventFields({ d }: { d: EventDefaults }) {
   const [coverKey, setCoverKey] = useState(d.coverImageKey ?? "");
   const [coverBusy, setCoverBusy] = useState(false);
+  // Guest registration is only valid on public events; track visibility so the
+  // toggle disables (and unchecks) itself when the event isn't public.
+  const [visibility, setVisibility] = useState(d.visibility);
+  const [allowGuest, setAllowGuest] = useState(d.allowGuestRegistration);
+  const guestAllowed = visibility === "public";
 
   async function uploadCover(file: File) {
     setCoverBusy(true);
@@ -166,13 +172,33 @@ export function EventFields({ d }: { d: EventDefaults }) {
         <select
           id="visibility"
           name="visibility"
-          defaultValue={d.visibility}
+          value={visibility}
+          onChange={(e) => setVisibility(e.target.value)}
           className={SELECT_CLASS}
         >
           <option value="public">Öffentlich</option>
           <option value="members_only">Nur Mitglieder</option>
           <option value="group_only">Nur Gruppe</option>
         </select>
+      </Field>
+
+      <Field
+        label="Gastanmeldung"
+        htmlFor="allowGuestRegistration"
+        hint="Nicht-Mitglieder können sich mit Name und E-Mail anmelden. Nur für öffentliche Veranstaltungen."
+        error={d.errors?.["allowGuestRegistration"]}
+      >
+        <label className="flex items-center gap-2 text-sm text-bdas-ink-body">
+          <input
+            type="checkbox"
+            id="allowGuestRegistration"
+            name="allowGuestRegistration"
+            checked={allowGuest && guestAllowed}
+            disabled={!guestAllowed}
+            onChange={(e) => setAllowGuest(e.target.checked)}
+          />
+          Gäste ohne Mitgliedskonto zulassen
+        </label>
       </Field>
 
       <Field label="Gruppe" htmlFor="groupId" error={d.errors?.["groupId"]}>

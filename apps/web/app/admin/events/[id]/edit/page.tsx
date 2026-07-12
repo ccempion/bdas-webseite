@@ -49,6 +49,7 @@ export default async function EditEventPage({ params }: { params: { id: string }
             registrationDeadlineLocal: toLocal(event.registrationDeadline),
             capacity: event.capacity,
             visibility: event.visibility,
+            allowGuestRegistration: event.allowGuestRegistration,
             location: event.locationName
               ? {
                   name: event.locationName,

@@ -10,8 +10,17 @@ send for audit.
 | ------------------ | ------------------------------------------ |
 | `notification_log` | One audit row per send (`sent` / `failed`) |
 
-Migration: `migrations/0001_init.sql`, runs after `members` (the FK target) per
-the `infra/migrations` manifest.
+Migrations, run after `members` (the FK target) per the `infra/migrations`
+manifest:
+
+- `migrations/0001_init.sql` — base schema
+- `migrations/0002_guest_recipient.sql` — makes `member_id` nullable so
+  transactional mail to event **guests** (non-members) can be logged with
+  `to_email` and a null `member_id` (Slice 4)
+
+Guest sends use `sendTransactionalToGuest(template, { email, name }, extra)`
+internally (no member resolver); the bus subscribers branch on whether a
+registrant event carries a `memberId` or guest fields.
 
 ## Public surface
 

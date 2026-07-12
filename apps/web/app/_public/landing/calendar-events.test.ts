@@ -23,6 +23,7 @@ const base = {
   locationLat: null,
   locationLng: null,
   capacity: null,
+  allowGuestRegistration: false,
   visibility: "public" as const,
   status: "published" as const,
   createdBy: "m-1",
