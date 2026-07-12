@@ -18,17 +18,31 @@ export async function loadRoster(eventId: string): Promise<RosterDisplayRow[]> {
   const rows = await listRegistrations(db, eventId);
   const out: RosterDisplayRow[] = [];
   for (const r of rows) {
-    const member = await getMember(db, r.memberId);
-    const name = member ? `${member.firstName} ${member.lastName}`.trim() : "—";
-    const user = member ? await getUserExport(db, member.userId) : null;
-    out.push({
-      registrationId: r.registrationId,
-      memberId: r.memberId,
-      name,
-      email: user?.email ?? "",
-      status: r.status,
-      registeredAt: r.registeredAt,
-    });
+    if (r.memberId) {
+      const member = await getMember(db, r.memberId);
+      const name = member ? `${member.firstName} ${member.lastName}`.trim() : "—";
+      const user = member ? await getUserExport(db, member.userId) : null;
+      out.push({
+        registrationId: r.registrationId,
+        memberId: r.memberId,
+        name,
+        email: user?.email ?? "",
+        isGuest: false,
+        status: r.status,
+        registeredAt: r.registeredAt,
+      });
+    } else {
+      // Guest: identity lives on the registration row itself (not in members).
+      out.push({
+        registrationId: r.registrationId,
+        memberId: null,
+        name: r.guestName ?? "Gast",
+        email: r.guestEmail ?? "",
+        isGuest: true,
+        status: r.status,
+        registeredAt: r.registeredAt,
+      });
+    }
   }
   return out;
 }

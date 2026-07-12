@@ -57,6 +57,7 @@ describeIfDb("listUpcomingEvents / listPastEvents", () => {
       ["..", "..", "members", "migrations", "0002_role_grants.sql"],
       ["..", "migrations", "0001_init.sql"],
       ["..", "migrations", "0002_event_pages.sql"],
+      ["..", "migrations", "0003_guest_registration.sql"],
     ]) {
       const sql = await fs.readFile(path.join(__dirname, "..", ...file), "utf8");
       await t.client.unsafe(sql);
@@ -69,11 +70,7 @@ describeIfDb("listUpcomingEvents / listPastEvents", () => {
   });
 
   async function publishPublic(title: string, startsAt: Date): Promise<string> {
-    const ev = await createEvent(
-      t.db,
-      { title, startsAt, visibility: "public" },
-      "usr_creator",
-    );
+    const ev = await createEvent(t.db, { title, startsAt, visibility: "public" }, "usr_creator");
     await publishEvent(t.db, ev.id);
     return ev.id;
   }

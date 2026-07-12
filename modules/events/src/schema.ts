@@ -35,6 +35,8 @@ export const events = pgTable(
     locationLng: doublePrecision("location_lng"),
     // null capacity = unlimited.
     capacity: integer("capacity"),
+    // Opt-in: accept non-member sign-ups (only for publicly viewable events).
+    allowGuestRegistration: boolean("allow_guest_registration").notNull().default(false),
     visibility: text("visibility").notNull().default("members_only"),
     status: text("status").notNull().default("draft"),
     createdBy: text("created_by").notNull(),
@@ -49,7 +51,13 @@ export const events = pgTable(
 export const eventRegistrations = pgTable("event_registrations", {
   id: text("id").primaryKey(),
   eventId: text("event_id").notNull(),
-  memberId: text("member_id").notNull(),
+  // Exactly one of memberId / guestEmail is set (DB CHECK). Guests are
+  // non-members registering by name + email on public, opt-in events.
+  memberId: text("member_id"),
+  guestName: text("guest_name"),
+  guestEmail: text("guest_email"),
+  // Single-use, unguessable token for a guest's self-cancel link (emailed).
+  guestCancelToken: text("guest_cancel_token"),
   registeredAt: timestamp("registered_at", { withTimezone: true }).notNull().defaultNow(),
   cancelledAt: timestamp("cancelled_at", { withTimezone: true }),
   // null position = confirmed; >=1 = waitlisted at that rank.

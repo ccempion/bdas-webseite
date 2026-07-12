@@ -7,10 +7,12 @@
  */
 import type { Db } from "@bdas/db";
 
-import { sendTransactional } from "./send";
+import { sendTransactional, sendTransactionalToGuest } from "./send";
 
 export type OrganizerMessage = {
   readonly memberIds: ReadonlyArray<string>;
+  /** Non-member guest recipients (Slice 4), addressed by raw email. */
+  readonly guests?: ReadonlyArray<{ readonly email: string; readonly name?: string | null }>;
   readonly eventTitle: string;
   readonly eventId?: string;
   readonly eventUrl?: string | undefined;
@@ -42,6 +44,22 @@ export async function sendOrganizerMessage(
     });
     if (!result) skipped += 1;
     else if (result.status === "sent") sent += 1;
+    else failed += 1;
+  }
+  for (const guest of msg.guests ?? []) {
+    const result = await sendTransactionalToGuest(
+      db,
+      "event_organizer_message",
+      { email: guest.email, name: guest.name },
+      {
+        eventTitle: msg.eventTitle,
+        eventId: msg.eventId,
+        eventUrl: msg.eventUrl,
+        subject: msg.subject,
+        messageBody: msg.body,
+      },
+    );
+    if (result.status === "sent") sent += 1;
     else failed += 1;
   }
   return { sent, failed, skipped };

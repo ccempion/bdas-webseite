@@ -3,9 +3,12 @@ import type { RosterStatus } from "@bdas/events-module";
 /** A roster entry with identity resolved, ready for display or CSV export. */
 export type RosterDisplayRow = {
   readonly registrationId: string;
-  readonly memberId: string;
+  /** null for a guest (non-member) registration. */
+  readonly memberId: string | null;
   readonly name: string;
   readonly email: string;
+  /** True for a non-member guest registration. */
+  readonly isGuest: boolean;
   readonly status: RosterStatus;
   readonly registeredAt: Date;
 };

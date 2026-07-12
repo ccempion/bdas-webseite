@@ -7,6 +7,7 @@ const row = (over: Partial<RosterDisplayRow>): RosterDisplayRow => ({
   memberId: "mem_1",
   name: "Mara Beispiel",
   email: "mara@example.org",
+  isGuest: false,
   status: "confirmed",
   registeredAt: new Date("2026-06-01T10:00:00.000Z"),
   ...over,

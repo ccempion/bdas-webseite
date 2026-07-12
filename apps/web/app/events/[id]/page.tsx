@@ -11,6 +11,7 @@ import { requireEventsFlag } from "../../_events/flag";
 import { readSessionCookie } from "../../../lib/auth-cookie";
 import { viewerFrom } from "../../../lib/event-viewer";
 import { formatDateTime } from "../../../lib/format";
+import { GuestRegisterForm } from "./GuestRegisterForm";
 import { RegisterControls } from "./RegisterControls";
 
 export const metadata = { title: "Veranstaltung" };
@@ -38,6 +39,10 @@ export default async function EventDetailPage({ params }: { params: { id: string
   if (!event) notFound();
 
   const myReg = me?.member ? await getMyRegistration(db, event.id, me.member.id) : null;
+
+  // Non-members may sign up only on published, public events that opted in.
+  const guestRegistrationOpen =
+    event.status === "published" && event.visibility === "public" && event.allowGuestRegistration;
 
   return (
     <main className="mx-auto flex max-w-3xl flex-col gap-6 px-4 py-12">
@@ -91,7 +96,28 @@ export default async function EventDetailPage({ params }: { params: { id: string
               }`}
         </p>
 
-        {!me ? (
+        {event.registrationDeadline && event.registrationDeadline < new Date() ? (
+          <Alert variant="info">Die Anmeldefrist ist abgelaufen.</Alert>
+        ) : me?.member ? (
+          <RegisterControls
+            eventId={event.id}
+            registered={myReg !== null}
+            waitlistPosition={myReg?.waitlistPosition ?? null}
+          />
+        ) : guestRegistrationOpen ? (
+          <div className="flex flex-col gap-3">
+            <GuestRegisterForm eventId={event.id} />
+            {!me ? (
+              <p className="text-sm text-bdas-ink-muted">
+                Bereits Mitglied?{" "}
+                <Link href="/anmelden" className="text-bdas-red hover:underline">
+                  Melde dich an
+                </Link>
+                , um dich mit deinem Konto anzumelden.
+              </p>
+            ) : null}
+          </div>
+        ) : !me ? (
           <Alert variant="info">
             Bitte{" "}
             <Link href="/anmelden" className="text-bdas-red hover:underline">
@@ -99,7 +125,7 @@ export default async function EventDetailPage({ params }: { params: { id: string
             </Link>
             , um teilzunehmen.
           </Alert>
-        ) : !me.member ? (
+        ) : (
           <Alert variant="info">
             Bitte{" "}
             <Link href="/account" className="text-bdas-red hover:underline">
@@ -107,14 +133,6 @@ export default async function EventDetailPage({ params }: { params: { id: string
             </Link>
             , um dich anzumelden.
           </Alert>
-        ) : event.registrationDeadline && event.registrationDeadline < new Date() ? (
-          <Alert variant="info">Die Anmeldefrist ist abgelaufen.</Alert>
-        ) : (
-          <RegisterControls
-            eventId={event.id}
-            registered={myReg !== null}
-            waitlistPosition={myReg?.waitlistPosition ?? null}
-          />
         )}
 
         <a

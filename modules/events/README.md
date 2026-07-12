@@ -9,18 +9,30 @@ Event creation, registration, and waitlisting (spec §10, Phase 2 core slice).
 
 ## Owned tables
 
-| Table                 | Purpose                                                         |
-| --------------------- | --------------------------------------------------------------- |
-| `events`              | Event row; `group_id` null = federation-wide                    |
-| `event_registrations` | One active row per member; `waitlist_position` null = confirmed |
-| `event_attendance`    | Day-of check-in (table only this PR; service/UI deferred)       |
+| Table                 | Purpose                                                                      |
+| --------------------- | ---------------------------------------------------------------------------- |
+| `events`              | Event row; `group_id` null = federation-wide                                 |
+| `event_registrations` | One active row per member **or** guest; `waitlist_position` null = confirmed |
+| `event_attendance`    | Day-of check-in (table only this PR; service/UI deferred)                    |
 
 Migrations:
 
 - `migrations/0001_init.sql` — base schema, run after `groups` + `members`
-- `migrations/0002_event_page_fields.sql` — adds `content`, `cover_image_key`,
+- `migrations/0002_event_pages.sql` — adds `content`, `cover_image_key`,
   `summary`, `registration_deadline`, `location_name`, `location_address`,
   `location_lat`, `location_lng`
+- `migrations/0003_guest_registration.sql` — adds `allow_guest_registration` on
+  `events`; makes `event_registrations.member_id` nullable and adds `guest_name`,
+  `guest_email`, `guest_cancel_token` with a member-XOR-guest CHECK (Slice 4)
+
+### Guest registration columns (added in Slice 4)
+
+| Column                            | Table                 | Purpose                                                                       |
+| --------------------------------- | --------------------- | ----------------------------------------------------------------------------- |
+| `events.allow_guest_registration` | `events`              | Per-event opt-in; only valid on `public` events (enforced in service/editor)  |
+| `member_id` (now nullable)        | `event_registrations` | Null for a guest; a CHECK enforces exactly one of `member_id` / `guest_email` |
+| `guest_name`, `guest_email`       | `event_registrations` | Non-member identity captured on the public sign-up form (consent required)    |
+| `guest_cancel_token`              | `event_registrations` | Single-use, unguessable token backing the guest self-cancel link in email     |
 
 ### Event page columns (added in Slice 1)
 
@@ -45,7 +57,7 @@ Migrations:
 import {
   // reads (viewer-scoped)
   listUpcomingEvents,
-  listPastEvents,   // published events with startsAt < now, newest-first, visibility-filtered
+  listPastEvents, // published events with startsAt < now, newest-first, visibility-filtered
   listManagedEvents,
   getEvent,
   getMyRegistration,
@@ -55,9 +67,12 @@ import {
   publishEvent,
   cancelEvent,
   EventInput,
-  // registration (member self-service)
+  // registration (member self-service + guest, Slice 4)
   registerMember,
+  registerGuest, // non-member sign-up on public, opt-in events
   cancelRegistration,
+  cancelGuestByToken, // guest self-cancel via the emailed token
+  listRegistrations, // roster incl. guests (name/email on the row)
   // authorization predicates + viewer
   canView,
   canManage,
@@ -160,10 +175,21 @@ of that group. Drafts and cancelled events are visible only to managers.
 seat opened before the event starts, auto-promotes the waitlist head (emitting
 `events.waitlist.promoted`) and closes the position gap. All in one transaction.
 
-## Events emitted (consumed later by `notifications`)
+**Guests (Slice 4).** On a published, `public` event with
+`allow_guest_registration`, `registerGuest(eventId, { name, email })` signs up a
+non-member — sharing the same capacity/waitlist path as members and minting a
+`guest_cancel_token`. Guests self-cancel with `cancelGuestByToken(eventId,
+token)` (the emailed link). One active registration per guest email per event
+(case-insensitive). `listRegistrations` and the counts include guests; a roster
+row is a member (`memberId` set) or a guest (`guestName`/`guestEmail` set).
+
+## Events emitted (consumed by `notifications`)
 
 `events.event.published` · `events.event.cancelled` · `events.event.registered`
-· `events.event.deregistered` · `events.waitlist.promoted`. No subscriber yet.
+· `events.event.deregistered` · `events.waitlist.promoted`. The registrant
+events carry either `memberId` **or** guest fields (`guestEmail`, `guestName`,
+and `guestCancelToken` on registered/promoted) so subscribers resolve the right
+recipient.
 
 ## Testing
 

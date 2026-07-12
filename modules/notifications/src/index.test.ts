@@ -62,7 +62,9 @@ describeIfDb("notifications integration", () => {
       // suite needs the events tables too.
       ["..", "..", "events", "migrations", "0001_init.sql"],
       ["..", "..", "events", "migrations", "0002_event_pages.sql"],
+      ["..", "..", "events", "migrations", "0003_guest_registration.sql"],
       ["..", "migrations", "0001_init.sql"],
+      ["..", "migrations", "0002_guest_recipient.sql"],
     ]) {
       const sql = await fs.readFile(path.join(__dirname, ...file), "utf8");
       await t.client.unsafe(sql);
@@ -187,6 +189,35 @@ describeIfDb("notifications integration", () => {
     unregisterNotificationSubscribers();
   });
 
+  it("registration event for a guest emails the guest with a self-cancel link, null member_id", async () => {
+    resetEventBus();
+    registerNotificationSubscribers(t.db, { siteUrl: "https://dashboard.bdas.de" });
+    await getEventBus().publish({
+      type: "events.event.registered",
+      eventId: "evt_g",
+      memberId: null,
+      guestEmail: "gast@example.org",
+      guestName: "Gast",
+      guestCancelToken: "gtok_abc",
+      waitlisted: false,
+      at: new Date(),
+    });
+
+    expect(sent).toHaveLength(1);
+    expect(sent[0]?.to).toBe("gast@example.org");
+    expect(sent[0]?.subject).toContain("Anmeldung");
+    expect(sent[0]?.text).toContain(
+      "https://dashboard.bdas.de/events/evt_g/gast-abmelden?token=gtok_abc",
+    );
+
+    const rows = await t.db.select().from(notificationLog);
+    expect(rows).toHaveLength(1);
+    expect(rows[0]?.memberId).toBeNull();
+    expect(rows[0]?.toEmail).toBe("gast@example.org");
+
+    unregisterNotificationSubscribers();
+  });
+
   /** Seed an auth_user + member with a unique suffix. */
   async function seedMemberN(n: number): Promise<string> {
     const userId = `usr_r_${n}`;
@@ -213,6 +244,10 @@ describeIfDb("notifications integration", () => {
     await t.client`
       INSERT INTO event_registrations (id, event_id, member_id, waitlist_position)
       VALUES ('ereg_2', ${eventId}, ${m2}, 1)`;
+    // A guest registrant (no member_id) — fan-out must reach them too.
+    await t.client`
+      INSERT INTO event_registrations (id, event_id, guest_name, guest_email, waitlist_position)
+      VALUES ('ereg_3', ${eventId}, 'Gast Drei', 'gast3@example.org', NULL)`;
     return [m1, m2];
   }
 
@@ -229,11 +264,14 @@ describeIfDb("notifications integration", () => {
       at: new Date(),
     });
 
-    expect(sent).toHaveLength(2);
-    expect(sent[0]?.subject).toContain("Änderung");
+    expect(sent).toHaveLength(3);
+    expect(sent.some((s) => s.subject.includes("Änderung"))).toBe(true);
+    expect(sent.map((s) => s.to)).toContain("gast3@example.org");
     const rows = await t.db.select().from(notificationLog);
-    expect(rows).toHaveLength(2);
+    expect(rows).toHaveLength(3);
     expect(rows.every((r) => r.template === "event_changed")).toBe(true);
+    // The guest row is logged with a null member_id.
+    expect(rows.some((r) => r.toEmail === "gast3@example.org" && r.memberId === null)).toBe(true);
 
     unregisterNotificationSubscribers();
   });
@@ -246,8 +284,9 @@ describeIfDb("notifications integration", () => {
     registerNotificationSubscribers(t.db);
     await getEventBus().publish({ type: "events.event.cancelled", eventId, at: new Date() });
 
-    expect(sent).toHaveLength(2);
+    expect(sent).toHaveLength(3);
     expect(sent[0]?.subject).toContain("abgesagt");
+    expect(sent.map((s) => s.to)).toContain("gast3@example.org");
     const rows = await t.db.select().from(notificationLog);
     expect(rows.every((r) => r.template === "event_cancelled")).toBe(true);
 

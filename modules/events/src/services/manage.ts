@@ -54,6 +54,8 @@ export const EventInput = z.object({
     .optional()
     .nullable(),
   visibility: z.enum(["public", "members_only", "group_only"]).default("members_only"),
+  // Opt-in non-member sign-ups; only valid on public events (enforced below).
+  allowGuestRegistration: z.boolean().optional().default(false),
   // null = federation-wide; a value = that group's event.
   groupId: z.string().min(1).optional().nullable(),
 });
@@ -89,6 +91,7 @@ export function rowToEvent(r: typeof events.$inferSelect): EventItem {
     locationLat: r.locationLat ?? null,
     locationLng: r.locationLng ?? null,
     capacity: r.capacity,
+    allowGuestRegistration: r.allowGuestRegistration,
     visibility: r.visibility as EventVisibility,
     status: r.status as EventStatus,
     createdBy: r.createdBy,
@@ -111,6 +114,14 @@ function validateInput(v: EventInput): void {
   if (v.visibility === "group_only" && !v.groupId) {
     throw new ValidationError("Eingabe ungültig", {
       fields: { visibility: "„Nur Gruppe“ erfordert eine Gruppe" },
+    });
+  }
+  // Non-members can only be let in on publicly viewable events.
+  if (v.allowGuestRegistration && v.visibility !== "public") {
+    throw new ValidationError("Eingabe ungültig", {
+      fields: {
+        allowGuestRegistration: "Gastanmeldung ist nur für öffentliche Veranstaltungen möglich",
+      },
     });
   }
 }
@@ -139,6 +150,7 @@ export async function createEvent(db: Db, input: unknown, createdBy: string): Pr
     locationLat: v.locationLat ?? null,
     locationLng: v.locationLng ?? null,
     capacity: v.capacity ?? null,
+    allowGuestRegistration: v.allowGuestRegistration,
     visibility: v.visibility,
     status: "draft",
     createdBy,
@@ -178,6 +190,7 @@ export async function updateEvent(db: Db, id: string, input: unknown): Promise<E
       locationLat: v.locationLat ?? null,
       locationLng: v.locationLng ?? null,
       capacity: v.capacity ?? null,
+      allowGuestRegistration: v.allowGuestRegistration,
       visibility: v.visibility,
       groupId: v.groupId ?? null,
     })
