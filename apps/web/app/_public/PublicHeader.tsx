@@ -7,6 +7,7 @@ import { isFlagOn } from "@bdas/feature-flags";
 import { getGroup } from "@bdas/groups";
 
 import { loadCurrentMember } from "../_dashboard/session";
+import { NavAutoClose } from "./NavAutoClose";
 import { navItems, type NavItem } from "./nav-items";
 
 const PILL =
@@ -83,67 +84,69 @@ export async function PublicHeader() {
           aria-label="Hauptnavigation"
           className="hidden flex-1 items-center justify-end md:flex"
         >
-          <ul className="flex items-center gap-1">
-            {items.map((item) => (
-              <li key={item.label}>
-                <DesktopItem item={item} />
-              </li>
-            ))}
-            {me ? (
-              <li>
-                <details className="group relative">
-                  <summary
-                    className={`${PILL} cursor-pointer list-none [&::-webkit-details-marker]:hidden`}
-                  >
-                    {displayName}
-                    <span
-                      aria-hidden
-                      className="ml-1 text-bdas-ink-muted transition-transform duration-bdas-quick group-open:rotate-180"
+          <NavAutoClose>
+            <ul className="flex items-center gap-1">
+              {items.map((item) => (
+                <li key={item.label}>
+                  <DesktopItem item={item} />
+                </li>
+              ))}
+              {me ? (
+                <li>
+                  <details className="group relative">
+                    <summary
+                      className={`${PILL} cursor-pointer list-none [&::-webkit-details-marker]:hidden`}
                     >
-                      ▾
-                    </span>
-                  </summary>
-                  <ul className="absolute right-0 top-full z-40 mt-2 w-56 animate-bdas-fade-slide-down rounded-bdas border border-bdas-strong bg-bdas-surface p-2 shadow-bdas-dropdown">
-                    <li>
-                      <Link href="/account" className={DROPDOWN_LINK}>
-                        Mein Konto
-                      </Link>
-                    </li>
-                    {isBoard ? (
+                      {displayName}
+                      <span
+                        aria-hidden
+                        className="ml-1 text-bdas-ink-muted transition-transform duration-bdas-quick group-open:rotate-180"
+                      >
+                        ▾
+                      </span>
+                    </summary>
+                    <ul className="absolute right-0 top-full z-40 mt-2 w-56 animate-bdas-fade-slide-down rounded-bdas border border-bdas-strong bg-bdas-surface p-2 shadow-bdas-dropdown">
                       <li>
-                        <Link href="/dashboard" className={DROPDOWN_LINK}>
-                          Board-Bereich
+                        <Link href="/account" className={DROPDOWN_LINK}>
+                          Mein Konto
                         </Link>
                       </li>
-                    ) : null}
-                    <li>
-                      <form action="/abmelden" method="post">
-                        <button type="submit" className={`${DROPDOWN_LINK} w-full text-left`}>
-                          Abmelden
-                        </button>
-                      </form>
-                    </li>
-                  </ul>
-                </details>
-              </li>
-            ) : (
-              <>
-                <li>
-                  <Link
-                    href="/registrieren"
-                    className="inline-flex items-center rounded-bdas-pill bg-bdas-red px-4 py-1.5 text-bdas-pill font-medium text-white transition-colors duration-bdas-quick ease-bdas hover:brightness-110"
-                  >
-                    Mitglied werden
-                  </Link>
+                      {isBoard ? (
+                        <li>
+                          <Link href="/dashboard" className={DROPDOWN_LINK}>
+                            Board-Bereich
+                          </Link>
+                        </li>
+                      ) : null}
+                      <li>
+                        <form action="/abmelden" method="post">
+                          <button type="submit" className={`${DROPDOWN_LINK} w-full text-left`}>
+                            Abmelden
+                          </button>
+                        </form>
+                      </li>
+                    </ul>
+                  </details>
                 </li>
-                <li>
-                  <Link href="/anmelden" className={PILL}>
-                    Anmelden
-                  </Link>
-                </li>
-              </>
-            )}
-          </ul>
+              ) : (
+                <>
+                  <li>
+                    <Link
+                      href="/registrieren"
+                      className="inline-flex items-center rounded-bdas-pill bg-bdas-red px-4 py-1.5 text-bdas-pill font-medium text-white transition-colors duration-bdas-quick ease-bdas hover:brightness-110"
+                    >
+                      Mitglied werden
+                    </Link>
+                  </li>
+                  <li>
+                    <Link href="/anmelden" className={PILL}>
+                      Anmelden
+                    </Link>
+                  </li>
+                </>
+              )}
+            </ul>
+          </NavAutoClose>
         </nav>
 
         {/* Mobile menu */}
