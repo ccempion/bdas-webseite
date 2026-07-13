@@ -18,6 +18,7 @@ export type EventDefaults = {
   summary: string | null;
   content: EventContent | null;
   coverImageKey: string | null;
+  coverImageUrl: string | null;
   startsAtLocal: string;
   endsAtLocal: string;
   registrationDeadlineLocal: string;
@@ -33,6 +34,7 @@ export type EventDefaults = {
 
 export function EventFields({ d }: { d: EventDefaults }) {
   const [coverKey, setCoverKey] = useState(d.coverImageKey ?? "");
+  const [coverUrl, setCoverUrl] = useState(d.coverImageUrl);
   const [coverBusy, setCoverBusy] = useState(false);
   // Guest registration is only valid on public events; track visibility so the
   // toggle disables (and unchecks) itself when the event isn't public.
@@ -52,13 +54,14 @@ export function EventFields({ d }: { d: EventDefaults }) {
         alert((await res.json().catch(() => ({}))).error ?? "Upload fehlgeschlagen.");
         return;
       }
-      const { uploadUrl, storageKey } = await res.json();
+      const { uploadUrl, publicUrl, storageKey } = await res.json();
       const put = await fetch(uploadUrl, { method: "PUT", body: file });
       if (!put.ok) {
         alert("Upload fehlgeschlagen.");
         return;
       }
       setCoverKey(storageKey);
+      setCoverUrl(publicUrl);
     } finally {
       setCoverBusy(false);
     }
@@ -80,6 +83,9 @@ export function EventFields({ d }: { d: EventDefaults }) {
 
       {d.eventId !== "" && (
         <Field label="Titelbild (optional)" htmlFor="cover">
+          {coverUrl ? (
+            <img src={coverUrl} alt="" className="mb-2 max-h-48 w-full rounded-bdas object-cover" />
+          ) : null}
           <input
             id="cover"
             type="file"
@@ -91,7 +97,7 @@ export function EventFields({ d }: { d: EventDefaults }) {
             }}
           />
           <input type="hidden" name="coverImageKey" value={coverKey} />
-          {coverKey ? <p className="mt-1 text-sm text-bdas-ink-muted">Bild gespeichert.</p> : null}
+          {coverBusy ? <p className="mt-1 text-sm text-bdas-ink-muted">Lädt hoch…</p> : null}
         </Field>
       )}
 
