@@ -1,6 +1,9 @@
+import Image from "next/image";
 import Link from "next/link";
 
 import { isFlagOn } from "@bdas/feature-flags";
+
+import logo from "../../public/bdas-logo.png";
 
 const LINK = "hover:text-bdas-red hover:underline";
 
@@ -18,6 +21,7 @@ export function PublicFooter({
     <footer className="mt-16 border-t border-bdas-soft bg-bdas-surface">
       <div className="mx-auto grid max-w-6xl gap-8 px-4 py-10 text-sm text-bdas-ink-body sm:grid-cols-2 lg:grid-cols-4">
         <div className="flex flex-col gap-2">
+          <Image src={logo} alt="BDAS" className="mb-1 h-12 w-auto self-start" />
           <h2 className="font-semibold text-bdas-ink">Kontakt</h2>
           <p>Bund der Alevitischen Studierenden in Deutschland</p>
           <p>
