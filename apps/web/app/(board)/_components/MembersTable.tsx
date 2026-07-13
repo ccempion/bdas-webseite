@@ -2,8 +2,9 @@
 
 import { useMemo, useState, useTransition } from "react";
 
-import type { Member, MemberStatus } from "@bdas/members";
+import type { Member, MemberStatus, OpenGroupChange } from "@bdas/members";
 
+import { MemberGroupPanel } from "./MemberGroupPanel";
 import { approveMemberAction, rejectMemberAction } from "./member-actions";
 
 const STATUS_LABEL: Record<MemberStatus, string> = {
@@ -22,10 +23,12 @@ const FILTERS: ReadonlyArray<{ key: "all" | MemberStatus; label: string }> = [
 export function MembersTable({
   members,
   groupNames,
+  openChanges,
   revalidatePath,
 }: {
   members: Member[];
   groupNames: Record<string, string>;
+  openChanges: OpenGroupChange[];
   revalidatePath: string;
 }) {
   const [filter, setFilter] = useState<"all" | MemberStatus>("all");
@@ -33,6 +36,15 @@ export function MembersTable({
   const [selected, setSelected] = useState<Member | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pending, start] = useTransition();
+
+  const openByMember = useMemo(
+    () =>
+      Object.fromEntries(openChanges.map((c) => [c.memberId, c])) as Record<
+        string,
+        OpenGroupChange | undefined
+      >,
+    [openChanges],
+  );
 
   const rows = useMemo(
     () =>
@@ -93,6 +105,11 @@ export function MembersTable({
                 </td>
                 <td className="p-3 text-bdas-ink-body">
                   {m.primaryGroupId ? (groupNames[m.primaryGroupId] ?? "—") : "—"}
+                  {openByMember[m.id] ? (
+                    <span className="ml-2 rounded-bdas-pill bg-bdas-surface-hover px-2 py-0.5 text-xs font-semibold text-bdas-red">
+                      → {groupNames[openByMember[m.id]?.toGroupId ?? ""] ?? "—"}
+                    </span>
+                  ) : null}
                 </td>
                 <td className="p-3">
                   <span
@@ -149,7 +166,7 @@ export function MembersTable({
         </table>
       </div>
       {selected && (
-        <aside className="w-72 shrink-0 rounded-bdas border-l-2 border-bdas-red bg-bdas-surface p-4 shadow-bdas-card">
+        <aside className="w-80 shrink-0 rounded-bdas border-l-2 border-bdas-red bg-bdas-surface p-4 shadow-bdas-card">
           <h3 className="text-lg font-semibold text-bdas-ink">
             {selected.firstName} {selected.lastName}
           </h3>
@@ -171,6 +188,12 @@ export function MembersTable({
               </dd>
             </div>
           </dl>
+          <MemberGroupPanel
+            member={selected}
+            open={openByMember[selected.id] ?? null}
+            groupNames={groupNames}
+            revalidatePath={revalidatePath}
+          />
           <button
             type="button"
             onClick={() => setSelected(null)}

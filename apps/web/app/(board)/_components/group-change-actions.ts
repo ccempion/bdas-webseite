@@ -1,0 +1,51 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+
+import { getDb } from "@bdas/db";
+import {
+  decideGroupChange,
+  getCurrentMember,
+  getGroupChangeHistory,
+  type GroupChangeRequest,
+} from "@bdas/members";
+
+import { readSessionCookie } from "../../../lib/auth-cookie";
+
+async function actor() {
+  const me = await getCurrentMember(getDb(), readSessionCookie());
+  if (!me) throw new Error("Nicht angemeldet.");
+  return { userId: me.user.id, grants: me.grants };
+}
+
+/** Server Actions are public endpoints; only ever revalidate board routes. */
+function safeRevalidate(path: string): void {
+  if (path.startsWith("/federal/") || path.startsWith("/gruppe/")) revalidatePath(path);
+}
+
+/** Approve or reject a transfer. Authority is enforced inside decideGroupChange. */
+export async function decideGroupChangeAction(
+  requestId: string,
+  decision: "approved" | "rejected",
+  revalidate: string,
+): Promise<{ ok: boolean; error?: string }> {
+  try {
+    await decideGroupChange(getDb(), requestId, decision, await actor());
+    safeRevalidate(revalidate);
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Fehler" };
+  }
+}
+
+/** One member's movement history — loaded lazily when a board opens their card. */
+export async function groupHistoryAction(
+  memberId: string,
+): Promise<{ ok: boolean; error?: string; entries?: GroupChangeRequest[] }> {
+  try {
+    const entries = await getGroupChangeHistory(getDb(), memberId, await actor());
+    return { ok: true, entries };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Fehler" };
+  }
+}

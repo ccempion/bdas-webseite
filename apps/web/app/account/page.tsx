@@ -4,12 +4,13 @@ import { redirect } from "next/navigation";
 import { getDb } from "@bdas/db";
 import { Alert, Button, Card } from "@bdas/design-system";
 import { listGroups } from "@bdas/groups";
-import { getCurrentMember, isFederalBoard } from "@bdas/members";
+import { getCurrentMember, getOpenGroupChange, isFederalBoard } from "@bdas/members";
 
 import { requireAuthFlag } from "../_auth/flag";
 import { requireMembersFlag } from "../_members/flag";
 import { readSessionCookie } from "../../lib/auth-cookie";
 import { ProfileForm } from "./ProfileForm";
+import { WithdrawChangeButton } from "./WithdrawChangeButton";
 
 export const metadata = { title: "Mein Konto" };
 
@@ -29,6 +30,12 @@ export default async function AccountPage() {
   if (!me) redirect("/anmelden");
 
   const groups = await listGroups(db, { status: "active" });
+  const openChange = me.member ? await getOpenGroupChange(db, me.member.id) : null;
+
+  const groupName = (id: string | null): string | null =>
+    id === null ? null : (groups.find((g) => g.id === id)?.name ?? null);
+  const currentGroupName = groupName(me.member?.primaryGroupId ?? null);
+  const targetGroupName = groupName(openChange?.toGroupId ?? null);
 
   const isBoard = isFederalBoard(me.grants);
   const status = me.member?.status;
@@ -49,6 +56,21 @@ export default async function AccountPage() {
       {status === "active" ? (
         <Alert variant="success" title="Mitgliedschaft aktiv">
           {STATUS_LABEL["active"]}
+        </Alert>
+      ) : null}
+
+      {openChange && targetGroupName ? (
+        <Alert variant="info" title="Gruppenwechsel beantragt">
+          <span className="flex flex-col gap-2">
+            <span>
+              Du bist Mitglied bei <strong>{currentGroupName ?? "keiner Gruppe"}</strong> und hast
+              den Wechsel zu <strong>{targetGroupName}</strong> beantragt (seit{" "}
+              {new Date(openChange.requestedAt).toLocaleDateString("de-DE")}). Bis der Vorstand von{" "}
+              {targetGroupName} entscheidet, bleibst du Mitglied bei{" "}
+              {currentGroupName ?? "keiner Gruppe"}.
+            </span>
+            <WithdrawChangeButton />
+          </span>
         </Alert>
       ) : null}
 
@@ -73,6 +95,7 @@ export default async function AccountPage() {
           }}
           groups={groups.map((g) => ({ id: g.id, slug: g.slug, name: g.name, city: g.city }))}
           isNew={!me.member}
+          openChangeGroupName={targetGroupName}
         />
       </Card>
 
