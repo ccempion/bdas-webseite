@@ -33,6 +33,7 @@ export {
   decideGroupChange,
   getOpenGroupChange,
   listOpenGroupChanges,
+  listIncomingGroupChanges,
   getGroupChangeHistory,
 } from "./services/group-change";
 
@@ -59,6 +60,7 @@ export type {
   GroupChangeStatus,
   GroupChangeResult,
   OpenGroupChange,
+  IncomingGroupChange,
 } from "./types";
 export type {
   MembersEvent,

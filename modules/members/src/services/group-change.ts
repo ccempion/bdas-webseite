@@ -36,6 +36,7 @@ import type {
   GroupChangeRequest,
   GroupChangeResult,
   GroupChangeStatus,
+  IncomingGroupChange,
   MemberStatus,
   OpenGroupChange,
 } from "../types";
@@ -388,6 +389,49 @@ export async function listOpenGroupChanges(db: Db, actor: Actor): Promise<OpenGr
     canDecide:
       r.toGroupId !== null &&
       canDecideJoinRequest(actor.grants, r.toGroupId, hasBoard.get(r.toGroupId) ?? false),
+  }));
+}
+
+/**
+ * One group's inbound queue, newest first: the members of *other* groups who
+ * have applied to join `toGroupId`. Hydrated with the applicant, because they
+ * are not in that group's member list yet — `listMembers({ groupId })` matches
+ * on the member's *current* group, so the board would otherwise have a request
+ * it may decide and nobody to attach it to.
+ *
+ * Empty for anyone but the federal board or a board of `toGroupId`; it does not
+ * throw, an unauthorized board simply has no queue. `canDecide` keeps ADR 0021's
+ * federal fallback for a destination group with no active board seat.
+ */
+export async function listIncomingGroupChanges(
+  db: Db,
+  toGroupId: string,
+  actor: Actor,
+): Promise<IncomingGroupChange[]> {
+  if (!isFederalBoard(actor.grants) && !canManageGroup(actor.grants, toGroupId)) return [];
+
+  const rows = await db
+    .select({ request: memberGroupChangeRequests, member: members })
+    .from(memberGroupChangeRequests)
+    .innerJoin(members, eq(members.id, memberGroupChangeRequests.memberId))
+    .where(
+      and(
+        eq(memberGroupChangeRequests.status, "pending"),
+        eq(memberGroupChangeRequests.toGroupId, toGroupId),
+      ),
+    )
+    .orderBy(desc(memberGroupChangeRequests.requestedAt));
+
+  const canDecide = canDecideJoinRequest(
+    actor.grants,
+    toGroupId,
+    await groupHasActiveLocalBoard(db, toGroupId),
+  );
+
+  return rows.map((r) => ({
+    ...row2request(r.request),
+    canDecide,
+    member: row2member(r.member),
   }));
 }
 

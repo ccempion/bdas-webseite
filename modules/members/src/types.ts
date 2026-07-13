@@ -55,3 +55,10 @@ export type GroupChangeResult =
 
 /** An open request plus whether *this* actor may decide it. */
 export type OpenGroupChange = GroupChangeRequest & { readonly canDecide: boolean };
+
+/**
+ * An open request *into* a group, hydrated with the member who filed it. The
+ * applicant is by definition not yet in the destination group's member list, so
+ * the destination board has no other way to see who they are.
+ */
+export type IncomingGroupChange = OpenGroupChange & { readonly member: Member };
