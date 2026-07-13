@@ -13,7 +13,8 @@ import { afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { createTestDb, type TestDb } from "@bdas/db/test";
 import { resetEventBus } from "@bdas/events";
 
-import { createProfile } from "./services/profile";
+import { createProfile, updateProfile } from "./services/profile";
+import { MEMBERS_TEST_MIGRATIONS } from "./test-db";
 import { approveMember, transitionStatus } from "./services/status";
 import { grantRole, revokeRole } from "./services/roles";
 import { listPendingMembers } from "./services/list-pending";
@@ -72,15 +73,7 @@ describeIfDb("members integration", () => {
 
   beforeEach(async () => {
     t = await createTestDb();
-    for (const file of [
-      ["..", "..", "auth", "migrations", "0001_init.sql"],
-      ["..", "..", "groups", "migrations", "0001_init.sql"],
-      ["..", "migrations", "0001_init.sql"],
-      ["..", "migrations", "0002_role_grants.sql"],
-      ["..", "migrations", "0003_local_board_lead.sql"],
-      ["..", "migrations", "0004_revoked_by.sql"],
-      ["..", "migrations", "0005_event_organizer.sql"],
-    ]) {
+    for (const file of MEMBERS_TEST_MIGRATIONS) {
       const sql = await fs.readFile(path.join(__dirname, ...file), "utf8");
       await t.client.unsafe(sql);
     }
