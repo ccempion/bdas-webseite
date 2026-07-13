@@ -12,14 +12,14 @@ group's public page `/gruppen/[slug]`.
 
 ## Decisions made
 
-| Question | Decision |
-| --- | --- |
-| Who can set a group's location | Both: group leads via the board "Profil" form AND federal/local board via `/admin/gruppen/[slug]/bearbeiten` |
-| Where the map appears | Start page (`GruppenBlock`) and `/gruppen` overview. **Not** on individual group pages |
-| Pin precision / public display | Exact coordinates from the searched place, but the street address is never rendered publicly — popup shows group name + city only |
-| Pin click behavior | Popup first (name, city, "Zur Gruppenseite →" link), never direct navigation |
-| Tile privacy (GDPR) | Load OSM tiles directly; add a paragraph to `/datenschutz` (IP transmission to OSM Foundation, legitimate interest). No consent gate |
-| Map library | Leaflet + OSM raster tiles — keyless/free, small bundle, matches the keyless Photon approach. (Rejected: MapLibre GL — needs MapTiler key + big bundle; custom SVG map — no zoom/pan, more design work) |
+| Question                       | Decision                                                                                                                                                                                                |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Who can set a group's location | Both: group leads via the board "Profil" form AND federal/local board via `/admin/gruppen/[slug]/bearbeiten`                                                                                            |
+| Where the map appears          | Start page (`GruppenBlock`) and `/gruppen` overview. **Not** on individual group pages                                                                                                                  |
+| Pin precision / public display | Exact coordinates from the searched place, but the street address is never rendered publicly — popup shows group name + city only                                                                       |
+| Pin click behavior             | Popup first (name, city, "Zur Gruppenseite →" link), never direct navigation                                                                                                                            |
+| Tile privacy (GDPR)            | Load OSM tiles directly; add a paragraph to `/datenschutz` (IP transmission to OSM Foundation, legitimate interest). No consent gate                                                                    |
+| Map library                    | Leaflet + OSM raster tiles — keyless/free, small bundle, matches the keyless Photon approach. (Rejected: MapLibre GL — needs MapTiler key + big bundle; custom SVG map — no zoom/pan, more design work) |
 
 ## 1. Data model (groups module)
 

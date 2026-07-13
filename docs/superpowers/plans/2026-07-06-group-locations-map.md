@@ -26,6 +26,7 @@
 ### Task 1: Groups module — location columns, types, services
 
 **Files:**
+
 - Create: `modules/groups/migrations/0004_location.sql`
 - Create: `modules/groups/src/location.ts`
 - Modify: `modules/groups/src/schema.ts`
@@ -39,6 +40,7 @@
 - Test: `modules/groups/src/index.test.ts`
 
 **Interfaces:**
+
 - Produces: `type GroupLocation = { readonly name: string; readonly address: string; readonly lat: number; readonly lng: number }`, exported from `@bdas/groups`. `Group` and `GroupSummary` gain `readonly location: GroupLocation | null`. `CreateGroupInput`/`UpdateGroupInput`/`UpsertGroupInput` accept optional/nullable `location`. Update semantics: `location` **undefined = leave stored value untouched**, `null` = clear, object = replace.
 
 - [ ] **Step 1: Write the failing tests**
@@ -57,85 +59,85 @@ In `modules/groups/src/index.test.ts`, first add `"0004_location.sql"` to the mi
 Then append these tests inside the `describeIfDb("groups integration", ...)` block:
 
 ```ts
-  it("stores a location, preserves it on location-less update, clears on null", async () => {
-    const created = await createGroup(t.db, {
-      slug: "bonn",
-      name: "BDAS Bonn",
-      city: "Bonn",
-      location: {
-        name: "Uni Bonn",
-        address: "Regina-Pacis-Weg 3, Bonn",
-        lat: 50.7339,
-        lng: 7.1022,
-      },
-    });
-    expect(created.location).toEqual({
+it("stores a location, preserves it on location-less update, clears on null", async () => {
+  const created = await createGroup(t.db, {
+    slug: "bonn",
+    name: "BDAS Bonn",
+    city: "Bonn",
+    location: {
       name: "Uni Bonn",
       address: "Regina-Pacis-Weg 3, Bonn",
       lat: 50.7339,
       lng: 7.1022,
-    });
-
-    // `location` absent → stored location untouched
-    const kept = await updateGroup(t.db, created.id, { name: "BDAS Bonn e.V.", city: "Bonn" });
-    expect(kept.location?.name).toBe("Uni Bonn");
-    expect((await getGroup(t.db, created.id))?.location?.name).toBe("Uni Bonn");
-
-    // explicit null → cleared
-    const cleared = await updateGroup(t.db, created.id, {
-      name: "BDAS Bonn e.V.",
-      city: "Bonn",
-      location: null,
-    });
-    expect(cleared.location).toBeNull();
-    expect((await getGroup(t.db, created.id))?.location).toBeNull();
+    },
+  });
+  expect(created.location).toEqual({
+    name: "Uni Bonn",
+    address: "Regina-Pacis-Weg 3, Bonn",
+    lat: 50.7339,
+    lng: 7.1022,
   });
 
-  it("re-seeding via upsert without location keeps the stored location", async () => {
-    await upsertGroupBySlug(t.db, {
-      slug: "ulm",
-      name: "BDAS Ulm",
-      city: "Ulm",
-      location: { name: "Uni Ulm", address: "Helmholtzstraße 16, Ulm", lat: 48.4227, lng: 9.9563 },
-    });
-    await upsertGroupBySlug(t.db, { slug: "ulm", name: "BDAS Ulm", city: "Ulm" });
-    expect((await getGroupBySlug(t.db, "ulm"))?.location?.name).toBe("Uni Ulm");
+  // `location` absent → stored location untouched
+  const kept = await updateGroup(t.db, created.id, { name: "BDAS Bonn e.V.", city: "Bonn" });
+  expect(kept.location?.name).toBe("Uni Bonn");
+  expect((await getGroup(t.db, created.id))?.location?.name).toBe("Uni Bonn");
+
+  // explicit null → cleared
+  const cleared = await updateGroup(t.db, created.id, {
+    name: "BDAS Bonn e.V.",
+    city: "Bonn",
+    location: null,
   });
+  expect(cleared.location).toBeNull();
+  expect((await getGroup(t.db, created.id))?.location).toBeNull();
+});
 
-  it("rejects out-of-range coordinates", async () => {
-    await expect(
-      createGroup(t.db, {
-        slug: "kaputt",
-        name: "BDAS Kaputt",
-        city: "Kaputtstadt",
-        location: { name: "Ort", address: "", lat: 91, lng: 0 },
-      }),
-    ).rejects.toThrow("Eingabe ungültig");
+it("re-seeding via upsert without location keeps the stored location", async () => {
+  await upsertGroupBySlug(t.db, {
+    slug: "ulm",
+    name: "BDAS Ulm",
+    city: "Ulm",
+    location: { name: "Uni Ulm", address: "Helmholtzstraße 16, Ulm", lat: 48.4227, lng: 9.9563 },
   });
+  await upsertGroupBySlug(t.db, { slug: "ulm", name: "BDAS Ulm", city: "Ulm" });
+  expect((await getGroupBySlug(t.db, "ulm"))?.location?.name).toBe("Uni Ulm");
+});
 
-  it("listGroups exposes location for the map", async () => {
-    await upsertGroupBySlug(t.db, {
-      slug: "koeln",
-      name: "BDAS Köln",
-      city: "Köln",
-      location: {
-        name: "Universität zu Köln",
-        address: "Albertus-Magnus-Platz, Köln",
-        lat: 50.9271,
-        lng: 6.9285,
-      },
-    });
-    await upsertGroupBySlug(t.db, { slug: "essen", name: "BDAS Essen", city: "Essen" });
+it("rejects out-of-range coordinates", async () => {
+  await expect(
+    createGroup(t.db, {
+      slug: "kaputt",
+      name: "BDAS Kaputt",
+      city: "Kaputtstadt",
+      location: { name: "Ort", address: "", lat: 91, lng: 0 },
+    }),
+  ).rejects.toThrow("Eingabe ungültig");
+});
 
-    const active = await listGroups(t.db, { status: "active" });
-    expect(active.find((g) => g.slug === "koeln")?.location).toEqual({
+it("listGroups exposes location for the map", async () => {
+  await upsertGroupBySlug(t.db, {
+    slug: "koeln",
+    name: "BDAS Köln",
+    city: "Köln",
+    location: {
       name: "Universität zu Köln",
       address: "Albertus-Magnus-Platz, Köln",
       lat: 50.9271,
       lng: 6.9285,
-    });
-    expect(active.find((g) => g.slug === "essen")?.location).toBeNull();
+    },
   });
+  await upsertGroupBySlug(t.db, { slug: "essen", name: "BDAS Essen", city: "Essen" });
+
+  const active = await listGroups(t.db, { status: "active" });
+  expect(active.find((g) => g.slug === "koeln")?.location).toEqual({
+    name: "Universität zu Köln",
+    address: "Albertus-Magnus-Platz, Köln",
+    lat: 50.9271,
+    lng: 6.9285,
+  });
+  expect(active.find((g) => g.slug === "essen")?.location).toBeNull();
+});
 ```
 
 - [ ] **Step 2: Run tests to verify they fail**
@@ -287,14 +289,14 @@ import { rowLocation } from "../location";
 ```
 
 ```ts
-  return rows.map((r) => ({
-    id: r.id,
-    slug: r.slug,
-    name: r.name,
-    city: r.city,
-    status: r.status as GroupStatus,
-    location: rowLocation(r),
-  }));
+return rows.map((r) => ({
+  id: r.id,
+  slug: r.slug,
+  name: r.name,
+  city: r.city,
+  status: r.status as GroupStatus,
+  location: rowLocation(r),
+}));
 ```
 
 `modules/groups/src/services/manage.ts`:
@@ -313,7 +315,12 @@ Add to `UpdateGroupInput` (after `status`):
 `rowToGroup` gains `location: rowLocation(r),`. Change `toGroup` to take the effective location explicitly:
 
 ```ts
-function toGroup(id: string, slug: string, v: UpdateGroupInput, location: GroupLocation | null): Group {
+function toGroup(
+  id: string,
+  slug: string,
+  v: UpdateGroupInput,
+  location: GroupLocation | null,
+): Group {
   return {
     id,
     slug,
@@ -339,25 +346,25 @@ and return `toGroup(id, v.slug, v, v.location ?? null);`
 In `updateGroup`, build the set-fragment tri-state and compute the effective location for the return value:
 
 ```ts
-  const now = new Date();
-  await db
-    .update(groups)
-    .set({
-      name: v.name,
-      city: v.city,
-      contactEmail: v.contactEmail ?? null,
-      instagramUrl: v.instagramUrl ?? null,
-      websiteUrl: v.websiteUrl ?? null,
-      status: v.status,
-      ...(v.location !== undefined ? locationColumns(v.location) : {}),
-      updatedAt: now,
-    })
-    .where(eq(groups.id, id));
+const now = new Date();
+await db
+  .update(groups)
+  .set({
+    name: v.name,
+    city: v.city,
+    contactEmail: v.contactEmail ?? null,
+    instagramUrl: v.instagramUrl ?? null,
+    websiteUrl: v.websiteUrl ?? null,
+    status: v.status,
+    ...(v.location !== undefined ? locationColumns(v.location) : {}),
+    updatedAt: now,
+  })
+  .where(eq(groups.id, id));
 ```
 
 ```ts
-  const location = v.location === undefined ? rowLocation(existing[0]) : (v.location ?? null);
-  return toGroup(id, existing[0].slug, v, location);
+const location = v.location === undefined ? rowLocation(existing[0]) : (v.location ?? null);
+return toGroup(id, existing[0].slug, v, location);
 ```
 
 `modules/groups/src/services/upsert.ts` — same pattern:
@@ -407,10 +414,12 @@ git commit -m "feat(groups): optional map location per group (tri-state update s
 ### Task 2: `group_map` feature flag
 
 **Files:**
+
 - Modify: `core/feature-flags/src/index.ts`
 - Test: `core/feature-flags/src/index.test.ts`
 
 **Interfaces:**
+
 - Produces: `"group_map"` as a valid `FlagName` for `isFlagOn`/`requireFlag`. Env var: `BDAS_FLAG_GROUP_MAP`.
 
 - [ ] **Step 1: Write the failing test**
@@ -418,12 +427,12 @@ git commit -m "feat(groups): optional map location per group (tri-state update s
 Append inside the existing describe block of `core/feature-flags/src/index.test.ts` (it already snapshots/restores `process.env`):
 
 ```ts
-  it("group_map maps to BDAS_FLAG_GROUP_MAP", () => {
-    delete process.env["BDAS_FLAG_GROUP_MAP"];
-    expect(isFlagOn("group_map")).toBe(false);
-    process.env["BDAS_FLAG_GROUP_MAP"] = "true";
-    expect(isFlagOn("group_map")).toBe(true);
-  });
+it("group_map maps to BDAS_FLAG_GROUP_MAP", () => {
+  delete process.env["BDAS_FLAG_GROUP_MAP"];
+  expect(isFlagOn("group_map")).toBe(false);
+  process.env["BDAS_FLAG_GROUP_MAP"] = "true";
+  expect(isFlagOn("group_map")).toBe(true);
+});
 ```
 
 - [ ] **Step 2: Run test to verify it fails**
@@ -457,11 +466,13 @@ git commit -m "feat(flags): add group_map flag for the public group map"
 ### Task 3: Shared LocationPicker with onChange + clear
 
 **Files:**
+
 - Create: `apps/web/app/_components/LocationPicker.tsx` (moved from `apps/web/app/admin/events/_editor/LocationPicker.tsx`)
 - Delete: `apps/web/app/admin/events/_editor/LocationPicker.tsx`
 - Modify: `apps/web/app/admin/events/_editor/EventFields.tsx:8`
 
 **Interfaces:**
+
 - Consumes: `searchPlaces`, `PlaceResult` from `apps/web/app/lib/photon.ts` (unchanged).
 - Produces: `LocationPicker({ defaultValue, onChange? })` — `defaultValue: { name: string; address: string; lat: number | null; lng: number | null } | null`, `onChange?: (location: PlaceResult | null) => void`. Still renders hidden inputs `locationName`, `locationAddress`, `locationLat`, `locationLng` for FormData forms. New: an „Ort entfernen“ button clears the selection.
 
@@ -601,12 +612,14 @@ git commit -m "refactor(web): share LocationPicker; add onChange + clear afforda
 ### Task 4: Location in the admin group form
 
 **Files:**
+
 - Modify: `apps/web/app/admin/gruppen/GroupForm.tsx`
 - Modify: `apps/web/app/admin/gruppen/actions.ts`
 - Modify: `apps/web/app/admin/gruppen/[slug]/bearbeiten/page.tsx`
 - Modify: `apps/web/app/admin/gruppen/neu/page.tsx`
 
 **Interfaces:**
+
 - Consumes: `LocationPicker` from Task 3 (hidden-inputs mode), `Group["location"]` / `GroupLocation` from Task 1.
 - Produces: `saveGroupAction` reads `locationName/locationAddress/locationLat/locationLng` from FormData and always passes `location` (object or `null`) to `createGroup`/`updateGroup` — full-replace, since the form always posts the complete current state.
 
@@ -629,7 +642,7 @@ Extend `GroupFormProps.initial`:
 Render after the „Stadt“ field:
 
 ```tsx
-      <LocationPicker defaultValue={initial.location} />
+<LocationPicker defaultValue={initial.location} />
 ```
 
 - [ ] **Step 2: Parse location in the action**
@@ -692,11 +705,13 @@ git commit -m "feat(web): set group location in the admin group form"
 ### Task 5: Location in the group-board Profil form
 
 **Files:**
+
 - Modify: `apps/web/app/(board)/_components/GroupProfileForm.tsx`
 - Modify: `apps/web/app/(board)/_components/group-profile-actions.ts`
 - Modify: `apps/web/app/(board)/gruppe/[slug]/profile/page.tsx`
 
 **Interfaces:**
+
 - Consumes: `LocationPicker` (onChange mode), `GroupLocation` from `@bdas/groups`.
 - Produces: `updateGroupProfileAction(groupId, input, revalidate)` where `input` is now `{ name: string; city: string; location: GroupLocation | null }`. The form initializes `location` from the loaded group, so saving name/city alone never wipes a stored location.
 
@@ -819,9 +834,11 @@ git commit -m "feat(web): set group location from the board Profil form"
 Pre-existing bug: `updateGroupProfileAction` passes only `{ name, city }` (now `+ location`) to `updateGroup`, whose full-replace semantics then null out `contactEmail`, `instagramUrl`, `websiteUrl` and reset `status` to `"active"`. A group lead saving their Profil silently destroys admin-entered contact data.
 
 **Files:**
+
 - Modify: `apps/web/app/(board)/_components/group-profile-actions.ts`
 
 **Interfaces:**
+
 - Consumes: `getGroup`, `updateGroup` from `@bdas/groups` (Task 1 shapes).
 - Produces: unchanged action signature; behavior contract: Profil save preserves `contactEmail`/`instagramUrl`/`websiteUrl`/`status` from the stored row. Behavioral regression coverage lands in Task 9's e2e.
 
@@ -836,27 +853,27 @@ import { getGroup, updateGroup } from "@bdas/groups";
 and replace the `try` block of `updateGroupProfileAction` with:
 
 ```ts
-  try {
-    const db = getDb();
-    // `updateGroup` is full-replace; merge the stored admin-managed fields so
-    // a Profil save never wipes contact data or resets the status.
-    const existing = await getGroup(db, groupId);
-    if (!existing) return { ok: false, error: "Gruppe nicht gefunden." };
-    if (existing.status === "archived") {
-      return { ok: false, error: "Archivierte Gruppen können nicht bearbeitet werden." };
-    }
-    await updateGroup(db, groupId, {
-      ...input,
-      contactEmail: existing.contactEmail,
-      instagramUrl: existing.instagramUrl,
-      websiteUrl: existing.websiteUrl,
-      status: existing.status,
-    });
-    safeRevalidate(revalidate);
-    return { ok: true };
-  } catch (e) {
-    return { ok: false, error: e instanceof Error ? e.message : "Fehler" };
+try {
+  const db = getDb();
+  // `updateGroup` is full-replace; merge the stored admin-managed fields so
+  // a Profil save never wipes contact data or resets the status.
+  const existing = await getGroup(db, groupId);
+  if (!existing) return { ok: false, error: "Gruppe nicht gefunden." };
+  if (existing.status === "archived") {
+    return { ok: false, error: "Archivierte Gruppen können nicht bearbeitet werden." };
   }
+  await updateGroup(db, groupId, {
+    ...input,
+    contactEmail: existing.contactEmail,
+    instagramUrl: existing.instagramUrl,
+    websiteUrl: existing.websiteUrl,
+    status: existing.status,
+  });
+  safeRevalidate(revalidate);
+  return { ok: true };
+} catch (e) {
+  return { ok: false, error: e instanceof Error ? e.message : "Fehler" };
+}
 ```
 
 - [ ] **Step 2: Verify**
@@ -876,6 +893,7 @@ git commit -m "fix(web): Profil save no longer wipes contact fields and status"
 ### Task 6: Leaflet map component + pins projection + ADR
 
 **Files:**
+
 - Modify: `apps/web/package.json` (via pnpm)
 - Create: `apps/web/app/_groups/pins.ts`
 - Create: `apps/web/app/_groups/pins.test.ts`
@@ -884,6 +902,7 @@ git commit -m "fix(web): Profil save no longer wipes contact fields and status"
 - Create: `docs/decisions/0019-leaflet-for-public-group-map.md`
 
 **Interfaces:**
+
 - Consumes: `GroupSummary` from `@bdas/groups` (Task 1).
 - Produces: `type GroupPin = { readonly slug: string; readonly name: string; readonly city: string; readonly lat: number; readonly lng: number }` and `toPins(groups: readonly GroupSummary[]): GroupPin[]` from `apps/web/app/_groups/pins.ts`; `GroupMapLazy({ pins }: { pins: GroupPin[] })` client component from `apps/web/app/_groups/GroupMapLazy.tsx` (renders nothing visible when `pins` is empty — callers still guard to avoid loading the chunk).
 
@@ -1142,10 +1161,12 @@ git commit -m "feat(web): Leaflet group map component + public pins projection (
 ### Task 7: Wire the map into the start page and /gruppen
 
 **Files:**
+
 - Modify: `apps/web/app/_public/landing/GruppenBlock.tsx`
 - Modify: `apps/web/app/gruppen/page.tsx`
 
 **Interfaces:**
+
 - Consumes: `toPins`, `GroupMapLazy` (Task 6), `isFlagOn("group_map")` (Task 2).
 - Behavior contract: flag off **or** zero located groups ⇒ both pages render exactly as before this feature.
 
@@ -1217,13 +1238,15 @@ import { toPins } from "../_groups/pins";
 Compute after the `listGroups` call:
 
 ```ts
-  const pins = isFlagOn("group_map") ? toPins(groups) : [];
+const pins = isFlagOn("group_map") ? toPins(groups) : [];
 ```
 
 Insert between `</header>` and the `{groups.length === 0 ? ...}` block:
 
 ```tsx
-      {pins.length > 0 ? <GroupMapLazy pins={pins} /> : null}
+{
+  pins.length > 0 ? <GroupMapLazy pins={pins} /> : null;
+}
 ```
 
 - [ ] **Step 3: Verify (manual smoke)**
@@ -1245,6 +1268,7 @@ git commit -m "feat(web): show group map on start page and /gruppen behind group
 ### Task 8: Datenschutz paragraph
 
 **Files:**
+
 - Modify: `apps/web/app/datenschutz/page.tsx`
 
 - [ ] **Step 1: Add the OSM paragraph**
@@ -1252,14 +1276,13 @@ git commit -m "feat(web): show group map on start page and /gruppen behind group
 In the `<div className="flex flex-col gap-4 text-bdas-ink-body">` block, after the existing cookie paragraph, add:
 
 ```tsx
-        <p>
-          Auf der Startseite und der Seite „Hochschulgruppen“ binden wir eine interaktive Karte auf
-          Basis von OpenStreetMap ein. Beim Laden der Karte wird Ihre IP-Adresse an Server der
-          OpenStreetMap Foundation (St John&apos;s Innovation Centre, Cambridge, Vereinigtes
-          Königreich) übertragen, um die Kartenkacheln auszuliefern. Rechtsgrundlage ist unser
-          berechtigtes Interesse an einer ansprechenden Darstellung unserer Hochschulgruppen
-          (Art. 6 Abs. 1 lit. f DSGVO).
-        </p>
+<p>
+  Auf der Startseite und der Seite „Hochschulgruppen“ binden wir eine interaktive Karte auf Basis
+  von OpenStreetMap ein. Beim Laden der Karte wird Ihre IP-Adresse an Server der OpenStreetMap
+  Foundation (St John&apos;s Innovation Centre, Cambridge, Vereinigtes Königreich) übertragen, um
+  die Kartenkacheln auszuliefern. Rechtsgrundlage ist unser berechtigtes Interesse an einer
+  ansprechenden Darstellung unserer Hochschulgruppen (Art. 6 Abs. 1 lit. f DSGVO).
+</p>
 ```
 
 - [ ] **Step 2: Verify + commit**
@@ -1276,11 +1299,13 @@ git commit -m "docs(web): Datenschutz paragraph for the OpenStreetMap embed"
 ### Task 9: E2E coverage + CI flag
 
 **Files:**
+
 - Modify: `e2e/helpers/db.ts` (`seedGroup`)
 - Create: `e2e/group-map.e2e.ts`
 - Modify: `.github/workflows/ci.yml` (e2e job env only — the block that already has `BDAS_FLAG_PUBLIC_SHELL`)
 
 **Interfaces:**
+
 - Consumes: helpers `seedGroup`, `uniqueEmail`, `uniqueSlug`, `grantLocalBoard` (`e2e/helpers/db.ts`), flows `registerVerifyLogin`, `createProfile` (`e2e/helpers/flows.ts`).
 - Produces: `seedGroup` accepts optional `location?: { name: string; address: string; lat: number; lng: number }`.
 
@@ -1333,7 +1358,13 @@ export async function groupContactEmail(slug: string): Promise<string | null> {
  */
 import { expect, test } from "@playwright/test";
 
-import { grantLocalBoard, groupContactEmail, seedGroup, uniqueEmail, uniqueSlug } from "./helpers/db";
+import {
+  grantLocalBoard,
+  groupContactEmail,
+  seedGroup,
+  uniqueEmail,
+  uniqueSlug,
+} from "./helpers/db";
 import { createProfile, registerVerifyLogin } from "./helpers/flows";
 
 const PHOTON_FIXTURE = {
@@ -1406,7 +1437,7 @@ Note: `.leaflet-marker-icon` without `.first()` on /gruppen asserts there is exa
 In `.github/workflows/ci.yml`, in the env block that already contains `BDAS_FLAG_PUBLIC_SHELL: "true"` (the e2e job, around line 180), add:
 
 ```yaml
-      BDAS_FLAG_GROUP_MAP: "true"
+BDAS_FLAG_GROUP_MAP: "true"
 ```
 
 Do NOT add it to the other two env blocks (unit/integration jobs don't render the map).

@@ -26,11 +26,13 @@
 ### Task 1: ADR 0018 + feature flags `public_shell` and `blog`
 
 **Files:**
+
 - Create: `docs/decisions/0018-public-web-presence-in-platform.md`
 - Modify: `core/feature-flags/src/index.ts` (FLAGS array)
 - Modify: `.env.example` (flags block)
 
 **Interfaces:**
+
 - Produces: `isFlagOn("public_shell")` and `isFlagOn("blog")` — every later task gates on the former; the header (Task 3) checks the latter for the Blog nav item.
 
 - [ ] **Step 1: Write the ADR**
@@ -120,6 +122,7 @@ git commit -m "feat(flags): public_shell + blog flags, ADR 0018 public web prese
 ### Task 2: Design-system additions — hero overlay token, `Section`, `FilterChip`
 
 **Files:**
+
 - Modify: `core/design-system/src/tokens.ts` (add `colors.surface.overlay.heroScrim`)
 - Modify: `core/design-system/src/tailwind-preset.ts` (map `bdas-hero-scrim` backgroundImage)
 - Create: `core/design-system/src/components/Section.tsx`
@@ -127,6 +130,7 @@ git commit -m "feat(flags): public_shell + blog flags, ADR 0018 public web prese
 - Modify: `core/design-system/src/index.ts` (re-exports)
 
 **Interfaces:**
+
 - Produces: `<Section id?, title, intro?, children>` — landing block wrapper (`<section>` + heading). `<FilterChip active, onClick, children>` — pill toggle button (client-safe, plain props). Tailwind class `bg-bdas-hero-scrim`.
 
 - [ ] **Step 1: Add the scrim token**
@@ -241,11 +245,13 @@ git commit -m "feat(design-system): hero scrim token, Section + FilterChip primi
 ### Task 3: Public header (three role states, dropdown, mobile)
 
 **Files:**
+
 - Create: `apps/web/app/_public/PublicHeader.tsx`
 - Create: `apps/web/app/_public/nav-items.ts`
 - Modify: `apps/web/app/layout.tsx` (flag-gated swap)
 
 **Interfaces:**
+
 - Consumes: `loadCurrentMember` from `apps/web/app/_dashboard/session.ts`; `canAdministerBoard` from `@bdas/dashboard-shell`; `isFlagOn` from `@bdas/feature-flags`.
 - Produces: `<PublicHeader />` (async Server Component, no props). `navItems(): NavItem[]` in `nav-items.ts` (flag-aware, computed per request).
 
@@ -308,7 +314,10 @@ function DesktopItem({ item }: { item: NavItem }) {
     <details className="group relative">
       <summary className={`${PILL} cursor-pointer list-none [&::-webkit-details-marker]:hidden`}>
         {item.label}
-        <span aria-hidden className="ml-1 text-bdas-ink-muted transition-transform duration-bdas-quick group-open:rotate-180">
+        <span
+          aria-hidden
+          className="ml-1 text-bdas-ink-muted transition-transform duration-bdas-quick group-open:rotate-180"
+        >
           ▾
         </span>
       </summary>
@@ -334,12 +343,18 @@ export async function PublicHeader() {
   return (
     <header className="sticky top-0 z-50 border-b border-bdas-soft bg-bdas-surface">
       <div className="mx-auto flex max-w-6xl items-center gap-4 px-4 py-3">
-        <Link href="/" className="text-lg font-semibold tracking-tight text-bdas-ink hover:text-bdas-red">
+        <Link
+          href="/"
+          className="text-lg font-semibold tracking-tight text-bdas-ink hover:text-bdas-red"
+        >
           BDAS
         </Link>
 
         {/* Desktop nav */}
-        <nav aria-label="Hauptnavigation" className="hidden flex-1 items-center justify-end md:flex">
+        <nav
+          aria-label="Hauptnavigation"
+          className="hidden flex-1 items-center justify-end md:flex"
+        >
           <ul className="flex items-center gap-1">
             {items.map((item) => (
               <li key={item.label}>
@@ -349,22 +364,35 @@ export async function PublicHeader() {
             {me ? (
               <li>
                 <details className="group relative">
-                  <summary className={`${PILL} cursor-pointer list-none [&::-webkit-details-marker]:hidden`}>
+                  <summary
+                    className={`${PILL} cursor-pointer list-none [&::-webkit-details-marker]:hidden`}
+                  >
                     {displayName}
-                    <span aria-hidden className="ml-1 text-bdas-ink-muted transition-transform duration-bdas-quick group-open:rotate-180">▾</span>
+                    <span
+                      aria-hidden
+                      className="ml-1 text-bdas-ink-muted transition-transform duration-bdas-quick group-open:rotate-180"
+                    >
+                      ▾
+                    </span>
                   </summary>
                   <ul className="absolute right-0 top-full z-40 mt-2 w-56 animate-bdas-fade-slide-down rounded-bdas border border-bdas-strong bg-bdas-surface p-2 shadow-bdas-dropdown">
                     <li>
-                      <Link href="/account" className={DROPDOWN_LINK}>Mein Konto</Link>
+                      <Link href="/account" className={DROPDOWN_LINK}>
+                        Mein Konto
+                      </Link>
                     </li>
                     {isBoard ? (
                       <li>
-                        <Link href="/dashboard" className={DROPDOWN_LINK}>Board-Bereich</Link>
+                        <Link href="/dashboard" className={DROPDOWN_LINK}>
+                          Board-Bereich
+                        </Link>
                       </li>
                     ) : null}
                     <li>
                       <form action="/abmelden" method="post">
-                        <button type="submit" className={`${DROPDOWN_LINK} w-full text-left`}>Abmelden</button>
+                        <button type="submit" className={`${DROPDOWN_LINK} w-full text-left`}>
+                          Abmelden
+                        </button>
                       </form>
                     </li>
                   </ul>
@@ -381,7 +409,9 @@ export async function PublicHeader() {
                   </Link>
                 </li>
                 <li>
-                  <Link href="/anmelden" className={PILL}>Anmelden</Link>
+                  <Link href="/anmelden" className={PILL}>
+                    Anmelden
+                  </Link>
                 </li>
               </>
             )}
@@ -404,18 +434,24 @@ export async function PublicHeader() {
               {items.map((item) =>
                 "href" in item ? (
                   <li key={item.label}>
-                    <Link href={item.href} className={DROPDOWN_LINK}>{item.label}</Link>
+                    <Link href={item.href} className={DROPDOWN_LINK}>
+                      {item.label}
+                    </Link>
                   </li>
                 ) : (
                   <li key={item.label}>
                     <details>
-                      <summary className={`${DROPDOWN_LINK} cursor-pointer list-none [&::-webkit-details-marker]:hidden`}>
+                      <summary
+                        className={`${DROPDOWN_LINK} cursor-pointer list-none [&::-webkit-details-marker]:hidden`}
+                      >
                         {item.label}
                       </summary>
                       <ul className="ml-3 flex flex-col gap-1 rounded-bdas bg-bdas-overlay-faint p-2">
                         {item.children.map((c) => (
                           <li key={c.href}>
-                            <Link href={c.href} className={DROPDOWN_LINK}>{c.label}</Link>
+                            <Link href={c.href} className={DROPDOWN_LINK}>
+                              {c.label}
+                            </Link>
                           </li>
                         ))}
                       </ul>
@@ -425,11 +461,23 @@ export async function PublicHeader() {
               )}
               {me ? (
                 <>
-                  <li><Link href="/account" className={DROPDOWN_LINK}>Mein Konto</Link></li>
-                  {isBoard ? <li><Link href="/dashboard" className={DROPDOWN_LINK}>Board-Bereich</Link></li> : null}
+                  <li>
+                    <Link href="/account" className={DROPDOWN_LINK}>
+                      Mein Konto
+                    </Link>
+                  </li>
+                  {isBoard ? (
+                    <li>
+                      <Link href="/dashboard" className={DROPDOWN_LINK}>
+                        Board-Bereich
+                      </Link>
+                    </li>
+                  ) : null}
                   <li>
                     <form action="/abmelden" method="post">
-                      <button type="submit" className={`${DROPDOWN_LINK} w-full text-left`}>Abmelden</button>
+                      <button type="submit" className={`${DROPDOWN_LINK} w-full text-left`}>
+                        Abmelden
+                      </button>
                     </form>
                   </li>
                 </>
@@ -443,7 +491,11 @@ export async function PublicHeader() {
                       Mitglied werden
                     </Link>
                   </li>
-                  <li><Link href="/anmelden" className={DROPDOWN_LINK}>Anmelden</Link></li>
+                  <li>
+                    <Link href="/anmelden" className={DROPDOWN_LINK}>
+                      Anmelden
+                    </Link>
+                  </li>
                 </>
               )}
             </ul>
@@ -466,7 +518,9 @@ import { PublicHeader } from "./_public/PublicHeader";
 ```
 
 ```tsx
-        {isFlagOn("public_shell") ? <PublicHeader /> : <SiteHeader />}
+{
+  isFlagOn("public_shell") ? <PublicHeader /> : <SiteHeader />;
+}
 ```
 
 - [ ] **Step 4: Verify both states manually**
@@ -487,10 +541,12 @@ git commit -m "feat(web): public header with role states behind public_shell fla
 ### Task 4: Public footer
 
 **Files:**
+
 - Create: `apps/web/app/_public/PublicFooter.tsx`
 - Modify: `apps/web/app/layout.tsx` (flag-gated swap)
 
 **Interfaces:**
+
 - Consumes: `legalUrls()` from `apps/web/lib/legal.ts` (already imported in layout). Footer links are static by design (footer shows a curated set, not the nav).
 - Produces: `<PublicFooter privacyUrl, imprintUrl />`.
 
@@ -505,7 +561,13 @@ const LINK = "hover:text-bdas-red hover:underline";
 
 /** Public-site footer: contact, quick links, partner orgs, legal, socials.
  *  Contact details and social handles are placeholders (spec §8 open items). */
-export function PublicFooter({ privacyUrl, imprintUrl }: { privacyUrl: string; imprintUrl: string }) {
+export function PublicFooter({
+  privacyUrl,
+  imprintUrl,
+}: {
+  privacyUrl: string;
+  imprintUrl: string;
+}) {
   const year = new Date().getFullYear();
   return (
     <footer className="mt-16 border-t border-bdas-soft bg-bdas-surface">
@@ -521,10 +583,18 @@ export function PublicFooter({ privacyUrl, imprintUrl }: { privacyUrl: string; i
         </div>
         <nav aria-label="Seiten" className="flex flex-col gap-2">
           <h2 className="font-semibold text-bdas-ink">Seiten</h2>
-          <Link href="/ueber-uns" className={LINK}>Über uns</Link>
-          <Link href="/unsere-arbeit" className={LINK}>Unsere Arbeit</Link>
-          <Link href="/events" className={LINK}>Events</Link>
-          <Link href="/gruppen" className={LINK}>Gruppen</Link>
+          <Link href="/ueber-uns" className={LINK}>
+            Über uns
+          </Link>
+          <Link href="/unsere-arbeit" className={LINK}>
+            Unsere Arbeit
+          </Link>
+          <Link href="/events" className={LINK}>
+            Events
+          </Link>
+          <Link href="/gruppen" className={LINK}>
+            Gruppen
+          </Link>
         </nav>
         <nav aria-label="Partner" className="flex flex-col gap-2">
           <h2 className="font-semibold text-bdas-ink">Verbund</h2>
@@ -537,9 +607,18 @@ export function PublicFooter({ privacyUrl, imprintUrl }: { privacyUrl: string; i
         </nav>
         <nav aria-label="Rechtliches und Social Media" className="flex flex-col gap-2">
           <h2 className="font-semibold text-bdas-ink">Rechtliches</h2>
-          <Link href={privacyUrl} className={LINK}>Datenschutz</Link>
-          <Link href={imprintUrl} className={LINK}>Impressum</Link>
-          <a href="https://www.instagram.com/" rel="noopener noreferrer" target="_blank" className={LINK}>
+          <Link href={privacyUrl} className={LINK}>
+            Datenschutz
+          </Link>
+          <Link href={imprintUrl} className={LINK}>
+            Impressum
+          </Link>
+          <a
+            href="https://www.instagram.com/"
+            rel="noopener noreferrer"
+            target="_blank"
+            className={LINK}
+          >
             Instagram
           </a>
         </nav>
@@ -561,11 +640,13 @@ import { PublicFooter } from "./_public/PublicFooter";
 ```
 
 ```tsx
-        {isFlagOn("public_shell") ? (
-          <PublicFooter privacyUrl={privacy} imprintUrl={imprint} />
-        ) : (
-          <SiteFooter privacyUrl={privacy} imprintUrl={imprint} />
-        )}
+{
+  isFlagOn("public_shell") ? (
+    <PublicFooter privacyUrl={privacy} imprintUrl={imprint} />
+  ) : (
+    <SiteFooter privacyUrl={privacy} imprintUrl={imprint} />
+  );
+}
 ```
 
 - [ ] **Step 3: Verify + commit**
@@ -583,6 +664,7 @@ git commit -m "feat(web): public footer behind public_shell flag"
 ### Task 5: Static pages (Über uns ×3, Unsere Arbeit) + flag helper
 
 **Files:**
+
 - Create: `apps/web/app/_public/flag.ts`
 - Create: `apps/web/app/_public/ags.ts`
 - Create: `apps/web/app/ueber-uns/page.tsx`
@@ -591,6 +673,7 @@ git commit -m "feat(web): public footer behind public_shell flag"
 - Create: `apps/web/app/unsere-arbeit/page.tsx`
 
 **Interfaces:**
+
 - Produces: `requirePublicShellFlag()` (throws `notFound()` when flag off — mirrors `apps/web/app/_events/flag.ts`); `AGS: ReadonlyArray<{ slug, name, teaser }>` consumed by the landing (Task 6).
 
 - [ ] **Step 1: Flag helper**
@@ -695,9 +778,9 @@ export default function VerbandsstrukturPage() {
       <h1 className="text-3xl font-semibold text-bdas-ink">Verbandsstruktur</h1>
       {/* Platzhaltertext — finale Texte liefert der Bundesvorstand (Spec §8). */}
       <p className="text-bdas-ink-body">
-        Der BDAS besteht aus lokalen Hochschulgruppen, die von gewählten lokalen Vorständen
-        geleitet werden. Auf Bundesebene koordiniert der Bundesvorstand die gemeinsame Arbeit;
-        die Bundeskonferenz ist das höchste beschlussfassende Gremium.
+        Der BDAS besteht aus lokalen Hochschulgruppen, die von gewählten lokalen Vorständen geleitet
+        werden. Auf Bundesebene koordiniert der Bundesvorstand die gemeinsame Arbeit; die
+        Bundeskonferenz ist das höchste beschlussfassende Gremium.
       </p>
     </main>
   );
@@ -727,9 +810,9 @@ export default function BdajPage() {
       </h1>
       {/* Platzhaltertext — finale Texte liefert der Bundesvorstand (Spec §8). */}
       <p className="text-bdas-ink-body">
-        Der BDAJ ist die Jugendorganisation der Alevitischen Gemeinde Deutschland und vertritt
-        über 78.000 Kinder, Jugendliche und junge Erwachsene. Der BDAS ist eng mit dem BDAJ
-        verbunden — viele unserer Mitglieder sind dort groß geworden.
+        Der BDAJ ist die Jugendorganisation der Alevitischen Gemeinde Deutschland und vertritt über
+        78.000 Kinder, Jugendliche und junge Erwachsene. Der BDAS ist eng mit dem BDAJ verbunden —
+        viele unserer Mitglieder sind dort groß geworden.
       </p>
       <p>
         <a
@@ -803,6 +886,7 @@ git commit -m "feat(web): static Über-uns and Unsere-Arbeit pages behind public
 ### Task 6: Styled error pages (404 / 500)
 
 **Files:**
+
 - Create: `apps/web/app/not-found.tsx`
 - Create: `apps/web/app/error.tsx`
 
@@ -866,6 +950,7 @@ git commit -m "feat(web): styled 404 and error pages"
 ### Task 7: Landing blocks — Hero (with pause), Gruppen, AGs, Connect
 
 **Files:**
+
 - Create: `apps/web/app/_public/landing/HeroSlideshow.tsx` (client)
 - Create: `apps/web/app/_public/landing/Hero.tsx`
 - Create: `apps/web/app/_public/landing/GruppenBlock.tsx`
@@ -873,6 +958,7 @@ git commit -m "feat(web): styled 404 and error pages"
 - Create: `apps/web/app/_public/landing/ConnectBlock.tsx`
 
 **Interfaces:**
+
 - Consumes: `listGroups(db, { status: "active" })` → `GroupSummary[]` (`{ id, slug, name, city, status }`) from `@bdas/groups`; `AGS` from Task 5; `Section` from Task 2; `loadViewer` from `_dashboard/session`.
 - Produces: `<Hero />`, `<GruppenBlock />` (async), `<AgBlock />`, `<ConnectBlock loggedIn />` — assembled by Task 8.
 
@@ -1067,7 +1153,10 @@ import { Card, Section } from "@bdas/design-system";
 
 const FEATURES = [
   { title: "Events & Anmeldung", text: "Veranstaltungen entdecken und mit einem Klick anmelden." },
-  { title: "Dateien & Vorlagen", text: "Gemeinsame Dokumente, Vorlagen und Materialien an einem Ort." },
+  {
+    title: "Dateien & Vorlagen",
+    text: "Gemeinsame Dokumente, Vorlagen und Materialien an einem Ort.",
+  },
   { title: "Dein Netzwerk", text: "Deine Gruppe, deine Leute — bundesweit verbunden." },
 ] as const;
 
@@ -1110,6 +1199,7 @@ git commit -m "feat(web): landing blocks — hero with pause, gruppen, AGs, conn
 ### Task 8: `NewsSource` contract + Aktuelles block + landing assembly
 
 **Files:**
+
 - Create: `apps/web/app/_public/news.ts`
 - Create: `apps/web/app/_public/news.test.ts`
 - Create: `apps/web/app/_public/landing/AktuellesBlock.tsx`
@@ -1117,6 +1207,7 @@ git commit -m "feat(web): landing blocks — hero with pause, gruppen, AGs, conn
 - Modify: `apps/web/app/page.tsx` (flag branch)
 
 **Interfaces:**
+
 - Produces: `type NewsItem = { id, title, teaser, publishedAt: Date, href: string | null }`; `type NewsSource = { listLatest(n: number): Promise<ReadonlyArray<NewsItem>> }`; `placeholderNewsSource: NewsSource`. The blog module later exports a `NewsSource` implementation and only the one import in `AktuellesBlock` changes.
 
 - [ ] **Step 1: Write the failing test**
@@ -1322,6 +1413,7 @@ git commit -m "feat(web): NewsSource contract, Aktuelles block, landing assembly
 ### Task 9: Events calendar (Schedule-X island + filter chips)
 
 **Files:**
+
 - Create: `apps/web/app/_public/landing/calendar-events.ts`
 - Create: `apps/web/app/_public/landing/calendar-events.test.ts`
 - Create: `apps/web/app/_public/landing/EventCalendar.tsx` (client)
@@ -1330,6 +1422,7 @@ git commit -m "feat(web): NewsSource contract, Aktuelles block, landing assembly
 - Modify: `apps/web/package.json` (deps)
 
 **Interfaces:**
+
 - Consumes: `listUpcomingEvents(db, viewer)` → `ReadonlyArray<EventWithCounts>` (`EventItem` fields incl. `id, title, startsAt: Date, endsAt: Date | null, groupId: string | null`); `viewerFrom(me)` from `apps/web/lib/event-viewer.ts`; `listGroups` from `@bdas/groups`; `FilterChip` from Task 2.
 - Produces: `type CalendarEvent = { id: string; title: string; start: string; end: string; groupId: string | null }` (start/end in Schedule-X's `"YYYY-MM-DD HH:mm"` format); `toCalendarEvents(events)`.
 
@@ -1458,7 +1551,13 @@ import "@schedule-x/theme-default/dist/index.css";
 export type GroupOption = { id: string; name: string };
 type Filter = "all" | "federal" | string;
 
-function Calendar({ events, onEventClick }: { events: CalendarEvent[]; onEventClick: (id: string) => void }) {
+function Calendar({
+  events,
+  onEventClick,
+}: {
+  events: CalendarEvent[];
+  onEventClick: (id: string) => void;
+}) {
   const calendar = useCalendarApp({
     views: [createViewMonthGrid(), createViewMonthAgenda()],
     events: events.map(({ groupId: _g, ...e }) => e),
@@ -1470,7 +1569,13 @@ function Calendar({ events, onEventClick }: { events: CalendarEvent[]; onEventCl
   return <ScheduleXCalendar calendarApp={calendar} />;
 }
 
-export function EventCalendar({ events, groups }: { events: CalendarEvent[]; groups: GroupOption[] }) {
+export function EventCalendar({
+  events,
+  groups,
+}: {
+  events: CalendarEvent[];
+  groups: GroupOption[];
+}) {
   const router = useRouter();
   const [filter, setFilter] = useState<Filter>("all");
 
@@ -1484,7 +1589,11 @@ export function EventCalendar({ events, groups }: { events: CalendarEvent[]; gro
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Veranstaltungen filtern">
+      <div
+        className="flex flex-wrap items-center gap-2"
+        role="group"
+        aria-label="Veranstaltungen filtern"
+      >
         <FilterChip active={filter === "all"} onClick={() => setFilter("all")}>
           Alle
         </FilterChip>
@@ -1498,7 +1607,11 @@ export function EventCalendar({ events, groups }: { events: CalendarEvent[]; gro
         ))}
       </div>
       {/* key remounts Schedule-X when the filter changes */}
-      <Calendar key={filter} events={filtered} onEventClick={(id) => router.push(`/events/${id}`)} />
+      <Calendar
+        key={filter}
+        events={filtered}
+        onEventClick={(id) => router.push(`/events/${id}`)}
+      />
     </div>
   );
 }
@@ -1517,7 +1630,7 @@ Append to `apps/web/app/globals.css`:
 }
 ```
 
-> Note for the implementer: if ESLint/review flags these raw values, extract them by importing `colors`/`radii` from `@bdas/design-system` into a small CSS-variable bridge in the layout instead. The constraint is "no *new* values", not "no mapping".
+> Note for the implementer: if ESLint/review flags these raw values, extract them by importing `colors`/`radii` from `@bdas/design-system` into a small CSS-variable bridge in the layout instead. The constraint is "no _new_ values", not "no mapping".
 
 - [ ] **Step 8: Server block + wire into the landing**
 
@@ -1564,7 +1677,9 @@ import { KalenderBlock } from "./_public/landing/KalenderBlock";
 ```
 
 ```tsx
-      {isFlagOn("events") ? <KalenderBlock /> : null}
+{
+  isFlagOn("events") ? <KalenderBlock /> : null;
+}
 ```
 
 - [ ] **Step 9: Verify + commit**
@@ -1582,6 +1697,7 @@ git commit -m "feat(web): Schedule-X events calendar with filter chips on the la
 ### Task 10: SEO — metadata base, OG image, sitemap, robots, legacy redirects
 
 **Files:**
+
 - Modify: `apps/web/app/layout.tsx` (metadataBase + description)
 - Create: `apps/web/app/opengraph-image.tsx`
 - Create: `apps/web/app/sitemap.ts`
@@ -1589,6 +1705,7 @@ git commit -m "feat(web): Schedule-X events calendar with filter chips on the la
 - Modify: `apps/web/next.config.mjs` (redirects)
 
 **Interfaces:**
+
 - Consumes: `PUBLIC_SITE_URL` env; `listGroups`, `listUpcomingEvents(db, ANON)`.
 
 - [ ] **Step 1: metadataBase**
@@ -1620,23 +1737,21 @@ export const contentType = "image/png";
 
 export default function OpengraphImage() {
   return new ImageResponse(
-    (
-      <div
-        style={{
-          width: "100%",
-          height: "100%",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "center",
-          background: "linear-gradient(135deg, #7a1414, #d12020)",
-          color: "#ffffff",
-        }}
-      >
-        <div style={{ fontSize: 120, fontWeight: 700 }}>BDAS</div>
-        <div style={{ fontSize: 36 }}>Bund der Alevitischen Studierenden in Deutschland</div>
-      </div>
-    ),
+    <div
+      style={{
+        width: "100%",
+        height: "100%",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        background: "linear-gradient(135deg, #7a1414, #d12020)",
+        color: "#ffffff",
+      }}
+    >
+      <div style={{ fontSize: 120, fontWeight: 700 }}>BDAS</div>
+      <div style={{ fontSize: 36 }}>Bund der Alevitischen Studierenden in Deutschland</div>
+    </div>,
     size,
   );
 }
@@ -1734,10 +1849,12 @@ git commit -m "feat(web): SEO — metadata, OG image, sitemap, robots, legacy re
 ### Task 11: E2E — public shell walk + facets test
 
 **Files:**
+
 - Modify: `e2e/helpers/db.ts` (add `seedEvent`)
 - Create: `e2e/public-shell.e2e.ts`
 
 **Interfaces:**
+
 - Consumes: existing helpers `seedGroup`, `uniqueSlug`, `uniqueEmail`, `registerVerifyLogin` (from `e2e/helpers/flows.ts` — read its signature before use), and the new `seedEvent`.
 - Precondition: the e2e environment runs with `BDAS_FLAG_PUBLIC_SHELL=true` (add it wherever the CI workflow sets the other `BDAS_FLAG_*` vars — check `.github/workflows/`).
 
@@ -1781,7 +1898,9 @@ import { registerVerifyLogin } from "./helpers/flows";
 
 test("visitor walks the public nav", async ({ page }) => {
   await page.goto("/");
-  await expect(page.getByRole("heading", { name: /Bund der Alevitischen Studierenden/ })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: /Bund der Alevitischen Studierenden/ }),
+  ).toBeVisible();
 
   // Static pages via the Über-uns dropdown
   await page.getByText("Über uns").click();
@@ -1848,6 +1967,7 @@ git commit -m "test(e2e): public shell nav walk + facets visibility test"
 ### Task 12: Final verification + go-live notes
 
 **Files:**
+
 - Modify: `docs/superpowers/specs/2026-07-05-public-shell-design.md` (tick nothing — just verify)
 
 - [ ] **Step 1: Full suite**

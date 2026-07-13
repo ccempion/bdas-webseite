@@ -38,10 +38,12 @@
 ## Task 1: Nav factory — "Meine Gruppe" dropdown + "Dateien" leaf
 
 **Files:**
+
 - Modify: `apps/web/app/_public/nav-items.ts`
 - Test: `apps/web/app/_public/nav-items.test.ts` (create)
 
 **Interfaces:**
+
 - Consumes: nothing new.
 - Produces: `navItems(opts?: { isFederal?: boolean; myGroup?: { slug: string }; showFiles?: boolean }): NavItem[]`. When `myGroup` is set, appends `{ label: "Meine Gruppe", children: [{ label: "Übersicht", href: "/gruppen/<slug>" }, { label: "Events", href: "/events?groups=<slug>" }] }`. When `showFiles` is true, appends `{ label: "Dateien", href: "/dateien" }`. Both are placed after the existing "Gruppen" item.
 
@@ -116,16 +118,16 @@ export function navItems({
 Then, immediately before `return items;`, add:
 
 ```ts
-  if (myGroup) {
-    items.push({
-      label: "Meine Gruppe",
-      children: [
-        { label: "Übersicht", href: `/gruppen/${myGroup.slug}` },
-        { label: "Events", href: `/events?groups=${myGroup.slug}` },
-      ],
-    });
-  }
-  if (showFiles) items.push({ label: "Dateien", href: "/dateien" });
+if (myGroup) {
+  items.push({
+    label: "Meine Gruppe",
+    children: [
+      { label: "Übersicht", href: `/gruppen/${myGroup.slug}` },
+      { label: "Events", href: `/events?groups=${myGroup.slug}` },
+    ],
+  });
+}
+if (showFiles) items.push({ label: "Dateien", href: "/dateien" });
 ```
 
 Leave the existing `isFederal` Events/Gruppen logic untouched.
@@ -152,9 +154,11 @@ git commit -m "feat(web): navItems supports Meine Gruppe dropdown + Dateien item
 ## Task 2: PublicHeader — resolve member group + files flag
 
 **Files:**
+
 - Modify: `apps/web/app/_public/PublicHeader.tsx`
 
 **Interfaces:**
+
 - Consumes: `navItems({ isFederal, myGroup, showFiles })` from Task 1; `getGroup(db, id)` from `@bdas/groups`; `getDb` from `@bdas/db`; `isFlagOn` from `@bdas/feature-flags`; `loadCurrentMember()` (already imported).
 - Produces: header renders the new items. No exported symbol changes.
 
@@ -173,35 +177,35 @@ import { getGroup } from "@bdas/groups";
 Find this block near the top of `export async function PublicHeader()`:
 
 ```ts
-  const me = await loadCurrentMember();
-  const isBoard = me ? canAdministerBoard(me.grants) : false;
-  const items = navItems({ isFederal: me ? isFederalBoard(me.grants) : false });
-  const displayName = me?.member?.firstName ?? "Konto";
+const me = await loadCurrentMember();
+const isBoard = me ? canAdministerBoard(me.grants) : false;
+const items = navItems({ isFederal: me ? isFederalBoard(me.grants) : false });
+const displayName = me?.member?.firstName ?? "Konto";
 ```
 
 Replace it with:
 
 ```ts
-  const me = await loadCurrentMember();
-  const isBoard = me ? canAdministerBoard(me.grants) : false;
+const me = await loadCurrentMember();
+const isBoard = me ? canAdministerBoard(me.grants) : false;
 
-  // "Meine Gruppe" links into the public group page + group-filtered events; it
-  // needs the group's slug and only makes sense while groups are enabled and the
-  // group is not archived (its public page 404s otherwise).
-  const groupId = me?.member?.primaryGroupId ?? null;
-  const group = groupId && isFlagOn("groups") ? await getGroup(getDb(), groupId) : null;
-  const myGroup = group && group.status !== "archived" ? { slug: group.slug } : undefined;
+// "Meine Gruppe" links into the public group page + group-filtered events; it
+// needs the group's slug and only makes sense while groups are enabled and the
+// group is not archived (its public page 404s otherwise).
+const groupId = me?.member?.primaryGroupId ?? null;
+const group = groupId && isFlagOn("groups") ? await getGroup(getDb(), groupId) : null;
+const myGroup = group && group.status !== "archived" ? { slug: group.slug } : undefined;
 
-  // Files access is per member-kind, independent of the group page; flag-gate it
-  // so the item never renders while BDAS_FLAG_FILES is off (no dead link).
-  const showFiles = Boolean(me?.member) && isFlagOn("files");
+// Files access is per member-kind, independent of the group page; flag-gate it
+// so the item never renders while BDAS_FLAG_FILES is off (no dead link).
+const showFiles = Boolean(me?.member) && isFlagOn("files");
 
-  const items = navItems({
-    isFederal: me ? isFederalBoard(me.grants) : false,
-    myGroup,
-    showFiles,
-  });
-  const displayName = me?.member?.firstName ?? "Konto";
+const items = navItems({
+  isFederal: me ? isFederalBoard(me.grants) : false,
+  myGroup,
+  showFiles,
+});
+const displayName = me?.member?.firstName ?? "Konto";
 ```
 
 - [ ] **Step 3: Typecheck**
@@ -230,12 +234,14 @@ git commit -m "feat(web): wire Meine Gruppe + Dateien nav items in PublicHeader"
 ## Task 3: `listPastEvents` in the events module
 
 **Files:**
+
 - Modify: `modules/events/src/services/list.ts`
 - Modify: `modules/events/src/index.ts`
 - Modify: `modules/events/README.md`
 - Test: `modules/events/src/services/list.test.ts` (create)
 
 **Interfaces:**
+
 - Consumes: existing `Viewer`, `ListOpts`, `EventWithCounts`, `canView`, `rowToEvent`, `withCounts`.
 - Produces: `listPastEvents(db: Db, viewer: Viewer, opts?: ListOpts): Promise<ReadonlyArray<EventWithCounts>>` — published events with `startsAt < now`, newest-first, visibility-filtered. `listUpcomingEvents` keeps its exact current signature/behaviour.
 
@@ -315,11 +321,7 @@ describeIfDb("listUpcomingEvents / listPastEvents", () => {
   });
 
   async function publishPublic(title: string, startsAt: Date): Promise<string> {
-    const ev = await createEvent(
-      t.db,
-      { title, startsAt, visibility: "public" },
-      "usr_creator",
-    );
+    const ev = await createEvent(t.db, { title, startsAt, visibility: "public" }, "usr_creator");
     await publishEvent(t.db, ev.id);
     return ev.id;
   }
@@ -427,7 +429,12 @@ export function listPastEvents(
 In `modules/events/src/index.ts`, change the list export line:
 
 ```ts
-export { listUpcomingEvents, listPastEvents, listManagedEvents, type ListOpts } from "./services/list";
+export {
+  listUpcomingEvents,
+  listPastEvents,
+  listManagedEvents,
+  type ListOpts,
+} from "./services/list";
 ```
 
 - [ ] **Step 5: Document in the README**
@@ -460,10 +467,12 @@ git commit -m "feat(events): add listPastEvents mirroring listUpcomingEvents"
 ## Task 4: Pure events filter helpers
 
 **Files:**
+
 - Create: `apps/web/app/events/event-filter.ts`
 - Test: `apps/web/app/events/event-filter.test.ts`
 
 **Interfaces:**
+
 - Consumes: `EventWithCounts` type from `@bdas/events-module` (only `groupId` is read).
 - Produces:
   - `FEDERATION_KEY = "bundesweit"` constant.
@@ -520,10 +529,7 @@ describe("deriveOwners", () => {
 describe("parseSelected", () => {
   it("keeps only valid keys", () => {
     const valid = new Set(["koeln", "berlin", FEDERATION_KEY]);
-    expect([...parseSelected("koeln,unknown,bundesweit", valid)]).toEqual([
-      "koeln",
-      "bundesweit",
-    ]);
+    expect([...parseSelected("koeln,unknown,bundesweit", valid)]).toEqual(["koeln", "bundesweit"]);
     expect(parseSelected(undefined, valid).size).toBe(0);
   });
 });
@@ -552,9 +558,7 @@ describe("buildHref / toggleHref", () => {
   });
   it("toggles a key while preserving past", () => {
     expect(toggleHref("koeln", new Set(["koeln"]), true)).toBe("/events?past=1");
-    expect(toggleHref("berlin", new Set(["koeln"]), false)).toBe(
-      "/events?groups=koeln%2Cberlin",
-    );
+    expect(toggleHref("berlin", new Set(["koeln"]), false)).toBe("/events?groups=koeln%2Cberlin");
   });
 });
 ```
@@ -604,10 +608,7 @@ export function deriveOwners(
 }
 
 /** Parse a comma-separated `groups` param, discarding keys not in `valid`. */
-export function parseSelected(
-  param: string | undefined,
-  valid: ReadonlySet<string>,
-): Set<string> {
+export function parseSelected(param: string | undefined, valid: ReadonlySet<string>): Set<string> {
   const out = new Set<string>();
   if (!param) return out;
   for (const raw of param.split(",")) {
@@ -641,11 +642,7 @@ export function buildHref(selected: ReadonlySet<string>, past: boolean): string 
 }
 
 /** Href that flips one chip in/out of the current selection (past preserved). */
-export function toggleHref(
-  chipKey: string,
-  selected: ReadonlySet<string>,
-  past: boolean,
-): string {
+export function toggleHref(chipKey: string, selected: ReadonlySet<string>, past: boolean): string {
   const next = new Set(selected);
   if (next.has(chipKey)) next.delete(chipKey);
   else next.add(chipKey);
@@ -670,9 +667,11 @@ git commit -m "feat(web): pure events group-filter helpers"
 ## Task 5: EventFilterBar component
 
 **Files:**
+
 - Create: `apps/web/app/events/EventFilterBar.tsx`
 
 **Interfaces:**
+
 - Consumes: `OwnerChip`, `buildHref`, `toggleHref` from `./event-filter` (Task 4); `cx` from `@bdas/design-system`.
 - Produces: `EventFilterBar({ chips, selected, past }: { chips: ReadonlyArray<OwnerChip>; selected: ReadonlySet<string>; past: boolean }): JSX.Element | null` — a server component rendering `<Link>` chips (mirroring FilterChip's token styling) + a past toggle. Returns `null` only when there are no chips **and** `past` is false.
 
@@ -727,10 +726,7 @@ export function EventFilterBar({
         </div>
       ) : null}
       <div>
-        <Link
-          href={buildHref(selected, !past)}
-          className={cx(CHIP, past ? ON : OFF)}
-        >
+        <Link href={buildHref(selected, !past)} className={cx(CHIP, past ? ON : OFF)}>
           {past ? "Nur kommende" : "Vergangene anzeigen"}
         </Link>
       </div>
@@ -756,9 +752,11 @@ git commit -m "feat(web): EventFilterBar chip bar + past toggle (server links)"
 ## Task 6: Wire the filter + past sections into /events
 
 **Files:**
+
 - Modify: `apps/web/app/events/page.tsx`
 
 **Interfaces:**
+
 - Consumes: `listUpcomingEvents`, `listPastEvents` from `@bdas/events-module`; `listGroups` from `@bdas/groups`; `deriveOwners`, `parseSelected`, `filterByGroups`, `type GroupInfo` from `./event-filter`; `EventFilterBar` from `./EventFilterBar`.
 - Produces: the page renders the filter bar, a "Kommende" section, and (when `?past=1`) a muted "Vergangene" section with a "Vorbei" badge.
 
@@ -780,12 +778,7 @@ import { readSessionCookie } from "../../lib/auth-cookie";
 import { viewerFrom } from "../../lib/event-viewer";
 import { formatDateTime } from "../../lib/format";
 import { EventFilterBar } from "./EventFilterBar";
-import {
-  deriveOwners,
-  filterByGroups,
-  parseSelected,
-  type GroupInfo,
-} from "./event-filter";
+import { deriveOwners, filterByGroups, parseSelected, type GroupInfo } from "./event-filter";
 
 export const metadata = { title: "Veranstaltungen" };
 
@@ -806,7 +799,13 @@ function EventCard({ e, past }: { e: EventWithCounts; past: boolean }) {
             </span>
           ) : null}
         </div>
-        <h2 className={past ? "mt-1 text-lg font-semibold text-bdas-ink-muted" : "mt-1 text-lg font-semibold text-bdas-ink"}>
+        <h2
+          className={
+            past
+              ? "mt-1 text-lg font-semibold text-bdas-ink-muted"
+              : "mt-1 text-lg font-semibold text-bdas-ink"
+          }
+        >
           {e.title}
         </h2>
         {e.location ? <p className="mt-1 text-sm text-bdas-ink-body">{e.location}</p> : null}
@@ -943,4 +942,7 @@ git commit -m "feat(web): group filter + past-events view on /events"
 - **Type consistency:** `OwnerChip`/`GroupInfo`/`FEDERATION_KEY` defined in Task 4 and consumed unchanged in Tasks 5–6; `listPastEvents` signature defined in Task 3 matches its use in Task 6; `navItems` option shape defined in Task 1 matches the call in Task 2. ✅
 - **No client JS:** chips + past toggle are `<Link>`s; `EventFilterBar` has no `"use client"`. ✅
 - **Regression guard:** existing `/events` card fields preserved; §23 events create-flow E2E untouched. Verify it stays green after Task 6 with `pnpm --filter @bdas/web test` and the repo's e2e job.
+
+```
+
 ```

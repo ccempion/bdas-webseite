@@ -11,12 +11,7 @@ import { readSessionCookie } from "../../lib/auth-cookie";
 import { viewerFrom } from "../../lib/event-viewer";
 import { formatDateTime } from "../../lib/format";
 import { EventFilterBar } from "./EventFilterBar";
-import {
-  deriveOwners,
-  filterByGroups,
-  parseSelected,
-  type GroupInfo,
-} from "./event-filter";
+import { deriveOwners, filterByGroups, parseSelected, type GroupInfo } from "./event-filter";
 
 export const metadata = { title: "Veranstaltungen" };
 
@@ -37,7 +32,13 @@ function EventCard({ e, past }: { e: EventWithCounts; past: boolean }) {
             </span>
           ) : null}
         </div>
-        <h2 className={past ? "mt-1 text-lg font-semibold text-bdas-ink-muted" : "mt-1 text-lg font-semibold text-bdas-ink"}>
+        <h2
+          className={
+            past
+              ? "mt-1 text-lg font-semibold text-bdas-ink-muted"
+              : "mt-1 text-lg font-semibold text-bdas-ink"
+          }
+        >
           {e.title}
         </h2>
         {e.location ? <p className="mt-1 text-sm text-bdas-ink-body">{e.location}</p> : null}

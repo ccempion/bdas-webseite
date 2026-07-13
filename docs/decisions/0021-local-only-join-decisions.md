@@ -15,7 +15,7 @@ The federation does not want this. Whether a person joins a local group is the
 local group's call: they know the applicant, they carry the consequences. A
 federal board member deciding admission for a group they are not part of
 overrides the group's own judgement. Federal oversight over the federation as a
-whole is not in question; admission to a *local* group is.
+whole is not in question; admission to a _local_ group is.
 
 ## Decision
 

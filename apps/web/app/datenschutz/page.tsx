@@ -30,8 +30,8 @@ export default function DatenschutzPage() {
           Basis von OpenStreetMap ein. Beim Laden der Karte wird Ihre IP-Adresse an Server der
           OpenStreetMap Foundation (St John&apos;s Innovation Centre, Cambridge, Vereinigtes
           Königreich) übertragen, um die Kartenkacheln auszuliefern. Rechtsgrundlage ist unser
-          berechtigtes Interesse an einer ansprechenden Darstellung unserer Hochschulgruppen
-          (Art. 6 Abs. 1 lit. f DSGVO).
+          berechtigtes Interesse an einer ansprechenden Darstellung unserer Hochschulgruppen (Art. 6
+          Abs. 1 lit. f DSGVO).
         </p>
         <p>
           Verantwortliche Stelle, Kontaktdaten, Zweck und Rechtsgrundlage der Verarbeitung, Hinweise

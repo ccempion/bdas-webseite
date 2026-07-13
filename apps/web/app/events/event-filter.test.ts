@@ -39,10 +39,7 @@ describe("deriveOwners", () => {
 describe("parseSelected", () => {
   it("keeps only valid keys", () => {
     const valid = new Set(["koeln", "berlin", FEDERATION_KEY]);
-    expect([...parseSelected("koeln,unknown,bundesweit", valid)]).toEqual([
-      "koeln",
-      "bundesweit",
-    ]);
+    expect([...parseSelected("koeln,unknown,bundesweit", valid)]).toEqual(["koeln", "bundesweit"]);
     expect(parseSelected(undefined, valid).size).toBe(0);
   });
 });
@@ -71,8 +68,6 @@ describe("buildHref / toggleHref", () => {
   });
   it("toggles a key while preserving past", () => {
     expect(toggleHref("koeln", new Set(["koeln"]), true)).toBe("/events?past=1");
-    expect(toggleHref("berlin", new Set(["koeln"]), false)).toBe(
-      "/events?groups=koeln%2Cberlin",
-    );
+    expect(toggleHref("berlin", new Set(["koeln"]), false)).toBe("/events?groups=koeln%2Cberlin");
   });
 });

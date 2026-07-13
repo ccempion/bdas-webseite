@@ -49,15 +49,15 @@ The platform (currently at dashboard.bdas.de) becomes the federation's entire we
 
 ### Routes
 
-| Route | Page | Content source |
-|---|---|---|
-| `/` | Landing (rebuilt) | mixed, see §4 |
-| `/ueber-uns` | Kurzportrait | placeholder copy |
-| `/ueber-uns/verbandsstruktur` | Verbandsstruktur | placeholder copy |
-| `/ueber-uns/bdaj` | BDAJ portrait + link to bdaj.de | placeholder copy |
-| `/unsere-arbeit` | AG overview | hardcoded AG list |
-| `/gruppen`, `/events` | existing | live modules |
-| `/blog` | future blog module | — |
+| Route                         | Page                            | Content source    |
+| ----------------------------- | ------------------------------- | ----------------- |
+| `/`                           | Landing (rebuilt)               | mixed, see §4     |
+| `/ueber-uns`                  | Kurzportrait                    | placeholder copy  |
+| `/ueber-uns/verbandsstruktur` | Verbandsstruktur                | placeholder copy  |
+| `/ueber-uns/bdaj`             | BDAJ portrait + link to bdaj.de | placeholder copy  |
+| `/unsere-arbeit`              | AG overview                     | hardcoded AG list |
+| `/gruppen`, `/events`         | existing                        | live modules      |
+| `/blog`                       | future blog module              | —                 |
 
 The four AGs (hardcoded list, no module/tables — YAGNI): Öffentlichkeitsarbeit/Social Media · Medizin · Ingenieurwesen & Technik · Jura.
 

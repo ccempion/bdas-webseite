@@ -33,10 +33,7 @@ export function deriveOwners(
 }
 
 /** Parse a comma-separated `groups` param, discarding keys not in `valid`. */
-export function parseSelected(
-  param: string | undefined,
-  valid: ReadonlySet<string>,
-): Set<string> {
+export function parseSelected(param: string | undefined, valid: ReadonlySet<string>): Set<string> {
   const out = new Set<string>();
   if (!param) return out;
   for (const raw of param.split(",")) {
@@ -70,11 +67,7 @@ export function buildHref(selected: ReadonlySet<string>, past: boolean): string 
 }
 
 /** Href that flips one chip in/out of the current selection (past preserved). */
-export function toggleHref(
-  chipKey: string,
-  selected: ReadonlySet<string>,
-  past: boolean,
-): string {
+export function toggleHref(chipKey: string, selected: ReadonlySet<string>, past: boolean): string {
   const next = new Set(selected);
   if (next.has(chipKey)) next.delete(chipKey);
   else next.add(chipKey);
