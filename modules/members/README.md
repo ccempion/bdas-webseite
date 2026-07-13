@@ -100,9 +100,40 @@ alumnus → active
 Anything else throws `ConflictError`. All transitions require the actor to
 manage the member's group (`canManageGroup`).
 
+## Group transfers (ADR 0022)
+
+`primary_group_id` is **not** editable through `updateProfile` — that service
+takes names only. A member moves groups through `changePrimaryGroup`, which
+branches on their status:
+
+| Member is  | Picks                | What happens                                                           |
+| ---------- | -------------------- | ---------------------------------------------------------------------- |
+| `pending`  | any group            | written straight through — nothing was approved yet, so the join request just moves to the other group's queue |
+| `active`   | another group        | a `pending` row in `member_group_change_requests`; the member does **not** move |
+| `active`   | no group (exit)      | applied immediately (nobody approves an exit), logged as an auto-approved row |
+| any        | their current group  | no-op, and any open request is withdrawn — the "never mind" affordance  |
+
+An open request is superseded when the member picks a different group, and
+withdrawn by `withdrawGroupChange`. At most one open request per member (partial
+unique index).
+
+`decideGroupChange` is the board's side. The **destination** group's board
+decides — a `local_board`/`local_board_lead` scoped to `to_group_id` — with
+federal board as fallback only when that group has no active board seat
+(`canDecideJoinRequest`, ADR 0021). The origin group can see the request but has
+no veto. Approval moves the member, leaves `status` untouched, and **revokes
+every group-scoped grant they still held in the group they left** (emitting a
+`members.role.revoked` per grant); rejection leaves them where they were.
+
+The table doubles as the audit log: terminal rows (`approved` / `rejected` /
+`withdrawn`) are the history, read back via `getGroupChangeHistory`. There is no
+separate audit table. `joinedAt` keeps its meaning — the date the member joined
+the *federation*, not their current group.
+
 ## Events
 
 `members.profile.created`, `members.profile.updated`,
 `members.status.changed`, `members.role.granted`, `members.role.revoked`
-(the role events carry `groupId`). Subscribers depend on these types via
-`MembersEvent`, never on the services.
+(the role events carry `groupId`), `members.group_change.requested`,
+`members.group_change.decided`, `members.group_change.withdrawn`. Subscribers
+depend on these types via `MembersEvent`, never on the services.
