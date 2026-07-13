@@ -6,6 +6,7 @@ import { getDb } from "@bdas/db";
 import { isFlagOn } from "@bdas/feature-flags";
 import { getGroup } from "@bdas/groups";
 
+import { BrandLink } from "../../components/BrandLink";
 import { loadCurrentMember } from "../_dashboard/session";
 import { NavAutoClose } from "./NavAutoClose";
 import { navItems, type NavItem } from "./nav-items";
@@ -72,12 +73,7 @@ export async function PublicHeader() {
   return (
     <header className="sticky top-0 z-50 border-b border-bdas-soft bg-bdas-surface">
       <div className="mx-auto flex max-w-6xl items-center gap-4 px-4 py-3">
-        <Link
-          href="/"
-          className="text-lg font-semibold tracking-tight text-bdas-ink hover:text-bdas-red"
-        >
-          BDAS
-        </Link>
+        <BrandLink />
 
         {/* Desktop nav */}
         <nav
