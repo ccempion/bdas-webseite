@@ -39,6 +39,7 @@ export function MembersTable({
   const [q, setQ] = useState("");
   const [selected, setSelected] = useState<Member | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [queueError, setQueueError] = useState<string | null>(null);
   const [pending, start] = useTransition();
 
   const openByMember = useMemo(
@@ -64,12 +65,19 @@ export function MembersTable({
   const decide = (requestId: string, decision: "approved" | "rejected") =>
     start(async () => {
       const res = await decideGroupChangeAction(requestId, decision, revalidatePath);
-      setError(res.ok ? null : (res.error ?? "Fehler"));
+      setQueueError(res.ok ? null : (res.error ?? "Fehler"));
     });
 
   return (
     <div className="flex gap-4">
       <div className="flex min-w-0 flex-1 flex-col gap-4">
+        {/* Outside the queue block: a failed decision revalidates, which can empty
+            the queue entirely — the reason it failed has to outlive the rows. */}
+        {queueError && (
+          <p className="rounded-bdas border border-bdas-soft bg-bdas-surface p-3 text-sm text-bdas-red shadow-bdas-card">
+            {queueError}
+          </p>
+        )}
         {incoming.length > 0 && (
           <div className="overflow-hidden rounded-bdas border border-bdas-soft bg-bdas-surface shadow-bdas-card">
             <h2 className="border-b border-bdas-soft p-3 text-sm font-semibold text-bdas-ink">
