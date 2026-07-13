@@ -253,9 +253,11 @@ describeIfDb("changePrimaryGroup", () => {
     await expect(changePrimaryGroup(t.db, id, "grp_b", FEDERAL)).rejects.toMatchObject({
       code: "FORBIDDEN",
     });
-    await expect(changePrimaryGroup(t.db, id, "grp_b", self("usr_attacker"))).rejects.toMatchObject({
-      code: "FORBIDDEN",
-    });
+    await expect(changePrimaryGroup(t.db, id, "grp_b", self("usr_attacker"))).rejects.toMatchObject(
+      {
+        code: "FORBIDDEN",
+      },
+    );
   });
 
   it("refuses a transfer for an inactive member", async () => {

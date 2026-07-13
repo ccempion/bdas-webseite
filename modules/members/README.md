@@ -5,13 +5,13 @@ Federation-side member profiles. Identity lives in `@bdas/auth`; membership
 
 ## Owned tables
 
-| Table                | Purpose                                                                              |
-| -------------------- | ------------------------------------------------------------------------------------ |
-| `members`            | id, user_id (FK auth_users), first/last name, primary_group_id, status, joined_at    |
-| `member_role_grants` | id, member_id, role, group_id (FK groups, NULL=unscoped), granted/revoked (ADR 0007) |
+| Table                          | Purpose                                                                                   |
+| ------------------------------ | ----------------------------------------------------------------------------------------- |
+| `members`                      | id, user_id (FK auth_users), first/last name, primary_group_id, status, joined_at         |
+| `member_role_grants`           | id, member_id, role, group_id (FK groups, NULL=unscoped), granted/revoked (ADR 0007)      |
+| `member_group_change_requests` | id, member_id, from/to_group_id, status, requested/decided — queue **and** log (ADR 0022) |
 
-`group_change_requests` and `member_status_history` deliberately omitted —
-Phase 6 / deferred per spec.
+`member_status_history` deliberately omitted — deferred per spec.
 
 ## Lifecycle
 
@@ -106,12 +106,12 @@ manage the member's group (`canManageGroup`).
 takes names only. A member moves groups through `changePrimaryGroup`, which
 branches on their status:
 
-| Member is  | Picks                | What happens                                                           |
-| ---------- | -------------------- | ---------------------------------------------------------------------- |
-| `pending`  | any group            | written straight through — nothing was approved yet, so the join request just moves to the other group's queue |
-| `active`   | another group        | a `pending` row in `member_group_change_requests`; the member does **not** move |
-| `active`   | no group (exit)      | applied immediately (nobody approves an exit), logged as an auto-approved row |
-| any        | their current group  | no-op, and any open request is withdrawn — the "never mind" affordance  |
+| Member is | Picks               | What happens                                                                                                   |
+| --------- | ------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `pending` | any group           | written straight through — nothing was approved yet, so the join request just moves to the other group's queue |
+| `active`  | another group       | a `pending` row in `member_group_change_requests`; the member does **not** move                                |
+| `active`  | no group (exit)     | applied immediately (nobody approves an exit), logged as an auto-approved row                                  |
+| any       | their current group | no-op, and any open request is withdrawn — the "never mind" affordance                                         |
 
 An open request is superseded when the member picks a different group, and
 withdrawn by `withdrawGroupChange`. At most one open request per member (partial
@@ -128,7 +128,7 @@ every group-scoped grant they still held in the group they left** (emitting a
 The table doubles as the audit log: terminal rows (`approved` / `rejected` /
 `withdrawn`) are the history, read back via `getGroupChangeHistory`. There is no
 separate audit table. `joinedAt` keeps its meaning — the date the member joined
-the *federation*, not their current group.
+the _federation_, not their current group.
 
 ## Events
 

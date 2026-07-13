@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Close the self-service group-switch hole — an active member can no longer reassign their `primary_group_id` at will; a switch becomes a *request* decided by the destination group's board, and every switch is recorded as an auditable timeline.
+**Goal:** Close the self-service group-switch hole — an active member can no longer reassign their `primary_group_id` at will; a switch becomes a _request_ decided by the destination group's board, and every switch is recorded as an auditable timeline.
 
-**Architecture:** A new members-owned table `member_group_change_requests` is the single record of every group movement — it is simultaneously the pending queue and the history log (no separate audit table). `updateProfile` stops accepting `primaryGroupId` entirely; a new `changePrimaryGroup` service becomes the only self-service writer of that column and branches on member status: a `pending` member still edits their group freely (nothing has been approved yet), an `active` member files a request, and leaving to "no group" applies immediately (nobody needs to approve an exit) but is still logged. Approval authority mirrors ADR 0021 — the *destination* group's local board decides, federal board only as fallback when that group has no board seat — and approval auto-revokes any group-scoped role grant the member still holds in the group they left.
+**Architecture:** A new members-owned table `member_group_change_requests` is the single record of every group movement — it is simultaneously the pending queue and the history log (no separate audit table). `updateProfile` stops accepting `primaryGroupId` entirely; a new `changePrimaryGroup` service becomes the only self-service writer of that column and branches on member status: a `pending` member still edits their group freely (nothing has been approved yet), an `active` member files a request, and leaving to "no group" applies immediately (nobody needs to approve an exit) but is still logged. Approval authority mirrors ADR 0021 — the _destination_ group's local board decides, federal board only as fallback when that group has no board seat — and approval auto-revokes any group-scoped role grant the member still holds in the group they left.
 
 **Tech Stack:** TypeScript, Next.js 14 App Router (Server Components + Server Actions), Drizzle ORM on PostgreSQL, Zod, Vitest against real Postgres (Docker), Tailwind via `@bdas/design-system` tokens.
 
@@ -25,6 +25,7 @@
 ## File Structure
 
 **Created:**
+
 - `docs/decisions/0022-group-transfer-requests.md` — the ADR recording the destination-board rule, the auto-revoke rule, and the request-table-as-log decision.
 - `modules/members/migrations/0006_group_change_requests.sql` — the new table.
 - `modules/members/src/services/group-change.ts` — write + read services for transfers. Single responsibility: everything that touches `member_group_change_requests`.
@@ -37,6 +38,7 @@
 - `apps/web/app/account/WithdrawChangeButton.tsx` — client button that withdraws the member's own open request.
 
 **Modified:**
+
 - `modules/members/src/schema.ts` — add the `memberGroupChangeRequests` table.
 - `modules/members/src/types.ts` — add `GroupChangeStatus`, `GroupChangeRequest`, `GroupChangeResult`, `OpenGroupChange`.
 - `modules/members/src/events.ts` — add three events + widen the `MembersEvent` union.
@@ -57,6 +59,7 @@
 ## Task 1: Schema, types, events, and the shared test harness
 
 **Files:**
+
 - Create: `docs/decisions/0022-group-transfer-requests.md`
 - Create: `modules/members/migrations/0006_group_change_requests.sql`
 - Create: `modules/members/src/test-db.ts`
@@ -67,6 +70,7 @@
 - Modify: `modules/members/src/index.test.ts` (migration list only)
 
 **Interfaces:**
+
 - Consumes: nothing (first task).
 - Produces:
   - table `member_group_change_requests`
@@ -102,7 +106,7 @@ self-serve path into another group's private documents.
 ## Decision
 
 1. **A group change is a request, not an edit.** `member_group_change_requests`
-   records every movement. Its rows *are* the audit log — there is no second
+   records every movement. Its rows _are_ the audit log — there is no second
    history table. A row's terminal state is `approved`, `rejected` or
    `withdrawn`; at most one `pending` row may exist per member (partial unique
    index).
@@ -110,7 +114,7 @@ self-serve path into another group's private documents.
    decision belongs to the group being joined. `canDecideJoinRequest` is reused
    verbatim against `to_group_id`, including its federal-board fallback for a
    destination group with zero active local-board seats. The origin group is
-   *notified* (the request is visible in its members list) but has no veto — a
+   _notified_ (the request is visible in its members list) but has no veto — a
    member cannot be held hostage by the group they are leaving.
 3. **Approval auto-revokes group-scoped grants in the origin group.** Any active
    `local_board`, `local_board_lead` or `event_organizer` grant scoped to
@@ -133,7 +137,7 @@ self-serve path into another group's private documents.
 - `UpdateProfileInput` no longer carries `primaryGroupId`. `updateProfile` is a
   names-only service. Any future caller wanting to move a member must go through
   `changePrimaryGroup` (self) or `decideGroupChange` (board).
-- `joinedAt` keeps its meaning: the date the member joined *the federation*, not
+- `joinedAt` keeps its meaning: the date the member joined _the federation_, not
   their current group. The group timeline derives the initial join from it.
 - The members module still performs no existence check on a destination group —
   the SQL foreign key backstops it. Querying `groups` from the members module
@@ -525,11 +529,13 @@ git commit -m "feat(members): group_change_requests table, types, events (ADR 00
 ## Task 2: `changePrimaryGroup` + `withdrawGroupChange` (the self-service write path)
 
 **Files:**
+
 - Create: `modules/members/src/services/group-change.ts`
 - Modify: `modules/members/src/services/status.ts` (export one helper)
 - Test: `modules/members/src/group-change.test.ts`
 
 **Interfaces:**
+
 - Consumes: `memberGroupChangeRequests`, `MemberGroupChangeRow` (Task 1); `GroupChangeRequest`, `GroupChangeResult` (Task 1); `GroupChangeRequested`, `GroupChangeDecided`, `GroupChangeWithdrawn` (Task 1); the existing `Actor`, `row2member`, `members`, `memberRoleGrants`.
 - Produces:
   - `changePrimaryGroup(db: Db, memberId: string, toGroupId: string | null, actor: Actor): Promise<GroupChangeResult>`
@@ -712,9 +718,9 @@ describeIfDb("changePrimaryGroup", () => {
     await expect(changePrimaryGroup(t.db, id, "grp_b", FEDERAL)).rejects.toMatchObject({
       code: "FORBIDDEN",
     });
-    await expect(
-      changePrimaryGroup(t.db, id, "grp_b", self("usr_attacker")),
-    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    await expect(changePrimaryGroup(t.db, id, "grp_b", self("usr_attacker"))).rejects.toMatchObject(
+      { code: "FORBIDDEN" },
+    );
   });
 
   it("refuses a transfer for an inactive member", async () => {
@@ -1008,10 +1014,12 @@ git commit -m "feat(members): changePrimaryGroup files a transfer request instea
 ## Task 3: `decideGroupChange` — destination board approves or rejects
 
 **Files:**
+
 - Modify: `modules/members/src/services/group-change.ts`
 - Test: `modules/members/src/group-change.test.ts`
 
 **Interfaces:**
+
 - Consumes: `revokeGroupScopedGrants`, `row2request`, `withdrawOpen` (Task 2); `groupHasActiveLocalBoard` (Task 2 Step 1); `canDecideJoinRequest` from `../roles`.
 - Produces: `decideGroupChange(db: Db, requestId: string, decision: "approved" | "rejected", actor: Actor): Promise<GroupChangeRequest>`
 
@@ -1274,11 +1282,13 @@ git commit -m "feat(members): decideGroupChange — destination board approves, 
 ## Task 4: Read services + public surface
 
 **Files:**
+
 - Modify: `modules/members/src/services/group-change.ts`
 - Modify: `modules/members/src/index.ts`
 - Test: `modules/members/src/group-change.test.ts`
 
 **Interfaces:**
+
 - Consumes: everything from Tasks 1–3.
 - Produces (all re-exported from `index.ts`):
   - `getOpenGroupChange(db: Db, memberId: string): Promise<GroupChangeRequest | null>`
@@ -1455,7 +1465,9 @@ export async function listOpenGroupChanges(db: Db, actor: Actor): Promise<OpenGr
 
   // canDecide needs to know whether each destination group has a board of its own
   // (the federal fallback in ADR 0021). One probe per distinct destination.
-  const destinations = [...new Set(visible.map((r) => r.toGroupId).filter((g): g is string => g !== null))];
+  const destinations = [
+    ...new Set(visible.map((r) => r.toGroupId).filter((g): g is string => g !== null)),
+  ];
   const hasBoard = new Map<string, boolean>();
   for (const g of destinations) {
     hasBoard.set(g, await groupHasActiveLocalBoard(db, g));
@@ -1497,8 +1509,7 @@ export async function getGroupChangeHistory(
   }
 
   const allowed =
-    isFederalBoard(actor.grants) ||
-    [...involved].some((g) => canManageGroup(actor.grants, g));
+    isFederalBoard(actor.grants) || [...involved].some((g) => canManageGroup(actor.grants, g));
   if (!allowed) throw new ForbiddenError("Nur Vorstände dürfen den Gruppenverlauf sehen.");
 
   return rows.map(row2request);
@@ -1569,11 +1580,13 @@ git commit -m "feat(members): group change read services + public surface"
 ## Task 5: Close the hole — `updateProfile` stops writing `primaryGroupId`
 
 **Files:**
+
 - Modify: `modules/members/src/services/profile.ts`
 - Modify: `apps/web/app/account/actions.ts`
 - Test: `modules/members/src/index.test.ts`
 
 **Interfaces:**
+
 - Consumes: `changePrimaryGroup`, `withdrawGroupChange` (Tasks 2, 4).
 - Produces: `UpdateProfileInput` = `{ firstName?: string; lastName?: string }` — **no `primaryGroupId`**; `saveProfileAction` returns `ProfileFormState` widened with `notice?: string`; new `withdrawGroupChangeAction(): Promise<{ ok: boolean; error?: string }>`.
 
@@ -1582,27 +1595,27 @@ git commit -m "feat(members): group change read services + public surface"
 Append to the `describeIfDb("members integration", ...)` block in `modules/members/src/index.test.ts`:
 
 ```ts
-  it("updateProfile cannot move a member between groups (ADR 0022)", async () => {
-    await createGroup("grp_a", "aachen");
-    await createGroup("grp_b", "berlin");
-    await createUser("usr_cem", "cem@example.de");
-    const m = await createProfile(t.db, {
-      userId: "usr_cem",
-      firstName: "Cem",
-      lastName: "Colak",
-      primaryGroupId: "grp_a",
-    });
-    await approveMember(t.db, m.id, BOARD);
-
-    const after = await updateProfile(t.db, m.id, {
-      firstName: "Cem",
-      lastName: "Colak",
-      primaryGroupId: "grp_b",
-    });
-
-    expect(after.primaryGroupId).toBe("grp_a"); // the smuggled field is ignored
-    expect(after.firstName).toBe("Cem");
+it("updateProfile cannot move a member between groups (ADR 0022)", async () => {
+  await createGroup("grp_a", "aachen");
+  await createGroup("grp_b", "berlin");
+  await createUser("usr_cem", "cem@example.de");
+  const m = await createProfile(t.db, {
+    userId: "usr_cem",
+    firstName: "Cem",
+    lastName: "Colak",
+    primaryGroupId: "grp_a",
   });
+  await approveMember(t.db, m.id, BOARD);
+
+  const after = await updateProfile(t.db, m.id, {
+    firstName: "Cem",
+    lastName: "Colak",
+    primaryGroupId: "grp_b",
+  });
+
+  expect(after.primaryGroupId).toBe("grp_a"); // the smuggled field is ignored
+  expect(after.firstName).toBe("Cem");
+});
 ```
 
 Add `updateProfile` to the existing `./services/profile` import in that file.
@@ -1610,7 +1623,7 @@ Add `updateProfile` to the existing `./services/profile` import in that file.
 - [ ] **Step 2: Run the test to verify it fails**
 
 Run: `pnpm --filter @bdas/members test -- index`
-Expected: FAIL — `expected 'grp_b' to be 'grp_a'`. This failure *is* the vulnerability, reproduced.
+Expected: FAIL — `expected 'grp_b' to be 'grp_a'`. This failure _is_ the vulnerability, reproduced.
 
 - [ ] **Step 3: Remove `primaryGroupId` from the update path**
 
@@ -1635,7 +1648,7 @@ export type UpdateProfileInput = z.infer<typeof UpdateProfileInput>;
 In `updateProfile`, delete the line:
 
 ```ts
-  if (v.primaryGroupId !== undefined) set.primaryGroupId = v.primaryGroupId;
+if (v.primaryGroupId !== undefined) set.primaryGroupId = v.primaryGroupId;
 ```
 
 Update the file's header comment — the sentence "Profiles start as `pending` and stay there until a federal_board user approves them" is stale; replace that paragraph with:
@@ -1651,7 +1664,7 @@ Update the file's header comment — the sentence "Profiles start as `pending` a
 - [ ] **Step 4: Run the test to verify it passes**
 
 Run: `pnpm --filter @bdas/members test`
-Expected: PASS. If another existing test asserted that `updateProfile` changes the group, it should now be *deleted* (that behaviour was the bug), not adapted.
+Expected: PASS. If another existing test asserted that `updateProfile` changes the group, it should now be _deleted_ (that behaviour was the bug), not adapted.
 
 - [ ] **Step 5: Rewrite the account action**
 
@@ -1759,11 +1772,13 @@ git commit -m "fix(members): updateProfile can no longer reassign a member's gro
 ## Task 6: "Mein Konto" — see the open request, withdraw or change it
 
 **Files:**
+
 - Create: `apps/web/app/account/WithdrawChangeButton.tsx`
 - Modify: `apps/web/app/account/page.tsx`
 - Modify: `apps/web/app/account/ProfileForm.tsx`
 
 **Interfaces:**
+
 - Consumes: `getOpenGroupChange` (Task 4), `withdrawGroupChangeAction` (Task 5), `ProfileFormState.notice` (Task 5).
 - Produces: `ProfileForm` gains a required prop `openChangeGroupName: string | null`.
 
@@ -1818,57 +1833,63 @@ import { WithdrawChangeButton } from "./WithdrawChangeButton";
 After `const groups = await listGroups(db, { status: "active" });` add:
 
 ```ts
-  const openChange = me.member ? await getOpenGroupChange(db, me.member.id) : null;
-  const groupName = (id: string | null): string | null =>
-    id === null ? null : (groups.find((g) => g.id === id)?.name ?? null);
-  const currentGroupName = groupName(me.member?.primaryGroupId ?? null);
-  const targetGroupName = groupName(openChange?.toGroupId ?? null);
+const openChange = me.member ? await getOpenGroupChange(db, me.member.id) : null;
+const groupName = (id: string | null): string | null =>
+  id === null ? null : (groups.find((g) => g.id === id)?.name ?? null);
+const currentGroupName = groupName(me.member?.primaryGroupId ?? null);
+const targetGroupName = groupName(openChange?.toGroupId ?? null);
 ```
 
 Insert this block directly after the `status === "active"` alert:
 
 ```tsx
-      {openChange && targetGroupName ? (
-        <Alert variant="info" title="Gruppenwechsel beantragt">
-          <span className="flex flex-col gap-2">
-            <span>
-              Du bist Mitglied bei <strong>{currentGroupName ?? "keiner Gruppe"}</strong> und hast
-              den Wechsel zu <strong>{targetGroupName}</strong> beantragt (seit{" "}
-              {new Date(openChange.requestedAt).toLocaleDateString("de-DE")}). Bis der Vorstand von{" "}
-              {targetGroupName} entscheidet, bleibst du Mitglied bei{" "}
-              {currentGroupName ?? "keiner Gruppe"}.
-            </span>
-            <WithdrawChangeButton />
-          </span>
-        </Alert>
-      ) : null}
+{
+  openChange && targetGroupName ? (
+    <Alert variant="info" title="Gruppenwechsel beantragt">
+      <span className="flex flex-col gap-2">
+        <span>
+          Du bist Mitglied bei <strong>{currentGroupName ?? "keiner Gruppe"}</strong> und hast den
+          Wechsel zu <strong>{targetGroupName}</strong> beantragt (seit{" "}
+          {new Date(openChange.requestedAt).toLocaleDateString("de-DE")}). Bis der Vorstand von{" "}
+          {targetGroupName} entscheidet, bleibst du Mitglied bei{" "}
+          {currentGroupName ?? "keiner Gruppe"}.
+        </span>
+        <WithdrawChangeButton />
+      </span>
+    </Alert>
+  ) : null;
+}
 ```
 
 - [ ] **Step 3: Hint in the form**
 
-In `apps/web/app/account/ProfileForm.tsx`, add `openChangeGroupName: string | null` to `ProfileFormProps`, destructure it, and render the notice + hint. The `<select>`'s `defaultValue` stays `data.primaryGroupId` — it shows the group the member is *actually in*, not the one they applied to.
+In `apps/web/app/account/ProfileForm.tsx`, add `openChangeGroupName: string | null` to `ProfileFormProps`, destructure it, and render the notice + hint. The `<select>`'s `defaultValue` stays `data.primaryGroupId` — it shows the group the member is _actually in_, not the one they applied to.
 
 Add below the existing `state.error` alert:
 
 ```tsx
-      {state.notice ? <Alert variant="info">{state.notice}</Alert> : null}
+{
+  state.notice ? <Alert variant="info">{state.notice}</Alert> : null;
+}
 ```
 
 And inside the `Field label="Hochschulgruppe"`, directly after the `</select>`:
 
 ```tsx
-        {openChangeGroupName ? (
-          <p className="mt-1 text-sm text-bdas-ink-muted">
-            Ein Wechsel zu {openChangeGroupName} ist beantragt. Eine andere Auswahl ersetzt den
-            Antrag; die aktuelle Gruppe erneut zu wählen zieht ihn zurück.
-          </p>
-        ) : null}
+{
+  openChangeGroupName ? (
+    <p className="mt-1 text-sm text-bdas-ink-muted">
+      Ein Wechsel zu {openChangeGroupName} ist beantragt. Eine andere Auswahl ersetzt den Antrag;
+      die aktuelle Gruppe erneut zu wählen zieht ihn zurück.
+    </p>
+  ) : null;
+}
 ```
 
 Pass it from `page.tsx`:
 
 ```tsx
-          openChangeGroupName={targetGroupName}
+openChangeGroupName = { targetGroupName };
 ```
 
 - [ ] **Step 4: Verify in the running app**
@@ -1876,7 +1897,8 @@ Pass it from `page.tsx`:
 Run: `pnpm --filter web typecheck && pnpm lint`
 
 Then drive it end-to-end (`pnpm dev`, log in as an active member):
-1. `/account` → pick a different group → save. Expect the "Gruppenwechsel beantragt" alert, and the select still showing the *old* group.
+
+1. `/account` → pick a different group → save. Expect the "Gruppenwechsel beantragt" alert, and the select still showing the _old_ group.
 2. Reload. Expect the alert to persist (the request is in the DB, the member did not move).
 3. Click "Antrag zurückziehen". Expect the alert to disappear.
 4. Confirm in psql: `SELECT status, from_group_id, to_group_id FROM member_group_change_requests;` → one `withdrawn` row.
@@ -1893,6 +1915,7 @@ git commit -m "feat(web): account page shows a pending group change and can with
 ## Task 7: Board dashboard — the flag, the decision buttons, the timeline
 
 **Files:**
+
 - Create: `apps/web/app/(board)/_components/group-history.ts`
 - Create: `apps/web/app/(board)/_components/group-history.test.ts`
 - Create: `apps/web/app/(board)/_components/group-change-actions.ts`
@@ -1902,6 +1925,7 @@ git commit -m "feat(web): account page shows a pending group change and can with
 - Modify: `apps/web/app/(board)/gruppe/[slug]/members/page.tsx`
 
 **Interfaces:**
+
 - Consumes: `listOpenGroupChanges`, `getGroupChangeHistory`, `decideGroupChange` (Tasks 3, 4); `OpenGroupChange`, `GroupChangeRequest`, `Member` types.
 - Produces:
   - `buildGroupTimeline(member: Member, requests: ReadonlyArray<GroupChangeRequest>): TimelineEntry[]` where `TimelineEntry = { id: string; at: Date; fromGroupId: string | null; toGroupId: string | null; kind: "join" | "pending" | "approved" | "rejected" | "withdrawn" }`
@@ -2038,7 +2062,7 @@ export function buildGroupTimeline(
 }
 ```
 
-A request's `status` *is* its timeline kind — `GroupChangeStatus` is a subset of `TimelineEntry["kind"]`, which adds only `"join"` (the one entry with no request row behind it), so the assignment needs no cast.
+A request's `status` _is_ its timeline kind — `GroupChangeStatus` is a subset of `TimelineEntry["kind"]`, which adds only `"join"` (the one entry with no request row behind it), so the assignment needs no cast.
 
 - [ ] **Step 4: Run it to verify it passes**
 
@@ -2265,34 +2289,35 @@ export function MembersTable({
 Inside the component, before `return`:
 
 ```tsx
-  const openByMember = useMemo(
-    () => Object.fromEntries(openChanges.map((c) => [c.memberId, c])) as Record<string, OpenGroupChange>,
-    [openChanges],
-  );
+const openByMember = useMemo(
+  () =>
+    Object.fromEntries(openChanges.map((c) => [c.memberId, c])) as Record<string, OpenGroupChange>,
+  [openChanges],
+);
 ```
 
 In the "Gruppe" cell of each row, append the flag after the group name:
 
 ```tsx
-                <td className="p-3 text-bdas-ink-body">
-                  {m.primaryGroupId ? (groupNames[m.primaryGroupId] ?? "—") : "—"}
-                  {openByMember[m.id] ? (
-                    <span className="ml-2 rounded-bdas-pill bg-bdas-surface-hover px-2 py-0.5 text-xs font-semibold text-bdas-red">
-                      → {groupNames[openByMember[m.id]!.toGroupId ?? ""] ?? "—"}
-                    </span>
-                  ) : null}
-                </td>
+<td className="p-3 text-bdas-ink-body">
+  {m.primaryGroupId ? (groupNames[m.primaryGroupId] ?? "—") : "—"}
+  {openByMember[m.id] ? (
+    <span className="ml-2 rounded-bdas-pill bg-bdas-surface-hover px-2 py-0.5 text-xs font-semibold text-bdas-red">
+      → {groupNames[openByMember[m.id]!.toGroupId ?? ""] ?? "—"}
+    </span>
+  ) : null}
+</td>
 ```
 
 In the aside, after the closing `</dl>` and before the "Schließen" button:
 
 ```tsx
-          <MemberGroupPanel
-            member={selected}
-            open={openByMember[selected.id] ?? null}
-            groupNames={groupNames}
-            revalidatePath={revalidatePath}
-          />
+<MemberGroupPanel
+  member={selected}
+  open={openByMember[selected.id] ?? null}
+  groupNames={groupNames}
+  revalidatePath={revalidatePath}
+/>
 ```
 
 Widen the aside so the timeline is readable: change `className="w-72 shrink-0 …"` to `className="w-80 shrink-0 …"`.
@@ -2337,7 +2362,7 @@ export default async function FederalMembersPage() {
 
 **Before writing this,** open `apps/web/app/_dashboard/session.ts` and use whatever helper it actually exports for a federal-scoped page (the group page uses `requireGroupScope(slug)`, which returns `{ groupId, ... }`). If no federal equivalent exists, get the actor the same way the existing board actions do — `getCurrentMember(getDb(), readSessionCookie())` — rather than inventing a new helper. The route is already board-gated by the `(board)` layout; you only need the actor's grants for `listOpenGroupChanges`.
 
-`apps/web/app/(board)/gruppe/[slug]/members/page.tsx` — the aside must be able to *name* a destination group that is not this group, so load all groups:
+`apps/web/app/(board)/gruppe/[slug]/members/page.tsx` — the aside must be able to _name_ a destination group that is not this group, so load all groups:
 
 ```tsx
 import { getDb } from "@bdas/db";
@@ -2375,13 +2400,14 @@ export default async function GroupMembersPage({ params }: { params: { slug: str
 
 **Adapt `scope.me.user.id` / `scope.me.grants` to whatever `requireGroupScope` actually returns** — read `apps/web/app/_dashboard/session.ts` first. If it returns only `{ groupId }`, fetch the actor with `getCurrentMember(db, readSessionCookie())` as the board actions do.
 
-Note the members list here is scoped to `groupId`, so a member who has *left* for another group drops out of it — their history stays visible from the federal list and from the destination group's list.
+Note the members list here is scoped to `groupId`, so a member who has _left_ for another group drops out of it — their history stays visible from the federal list and from the destination group's list.
 
 - [ ] **Step 9: Verify in the running app**
 
 Run: `pnpm --filter web typecheck && pnpm lint && pnpm --filter web test`
 
 Then, with `pnpm dev` and a member who has an open request (from Task 6):
+
 1. Open `/federal/members` as federal board. Expect the row's Gruppe cell to read `BDAS Aachen → BDAS Köln`.
 2. Click the member. Expect the "Wechsel beantragt" block with **Freigeben** / **Ablehnen** (federal sees them only when the destination has no local board — otherwise the "Entscheidet der Vorstand von …" note).
 3. Expand "Gruppenverlauf". Expect the pending row and a "Beitritt" row derived from `joinedAt`.
@@ -2400,6 +2426,7 @@ git commit -m "feat(web): board members list shows pending transfers, decisions,
 ## Task 8: Docs, prod migration, and RLS
 
 **Files:**
+
 - Modify: `modules/members/README.md`
 - Prod database (`rcfvs…` Supabase project)
 
@@ -2437,7 +2464,7 @@ VALUES ('members', '0006_group_change_requests.sql');
 
 Confirm the exact column names of `_bdas_migrations` first (`SELECT * FROM _bdas_migrations ORDER BY 1 DESC LIMIT 3;`) and match the shape of the existing rows.
 
-**Deploy order matters:** apply the migration *before* the code ships, or `/account` and the board members pages will 500 on a missing relation.
+**Deploy order matters:** apply the migration _before_ the code ships, or `/account` and the board members pages will 500 on a missing relation.
 
 - [ ] **Step 5: Commit and open the PR**
 
@@ -2455,11 +2482,12 @@ The PR body must call out that this closes a privilege-escalation path (a member
 ## Self-Review
 
 **Spec coverage:**
+
 - "member sees they are member of one group and applying for another, waiting for approval" → Task 6, Step 2 (the `Gruppenwechsel beantragt` alert names both groups and the deciding board).
 - "should be able to revoke it" → Task 6, Step 1 (`WithdrawChangeButton` → `withdrawGroupChangeAction` → `withdrawGroupChange`).
 - "or change it again" → Task 2 (`changePrimaryGroup` supersedes an open request; re-picking the current group withdraws it) + Task 6, Step 3 (the hint under the select spells both out).
 - "board-wide members list, click a member, see the change of groups" → Task 7 (`MemberGroupPanel` in the aside: pending block + `<details>` history).
-- "cheap and clean solution for the log" → the request table *is* the log (ADR 0022, decision 1); no second audit table, and history loads lazily on click so the list stays one query.
+- "cheap and clean solution for the log" → the request table _is_ the log (ADR 0022, decision 1); no second audit table, and history loads lazily on click so the list stays one query.
 - The original vulnerability → Task 5 (test reproduces it, fix removes `primaryGroupId` from `UpdateProfileInput`).
 
 **Known adaptations required at execution time** (flagged inline, not placeholders): the exact helper exported by `apps/web/app/_dashboard/session.ts` for board pages, and whether `index.export.test.ts` enumerates the public surface. Both are one-line reads.

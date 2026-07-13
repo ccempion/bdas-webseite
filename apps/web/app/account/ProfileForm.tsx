@@ -19,7 +19,12 @@ export type ProfileFormProps = {
 
 const initial: ProfileFormState = {};
 
-export function ProfileForm({ initial: data, groups, isNew, openChangeGroupName }: ProfileFormProps) {
+export function ProfileForm({
+  initial: data,
+  groups,
+  isNew,
+  openChangeGroupName,
+}: ProfileFormProps) {
   const [state, action] = useFormState(saveProfileAction, initial);
   return (
     <Form action={action}>
