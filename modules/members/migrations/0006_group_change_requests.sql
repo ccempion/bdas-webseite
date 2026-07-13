@@ -43,3 +43,11 @@ CREATE INDEX member_group_change_requests_to_group_idx
 CREATE INDEX member_group_change_requests_from_group_idx
   ON member_group_change_requests (from_group_id)
   WHERE status = 'pending';
+
+-- Row-Level Security lockdown, matching `members` / `member_role_grants` (and the
+-- idiom in files/0002_rls_lockdown.sql). The app reaches this table only over the
+-- service-role / direct-Postgres path, which bypasses RLS; enabling RLS with NO
+-- permissive policy denies every other role (Supabase `anon` / `authenticated`)
+-- without changing the app's enforced path. This table carries membership history,
+-- so it must not be the one table readable through the public API.
+ALTER TABLE member_group_change_requests ENABLE ROW LEVEL SECURITY;
