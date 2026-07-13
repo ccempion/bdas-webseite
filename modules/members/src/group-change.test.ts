@@ -8,6 +8,7 @@ import {
   decideGroupChange,
   getGroupChangeHistory,
   getOpenGroupChange,
+  listIncomingGroupChanges,
   listOpenGroupChanges,
   withdrawGroupChange,
 } from "./services/group-change";
@@ -493,5 +494,111 @@ describeIfDb("group change read services", () => {
     const id = await transferrer("usr_dest");
     const history = await getGroupChangeHistory(t.db, id, boardOf("usr_b_board", "grp_b"));
     expect(history.length).toBe(1);
+  });
+});
+
+describeIfDb("listIncomingGroupChanges", () => {
+  let t: TestDb;
+
+  beforeAll(() => {
+    process.env["SSO_JWT_SECRET"] = "x".repeat(48);
+  });
+
+  beforeEach(async () => {
+    t = await setupMembersDb();
+    resetEventBus();
+    await createGroup(t, "grp_a", "aachen");
+    await createGroup(t, "grp_b", "berlin");
+  });
+
+  afterEach(async () => {
+    await t.cleanup();
+  });
+
+  /** An active member of grp_a with an open request to grp_b. */
+  async function applicant(userId: string, firstName: string): Promise<string> {
+    await createUser(t, userId, `${userId}@example.de`);
+    const m = await createProfile(t.db, {
+      userId,
+      firstName,
+      lastName: "Bewerber",
+      primaryGroupId: "grp_a",
+    });
+    await approveMember(t.db, m.id, FEDERAL);
+    await changePrimaryGroup(t.db, m.id, "grp_b", self(userId));
+    return m.id;
+  }
+
+  /** Give `groupId` a board seat of its own, so the federal fallback is off. */
+  async function giveBoardSeat(userId: string, groupId: string): Promise<void> {
+    await createUser(t, userId, `${userId}@example.de`);
+    const m = await createProfile(t.db, {
+      userId,
+      firstName: "Board",
+      lastName: "Person",
+      primaryGroupId: groupId,
+    });
+    await approveMember(t.db, m.id, FEDERAL);
+    await grantRole(t.db, m.id, "local_board", FEDERAL, groupId);
+  }
+
+  it("the destination board sees the applicant, hydrated, and may decide", async () => {
+    const memberId = await applicant("usr_cem", "Cem");
+    await giveBoardSeat("usr_b_board", "grp_b");
+
+    const incoming = await listIncomingGroupChanges(t.db, "grp_b", boardOf("usr_b_board", "grp_b"));
+
+    expect(incoming.length).toBe(1);
+    expect(incoming[0]?.memberId).toBe(memberId);
+    expect(incoming[0]?.member.firstName).toBe("Cem");
+    expect(incoming[0]?.member.primaryGroupId).toBe("grp_a"); // still in the group they are leaving
+    expect(incoming[0]?.fromGroupId).toBe("grp_a");
+    expect(incoming[0]?.canDecide).toBe(true);
+  });
+
+  it("the origin board has no inbound queue of its own", async () => {
+    await applicant("usr_leaver", "Lena");
+    await giveBoardSeat("usr_a_board", "grp_a");
+
+    const incoming = await listIncomingGroupChanges(t.db, "grp_a", boardOf("usr_a_board", "grp_a"));
+    expect(incoming.length).toBe(0);
+  });
+
+  it("an unrelated board sees nothing", async () => {
+    await applicant("usr_x", "Xenia");
+    await createGroup(t, "grp_c", "koeln");
+    await giveBoardSeat("usr_c_board", "grp_c");
+
+    const incoming = await listIncomingGroupChanges(t.db, "grp_b", boardOf("usr_c_board", "grp_c"));
+    expect(incoming.length).toBe(0);
+  });
+
+  it("federal board decides as fallback when the destination has no board seat", async () => {
+    await applicant("usr_orphan", "Ole");
+
+    const incoming = await listIncomingGroupChanges(t.db, "grp_b", FEDERAL);
+    expect(incoming.length).toBe(1);
+    expect(incoming[0]?.canDecide).toBe(true);
+  });
+
+  it("federal board sees the queue but may not decide once the destination has a board", async () => {
+    await applicant("usr_watched", "Wera");
+    await giveBoardSeat("usr_b_board", "grp_b");
+
+    const incoming = await listIncomingGroupChanges(t.db, "grp_b", FEDERAL);
+    expect(incoming.length).toBe(1);
+    expect(incoming[0]?.canDecide).toBe(false);
+  });
+
+  it("a decided request drops out of the queue", async () => {
+    await applicant("usr_done", "Dana");
+    await giveBoardSeat("usr_b_board", "grp_b");
+    const board = boardOf("usr_b_board", "grp_b");
+
+    const [open] = await listIncomingGroupChanges(t.db, "grp_b", board);
+    if (!open) throw new Error("expected an inbound request");
+    await decideGroupChange(t.db, open.id, "approved", board);
+
+    expect(await listIncomingGroupChanges(t.db, "grp_b", board)).toEqual([]);
   });
 });

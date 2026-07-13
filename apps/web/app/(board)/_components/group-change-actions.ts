@@ -34,6 +34,10 @@ export async function decideGroupChangeAction(
     safeRevalidate(revalidate);
     return { ok: true };
   } catch (e) {
+    // Revalidate on failure too: a decision usually fails because the request is
+    // already gone (withdrawn, or decided in another tab). Leaving the stale row
+    // on screen offers a button that can never work.
+    safeRevalidate(revalidate);
     return { ok: false, error: e instanceof Error ? e.message : "Fehler" };
   }
 }

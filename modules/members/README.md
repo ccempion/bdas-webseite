@@ -130,6 +130,20 @@ The table doubles as the audit log: terminal rows (`approved` / `rejected` /
 separate audit table. `joinedAt` keeps its meaning — the date the member joined
 the _federation_, not their current group.
 
+### Reading the queue
+
+| Service                                          | Answers                                                                                                            |
+| ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------ |
+| `getOpenGroupChange(db, memberId)`               | does this member have an open request?                                                                             |
+| `listOpenGroupChanges(db, actor)`                | every open request touching a group the actor manages, in either direction (the `/account` and federal-wide views) |
+| `listIncomingGroupChanges(db, toGroupId, actor)` | one group's **inbound** queue, hydrated with the applicant                                                         |
+| `getGroupChangeHistory(db, memberId, actor)`     | one member's full movement timeline                                                                                |
+
+`listIncomingGroupChanges` exists because an applicant is still a member of the
+group they are leaving: `listMembers({ groupId })` matches on `primary_group_id`
+and so never returns them. Without the join to `members`, the destination board
+would hold a request it is authorized to decide with no name attached to it.
+
 ## Events
 
 `members.profile.created`, `members.profile.updated`,
