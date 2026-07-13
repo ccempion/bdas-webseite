@@ -24,7 +24,7 @@ export {
   isFederalBoard,
   canManageGroup,
   canGrantLocalBoard,
-  canApproveMember,
+  canDecideJoinRequest,
 } from "./roles";
 
 export { listMembers, type MemberQuery } from "./services/list-members";

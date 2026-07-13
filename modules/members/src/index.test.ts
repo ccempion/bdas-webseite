@@ -209,6 +209,108 @@ describeIfDb("members integration", () => {
     expect(ok.status).toBe("active");
   });
 
+  /** Grants a real DB local_board seat to a throwaway member of `groupId`. */
+  async function seatLocalBoard(userId: string, groupId: string): Promise<void> {
+    await createUser(userId, `${userId}@example.de`);
+    const seat = await createProfile(t.db, {
+      userId,
+      firstName: userId,
+      lastName: "Seat",
+      primaryGroupId: groupId,
+    });
+    await grantRole(t.db, seat.id, "local_board", BOARD, groupId);
+  }
+
+  it("federal_board may NOT decide a join for a group that has a local board (ADR 0021)", async () => {
+    await createGroup("grp_a", "aachen");
+    await seatLocalBoard("usr_seat_a", "grp_a");
+
+    await createUser("usr_join_a", "ja@example.de");
+    const pending = await createProfile(t.db, {
+      userId: "usr_join_a",
+      firstName: "Join",
+      lastName: "A",
+      primaryGroupId: "grp_a",
+    });
+
+    // Accept is the local board's call, not federal's...
+    await expect(approveMember(t.db, pending.id, BOARD)).rejects.toMatchObject({
+      code: "FORBIDDEN",
+    });
+    // ...and so is reject.
+    await expect(transitionStatus(t.db, pending.id, "inactive", BOARD)).rejects.toMatchObject({
+      code: "FORBIDDEN",
+    });
+
+    // The group's own board decides.
+    const approved = await approveMember(t.db, pending.id, localBoardOf("usr_lb_a", "grp_a"));
+    expect(approved.status).toBe("active");
+  });
+
+  it("federal_board decides a join only as fallback, when the group has no local board (ADR 0021)", async () => {
+    await createGroup("grp_a", "aachen");
+    await createUser("usr_join_b", "jb@example.de");
+    const pending = await createProfile(t.db, {
+      userId: "usr_join_b",
+      firstName: "Join",
+      lastName: "B",
+      primaryGroupId: "grp_a",
+    });
+
+    // grp_a has zero local-board seats → federal may step in.
+    const approved = await approveMember(t.db, pending.id, BOARD);
+    expect(approved.status).toBe("active");
+  });
+
+  it("a revoked local_board seat re-opens the federal fallback (ADR 0021)", async () => {
+    await createGroup("grp_a", "aachen");
+    await createUser("usr_seat_r", "seatr@example.de");
+    const seat = await createProfile(t.db, {
+      userId: "usr_seat_r",
+      firstName: "Seat",
+      lastName: "R",
+      primaryGroupId: "grp_a",
+    });
+    await grantRole(t.db, seat.id, "local_board", BOARD, "grp_a");
+
+    await createUser("usr_join_c", "jc@example.de");
+    const pending = await createProfile(t.db, {
+      userId: "usr_join_c",
+      firstName: "Join",
+      lastName: "C",
+      primaryGroupId: "grp_a",
+    });
+
+    // Seat occupied → federal locked out.
+    await expect(approveMember(t.db, pending.id, BOARD)).rejects.toMatchObject({
+      code: "FORBIDDEN",
+    });
+
+    // Seat vacated → fallback re-opens.
+    await revokeRole(t.db, seat.id, "local_board", BOARD, "grp_a");
+    const approved = await approveMember(t.db, pending.id, BOARD);
+    expect(approved.status).toBe("active");
+  });
+
+  it("federal_board keeps authority over non-join transitions of a boarded group (ADR 0021)", async () => {
+    await createGroup("grp_a", "aachen");
+    await createUser("usr_act", "act@example.de");
+    const m = await createProfile(t.db, {
+      userId: "usr_act",
+      firstName: "Act",
+      lastName: "x",
+      primaryGroupId: "grp_a",
+    });
+    // Approve while the group is board-less (fallback), then seat a board.
+    await approveMember(t.db, m.id, BOARD);
+    await seatLocalBoard("usr_seat_n", "grp_a");
+
+    // The member is no longer pending, so this is not a join decision: federal
+    // retains deactivation/alumni authority even though grp_a has a board.
+    const alumnus = await transitionStatus(t.db, m.id, "alumnus", BOARD);
+    expect(alumnus.status).toBe("alumnus");
+  });
+
   it("listPendingMembers: federal sees all, local sees only its group", async () => {
     await createGroup("grp_a", "aachen");
     await createGroup("grp_b", "berlin");
@@ -414,7 +516,9 @@ describeIfDb("members integration", () => {
       lastName: "x",
       primaryGroupId: "grp_a",
     });
-    await approveMember(t.db, member.id, BOARD);
+    // grp_a now has a local board (the lead), so its join decisions belong to
+    // that board, not federal (ADR 0021) — the lead approves.
+    await approveMember(t.db, member.id, leadActor);
 
     // Lead CAN grant local_board within its own group...
     await grantRole(t.db, member.id, "local_board", leadActor, "grp_a");

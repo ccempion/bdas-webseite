@@ -76,12 +76,26 @@ export function canGrantLocalBoard(grants: ReadonlyArray<Grant>, groupId: string
   return grants.some((g) => g.role === "local_board_lead" && g.groupId === groupId);
 }
 
-/** Approving/transitioning a member is "do you manage their group?". */
-export function canApproveMember(
+/**
+ * May the actor decide a *pending* member's join for a local group (ADR 0021)?
+ * A join decision — accept (→ active) or reject (→ inactive) — belongs to the
+ * group's own board: a `local_board` or `local_board_lead` scoped to that group.
+ * Federal board is NOT a blanket authority here; it may act only as an emergency
+ * fallback when the group has zero active local-board seats. A pending member
+ * with no group (groupId null) has no local board to speak for it and is routed
+ * through `canManageGroup` (federal-only) by the caller instead.
+ */
+export function canDecideJoinRequest(
   grants: ReadonlyArray<Grant>,
-  member: { readonly primaryGroupId: string | null },
+  groupId: string,
+  groupHasLocalBoard: boolean,
 ): boolean {
-  return canManageGroup(grants, member.primaryGroupId);
+  const isLocalBoard = grants.some(
+    (g) => (g.role === "local_board" || g.role === "local_board_lead") && g.groupId === groupId,
+  );
+  if (isLocalBoard) return true;
+  if (!groupHasLocalBoard) return isFederalBoard(grants);
+  return false;
 }
 
 const TRANSITIONS: Record<MemberStatus, ReadonlySet<MemberStatus>> = {
