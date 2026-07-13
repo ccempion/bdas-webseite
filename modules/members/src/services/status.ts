@@ -29,7 +29,7 @@ export type Actor = {
  * grants alone (ADR 0021) — a `local_board`/`local_board_lead` grant with
  * `revoked_at IS NULL` — regardless of the holder's own member status.
  */
-async function groupHasActiveLocalBoard(tx: Db, groupId: string): Promise<boolean> {
+export async function groupHasActiveLocalBoard(tx: Db, groupId: string): Promise<boolean> {
   const rows = await tx
     .select({ id: memberRoleGrants.id })
     .from(memberRoleGrants)

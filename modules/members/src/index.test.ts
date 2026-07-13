@@ -648,4 +648,26 @@ describeIfDb("members integration", () => {
     const scoped = await listGrantAudit(t.db, { groupId: "grp_a" });
     expect(scoped.length).toBe(2);
   });
+
+  it("updateProfile cannot move a member between groups (ADR 0022)", async () => {
+    await createGroup("grp_a", "aachen");
+    await createGroup("grp_b", "berlin");
+    await createUser("usr_cem", "cem@example.de");
+    const m = await createProfile(t.db, {
+      userId: "usr_cem",
+      firstName: "Cem",
+      lastName: "Colak",
+      primaryGroupId: "grp_a",
+    });
+    await approveMember(t.db, m.id, BOARD);
+
+    const after = await updateProfile(t.db, m.id, {
+      firstName: "Cem",
+      lastName: "Colak",
+      primaryGroupId: "grp_b",
+    });
+
+    expect(after.primaryGroupId).toBe("grp_a"); // the smuggled field is ignored
+    expect(after.firstName).toBe("Cem");
+  });
 });
