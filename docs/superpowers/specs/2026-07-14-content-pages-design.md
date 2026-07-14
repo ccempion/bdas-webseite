@@ -13,7 +13,7 @@ The federation wants an "Über uns" page presenting the Bundessprecher\*innenrat
 Decisions made during brainstorming:
 
 - **Generic system, BSR page first.** Pages are stored per slug; Kurzportrait, Verbandsstruktur, and BDAJ (currently placeholder copy waiting on the board) can be switched to editable pages later without new code. Only the BSR page ships now.
-- **Puck** (`@measured/puck`, MIT, ^0.22) is the editor. It is a React visual editor with an official Next.js App Router recipe; it stores a page as a JSON document and renders it with a `<Render>` component. Puck deliberately ships no auth — we gate editing with our existing `federal_board` grant machinery. **This is a new dependency and gets ADR 0023** (the dependency itself plus the deliberate coupling to Puck's JSON document format).
+- **Puck** (`@puckeditor/core` — formerly published as `@measured/puck` — MIT, ^0.22) is the editor. It is a React visual editor with an official Next.js App Router recipe; it stores a page as a JSON document and renders it with a `<Render>` component. Puck deliberately ships no auth — we gate editing with our existing `federal_board` grant machinery. **This is a new dependency and gets ADR 0023** (the dependency itself plus the deliberate coupling to Puck's JSON document format).
 - **Save = live.** Clicking "Veröffentlichen" in the editor writes to the DB and the public page shows it immediately. No draft state, no version history (YAGNI for a team the size of the BSR; revisit if it hurts).
 - **BSR member data is free-form content**, not linked to member accounts. The members module knows neither university nor degree programme nor photos, and BSR members need not be dashboard users. The board types the data into the page.
 - **URL and nav:** `/ueber-uns/bundessprecherinnenrat`, nav label „Bundessprecher\*innenrat“ in the Über-uns dropdown.
@@ -57,7 +57,7 @@ The route layer resolves the session → member → effective grants (existing `
 
 ## 4. Puck integration (`apps/web`)
 
-`@measured/puck` is a dependency of `apps/web` only — modules and `core/` never import it.
+`@puckeditor/core` is a dependency of `apps/web` only — modules and `core/` never import it.
 
 ### Block palette — `apps/web/app/_content/puck-config.tsx`
 
@@ -90,6 +90,8 @@ Storage keys: `<slug-with-slashes-replaced>/<uuid>.<ext>`. Orphaned images (uplo
 | `POST /api/content/upload-url`                     | Route handler                 | See §4.                                                                                                                                                                 |
 
 The page routes are **hardcoded for the BSR slug** in this iteration; the API and service are slug-generic. Enabling another page later means adding its route (a five-line Server Component) — deliberately not a catch-all route, so only intentionally released slugs are reachable.
+
+**Legacy redirect exception:** `next.config.mjs` redirects unknown `/ueber-uns/:slug` paths to `/ueber-uns` (WordPress legacy map). `bundessprecherinnenrat` must be added to the negative-lookahead exception list, or the new page is unreachable.
 
 **Nav:** new leaf `{ label: "Bundessprecher*innenrat", href: "/ueber-uns/bundessprecherinnenrat" }` in the Über-uns dropdown in `apps/web/app/_public/nav-items.ts`, rendered only when the `content` flag is on. Sitemap entry in `sitemap.ts` under the same condition.
 
