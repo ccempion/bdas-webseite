@@ -10,6 +10,7 @@ import { getDb } from "@bdas/db";
 import { isFlagOn } from "@bdas/feature-flags";
 
 import { readSessionCookie } from "../lib/auth-cookie";
+import { BrandLink } from "./BrandLink";
 
 const PILL =
   "inline-flex items-center rounded-bdas-pill px-3 py-1 text-sm text-bdas-ink transition-colors duration-bdas-quick ease-bdas hover:bg-bdas-overlay-hover";
@@ -22,12 +23,7 @@ export async function SiteHeader() {
   return (
     <header className="border-b border-bdas-soft bg-bdas-surface">
       <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-4 px-4 py-3">
-        <Link
-          href="/"
-          className="text-lg font-semibold tracking-tight text-bdas-ink hover:text-bdas-red"
-        >
-          BDAS
-        </Link>
+        <BrandLink />
         <nav aria-label="Hauptnavigation" className="flex flex-1 items-center justify-end">
           <ul className="flex flex-wrap items-center gap-1">
             {groupsOn ? (

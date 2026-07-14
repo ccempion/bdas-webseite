@@ -37,6 +37,8 @@ export const colors = {
       hover: "rgba(0, 0, 0, 0.04)",
       /** Card-on-card resting wash. */
       soft: "rgba(0, 0, 0, 0.05)",
+      /** Dark gradient laid over hero imagery so white text stays readable. */
+      heroScrim: "linear-gradient(rgba(0, 0, 0, 0.35), rgba(0, 0, 0, 0.55))",
     },
   },
   border: {

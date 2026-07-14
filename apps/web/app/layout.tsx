@@ -1,9 +1,13 @@
 import type { ReactNode } from "react";
 import type { Metadata } from "next";
 
+import { isFlagOn } from "@bdas/feature-flags";
+
 import { CookieNotice } from "../components/CookieNotice";
 import { SiteFooter } from "../components/SiteFooter";
 import { SiteHeader } from "../components/SiteHeader";
+import { PublicHeader } from "./_public/PublicHeader";
+import { PublicFooter } from "./_public/PublicFooter";
 import { legalUrls } from "../lib/legal";
 
 import "./globals.css";
@@ -14,11 +18,13 @@ import "./globals.css";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env["PUBLIC_SITE_URL"] ?? "http://localhost:3000"),
   title: {
-    default: "BDAS",
+    default: "BDAS — Bund der Alevitischen Studierenden",
     template: "%s · BDAS",
   },
-  description: "Bund der Alevitischen Studierenden — digitale Plattform.",
+  description:
+    "Der Bund der Alevitischen Studierenden in Deutschland: Hochschulgruppen, Veranstaltungen und BDAS-Connect, die Plattform für Mitglieder.",
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
@@ -32,11 +38,15 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         >
           Zum Inhalt springen
         </a>
-        <SiteHeader />
+        {isFlagOn("public_shell") ? <PublicHeader /> : <SiteHeader />}
         <div id="inhalt" tabIndex={-1} className="flex-1 outline-none">
           {children}
         </div>
-        <SiteFooter privacyUrl={privacy} imprintUrl={imprint} />
+        {isFlagOn("public_shell") ? (
+          <PublicFooter privacyUrl={privacy} imprintUrl={imprint} />
+        ) : (
+          <SiteFooter privacyUrl={privacy} imprintUrl={imprint} />
+        )}
         <CookieNotice privacyUrl={privacy} />
       </body>
     </html>

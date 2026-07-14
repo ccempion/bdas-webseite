@@ -5,6 +5,7 @@ import { Card } from "@bdas/design-system";
 import { canManage, getEvent } from "@bdas/events-module";
 import { listGroups } from "@bdas/groups";
 import { getCurrentMember } from "@bdas/members";
+import { eventMediaPublicUrl } from "@bdas/storage";
 
 import { requireEventsFlag } from "../../../../_events/flag";
 import { readSessionCookie } from "../../../../../lib/auth-cookie";
@@ -44,11 +45,13 @@ export default async function EditEventPage({ params }: { params: { id: string }
             summary: event.summary,
             content: event.content,
             coverImageKey: event.coverImageKey,
+            coverImageUrl: event.coverImageKey ? eventMediaPublicUrl(event.coverImageKey) : null,
             startsAtLocal: toLocal(event.startsAt),
             endsAtLocal: toLocal(event.endsAt),
             registrationDeadlineLocal: toLocal(event.registrationDeadline),
             capacity: event.capacity,
             visibility: event.visibility,
+            allowGuestRegistration: event.allowGuestRegistration,
             location: event.locationName
               ? {
                   name: event.locationName,

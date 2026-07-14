@@ -38,7 +38,10 @@ export default async function VorstandPage({
             memberId: m.id,
             name: `${m.firstName} ${m.lastName}`,
           }))}
-          roleOptions={[{ role: "local_board", label: "Vorstand", groupId }]}
+          roleOptions={[
+            { role: "local_board", label: "Vorstand", groupId },
+            { role: "event_organizer", label: "Organisator", groupId },
+          ]}
           revalidatePath={revalidate}
         />
       </div>
@@ -63,6 +66,10 @@ export default async function VorstandPage({
           sections={[
             { title: "Leads", holders: ofGroup.filter((h) => h.role === "local_board_lead") },
             { title: "Vorstand", holders: ofGroup.filter((h) => h.role === "local_board") },
+            {
+              title: "Organisatoren",
+              holders: ofGroup.filter((h) => h.role === "event_organizer"),
+            },
           ]}
           groupNames={{}}
           revalidatePath={revalidate}

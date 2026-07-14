@@ -8,7 +8,12 @@
  * taken by the core event bus (core/events). See the module README.
  */
 
-export { listUpcomingEvents, listManagedEvents, type ListOpts } from "./services/list";
+export {
+  listUpcomingEvents,
+  listPastEvents,
+  listManagedEvents,
+  type ListOpts,
+} from "./services/list";
 export { getEvent, canView, canManage, ANON, type Viewer } from "./services/get";
 export {
   createEvent,
@@ -18,7 +23,15 @@ export {
   deleteEvent,
   EventInput,
 } from "./services/manage";
-export { registerMember, cancelRegistration, getMyRegistration } from "./services/registration";
+export {
+  registerMember,
+  registerGuest,
+  cancelRegistration,
+  cancelRegistrationById,
+  cancelGuestByToken,
+  getMyRegistration,
+  listRegistrations,
+} from "./services/registration";
 
 export { eventToIcs } from "./ics";
 export { renderEventContentHtml, plainTextToDoc } from "./content";
@@ -31,11 +44,15 @@ export type {
   EventVisibility,
   RegistrationResult,
   EventWithCounts,
+  RosterRow,
+  RosterStatus,
 } from "./types";
 export type {
   EventsEvent,
   EventPublished,
   EventCancelled,
+  EventUpdated,
+  EventChange,
   EventRegistered,
   EventDeregistered,
   WaitlistPromoted,

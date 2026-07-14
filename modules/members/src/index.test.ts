@@ -13,7 +13,8 @@ import { afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { createTestDb, type TestDb } from "@bdas/db/test";
 import { resetEventBus } from "@bdas/events";
 
-import { createProfile } from "./services/profile";
+import { createProfile, updateProfile } from "./services/profile";
+import { MEMBERS_TEST_MIGRATIONS } from "./test-db";
 import { approveMember, transitionStatus } from "./services/status";
 import { grantRole, revokeRole } from "./services/roles";
 import { listPendingMembers } from "./services/list-pending";
@@ -72,14 +73,7 @@ describeIfDb("members integration", () => {
 
   beforeEach(async () => {
     t = await createTestDb();
-    for (const file of [
-      ["..", "..", "auth", "migrations", "0001_init.sql"],
-      ["..", "..", "groups", "migrations", "0001_init.sql"],
-      ["..", "migrations", "0001_init.sql"],
-      ["..", "migrations", "0002_role_grants.sql"],
-      ["..", "migrations", "0003_local_board_lead.sql"],
-      ["..", "migrations", "0004_revoked_by.sql"],
-    ]) {
+    for (const file of MEMBERS_TEST_MIGRATIONS) {
       const sql = await fs.readFile(path.join(__dirname, ...file), "utf8");
       await t.client.unsafe(sql);
     }
@@ -206,6 +200,108 @@ describeIfDb("members integration", () => {
     });
     const ok = await approveMember(t.db, m.id, BOARD);
     expect(ok.status).toBe("active");
+  });
+
+  /** Grants a real DB local_board seat to a throwaway member of `groupId`. */
+  async function seatLocalBoard(userId: string, groupId: string): Promise<void> {
+    await createUser(userId, `${userId}@example.de`);
+    const seat = await createProfile(t.db, {
+      userId,
+      firstName: userId,
+      lastName: "Seat",
+      primaryGroupId: groupId,
+    });
+    await grantRole(t.db, seat.id, "local_board", BOARD, groupId);
+  }
+
+  it("federal_board may NOT decide a join for a group that has a local board (ADR 0021)", async () => {
+    await createGroup("grp_a", "aachen");
+    await seatLocalBoard("usr_seat_a", "grp_a");
+
+    await createUser("usr_join_a", "ja@example.de");
+    const pending = await createProfile(t.db, {
+      userId: "usr_join_a",
+      firstName: "Join",
+      lastName: "A",
+      primaryGroupId: "grp_a",
+    });
+
+    // Accept is the local board's call, not federal's...
+    await expect(approveMember(t.db, pending.id, BOARD)).rejects.toMatchObject({
+      code: "FORBIDDEN",
+    });
+    // ...and so is reject.
+    await expect(transitionStatus(t.db, pending.id, "inactive", BOARD)).rejects.toMatchObject({
+      code: "FORBIDDEN",
+    });
+
+    // The group's own board decides.
+    const approved = await approveMember(t.db, pending.id, localBoardOf("usr_lb_a", "grp_a"));
+    expect(approved.status).toBe("active");
+  });
+
+  it("federal_board decides a join only as fallback, when the group has no local board (ADR 0021)", async () => {
+    await createGroup("grp_a", "aachen");
+    await createUser("usr_join_b", "jb@example.de");
+    const pending = await createProfile(t.db, {
+      userId: "usr_join_b",
+      firstName: "Join",
+      lastName: "B",
+      primaryGroupId: "grp_a",
+    });
+
+    // grp_a has zero local-board seats → federal may step in.
+    const approved = await approveMember(t.db, pending.id, BOARD);
+    expect(approved.status).toBe("active");
+  });
+
+  it("a revoked local_board seat re-opens the federal fallback (ADR 0021)", async () => {
+    await createGroup("grp_a", "aachen");
+    await createUser("usr_seat_r", "seatr@example.de");
+    const seat = await createProfile(t.db, {
+      userId: "usr_seat_r",
+      firstName: "Seat",
+      lastName: "R",
+      primaryGroupId: "grp_a",
+    });
+    await grantRole(t.db, seat.id, "local_board", BOARD, "grp_a");
+
+    await createUser("usr_join_c", "jc@example.de");
+    const pending = await createProfile(t.db, {
+      userId: "usr_join_c",
+      firstName: "Join",
+      lastName: "C",
+      primaryGroupId: "grp_a",
+    });
+
+    // Seat occupied → federal locked out.
+    await expect(approveMember(t.db, pending.id, BOARD)).rejects.toMatchObject({
+      code: "FORBIDDEN",
+    });
+
+    // Seat vacated → fallback re-opens.
+    await revokeRole(t.db, seat.id, "local_board", BOARD, "grp_a");
+    const approved = await approveMember(t.db, pending.id, BOARD);
+    expect(approved.status).toBe("active");
+  });
+
+  it("federal_board keeps authority over non-join transitions of a boarded group (ADR 0021)", async () => {
+    await createGroup("grp_a", "aachen");
+    await createUser("usr_act", "act@example.de");
+    const m = await createProfile(t.db, {
+      userId: "usr_act",
+      firstName: "Act",
+      lastName: "x",
+      primaryGroupId: "grp_a",
+    });
+    // Approve while the group is board-less (fallback), then seat a board.
+    await approveMember(t.db, m.id, BOARD);
+    await seatLocalBoard("usr_seat_n", "grp_a");
+
+    // The member is no longer pending, so this is not a join decision: federal
+    // retains deactivation/alumni authority even though grp_a has a board.
+    const alumnus = await transitionStatus(t.db, m.id, "alumnus", BOARD);
+    expect(alumnus.status).toBe("alumnus");
   });
 
   it("listPendingMembers: federal sees all, local sees only its group", async () => {
@@ -413,7 +509,9 @@ describeIfDb("members integration", () => {
       lastName: "x",
       primaryGroupId: "grp_a",
     });
-    await approveMember(t.db, member.id, BOARD);
+    // grp_a now has a local board (the lead), so its join decisions belong to
+    // that board, not federal (ADR 0021) — the lead approves.
+    await approveMember(t.db, member.id, leadActor);
 
     // Lead CAN grant local_board within its own group...
     await grantRole(t.db, member.id, "local_board", leadActor, "grp_a");
@@ -446,6 +544,71 @@ describeIfDb("members integration", () => {
     await expect(grantRole(t.db, member.id, "federal_board", leadActor)).rejects.toMatchObject({
       code: "FORBIDDEN",
     });
+  });
+
+  it("a lead may grant/revoke event_organizer scoped to its group (ADR 0017)", async () => {
+    await createGroup("grp_a", "aachen");
+    await createUser("usr_org", "org@example.de");
+    const m = await createProfile(t.db, {
+      userId: "usr_org",
+      firstName: "O",
+      lastName: "x",
+      primaryGroupId: "grp_a",
+    });
+    await approveMember(t.db, m.id, BOARD);
+
+    // event_organizer is group-scoped: a null scope is rejected.
+    await expect(grantRole(t.db, m.id, "event_organizer", BOARD)).rejects.toMatchObject({
+      code: "VALIDATION",
+    });
+
+    // A lead of the group may grant it.
+    await grantRole(t.db, m.id, "event_organizer", leadOf("usr_lead", "grp_a"), "grp_a");
+    expect(await getGrants(t.db, m.id)).toContainEqual({
+      role: "event_organizer",
+      groupId: "grp_a",
+    });
+
+    // ...and revoke it.
+    await revokeRole(t.db, m.id, "event_organizer", leadOf("usr_lead", "grp_a"), "grp_a");
+    expect(await getGrants(t.db, m.id)).not.toContainEqual({
+      role: "event_organizer",
+      groupId: "grp_a",
+    });
+  });
+
+  it("a plain local_board member may NOT grant event_organizer", async () => {
+    await createGroup("grp_a", "aachen");
+    await createUser("usr_org2", "org2@example.de");
+    const m = await createProfile(t.db, {
+      userId: "usr_org2",
+      firstName: "O",
+      lastName: "y",
+      primaryGroupId: "grp_a",
+    });
+    await approveMember(t.db, m.id, BOARD);
+
+    await expect(
+      grantRole(t.db, m.id, "event_organizer", localBoardOf("usr_lb", "grp_a"), "grp_a"),
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+  });
+
+  it("listRoleHolders includes event_organizer grants", async () => {
+    await createGroup("grp_a", "aachen");
+    await createUser("usr_org3", "org3@example.de");
+    const m = await createProfile(t.db, {
+      userId: "usr_org3",
+      firstName: "Org",
+      lastName: "Anita",
+      primaryGroupId: "grp_a",
+    });
+    await approveMember(t.db, m.id, BOARD);
+    await grantRole(t.db, m.id, "event_organizer", BOARD, "grp_a");
+
+    const holders = await listRoleHolders(t.db);
+    expect(holders).toContainEqual(
+      expect.objectContaining({ memberId: m.id, role: "event_organizer", groupId: "grp_a" }),
+    );
   });
 
   it("listRoleHolders and listGrantAudit expose roster + history", async () => {
@@ -484,5 +647,27 @@ describeIfDb("members integration", () => {
 
     const scoped = await listGrantAudit(t.db, { groupId: "grp_a" });
     expect(scoped.length).toBe(2);
+  });
+
+  it("updateProfile cannot move a member between groups (ADR 0022)", async () => {
+    await createGroup("grp_a", "aachen");
+    await createGroup("grp_b", "berlin");
+    await createUser("usr_cem", "cem@example.de");
+    const m = await createProfile(t.db, {
+      userId: "usr_cem",
+      firstName: "Cem",
+      lastName: "Colak",
+      primaryGroupId: "grp_a",
+    });
+    await approveMember(t.db, m.id, BOARD);
+
+    const after = await updateProfile(t.db, m.id, {
+      firstName: "Cem",
+      lastName: "Colak",
+      primaryGroupId: "grp_b",
+    });
+
+    expect(after.primaryGroupId).toBe("grp_a"); // the smuggled field is ignored
+    expect(after.firstName).toBe("Cem");
   });
 });

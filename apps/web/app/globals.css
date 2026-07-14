@@ -90,3 +90,16 @@
     animation: bdas-fade-slide-down 400ms ease forwards;
   }
 }
+
+/* Schedule-X → BDAS design tokens. The installed theme (v4, Material-3-style)
+ * exposes its palette/radius as CSS custom properties consumed deep inside
+ * the calendar's DOM, not as flat `color`/`border-radius` properties on
+ * `.sx__calendar` itself (that's why this overrides variables, not
+ * properties, and why the selector is two classes deep — it must out-rank
+ * the theme's own `.sx__calendar` rule regardless of CSS load order between
+ * this global stylesheet and the theme's own). */
+.sx__calendar-wrapper .sx__calendar {
+  --sx-color-primary: var(--bdas-accent);
+  --sx-rounding-small: 12px; /* = radii.md */
+  --sx-border: 1px solid rgba(0, 0, 0, 0.06); /* = colors.border.soft */
+}

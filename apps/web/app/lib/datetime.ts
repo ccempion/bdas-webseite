@@ -17,7 +17,7 @@ const partsFmt = new Intl.DateTimeFormat("en-CA", {
   hourCycle: "h23",
 });
 
-function berlinParts(at: Date): Record<string, number> {
+export function berlinParts(at: Date): Record<string, number> {
   const out: Record<string, number> = {};
   for (const p of partsFmt.formatToParts(at)) {
     if (p.type !== "literal") out[p.type] = Number(p.value);

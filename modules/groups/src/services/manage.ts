@@ -18,8 +18,9 @@ import { getEventBus } from "@bdas/events";
 import { createId } from "@bdas/id";
 
 import type { GroupArchived, GroupCreated, GroupUpdated } from "../events";
+import { GroupLocationInput, locationColumns, rowLocation } from "../location";
 import { groups } from "../schema";
-import type { Group, GroupStatus } from "../types";
+import type { Group, GroupLocation, GroupStatus } from "../types";
 
 export type Db = PostgresJsDatabase<Record<string, never>>;
 
@@ -59,6 +60,7 @@ export const UpdateGroupInput = z.object({
     .optional()
     .nullable(),
   status: z.enum(["active", "dormant", "new"]).default("active"),
+  location: GroupLocationInput.optional().nullable(),
 });
 export type UpdateGroupInput = z.infer<typeof UpdateGroupInput>;
 
@@ -95,13 +97,19 @@ function rowToGroup(r: typeof groups.$inferSelect): Group {
     contactEmail: r.contactEmail,
     instagramUrl: r.instagramUrl,
     websiteUrl: r.websiteUrl,
+    location: rowLocation(r),
     status: r.status as GroupStatus,
   };
 }
 
 /** Build the returned domain object from validated input (slug passed in
  *  separately since it is immutable / absent from the update surface). */
-function toGroup(id: string, slug: string, v: UpdateGroupInput): Group {
+function toGroup(
+  id: string,
+  slug: string,
+  v: UpdateGroupInput,
+  location: GroupLocation | null,
+): Group {
   return {
     id,
     slug,
@@ -111,6 +119,7 @@ function toGroup(id: string, slug: string, v: UpdateGroupInput): Group {
     instagramUrl: v.instagramUrl ?? null,
     websiteUrl: v.websiteUrl ?? null,
     status: v.status as GroupStatus,
+    location,
   };
 }
 
@@ -133,6 +142,7 @@ export async function createGroup(db: Db, input: unknown): Promise<Group> {
     instagramUrl: v.instagramUrl ?? null,
     websiteUrl: v.websiteUrl ?? null,
     status: v.status,
+    ...locationColumns(v.location),
   });
 
   const event: GroupCreated = {
@@ -143,7 +153,7 @@ export async function createGroup(db: Db, input: unknown): Promise<Group> {
   };
   await getEventBus().publish(event);
 
-  return toGroup(id, v.slug, v);
+  return toGroup(id, v.slug, v, v.location ?? null);
 }
 
 export async function updateGroup(db: Db, id: string, input: unknown): Promise<Group> {
@@ -164,6 +174,7 @@ export async function updateGroup(db: Db, id: string, input: unknown): Promise<G
       instagramUrl: v.instagramUrl ?? null,
       websiteUrl: v.websiteUrl ?? null,
       status: v.status,
+      ...(v.location !== undefined ? locationColumns(v.location) : {}),
       updatedAt: now,
     })
     .where(eq(groups.id, id));
@@ -176,7 +187,8 @@ export async function updateGroup(db: Db, id: string, input: unknown): Promise<G
   };
   await getEventBus().publish(event);
 
-  return toGroup(id, existing[0].slug, v);
+  const location = v.location === undefined ? rowLocation(existing[0]) : (v.location ?? null);
+  return toGroup(id, existing[0].slug, v, location);
 }
 
 export async function archiveGroup(db: Db, id: string): Promise<Group> {

@@ -16,7 +16,7 @@ export default async function GroupProfilePage({ params }: { params: { slug: str
       <h1 className="text-2xl font-semibold text-bdas-ink">Profil</h1>
       <GroupProfileForm
         groupId={groupId}
-        initial={{ name: group.name, city: group.city }}
+        initial={{ name: group.name, city: group.city, location: group.location }}
         revalidatePath={`/gruppe/${params.slug}/profile`}
       />
     </section>

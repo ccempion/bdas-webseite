@@ -17,5 +17,5 @@ export {
   UpdateGroupInput,
 } from "./services/manage";
 
-export type { Group, GroupSummary, GroupStatus, JoinPolicy } from "./types";
+export type { Group, GroupSummary, GroupStatus, GroupLocation, JoinPolicy } from "./types";
 export type { GroupEvent, GroupCreated, GroupUpdated, GroupArchived } from "./events";

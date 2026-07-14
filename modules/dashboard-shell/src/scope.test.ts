@@ -11,9 +11,24 @@ const groups: GroupSummary[] = [
     name: "HG Mönchengladbach",
     city: "MG",
     status: "active",
+    location: null,
   },
-  { id: "grp_ac", slug: "aachen", name: "HG Aachen", city: "Aachen", status: "active" },
-  { id: "grp_old", slug: "altstadt", name: "HG Altstadt", city: "Köln", status: "archived" },
+  {
+    id: "grp_ac",
+    slug: "aachen",
+    name: "HG Aachen",
+    city: "Aachen",
+    status: "active",
+    location: null,
+  },
+  {
+    id: "grp_old",
+    slug: "altstadt",
+    name: "HG Altstadt",
+    city: "Köln",
+    status: "archived",
+    location: null,
+  },
 ];
 
 describe("boardScopes", () => {

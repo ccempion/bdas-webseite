@@ -15,10 +15,18 @@
  */
 import type { Db } from "@bdas/db";
 import { getEventBus, type AnyEvent, type EventHandler, type Subscription } from "@bdas/events";
-import { getEvent, type Viewer } from "@bdas/events-module";
-import type { EventRegistered, EventDeregistered, WaitlistPromoted } from "@bdas/events-module";
+import { getEvent, listRegistrations, type Viewer } from "@bdas/events-module";
+import type {
+  EventCancelled,
+  EventDeregistered,
+  EventRegistered,
+  EventUpdated,
+  WaitlistPromoted,
+} from "@bdas/events-module";
+import { getGroup } from "@bdas/groups";
+import type { RoleGranted, RoleRevoked } from "@bdas/members";
 
-import { sendTransactional } from "./services/send";
+import { sendTransactional, sendTransactionalToGuest } from "./services/send";
 
 /** System reader: sees everything, so the title lookup is never visibility-gated. */
 const SYSTEM_VIEWER: Viewer = {
@@ -26,6 +34,7 @@ const SYSTEM_VIEWER: Viewer = {
   memberGroupIds: [],
   isFederal: true,
   boardGroupIds: [],
+  organizerGroupIds: [],
 };
 
 let subs: Subscription[] = [];
@@ -73,37 +82,158 @@ export function registerNotificationSubscribers(db: Db, opts: { siteUrl?: string
       ? `${opts.siteUrl.replace(/\/$/, "")}/events/${encodeURIComponent(eventId)}`
       : undefined;
 
+  // A guest's self-cancel link — the "manage/cancel" link in their emails, since
+  // guests have no login. Requires both the site URL and the per-guest token.
+  const guestCancelUrl = (eventId: string, token: string | null | undefined): string | undefined =>
+    opts.siteUrl && token
+      ? `${opts.siteUrl.replace(/\/$/, "")}/events/${encodeURIComponent(
+          eventId,
+        )}/gast-abmelden?token=${encodeURIComponent(token)}`
+      : undefined;
+
   subs = [
     getEventBus().subscribe<EventRegistered>(
       "events.event.registered",
       safe<EventRegistered>(async (e) => {
         const title = await eventTitle(db, e.eventId);
-        await sendTransactional(
-          db,
-          e.waitlisted ? "event_waitlisted" : "event_registration_confirmed",
-          e.memberId,
-          { eventTitle: title, eventId: e.eventId, eventUrl: eventUrl(e.eventId) },
-        );
+        const template = e.waitlisted ? "event_waitlisted" : "event_registration_confirmed";
+        if (e.memberId) {
+          await sendTransactional(db, template, e.memberId, {
+            eventTitle: title,
+            eventId: e.eventId,
+            eventUrl: eventUrl(e.eventId),
+          });
+        } else if (e.guestEmail) {
+          await sendTransactionalToGuest(
+            db,
+            template,
+            { email: e.guestEmail, name: e.guestName },
+            {
+              eventTitle: title,
+              eventId: e.eventId,
+              eventUrl: guestCancelUrl(e.eventId, e.guestCancelToken),
+            },
+          );
+        }
       }),
     ),
     getEventBus().subscribe<EventDeregistered>(
       "events.event.deregistered",
       safe<EventDeregistered>(async (e) => {
         const title = await eventTitle(db, e.eventId);
-        await sendTransactional(db, "event_deregistration_confirmed", e.memberId, {
-          eventTitle: title,
-          eventId: e.eventId,
-        });
+        if (e.memberId) {
+          await sendTransactional(db, "event_deregistration_confirmed", e.memberId, {
+            eventTitle: title,
+            eventId: e.eventId,
+          });
+        } else if (e.guestEmail) {
+          await sendTransactionalToGuest(
+            db,
+            "event_deregistration_confirmed",
+            { email: e.guestEmail, name: e.guestName },
+            { eventTitle: title, eventId: e.eventId },
+          );
+        }
       }),
     ),
     getEventBus().subscribe<WaitlistPromoted>(
       "events.waitlist.promoted",
       safe<WaitlistPromoted>(async (e) => {
         const title = await eventTitle(db, e.eventId);
-        await sendTransactional(db, "event_waitlist_promoted", e.memberId, {
-          eventTitle: title,
-          eventId: e.eventId,
-          eventUrl: eventUrl(e.eventId),
+        if (e.memberId) {
+          await sendTransactional(db, "event_waitlist_promoted", e.memberId, {
+            eventTitle: title,
+            eventId: e.eventId,
+            eventUrl: eventUrl(e.eventId),
+          });
+        } else if (e.guestEmail) {
+          await sendTransactionalToGuest(
+            db,
+            "event_waitlist_promoted",
+            { email: e.guestEmail, name: e.guestName },
+            {
+              eventTitle: title,
+              eventId: e.eventId,
+              eventUrl: guestCancelUrl(e.eventId, e.guestCancelToken),
+            },
+          );
+        }
+      }),
+    ),
+    // A published event's date/time/location changed — notify every active
+    // registrant (confirmed + waitlist).
+    getEventBus().subscribe<EventUpdated>(
+      "events.event.updated",
+      safe<EventUpdated>(async (e) => {
+        const title = await eventTitle(db, e.eventId);
+        const roster = await listRegistrations(db, e.eventId);
+        for (const r of roster) {
+          if (r.memberId) {
+            await sendTransactional(db, "event_changed", r.memberId, {
+              eventTitle: title,
+              eventId: e.eventId,
+              eventUrl: eventUrl(e.eventId),
+              changes: e.changed,
+            });
+          } else if (r.guestEmail) {
+            await sendTransactionalToGuest(
+              db,
+              "event_changed",
+              { email: r.guestEmail, name: r.guestName },
+              {
+                eventTitle: title,
+                eventId: e.eventId,
+                eventUrl: eventUrl(e.eventId),
+                changes: e.changed,
+              },
+            );
+          }
+        }
+      }),
+    ),
+    // The event was cancelled — notify every active registrant.
+    getEventBus().subscribe<EventCancelled>(
+      "events.event.cancelled",
+      safe<EventCancelled>(async (e) => {
+        const title = await eventTitle(db, e.eventId);
+        const roster = await listRegistrations(db, e.eventId);
+        for (const r of roster) {
+          if (r.memberId) {
+            await sendTransactional(db, "event_cancelled", r.memberId, {
+              eventTitle: title,
+              eventId: e.eventId,
+            });
+          } else if (r.guestEmail) {
+            await sendTransactionalToGuest(
+              db,
+              "event_cancelled",
+              { email: r.guestEmail, name: r.guestName },
+              { eventTitle: title, eventId: e.eventId },
+            );
+          }
+        }
+      }),
+    ),
+    // A member was granted/removed as event_organizer for a group (ADR 0017) —
+    // email only that member; ignore every other role's grant events.
+    getEventBus().subscribe<RoleGranted>(
+      "members.role.granted",
+      safe<RoleGranted>(async (e) => {
+        if (e.role !== "event_organizer" || !e.groupId) return;
+        const group = await getGroup(db, e.groupId);
+        await sendTransactional(db, "event_organizer_granted", e.memberId, {
+          groupName: group?.name,
+          eventUrl: opts.siteUrl ? `${opts.siteUrl.replace(/\/$/, "")}/admin/events` : undefined,
+        });
+      }),
+    ),
+    getEventBus().subscribe<RoleRevoked>(
+      "members.role.revoked",
+      safe<RoleRevoked>(async (e) => {
+        if (e.role !== "event_organizer" || !e.groupId) return;
+        const group = await getGroup(db, e.groupId);
+        await sendTransactional(db, "event_organizer_revoked", e.memberId, {
+          groupName: group?.name,
         });
       }),
     ),

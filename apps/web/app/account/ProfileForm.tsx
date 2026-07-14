@@ -14,15 +14,22 @@ export type ProfileFormProps = {
   };
   groups: Array<{ id: string; slug: string; name: string; city: string }>;
   isNew: boolean;
+  openChangeGroupName: string | null;
 };
 
 const initial: ProfileFormState = {};
 
-export function ProfileForm({ initial: data, groups, isNew }: ProfileFormProps) {
+export function ProfileForm({
+  initial: data,
+  groups,
+  isNew,
+  openChangeGroupName,
+}: ProfileFormProps) {
   const [state, action] = useFormState(saveProfileAction, initial);
   return (
     <Form action={action}>
       {state.error ? <Alert variant="error">{state.error}</Alert> : null}
+      {state.notice ? <Alert variant="info">{state.notice}</Alert> : null}
       <Field
         label="Vorname"
         htmlFor="firstName"
@@ -63,6 +70,12 @@ export function ProfileForm({ initial: data, groups, isNew }: ProfileFormProps) 
             </option>
           ))}
         </select>
+        {openChangeGroupName ? (
+          <p className="mt-1 text-sm text-bdas-ink-muted">
+            Ein Wechsel zu {openChangeGroupName} ist beantragt. Eine andere Auswahl ersetzt den
+            Antrag; die aktuelle Gruppe erneut zu wählen zieht ihn zurück.
+          </p>
+        ) : null}
       </Field>
       <SubmitButton isNew={isNew} />
     </Form>

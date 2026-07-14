@@ -4,8 +4,9 @@
  * The auth module owns identity (auth_users); the members module owns the
  * federation-side profile (display name, primary group, status, roles).
  *
- * Profiles start as `pending` and stay there until a federal_board user
- * approves them via `transitionStatus(active)`.
+ * Profiles start as `pending` and stay there until the group's local board
+ * approves them (ADR 0021). The primary group is not editable through this
+ * service — see services/group-change.ts (ADR 0022).
  */
 import { eq } from "drizzle-orm";
 import type { PostgresJsDatabase } from "drizzle-orm/postgres-js";
@@ -31,10 +32,15 @@ export const CreateProfileInput = z.object({
 });
 export type CreateProfileInput = z.infer<typeof CreateProfileInput>;
 
+/**
+ * Names only. The primary group is NOT editable here (ADR 0022) — it moves via
+ * `changePrimaryGroup` (self-service, files a request the destination board
+ * decides) or `decideGroupChange` (the board). Zod strips the unknown key, so a
+ * smuggled `primaryGroupId` is ignored rather than honoured.
+ */
 export const UpdateProfileInput = z.object({
   firstName: z.string().min(1).max(120).optional(),
   lastName: z.string().min(1).max(120).optional(),
-  primaryGroupId: z.string().min(1).optional().nullable(),
 });
 export type UpdateProfileInput = z.infer<typeof UpdateProfileInput>;
 
@@ -93,7 +99,6 @@ export async function updateProfile(db: Db, memberId: string, input: unknown): P
   };
   if (v.firstName !== undefined) set.firstName = v.firstName;
   if (v.lastName !== undefined) set.lastName = v.lastName;
-  if (v.primaryGroupId !== undefined) set.primaryGroupId = v.primaryGroupId;
 
   const [row] = await db.update(members).set(set).where(eq(members.id, memberId)).returning();
   if (!row) throw new NotFoundError("Profil nicht gefunden.");

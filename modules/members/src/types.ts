@@ -25,3 +25,40 @@ export type Grant = {
   readonly role: Role;
   readonly groupId: string | null;
 };
+
+export type GroupChangeStatus = "pending" | "approved" | "rejected" | "withdrawn";
+
+/**
+ * One recorded group movement (ADR 0022). `fromGroupId` null ⇔ the member had no
+ * group; `toGroupId` null ⇔ the member left the group structure (always
+ * `approved` on write — an exit needs no decision).
+ */
+export type GroupChangeRequest = {
+  readonly id: string;
+  readonly memberId: string;
+  readonly fromGroupId: string | null;
+  readonly toGroupId: string | null;
+  readonly status: GroupChangeStatus;
+  readonly requestedAt: Date;
+  readonly decidedAt: Date | null;
+  readonly decidedBy: string | null;
+};
+
+/**
+ * What `changePrimaryGroup` did: wrote the column straight through (`applied` —
+ * a pending member editing their choice, or any member leaving), or filed a
+ * request for the destination board (`requested`).
+ */
+export type GroupChangeResult =
+  | { readonly kind: "applied"; readonly member: Member }
+  | { readonly kind: "requested"; readonly request: GroupChangeRequest };
+
+/** An open request plus whether *this* actor may decide it. */
+export type OpenGroupChange = GroupChangeRequest & { readonly canDecide: boolean };
+
+/**
+ * An open request *into* a group, hydrated with the member who filed it. The
+ * applicant is by definition not yet in the destination group's member list, so
+ * the destination board has no other way to see who they are.
+ */
+export type IncomingGroupChange = OpenGroupChange & { readonly member: Member };

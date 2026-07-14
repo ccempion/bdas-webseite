@@ -1,6 +1,7 @@
 import { eq } from "drizzle-orm";
 import type { PostgresJsDatabase } from "drizzle-orm/postgres-js";
 
+import { rowLocation } from "../location";
 import { groups } from "../schema";
 import type { Group, GroupStatus } from "../types";
 
@@ -15,6 +16,7 @@ function row2group(r: typeof groups.$inferSelect): Group {
     contactEmail: r.contactEmail,
     instagramUrl: r.instagramUrl,
     websiteUrl: r.websiteUrl,
+    location: rowLocation(r),
     status: r.status as GroupStatus,
   };
 }
