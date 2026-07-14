@@ -22,5 +22,7 @@ export const MIGRATION_MANIFEST: ReadonlyArray<string> = [
   "events",
   // Phase 4 — projects (projects.group_id FKs into groups).
   "projects",
+  // Blog (posts; created_by is a plain auth-user id, no cross-module FK).
+  "blog",
   // Phase 3 onward — append as modules land.
 ];

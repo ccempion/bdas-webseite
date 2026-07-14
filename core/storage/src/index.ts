@@ -113,4 +113,31 @@ export function eventMediaPublicUrl(storageKey: string): string {
   return `${url.replace(/\/$/, "")}/storage/v1/object/public/${bucket}/${storageKey}`;
 }
 
+let _blogMedia: SupabaseStorageClient | null = null;
+
+/** Storage client for the public `blog-media` bucket (inline post images). */
+export function getBlogMediaStorage(): SupabaseStorageClient {
+  if (_blogMedia) return _blogMedia;
+  const url = process.env["SUPABASE_URL"];
+  const serviceRoleKey = process.env["SUPABASE_SERVICE_ROLE_KEY"];
+  const bucket = process.env["SUPABASE_BLOG_MEDIA_BUCKET"] ?? "blog-media";
+  if (!url || !serviceRoleKey) {
+    throw new Error(
+      "blog-media storage is not configured (need SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY).",
+    );
+  }
+  _blogMedia = new SupabaseStorageClient({ url, serviceRoleKey, bucket });
+  return _blogMedia;
+}
+
+/** Deterministic public URL for a blog-media object. Needs only SUPABASE_URL. */
+export function blogMediaPublicUrl(storageKey: string): string {
+  const url = process.env["SUPABASE_URL"];
+  const bucket = process.env["SUPABASE_BLOG_MEDIA_BUCKET"] ?? "blog-media";
+  if (!url) {
+    throw new Error("blog-media public URL needs SUPABASE_URL.");
+  }
+  return `${url.replace(/\/$/, "")}/storage/v1/object/public/${bucket}/${storageKey}`;
+}
+
 export { SupabaseStorageClient };
