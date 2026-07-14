@@ -1,4 +1,4 @@
-import { and, asc, eq, gte, inArray, isNull, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gte, inArray, isNull, lt, sql } from "drizzle-orm";
 import type { PostgresJsDatabase } from "drizzle-orm/postgres-js";
 
 import { eventRegistrations, events } from "../schema";
@@ -43,16 +43,17 @@ async function withCounts(db: Db, rows: ReadonlyArray<typeof events.$inferSelect
   });
 }
 
-/**
- * Upcoming, published events the viewer may see (visibility-filtered), ordered
- * by start time. The visibility predicate runs in JS (small N) — see canView.
- */
-export async function listUpcomingEvents(
+async function listByTimeframe(
   db: Db,
   viewer: Viewer,
-  opts: ListOpts = {},
+  timeframe: "upcoming" | "past",
+  opts: ListOpts,
 ): Promise<ReadonlyArray<EventWithCounts>> {
-  const conds = [eq(events.status, "published"), gte(events.startsAt, new Date())];
+  const now = new Date();
+  const conds = [
+    eq(events.status, "published"),
+    timeframe === "upcoming" ? gte(events.startsAt, now) : lt(events.startsAt, now),
+  ];
   if (opts.groupId !== undefined) {
     conds.push(opts.groupId === null ? isNull(events.groupId) : eq(events.groupId, opts.groupId));
   }
@@ -60,27 +61,53 @@ export async function listUpcomingEvents(
     .select()
     .from(events)
     .where(and(...conds))
-    .orderBy(asc(events.startsAt));
+    .orderBy(timeframe === "upcoming" ? asc(events.startsAt) : desc(events.startsAt));
   const visible = rows.filter((r) => canView(viewer, rowToEvent(r)));
   return withCounts(db, visible);
 }
 
 /**
+ * Upcoming, published events the viewer may see (visibility-filtered), ordered
+ * by start time. The visibility predicate runs in JS (small N) — see canView.
+ */
+export function listUpcomingEvents(
+  db: Db,
+  viewer: Viewer,
+  opts: ListOpts = {},
+): Promise<ReadonlyArray<EventWithCounts>> {
+  return listByTimeframe(db, viewer, "upcoming", opts);
+}
+
+/**
+ * Past, published events the viewer may see (visibility-filtered), newest-first.
+ * Mirrors listUpcomingEvents for the /events "Vergangene" section.
+ */
+export function listPastEvents(
+  db: Db,
+  viewer: Viewer,
+  opts: ListOpts = {},
+): Promise<ReadonlyArray<EventWithCounts>> {
+  return listByTimeframe(db, viewer, "past", opts);
+}
+
+/**
  * Every event the viewer manages (any status), for the board admin views.
- * Federal board sees all; local board sees its own groups' events.
+ * Federal board sees all; local board and event organizers see their groups' events.
  */
 export async function listManagedEvents(
   db: Db,
   viewer: Viewer,
 ): Promise<ReadonlyArray<EventWithCounts>> {
-  const rows = viewer.isFederal
-    ? await db.select().from(events).orderBy(asc(events.startsAt))
-    : viewer.boardGroupIds.length === 0
-      ? []
-      : await db
-          .select()
-          .from(events)
-          .where(inArray(events.groupId, [...viewer.boardGroupIds]))
-          .orderBy(asc(events.startsAt));
+  if (viewer.isFederal) {
+    const rows = await db.select().from(events).orderBy(asc(events.startsAt));
+    return withCounts(db, rows);
+  }
+  const manageGroupIds = [...new Set([...viewer.boardGroupIds, ...viewer.organizerGroupIds])];
+  if (manageGroupIds.length === 0) return withCounts(db, []);
+  const rows = await db
+    .select()
+    .from(events)
+    .where(inArray(events.groupId, manageGroupIds))
+    .orderBy(asc(events.startsAt));
   return withCounts(db, rows);
 }

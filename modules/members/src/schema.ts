@@ -52,3 +52,36 @@ export const memberRoleGrants = pgTable(
 );
 
 export type MemberRoleGrantRow = typeof memberRoleGrants.$inferSelect;
+
+/**
+ * Group transfer requests (ADR 0022). Both the pending queue and the audit log:
+ * `pending` rows await the DESTINATION group's board; terminal rows are history.
+ * `toGroupId` NULL ⇔ an exit (written already `approved`).
+ */
+export const memberGroupChangeRequests = pgTable(
+  "member_group_change_requests",
+  {
+    id: text("id").primaryKey(),
+    memberId: text("member_id").notNull(),
+    fromGroupId: text("from_group_id"),
+    toGroupId: text("to_group_id"),
+    status: text("status").notNull().default("pending"),
+    requestedAt: timestamp("requested_at", { withTimezone: true }).notNull().defaultNow(),
+    decidedAt: timestamp("decided_at", { withTimezone: true }),
+    decidedBy: text("decided_by"),
+  },
+  (t) => ({
+    openUq: uniqueIndex("member_group_change_requests_open_uq")
+      .on(t.memberId)
+      .where(sql`${t.status} = 'pending'`),
+    memberIdx: index("member_group_change_requests_member_idx").on(t.memberId),
+    toGroupIdx: index("member_group_change_requests_to_group_idx")
+      .on(t.toGroupId)
+      .where(sql`${t.status} = 'pending'`),
+    fromGroupIdx: index("member_group_change_requests_from_group_idx")
+      .on(t.fromGroupId)
+      .where(sql`${t.status} = 'pending'`),
+  }),
+);
+
+export type MemberGroupChangeRow = typeof memberGroupChangeRequests.$inferSelect;

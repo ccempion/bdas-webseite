@@ -20,6 +20,7 @@ const EMPTY = {
   instagramUrl: "",
   websiteUrl: "",
   status: "active",
+  location: null,
 };
 
 export default async function NeueGruppePage() {

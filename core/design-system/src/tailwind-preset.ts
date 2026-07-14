@@ -68,6 +68,9 @@ export const tailwindPreset: TailwindPreset = {
         "bdas-submenu-link": typography.size.submenuLink,
         "bdas-icon": typography.size.icon,
       },
+      backgroundImage: {
+        "bdas-hero-scrim": colors.surface.overlay.heroScrim,
+      },
       keyframes: {
         "bdas-fade-slide-down": keyframes.fadeSlideDown,
       },

@@ -5,7 +5,7 @@ import { useState } from "react";
 import { Field, Input } from "@bdas/design-system";
 import type { EventContent } from "@bdas/events-module";
 
-import { LocationPicker } from "./LocationPicker";
+import { LocationPicker } from "../../../_components/LocationPicker";
 import { RichTextEditor } from "./RichTextEditor";
 
 const SELECT_CLASS =
@@ -18,11 +18,13 @@ export type EventDefaults = {
   summary: string | null;
   content: EventContent | null;
   coverImageKey: string | null;
+  coverImageUrl: string | null;
   startsAtLocal: string;
   endsAtLocal: string;
   registrationDeadlineLocal: string;
   capacity: number | null;
   visibility: string;
+  allowGuestRegistration: boolean;
   location: { name: string; address: string; lat: number | null; lng: number | null } | null;
   groups: ReadonlyArray<{ id: string; name: string }>;
   allowFederation: boolean;
@@ -32,7 +34,13 @@ export type EventDefaults = {
 
 export function EventFields({ d }: { d: EventDefaults }) {
   const [coverKey, setCoverKey] = useState(d.coverImageKey ?? "");
+  const [coverUrl, setCoverUrl] = useState(d.coverImageUrl);
   const [coverBusy, setCoverBusy] = useState(false);
+  // Guest registration is only valid on public events; track visibility so the
+  // toggle disables (and unchecks) itself when the event isn't public.
+  const [visibility, setVisibility] = useState(d.visibility);
+  const [allowGuest, setAllowGuest] = useState(d.allowGuestRegistration);
+  const guestAllowed = visibility === "public";
 
   async function uploadCover(file: File) {
     setCoverBusy(true);
@@ -46,13 +54,14 @@ export function EventFields({ d }: { d: EventDefaults }) {
         alert((await res.json().catch(() => ({}))).error ?? "Upload fehlgeschlagen.");
         return;
       }
-      const { uploadUrl, storageKey } = await res.json();
+      const { uploadUrl, publicUrl, storageKey } = await res.json();
       const put = await fetch(uploadUrl, { method: "PUT", body: file });
       if (!put.ok) {
         alert("Upload fehlgeschlagen.");
         return;
       }
       setCoverKey(storageKey);
+      setCoverUrl(publicUrl);
     } finally {
       setCoverBusy(false);
     }
@@ -74,6 +83,9 @@ export function EventFields({ d }: { d: EventDefaults }) {
 
       {d.eventId !== "" && (
         <Field label="Titelbild (optional)" htmlFor="cover">
+          {coverUrl ? (
+            <img src={coverUrl} alt="" className="mb-2 max-h-48 w-full rounded-bdas object-cover" />
+          ) : null}
           <input
             id="cover"
             type="file"
@@ -85,7 +97,7 @@ export function EventFields({ d }: { d: EventDefaults }) {
             }}
           />
           <input type="hidden" name="coverImageKey" value={coverKey} />
-          {coverKey ? <p className="mt-1 text-sm text-bdas-ink-muted">Bild gespeichert.</p> : null}
+          {coverBusy ? <p className="mt-1 text-sm text-bdas-ink-muted">Lädt hoch…</p> : null}
         </Field>
       )}
 
@@ -166,13 +178,33 @@ export function EventFields({ d }: { d: EventDefaults }) {
         <select
           id="visibility"
           name="visibility"
-          defaultValue={d.visibility}
+          value={visibility}
+          onChange={(e) => setVisibility(e.target.value)}
           className={SELECT_CLASS}
         >
           <option value="public">Öffentlich</option>
           <option value="members_only">Nur Mitglieder</option>
           <option value="group_only">Nur Gruppe</option>
         </select>
+      </Field>
+
+      <Field
+        label="Gastanmeldung"
+        htmlFor="allowGuestRegistration"
+        hint="Nicht-Mitglieder können sich mit Name und E-Mail anmelden. Nur für öffentliche Veranstaltungen."
+        error={d.errors?.["allowGuestRegistration"]}
+      >
+        <label className="flex items-center gap-2 text-sm text-bdas-ink-body">
+          <input
+            type="checkbox"
+            id="allowGuestRegistration"
+            name="allowGuestRegistration"
+            checked={allowGuest && guestAllowed}
+            disabled={!guestAllowed}
+            onChange={(e) => setAllowGuest(e.target.checked)}
+          />
+          Gäste ohne Mitgliedskonto zulassen
+        </label>
       </Field>
 
       <Field label="Gruppe" htmlFor="groupId" error={d.errors?.["groupId"]}>

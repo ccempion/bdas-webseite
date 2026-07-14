@@ -42,9 +42,40 @@ export type RoleRevoked = {
   readonly at: Date;
 };
 
+export type GroupChangeRequested = {
+  readonly type: "members.group_change.requested";
+  readonly requestId: string;
+  readonly memberId: string;
+  readonly fromGroupId: string | null;
+  readonly toGroupId: string;
+  readonly at: Date;
+};
+
+export type GroupChangeDecided = {
+  readonly type: "members.group_change.decided";
+  readonly requestId: string;
+  readonly memberId: string;
+  readonly fromGroupId: string | null;
+  readonly toGroupId: string | null;
+  readonly decision: "approved" | "rejected";
+  readonly actorUserId: string;
+  readonly at: Date;
+};
+
+export type GroupChangeWithdrawn = {
+  readonly type: "members.group_change.withdrawn";
+  readonly requestId: string;
+  readonly memberId: string;
+  readonly actorUserId: string;
+  readonly at: Date;
+};
+
 export type MembersEvent =
   | ProfileCreated
   | ProfileUpdated
   | StatusChanged
   | RoleGranted
-  | RoleRevoked;
+  | RoleRevoked
+  | GroupChangeRequested
+  | GroupChangeDecided
+  | GroupChangeWithdrawn;

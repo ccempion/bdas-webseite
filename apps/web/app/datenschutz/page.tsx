@@ -26,6 +26,14 @@ export default function DatenschutzPage() {
           Werbezwecken statt.
         </p>
         <p>
+          Auf der Startseite und der Seite „Hochschulgruppen" binden wir eine interaktive Karte auf
+          Basis von OpenStreetMap ein. Beim Laden der Karte wird Ihre IP-Adresse an Server der
+          OpenStreetMap Foundation (St John&apos;s Innovation Centre, Cambridge, Vereinigtes
+          Königreich) übertragen, um die Kartenkacheln auszuliefern. Rechtsgrundlage ist unser
+          berechtigtes Interesse an einer ansprechenden Darstellung unserer Hochschulgruppen (Art. 6
+          Abs. 1 lit. f DSGVO).
+        </p>
+        <p>
           Verantwortliche Stelle, Kontaktdaten, Zweck und Rechtsgrundlage der Verarbeitung, Hinweise
           zu Speicherdauer und Betroffenenrechten sind hier einzufügen.
         </p>

@@ -1,4 +1,4 @@
-import { index, pgTable, text, timestamp } from "drizzle-orm/pg-core";
+import { doublePrecision, index, pgTable, text, timestamp } from "drizzle-orm/pg-core";
 
 export const groups = pgTable(
   "groups",
@@ -10,6 +10,10 @@ export const groups = pgTable(
     contactEmail: text("contact_email"),
     instagramUrl: text("instagram_url"),
     websiteUrl: text("website_url"),
+    locationName: text("location_name"),
+    locationAddress: text("location_address"),
+    locationLat: doublePrecision("location_lat"),
+    locationLng: doublePrecision("location_lng"),
     status: text("status").notNull().default("active"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),

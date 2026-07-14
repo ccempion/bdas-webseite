@@ -12,8 +12,9 @@ import { getEventBus } from "@bdas/events";
 import { createId } from "@bdas/id";
 
 import type { GroupCreated, GroupUpdated } from "../events";
+import { GroupLocationInput, locationColumns, rowLocation } from "../location";
 import { groups } from "../schema";
-import type { Group, GroupStatus } from "../types";
+import type { Group, GroupLocation, GroupStatus } from "../types";
 
 export type Db = PostgresJsDatabase<Record<string, never>>;
 
@@ -29,6 +30,7 @@ export const UpsertGroupInput = z.object({
   instagramUrl: z.string().url().max(500).optional().nullable(),
   websiteUrl: z.string().url().max(500).optional().nullable(),
   status: z.enum(["active", "dormant", "new", "archived"]).default("active"),
+  location: GroupLocationInput.optional().nullable(),
 });
 export type UpsertGroupInput = z.infer<typeof UpsertGroupInput>;
 
@@ -62,6 +64,7 @@ export async function upsertGroupBySlug(db: Db, input: unknown): Promise<UpsertR
         instagramUrl: v.instagramUrl ?? null,
         websiteUrl: v.websiteUrl ?? null,
         status: v.status,
+        ...(v.location !== undefined ? locationColumns(v.location) : {}),
         updatedAt: now,
       })
       .where(eq(groups.id, id));
@@ -74,7 +77,8 @@ export async function upsertGroupBySlug(db: Db, input: unknown): Promise<UpsertR
     };
     await getEventBus().publish(event);
 
-    return { group: toGroup(id, v), created: false };
+    const location = v.location === undefined ? rowLocation(existing[0]) : (v.location ?? null);
+    return { group: toGroup(id, v, location), created: false };
   }
 
   const id = createId("grp");
@@ -87,6 +91,7 @@ export async function upsertGroupBySlug(db: Db, input: unknown): Promise<UpsertR
     instagramUrl: v.instagramUrl ?? null,
     websiteUrl: v.websiteUrl ?? null,
     status: v.status,
+    ...locationColumns(v.location),
   });
 
   const event: GroupCreated = {
@@ -97,10 +102,10 @@ export async function upsertGroupBySlug(db: Db, input: unknown): Promise<UpsertR
   };
   await getEventBus().publish(event);
 
-  return { group: toGroup(id, v), created: true };
+  return { group: toGroup(id, v, v.location ?? null), created: true };
 }
 
-function toGroup(id: string, v: UpsertGroupInput): Group {
+function toGroup(id: string, v: UpsertGroupInput, location: GroupLocation | null): Group {
   return {
     id,
     slug: v.slug,
@@ -110,5 +115,6 @@ function toGroup(id: string, v: UpsertGroupInput): Group {
     instagramUrl: v.instagramUrl ?? null,
     websiteUrl: v.websiteUrl ?? null,
     status: v.status as GroupStatus,
+    location,
   };
 }

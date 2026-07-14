@@ -21,13 +21,21 @@ const unconfigured: RecipientResolver = {
   },
 };
 
-let _resolver: RecipientResolver = unconfigured;
+// Backed by globalThis (Symbol.for) for the same reason as the Notifier: a
+// direct send from a Server Action runs in a different module instance than the
+// `instrumentation.ts` boot that wired this, so a module-level `let` would read
+// `unconfigured` and silently skip every send.
+const RESOLVER_KEY = Symbol.for("@bdas/notifications:resolver");
+type ResolverStore = { [RESOLVER_KEY]?: RecipientResolver };
+function resolverStore(): ResolverStore {
+  return globalThis as unknown as ResolverStore;
+}
 
 export function getRecipientResolver(): RecipientResolver {
-  return _resolver;
+  return resolverStore()[RESOLVER_KEY] ?? unconfigured;
 }
 
 /** Composition-time wiring. apps/web calls this at boot. */
 export function setRecipientResolver(r: RecipientResolver): void {
-  _resolver = r;
+  resolverStore()[RESOLVER_KEY] = r;
 }

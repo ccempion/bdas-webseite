@@ -11,7 +11,8 @@ export const notificationLog = pgTable(
   "notification_log",
   {
     id: text("id").primaryKey(),
-    memberId: text("member_id").notNull(),
+    // null for a guest (non-member) recipient; to_email carries the address.
+    memberId: text("member_id"),
     channel: text("channel").notNull().default("email"),
     template: text("template").notNull(),
     toEmail: text("to_email").notNull(),

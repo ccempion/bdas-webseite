@@ -17,8 +17,16 @@ import { getEventBus, resetEventBus } from "@bdas/events";
 import type { EventsEvent } from "./events";
 import { getEvent, type Viewer } from "./services/get";
 import { listManagedEvents } from "./services/list";
-import { createEvent, deleteEvent, publishEvent } from "./services/manage";
-import { cancelRegistration, getMyRegistration, registerMember } from "./services/registration";
+import { createEvent, deleteEvent, publishEvent, updateEvent } from "./services/manage";
+import {
+  cancelGuestByToken,
+  cancelRegistration,
+  cancelRegistrationById,
+  getMyRegistration,
+  listRegistrations,
+  registerGuest,
+  registerMember,
+} from "./services/registration";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DEFAULT_URL = "postgres://bdas:bdas@localhost:5432/bdas";
@@ -48,18 +56,21 @@ const ACTIVE: Viewer = {
   memberGroupIds: [],
   isFederal: false,
   boardGroupIds: [],
+  organizerGroupIds: [],
 };
 const ANON_VIEWER: Viewer = {
   isActiveMember: false,
   memberGroupIds: [],
   isFederal: false,
   boardGroupIds: [],
+  organizerGroupIds: [],
 };
 const FEDERAL: Viewer = {
   isActiveMember: true,
   memberGroupIds: [],
   isFederal: true,
   boardGroupIds: [],
+  organizerGroupIds: [],
 };
 
 function future(daysAhead = 7): Date {
@@ -78,6 +89,7 @@ describeIfDb("events integration", () => {
       ["..", "..", "members", "migrations", "0002_role_grants.sql"],
       ["..", "migrations", "0001_init.sql"],
       ["..", "migrations", "0002_event_pages.sql"],
+      ["..", "migrations", "0003_guest_registration.sql"],
     ]) {
       const sql = await fs.readFile(path.join(__dirname, ...file), "utf8");
       await t.client.unsafe(sql);
@@ -281,5 +293,241 @@ describeIfDb("events integration", () => {
     expect(await getEvent(t.db, membersOnly.id, ANON_VIEWER)).toBeNull();
     expect(await getEvent(t.db, membersOnly.id, ACTIVE)).not.toBeNull();
     expect(await getEvent(t.db, pub.id, ANON_VIEWER)).not.toBeNull();
+  });
+
+  it("listRegistrations returns confirmed first, then the waitlist in rank order", async () => {
+    for (const m of ["mem1", "mem2", "mem3"]) await createMember(m, null);
+    const ev = await publishEvent(
+      t.db,
+      (await createEvent(t.db, { title: "Roster", startsAt: future(), capacity: 2 }, "usr_c")).id,
+    );
+    await registerMember(t.db, ev.id, "mem1");
+    await registerMember(t.db, ev.id, "mem2");
+    await registerMember(t.db, ev.id, "mem3"); // waitlisted
+
+    const roster = await listRegistrations(t.db, ev.id);
+    expect(roster).toHaveLength(3);
+    expect(roster.map((r) => r.status)).toEqual(["confirmed", "confirmed", "waitlisted"]);
+    expect(roster[2]).toMatchObject({ memberId: "mem3", waitlistPosition: 1 });
+
+    // Cancelled registrations drop out of the roster.
+    await cancelRegistration(t.db, ev.id, "mem3");
+    expect(await listRegistrations(t.db, ev.id)).toHaveLength(2);
+  });
+
+  it("cancelRegistrationById cancels a specific seat and auto-promotes; rejects a foreign event", async () => {
+    for (const m of ["mem1", "mem2"]) await createMember(m, null);
+    const ev = await publishEvent(
+      t.db,
+      (await createEvent(t.db, { title: "Cancel", startsAt: future(), capacity: 1 }, "usr_c")).id,
+    );
+    await registerMember(t.db, ev.id, "mem1"); // confirmed
+    await registerMember(t.db, ev.id, "mem2"); // waitlist 1
+    const mem1Reg = (await listRegistrations(t.db, ev.id)).find((r) => r.memberId === "mem1")!;
+
+    const promoted = capture("events.waitlist.promoted");
+
+    // The eventId binds the registration to the event the caller authorized; a
+    // mismatched event must not cancel it.
+    await expect(
+      cancelRegistrationById(t.db, "evt_other", mem1Reg.registrationId),
+    ).rejects.toMatchObject({ code: "NOT_FOUND" });
+
+    await cancelRegistrationById(t.db, ev.id, mem1Reg.registrationId);
+    expect(await getMyRegistration(t.db, ev.id, "mem1")).toBeNull();
+    expect((await getMyRegistration(t.db, ev.id, "mem2"))?.waitlistPosition).toBeNull(); // promoted
+    expect(promoted).toHaveLength(1);
+    expect(promoted[0]).toMatchObject({ memberId: "mem2" });
+  });
+
+  it("updateEvent emits event.updated only on a material change to a published event", async () => {
+    const ev = await publishEvent(
+      t.db,
+      (
+        await createEvent(
+          t.db,
+          { title: "Stammtisch", startsAt: future(5), locationName: "Aula" },
+          "usr_c",
+        )
+      ).id,
+    );
+    const original = await getEvent(t.db, ev.id, FEDERAL);
+    const updated = capture("events.event.updated");
+
+    // No-op for notifications: same time + location, only the title differs.
+    await updateEvent(t.db, ev.id, {
+      title: "Stammtisch v2",
+      startsAt: original!.startsAt,
+      locationName: "Aula",
+    });
+    expect(updated).toHaveLength(0);
+
+    // Time change.
+    await updateEvent(t.db, ev.id, {
+      title: "Stammtisch v2",
+      startsAt: future(8),
+      locationName: "Aula",
+    });
+    expect(updated).toHaveLength(1);
+    expect(updated[0]).toMatchObject({ type: "events.event.updated", changed: ["time"] });
+
+    // Location-only change (reuse the stored start so time is unchanged).
+    const afterTime = await getEvent(t.db, ev.id, FEDERAL);
+    await updateEvent(t.db, ev.id, {
+      title: "Stammtisch v2",
+      startsAt: afterTime!.startsAt,
+      locationName: "Mensa",
+    });
+    expect(updated).toHaveLength(2);
+    expect(updated[1]).toMatchObject({ changed: ["location"] });
+  });
+
+  it("updateEvent on a draft never emits event.updated", async () => {
+    const draft = await createEvent(t.db, { title: "Entwurf", startsAt: future(5) }, "usr_c");
+    const updated = capture("events.event.updated");
+    await updateEvent(t.db, draft.id, { title: "Entwurf", startsAt: future(9) });
+    expect(updated).toHaveLength(0);
+  });
+
+  it("listManagedEvents includes an organizer's group events, not other groups'", async () => {
+    await t.client`INSERT INTO groups (id, slug, name, city) VALUES ('grp_a', 'grp-a', 'Group A', 'Aachen'), ('grp_b', 'grp-b', 'Group B', 'Bonn')`;
+    await createEvent(
+      t.db,
+      { title: "Aachen-Fest", startsAt: future(), groupId: "grp_a" },
+      "usr_c",
+    );
+    await createEvent(t.db, { title: "Bonn-Fest", startsAt: future(), groupId: "grp_b" }, "usr_c");
+
+    const organizer: Viewer = {
+      isActiveMember: true,
+      memberGroupIds: [],
+      isFederal: false,
+      boardGroupIds: [],
+      organizerGroupIds: ["grp_a"],
+    };
+    const managed = await listManagedEvents(t.db, organizer);
+    const titles = managed.map((e) => e.title);
+    expect(titles).toContain("Aachen-Fest");
+    expect(titles).not.toContain("Bonn-Fest");
+  });
+
+  // --- Guest (non-member) registration, Slice 4 ---
+
+  async function publicGuestEvent(capacity?: number): Promise<string> {
+    const ev = await createEvent(
+      t.db,
+      {
+        title: "Guest-Event",
+        startsAt: future(),
+        visibility: "public",
+        allowGuestRegistration: true,
+        ...(capacity !== undefined ? { capacity } : {}),
+      },
+      "usr_c",
+    );
+    return (await publishEvent(t.db, ev.id)).id;
+  }
+
+  function tokenOf(e: EventsEvent | undefined): string {
+    return (e as { guestCancelToken?: string }).guestCancelToken ?? "";
+  }
+
+  it("guest registration confirms, counts, and appears on the roster with identity", async () => {
+    const id = await publicGuestEvent();
+    const registered = capture("events.event.registered");
+
+    const res = await registerGuest(t.db, id, { name: "Gast Eins", email: "gast1@example.org" });
+    expect(res).toEqual({ status: "registered", waitlistPosition: null });
+
+    expect(await getEvent(t.db, id, ANON_VIEWER)).toMatchObject({
+      confirmedCount: 1,
+      waitlistCount: 0,
+    });
+    const roster = await listRegistrations(t.db, id);
+    expect(roster[0]).toMatchObject({
+      memberId: null,
+      guestName: "Gast Eins",
+      guestEmail: "gast1@example.org",
+      status: "confirmed",
+    });
+    expect(registered[0]).toMatchObject({
+      memberId: null,
+      guestEmail: "gast1@example.org",
+      guestName: "Gast Eins",
+      waitlisted: false,
+    });
+    expect(tokenOf(registered[0])).not.toBe("");
+  });
+
+  it("rejects a duplicate active guest email, case-insensitively", async () => {
+    const id = await publicGuestEvent();
+    await registerGuest(t.db, id, { name: "Gast A", email: "dup@example.org" });
+    await expect(
+      registerGuest(t.db, id, { name: "Gast B", email: "DUP@example.org" }),
+    ).rejects.toMatchObject({ code: "CONFLICT" });
+  });
+
+  it("guests share capacity/waitlist with members", async () => {
+    await createMember("mem1", null);
+    const id = await publicGuestEvent(1);
+    await registerMember(t.db, id, "mem1"); // takes the only seat
+    expect(await registerGuest(t.db, id, { name: "Gast", email: "g@example.org" })).toEqual({
+      status: "waitlisted",
+      waitlistPosition: 1,
+    });
+  });
+
+  it("guest self-cancel by token cancels, auto-promotes, and emits guest identity", async () => {
+    const id = await publicGuestEvent(1);
+    const registered = capture("events.event.registered");
+    await registerGuest(t.db, id, { name: "Gast1", email: "g1@example.org" }); // confirmed
+    await registerGuest(t.db, id, { name: "Gast2", email: "g2@example.org" }); // waitlist 1
+    const token1 = tokenOf(registered[0]);
+
+    const promoted = capture("events.waitlist.promoted");
+    const deregistered = capture("events.event.deregistered");
+
+    await expect(cancelGuestByToken(t.db, id, "not-a-real-token")).rejects.toMatchObject({
+      code: "NOT_FOUND",
+    });
+
+    await cancelGuestByToken(t.db, id, token1);
+
+    const roster = await listRegistrations(t.db, id);
+    expect(roster).toHaveLength(1);
+    expect(roster[0]).toMatchObject({ guestEmail: "g2@example.org", status: "confirmed" });
+    expect(promoted[0]).toMatchObject({ memberId: null, guestEmail: "g2@example.org" });
+    expect(deregistered[0]).toMatchObject({ memberId: null, guestEmail: "g1@example.org" });
+  });
+
+  it("rejects guest registration on an event that didn't opt in", async () => {
+    const ev = await publishEvent(
+      t.db,
+      (
+        await createEvent(
+          t.db,
+          { title: "Öffentlich", startsAt: future(), visibility: "public" },
+          "usr_c",
+        )
+      ).id,
+    );
+    await expect(
+      registerGuest(t.db, ev.id, { name: "Gast", email: "x@example.org" }),
+    ).rejects.toMatchObject({ code: "CONFLICT" });
+  });
+
+  it("rejects enabling guest registration on a non-public event", async () => {
+    await expect(
+      createEvent(
+        t.db,
+        {
+          title: "Intern",
+          startsAt: future(),
+          visibility: "members_only",
+          allowGuestRegistration: true,
+        },
+        "usr_c",
+      ),
+    ).rejects.toMatchObject({ code: "VALIDATION" });
   });
 });

@@ -4,6 +4,7 @@ import { useFormState, useFormStatus } from "react-dom";
 
 import { Alert, Button, Field, Form, Input } from "@bdas/design-system";
 
+import { LocationPicker } from "../../_components/LocationPicker";
 import { saveGroupAction, type GroupFormState } from "./actions";
 
 export type GroupFormProps = {
@@ -17,6 +18,7 @@ export type GroupFormProps = {
     instagramUrl: string;
     websiteUrl: string;
     status: string;
+    location: { name: string; address: string; lat: number; lng: number } | null;
   };
 };
 
@@ -61,6 +63,8 @@ export function GroupForm({ groupId, initial }: GroupFormProps) {
       <Field label="Stadt" htmlFor="city" {...err("city")}>
         <Input id="city" name="city" defaultValue={initial.city} required />
       </Field>
+
+      <LocationPicker defaultValue={initial.location} />
 
       <Field label="Kontakt-E-Mail" htmlFor="contactEmail" {...err("contactEmail")}>
         <Input

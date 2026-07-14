@@ -6,7 +6,7 @@
 import { expect, test } from "@playwright/test";
 
 import { latestResetToken, resetRateLimits, uniqueEmail } from "./helpers/db";
-import { login, logout, PASSWORD, register, verify } from "./helpers/flows";
+import { login, logout, openMobileMenu, PASSWORD, register, verify } from "./helpers/flows";
 
 test("register → verify → login → logout → reset → re-login", async ({ page }) => {
   const email = uniqueEmail("auth");
@@ -18,17 +18,22 @@ test("register → verify → login → logout → reset → re-login", async ({
   await expect(page.getByRole("heading", { name: "Mein Konto" })).toBeVisible();
 
   // The global header (role=banner) must reflect the session, and must survive a
-  // reload of a public page — the reported "logged out on reload" symptom.
+  // reload of a public page — the reported "logged out on reload" symptom. This
+  // suite runs a mobile viewport, so the header's controls live behind the
+  // "Menü" disclosure, which resets closed on every navigation/reload.
   const banner = page.getByRole("banner");
+  await openMobileMenu(page);
   await expect(banner.getByRole("link", { name: "Mein Konto" })).toBeVisible();
   await expect(banner.getByRole("button", { name: "Abmelden" })).toBeVisible();
   await page.goto("/");
   await page.reload();
+  await openMobileMenu(page);
   await expect(banner.getByRole("button", { name: "Abmelden" })).toBeVisible();
   await expect(banner.getByRole("link", { name: "Anmelden" })).toHaveCount(0);
 
   await logout(page);
   await expect(page).not.toHaveURL(/\/account/);
+  await openMobileMenu(page);
   await expect(banner.getByRole("link", { name: "Anmelden" })).toBeVisible();
 
   // Request a password reset, then complete it with the DB-read token.

@@ -13,6 +13,9 @@ export function render(template: TransactionalTemplate, data: TemplateData): Ren
   const manage = eventUrl
     ? { label: "Du kannst dich jederzeit über die Veranstaltungsseite abmelden:", url: eventUrl }
     : undefined;
+  const details = eventUrl
+    ? { label: "Alle aktuellen Details findest du hier:", url: eventUrl }
+    : undefined;
   switch (template) {
     case "event_registration_confirmed":
       return body(
@@ -41,7 +44,45 @@ export function render(template: TransactionalTemplate, data: TemplateData): Ren
         `gute Nachrichten: Bei „${eventTitle}“ ist ein Platz frei geworden und du bist nachgerückt. Deine Teilnahme ist jetzt bestätigt.`,
         manage,
       );
+    case "event_changed":
+      return body(
+        "BDAS — Änderung bei einer Veranstaltung",
+        firstName,
+        `bei „${eventTitle}“ hat sich etwas geändert: ${changeSummary(data.changes)}. Bitte prüfe die aktualisierten Angaben.`,
+        details,
+      );
+    case "event_cancelled":
+      return body(
+        "BDAS — Veranstaltung abgesagt",
+        firstName,
+        `leider müssen wir dir mitteilen, dass „${eventTitle}“ abgesagt wurde. Deine Anmeldung ist damit hinfällig — wir bitten um dein Verständnis.`,
+      );
+    case "event_organizer_message": {
+      const subject = data.subject?.trim() || `BDAS — Nachricht zu „${eventTitle}“`;
+      return body(subject, firstName, data.messageBody ?? "", details);
+    }
+    case "event_organizer_granted":
+      return body(
+        "BDAS — Du bist jetzt Veranstaltungs-Organisator:in",
+        firstName,
+        `du wurdest als Organisator:in für die Gruppe „${data.groupName ?? "deine Gruppe"}“ eingetragen. Du kannst ab sofort die Veranstaltungen dieser Gruppe anlegen und verwalten.`,
+        eventUrl ? { label: "Zur Veranstaltungsverwaltung:", url: eventUrl } : undefined,
+      );
+    case "event_organizer_revoked":
+      return body(
+        "BDAS — Organisator:innen-Rolle entzogen",
+        firstName,
+        `deine Organisator:innen-Rolle für die Gruppe „${data.groupName ?? "deine Gruppe"}“ wurde entzogen. Du kannst die Veranstaltungen dieser Gruppe nicht mehr verwalten.`,
+      );
   }
+}
+
+/** German phrasing for which aspects of an event changed. */
+function changeSummary(changes: ReadonlyArray<"time" | "location"> | undefined): string {
+  const parts = (changes ?? []).map((c) => (c === "time" ? "Datum/Uhrzeit" : "Ort"));
+  if (parts.length === 0) return "die Veranstaltungsdaten";
+  if (parts.length === 1) return parts[0]!;
+  return `${parts.slice(0, -1).join(", ")} und ${parts[parts.length - 1]}`;
 }
 
 function escapeHtml(s: string): string {

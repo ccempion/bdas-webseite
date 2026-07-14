@@ -24,8 +24,18 @@ export {
   isFederalBoard,
   canManageGroup,
   canGrantLocalBoard,
-  canApproveMember,
+  canDecideJoinRequest,
 } from "./roles";
+
+export {
+  changePrimaryGroup,
+  withdrawGroupChange,
+  decideGroupChange,
+  getOpenGroupChange,
+  listOpenGroupChanges,
+  listIncomingGroupChanges,
+  getGroupChangeHistory,
+} from "./services/group-change";
 
 export { listMembers, type MemberQuery } from "./services/list-members";
 export {
@@ -41,7 +51,17 @@ export {
   type SignupPoint,
 } from "./services/stats";
 
-export type { Member, MemberStatus, PendingMember, Grant } from "./types";
+export type {
+  Member,
+  MemberStatus,
+  PendingMember,
+  Grant,
+  GroupChangeRequest,
+  GroupChangeStatus,
+  GroupChangeResult,
+  OpenGroupChange,
+  IncomingGroupChange,
+} from "./types";
 export type {
   MembersEvent,
   ProfileCreated,
@@ -49,4 +69,7 @@ export type {
   StatusChanged,
   RoleGranted,
   RoleRevoked,
+  GroupChangeRequested,
+  GroupChangeDecided,
+  GroupChangeWithdrawn,
 } from "./events";

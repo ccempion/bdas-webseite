@@ -50,6 +50,7 @@ describeIfDb("groups integration", () => {
       "0001_init.sql",
       "0002_status_check.sql",
       "0003_drop_university_description.sql",
+      "0004_location.sql",
     ]) {
       const sql = await fs.readFile(path.join(__dirname, "..", "migrations", file), "utf8");
       await t.client.unsafe(sql);
@@ -189,5 +190,85 @@ describeIfDb("groups integration", () => {
       t.client`insert into groups (id, slug, name, city, status)
                values ('grp_bad', 'bad', 'Bad', 'Nowhere', 'bogus')`,
     ).rejects.toThrow();
+  });
+
+  it("stores a location, preserves it on location-less update, clears on null", async () => {
+    const created = await createGroup(t.db, {
+      slug: "bonn",
+      name: "BDAS Bonn",
+      city: "Bonn",
+      location: {
+        name: "Uni Bonn",
+        address: "Regina-Pacis-Weg 3, Bonn",
+        lat: 50.7339,
+        lng: 7.1022,
+      },
+    });
+    expect(created.location).toEqual({
+      name: "Uni Bonn",
+      address: "Regina-Pacis-Weg 3, Bonn",
+      lat: 50.7339,
+      lng: 7.1022,
+    });
+
+    // `location` absent → stored location untouched
+    const kept = await updateGroup(t.db, created.id, { name: "BDAS Bonn e.V.", city: "Bonn" });
+    expect(kept.location?.name).toBe("Uni Bonn");
+    expect((await getGroup(t.db, created.id))?.location?.name).toBe("Uni Bonn");
+
+    // explicit null → cleared
+    const cleared = await updateGroup(t.db, created.id, {
+      name: "BDAS Bonn e.V.",
+      city: "Bonn",
+      location: null,
+    });
+    expect(cleared.location).toBeNull();
+    expect((await getGroup(t.db, created.id))?.location).toBeNull();
+  });
+
+  it("re-seeding via upsert without location keeps the stored location", async () => {
+    await upsertGroupBySlug(t.db, {
+      slug: "ulm",
+      name: "BDAS Ulm",
+      city: "Ulm",
+      location: { name: "Uni Ulm", address: "Helmholtzstraße 16, Ulm", lat: 48.4227, lng: 9.9563 },
+    });
+    await upsertGroupBySlug(t.db, { slug: "ulm", name: "BDAS Ulm", city: "Ulm" });
+    expect((await getGroupBySlug(t.db, "ulm"))?.location?.name).toBe("Uni Ulm");
+  });
+
+  it("rejects out-of-range coordinates", async () => {
+    await expect(
+      createGroup(t.db, {
+        slug: "kaputt",
+        name: "BDAS Kaputt",
+        city: "Kaputtstadt",
+        location: { name: "Ort", address: "", lat: 91, lng: 0 },
+      }),
+    ).rejects.toThrow("Eingabe ungültig");
+  });
+
+  it("listGroups exposes location for the map", async () => {
+    await upsertGroupBySlug(t.db, {
+      slug: "koeln",
+      name: "BDAS Köln",
+      city: "Köln",
+      location: {
+        name: "Universität zu Köln",
+        address: "Albertus-Magnus-Platz, Köln",
+        lat: 50.9271,
+        lng: 6.9285,
+      },
+    });
+    await upsertGroupBySlug(t.db, { slug: "essen", name: "BDAS Essen", city: "Essen" });
+
+    const active = await listGroups(t.db, { status: "active" });
+    expect(active.find((g) => g.slug === "koeln")?.location).toEqual({
+      name: "Universität zu Köln",
+      address: "Albertus-Magnus-Platz, Köln",
+      lat: 50.9271,
+      lng: 6.9285,
+    });
+    expect(active.find((g) => g.slug === "essen")?.location).toBeNull();
   });
 });

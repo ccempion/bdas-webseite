@@ -19,12 +19,17 @@ export default async function NewEventPage() {
   const me = await getCurrentMember(db, readSessionCookie());
   if (!me) redirect("/anmelden");
   const viewer = viewerFrom(me);
-  if (!viewer.isFederal && viewer.boardGroupIds.length === 0) redirect("/account");
+  if (
+    !viewer.isFederal &&
+    viewer.boardGroupIds.length === 0 &&
+    viewer.organizerGroupIds.length === 0
+  ) {
+    redirect("/account");
+  }
 
   const allGroups = await listGroups(db, { status: "active" });
-  const groups = viewer.isFederal
-    ? allGroups
-    : allGroups.filter((g) => viewer.boardGroupIds.includes(g.id));
+  const manageGroupIds = new Set([...viewer.boardGroupIds, ...viewer.organizerGroupIds]);
+  const groups = viewer.isFederal ? allGroups : allGroups.filter((g) => manageGroupIds.has(g.id));
 
   return (
     <main className="mx-auto flex max-w-2xl flex-col gap-6 px-4 py-12">

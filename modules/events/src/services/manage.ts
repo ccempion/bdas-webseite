@@ -14,7 +14,7 @@ import { ConflictError, NotFoundError, ValidationError } from "@bdas/errors";
 import { getEventBus } from "@bdas/events";
 import { createId } from "@bdas/id";
 
-import type { EventCancelled, EventPublished } from "../events";
+import type { EventCancelled, EventChange, EventPublished, EventUpdated } from "../events";
 import { events } from "../schema";
 import type { EventContent, EventItem, EventStatus, EventVisibility } from "../types";
 
@@ -54,6 +54,8 @@ export const EventInput = z.object({
     .optional()
     .nullable(),
   visibility: z.enum(["public", "members_only", "group_only"]).default("members_only"),
+  // Opt-in non-member sign-ups; only valid on public events (enforced below).
+  allowGuestRegistration: z.boolean().optional().default(false),
   // null = federation-wide; a value = that group's event.
   groupId: z.string().min(1).optional().nullable(),
 });
@@ -89,6 +91,7 @@ export function rowToEvent(r: typeof events.$inferSelect): EventItem {
     locationLat: r.locationLat ?? null,
     locationLng: r.locationLng ?? null,
     capacity: r.capacity,
+    allowGuestRegistration: r.allowGuestRegistration,
     visibility: r.visibility as EventVisibility,
     status: r.status as EventStatus,
     createdBy: r.createdBy,
@@ -111,6 +114,14 @@ function validateInput(v: EventInput): void {
   if (v.visibility === "group_only" && !v.groupId) {
     throw new ValidationError("Eingabe ungültig", {
       fields: { visibility: "„Nur Gruppe“ erfordert eine Gruppe" },
+    });
+  }
+  // Non-members can only be let in on publicly viewable events.
+  if (v.allowGuestRegistration && v.visibility !== "public") {
+    throw new ValidationError("Eingabe ungültig", {
+      fields: {
+        allowGuestRegistration: "Gastanmeldung ist nur für öffentliche Veranstaltungen möglich",
+      },
     });
   }
 }
@@ -139,6 +150,7 @@ export async function createEvent(db: Db, input: unknown, createdBy: string): Pr
     locationLat: v.locationLat ?? null,
     locationLng: v.locationLng ?? null,
     capacity: v.capacity ?? null,
+    allowGuestRegistration: v.allowGuestRegistration,
     visibility: v.visibility,
     status: "draft",
     createdBy,
@@ -155,6 +167,10 @@ export async function updateEvent(db: Db, id: string, input: unknown): Promise<E
   }
   const v = parseOrThrow(EventInput, input);
   validateInput(v);
+
+  // Detect material changes *before* writing, so published registrants can be
+  // notified of date/time/location edits (notifications consumes event.updated).
+  const changed = materialChanges(existing, v);
 
   await db
     .update(events)
@@ -174,12 +190,47 @@ export async function updateEvent(db: Db, id: string, input: unknown): Promise<E
       locationLat: v.locationLat ?? null,
       locationLng: v.locationLng ?? null,
       capacity: v.capacity ?? null,
+      allowGuestRegistration: v.allowGuestRegistration,
       visibility: v.visibility,
       groupId: v.groupId ?? null,
     })
     .where(eq(events.id, id));
 
+  // Only published events have registrants to notify; drafts emit nothing.
+  if (existing.status === "published" && changed.length > 0) {
+    const event: EventUpdated = {
+      type: "events.event.updated",
+      eventId: id,
+      changed,
+      at: new Date(),
+    };
+    await getEventBus().publish(event);
+  }
+
   return rowToEvent(await loadOrThrow(db, id));
+}
+
+/** Which of {time, location} an edit materially altered. */
+function materialChanges(existing: typeof events.$inferSelect, v: EventInput): EventChange[] {
+  const sameInstant = (a: Date | null, b: Date | null): boolean =>
+    (a?.getTime() ?? null) === (b?.getTime() ?? null);
+  const changed: EventChange[] = [];
+  if (
+    !sameInstant(existing.startsAt, v.startsAt) ||
+    !sameInstant(existing.endsAt, v.endsAt ?? null)
+  ) {
+    changed.push("time");
+  }
+  if (
+    existing.location !== (v.location ?? null) ||
+    existing.locationName !== (v.locationName ?? null) ||
+    existing.locationAddress !== (v.locationAddress ?? null) ||
+    existing.locationLat !== (v.locationLat ?? null) ||
+    existing.locationLng !== (v.locationLng ?? null)
+  ) {
+    changed.push("location");
+  }
+  return changed;
 }
 
 /** Draft → published. Emits `events.event.published`. */

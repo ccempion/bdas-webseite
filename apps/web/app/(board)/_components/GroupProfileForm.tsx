@@ -2,6 +2,9 @@
 
 import { useState, useTransition } from "react";
 
+import type { GroupLocation } from "@bdas/groups";
+
+import { LocationPicker } from "../../_components/LocationPicker";
 import { updateGroupProfileAction } from "./group-profile-actions";
 
 export function GroupProfileForm({
@@ -10,7 +13,7 @@ export function GroupProfileForm({
   revalidatePath,
 }: {
   groupId: string;
-  initial: { name: string; city: string };
+  initial: { name: string; city: string; location: GroupLocation | null };
   revalidatePath: string;
 }) {
   const [form, setForm] = useState(initial);
@@ -45,6 +48,10 @@ export function GroupProfileForm({
           className="rounded-bdas-sm border border-bdas-soft px-3 py-2 text-bdas-ink"
         />
       </label>
+      <LocationPicker
+        defaultValue={initial.location}
+        onChange={(location) => setForm((f) => ({ ...f, location }))}
+      />
       <button
         type="submit"
         disabled={pending}
