@@ -26,6 +26,14 @@
     "e2e": "playwright test",
     "e2e:report": "playwright show-report"
   },
+  "pnpm": {
+    "overrides": {
+      "@tiptap/extension-image@2.27.2>@tiptap/core": "2.27.2",
+      "@tiptap/extension-link@2.27.2>@tiptap/core": "2.27.2",
+      "@tiptap/react@2.27.2>@tiptap/core": "2.27.2",
+      "@tiptap/html@2.27.2>@tiptap/core": "2.27.2"
+    }
+  },
   "devDependencies": {
     "@playwright/test": "^1.49.1",
     "@types/node": "^22.7.0",
