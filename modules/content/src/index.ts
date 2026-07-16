@@ -5,4 +5,7 @@
  * other workspaces. Internal files are not importable.
  */
 
-export type { ContentPageRow } from "./schema";
+export { getPage, savePage } from "./services/pages";
+export { PuckDataSchema } from "./types";
+export type { ActorGrant, ContentActor, ContentPage, PageData } from "./types";
+export type { ContentEvent, ContentPageSaved } from "./events";
