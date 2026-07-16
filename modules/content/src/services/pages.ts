@@ -11,7 +11,6 @@ import { PuckDataSchema, type ContentActor, type ContentPage, type PageData } fr
 export type Db = PostgresJsDatabase<Record<string, never>>;
 
 const SLUG_RE = /^[a-z0-9-]+(?:\/[a-z0-9-]+)*$/;
-const MAX_SLUG_LENGTH = 200;
 const MAX_DATA_BYTES = 512 * 1024;
 
 export async function getPage(db: Db, slug: string): Promise<ContentPage | null> {
@@ -28,7 +27,7 @@ export async function savePage(
   if (!input.actor.grants.some((g) => g.role === "federal_board")) {
     throw new ForbiddenError("Nur der Bundesvorstand darf Seiten bearbeiten.");
   }
-  if (input.slug.length > MAX_SLUG_LENGTH || !SLUG_RE.test(input.slug)) {
+  if (!SLUG_RE.test(input.slug)) {
     throw new ValidationError("Ungültiger Seiten-Slug.");
   }
   const parsed = PuckDataSchema.safeParse(input.data);

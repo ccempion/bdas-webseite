@@ -50,6 +50,18 @@ describeIfDb("content pages service", () => {
     expect(page?.updatedAt).toBeInstanceOf(Date);
   });
 
+  it("preserves unknown top-level keys on components (opaque storage)", async () => {
+    const doc = {
+      root: { props: {} },
+      content: [
+        { type: "Absatz", props: { id: "Absatz-1", text: "Hallo BSR" }, readOnly: true },
+      ],
+    };
+    await savePage(t.db, { slug: SLUG, data: doc, actor: FEDERAL });
+    const page = await getPage(t.db, SLUG);
+    expect(page?.data).toEqual(doc);
+  });
+
   it("getPage returns null for an unknown slug", async () => {
     expect(await getPage(t.db, "nicht/da")).toBeNull();
   });
