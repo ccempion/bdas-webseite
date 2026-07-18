@@ -21,10 +21,12 @@
 ### Task 1: Flatten the Events nav item
 
 **Files:**
+
 - Modify: `apps/web/app/_public/nav-items.ts` (the `if (isFlagOn("events"))` block, ~lines 32-43)
 - Test: `apps/web/app/_public/nav-items.test.ts`
 
 **Interfaces:**
+
 - Consumes: `navItems({ isFederal?, myGroup?, showFiles? })` — existing signature, unchanged.
 - Produces: for all inputs, the Events entry is the leaf `{ label: "Events", href: "/events" }`; `navItems` never emits an `/admin/events` href. `isFederal` remains a parameter (Gruppen still uses it).
 
@@ -64,27 +66,27 @@ Expected: FAIL — federal currently yields an Events object with `children` (a 
 In `apps/web/app/_public/nav-items.ts`, replace the events block:
 
 ```ts
-  if (isFlagOn("events")) {
-    items.push(
-      isFederal
-        ? {
-            label: "Events",
-            children: [
-              { label: "Übersicht", href: "/events" },
-              { label: "Verwalten", href: "/admin/events" },
-            ],
-          }
-        : { label: "Events", href: "/events" },
-    );
-  }
+if (isFlagOn("events")) {
+  items.push(
+    isFederal
+      ? {
+          label: "Events",
+          children: [
+            { label: "Übersicht", href: "/events" },
+            { label: "Verwalten", href: "/admin/events" },
+          ],
+        }
+      : { label: "Events", href: "/events" },
+  );
+}
 ```
 
 with:
 
 ```ts
-  if (isFlagOn("events")) {
-    items.push({ label: "Events", href: "/events" });
-  }
+if (isFlagOn("events")) {
+  items.push({ label: "Events", href: "/events" });
+}
 ```
 
 Leave the `Gruppen` block (which also branches on `isFederal`) and the `isFederal` parameter untouched.
@@ -106,10 +108,12 @@ git commit -m "feat(web): flatten Events nav item, drop federal-only Verwalten d
 ### Task 2: Add `canManageAny(viewer)` helper
 
 **Files:**
+
 - Modify: `apps/web/lib/event-viewer.ts`
 - Test: `apps/web/app/lib/event-viewer.test.ts`
 
 **Interfaces:**
+
 - Consumes: `Viewer` from `@bdas/events-module` (already imported as the return type of `viewerFrom`).
 - Produces: `canManageAny(viewer: Viewer): boolean` — true when `viewer.isFederal`, or `viewer.boardGroupIds.length > 0`, or `viewer.organizerGroupIds.length > 0`. Consumed by Task 3.
 
@@ -196,9 +200,11 @@ git commit -m "feat(web): add canManageAny viewer helper for events management g
 ### Task 3: `/events` header buttons + per-card "Bearbeiten" pill
 
 **Files:**
+
 - Modify: `apps/web/app/events/page.tsx` (the `EventCard` component and the page `<header>`)
 
 **Interfaces:**
+
 - Consumes: `canManageAny` (Task 2); `canManage` from `@bdas/events-module`; existing `viewer`, `Button` (`@bdas/design-system`), `Link` (`next/link`).
 - Produces: no exported surface; this is the final wiring task.
 
@@ -227,7 +233,10 @@ function EventCard({ e, past, canEdit }: { e: EventWithCounts; past: boolean; ca
   const full = e.capacity !== null && e.confirmedCount >= e.capacity;
   return (
     <div className="relative">
-      <Link href={`/events/${e.id}`} className="block focus:outline-none after:absolute after:inset-0">
+      <Link
+        href={`/events/${e.id}`}
+        className="block focus:outline-none after:absolute after:inset-0"
+      >
         <Card className={past ? "p-5 opacity-70" : "p-5"}>
           <div className="flex items-center gap-2">
             <p className="text-sm text-bdas-ink-muted">{formatDateTime(e.startsAt)}</p>
@@ -285,31 +294,31 @@ const canManage_ = canManageAny(viewer);
 Replace the current header:
 
 ```tsx
-      <header className="flex flex-col gap-2">
-        <h1 className="text-3xl font-semibold text-bdas-ink">Veranstaltungen</h1>
-        <p className="text-bdas-ink-body">Kommende Veranstaltungen des BDAS.</p>
-      </header>
+<header className="flex flex-col gap-2">
+  <h1 className="text-3xl font-semibold text-bdas-ink">Veranstaltungen</h1>
+  <p className="text-bdas-ink-body">Kommende Veranstaltungen des BDAS.</p>
+</header>
 ```
 
 with:
 
 ```tsx
-      <header className="flex flex-wrap items-start justify-between gap-4">
-        <div className="flex flex-col gap-2">
-          <h1 className="text-3xl font-semibold text-bdas-ink">Veranstaltungen</h1>
-          <p className="text-bdas-ink-body">Kommende Veranstaltungen des BDAS.</p>
-        </div>
-        {canManage_ ? (
-          <div className="flex flex-wrap gap-3">
-            <Link href="/admin/events/neu">
-              <Button variant="primary">Neue Veranstaltung</Button>
-            </Link>
-            <Link href="/admin/events">
-              <Button variant="secondary">Verwalten</Button>
-            </Link>
-          </div>
-        ) : null}
-      </header>
+<header className="flex flex-wrap items-start justify-between gap-4">
+  <div className="flex flex-col gap-2">
+    <h1 className="text-3xl font-semibold text-bdas-ink">Veranstaltungen</h1>
+    <p className="text-bdas-ink-body">Kommende Veranstaltungen des BDAS.</p>
+  </div>
+  {canManage_ ? (
+    <div className="flex flex-wrap gap-3">
+      <Link href="/admin/events/neu">
+        <Button variant="primary">Neue Veranstaltung</Button>
+      </Link>
+      <Link href="/admin/events">
+        <Button variant="secondary">Verwalten</Button>
+      </Link>
+    </div>
+  ) : null}
+</header>
 ```
 
 - [ ] **Step 3: Pass `canEdit` at every `EventCard` call site**
@@ -317,15 +326,17 @@ with:
 Find each `<EventCard e={...} past={...} />` usage (upcoming and past sections) and add `canEdit={canManage(viewer, e)}`. Example:
 
 ```tsx
-{upcomingShown.map((e) => (
-  <EventCard key={e.id} e={e} past={false} canEdit={canManage(viewer, e)} />
-))}
+{
+  upcomingShown.map((e) => (
+    <EventCard key={e.id} e={e} past={false} canEdit={canManage(viewer, e)} />
+  ));
+}
 ```
 
 ```tsx
-{pastShown.map((e) => (
-  <EventCard key={e.id} e={e} past={true} canEdit={canManage(viewer, e)} />
-))}
+{
+  pastShown.map((e) => <EventCard key={e.id} e={e} past={true} canEdit={canManage(viewer, e)} />);
+}
 ```
 
 (Match the actual prop names already used at each call site; only add `canEdit`.)
@@ -333,10 +344,12 @@ Find each `<EventCard e={...} past={...} />` usage (upcoming and past sections) 
 - [ ] **Step 4: Typecheck and build**
 
 Run (from `apps/web`):
+
 ```bash
 pnpm exec tsc --noEmit
 pnpm exec next build
 ```
+
 Expected: both succeed. If `Button` has no `size` prop, drop `size="sm"` (verify against `core/design-system/src/components/Button.tsx` — it defines `size` on `ButtonProps`; keep `size="sm"` only if the `SIZE` map has an `sm` key, otherwise remove the prop).
 
 - [ ] **Step 5: Run the web test suite**
@@ -347,6 +360,7 @@ Expected: PASS (Tasks 1–2 tests green, nothing else broken).
 - [ ] **Step 6: Manual verification**
 
 Start the app and, on `/events`:
+
 - As an anonymous visitor: no header buttons, no "Bearbeiten" pills.
 - As an event organizer / local board member: "Neue Veranstaltung" + "Verwalten" buttons top-right; "Bearbeiten" pill only on cards for their group's events; clicking a card still navigates to the public detail; clicking "Bearbeiten" goes to `/admin/events/{id}`.
 
@@ -362,6 +376,7 @@ git commit -m "feat(web): surface event management on /events for authorized use
 ## Self-Review
 
 **Spec coverage:**
+
 - Nav flattening → Task 1. ✓
 - `canManageAny` authorization predicate → Task 2. ✓
 - Header buttons (Neue Veranstaltung primary, Verwalten secondary), authorized-only → Task 3 Step 2. ✓

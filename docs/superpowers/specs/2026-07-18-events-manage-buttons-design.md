@@ -92,7 +92,7 @@ HTML. Restructure with the stretched-link pattern:
 
 - Card container becomes `relative`.
 - The existing detail `<Link>` keeps filling the card via `after:absolute
-  after:inset-0` (whole card stays clickable to `/events/{id}`).
+after:inset-0` (whole card stays clickable to `/events/{id}`).
 - The Bearbeiten `<Link>` is positioned `absolute right-3 top-3 z-10` so it sits
   above the stretched overlay and is independently clickable.
 - Styled as a subtle `ghost`, `size="sm"` button — **not** brand accent
@@ -110,7 +110,7 @@ HTML. Restructure with the stretched-link pattern:
   Events dropdown — they now get the same flat `Events` link as everyone else.
   Assert no `/admin/events` href is produced by `navItems` for any input.
 - **`/events` page**: assert the manage buttons (`Verwalten`, `Neue
-  Veranstaltung`) render for an authorized viewer (federal, and separately an
+Veranstaltung`) render for an authorized viewer (federal, and separately an
   organizer-only viewer) and are absent for an anonymous visitor and a plain
   active member. Assert the per-card `Bearbeiten` link appears only on cards the
   viewer can manage.

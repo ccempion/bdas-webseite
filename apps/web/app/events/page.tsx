@@ -24,15 +24,7 @@ function firstParam(v: string | string[] | undefined): string | undefined {
   return Array.isArray(v) ? v[0] : v;
 }
 
-function EventCard({
-  e,
-  past,
-  canEdit,
-}: {
-  e: EventWithCounts;
-  past: boolean;
-  canEdit: boolean;
-}) {
+function EventCard({ e, past, canEdit }: { e: EventWithCounts; past: boolean; canEdit: boolean }) {
   const full = e.capacity !== null && e.confirmedCount >= e.capacity;
   return (
     <div className="relative">
