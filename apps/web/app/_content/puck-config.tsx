@@ -1,4 +1,4 @@
-import type { Config } from "@puckeditor/core";
+import { DropZone, type Config } from "@puckeditor/core";
 import React from "react";
 
 import { Card } from "@bdas/design-system";
@@ -41,6 +41,9 @@ type Blocks = {
   Trenner: Record<string, never>;
   Abstand: {
     hoehe: "klein" | "mittel" | "gross";
+  };
+  Spalten: {
+    anzahl: "2" | "3";
   };
 };
 
@@ -232,6 +235,27 @@ export const puckConfig: Config<Blocks> = {
       defaultProps: { hoehe: "mittel" },
       render: ({ hoehe }) => (
         <div aria-hidden className={hoehe === "klein" ? "h-4" : hoehe === "gross" ? "h-16" : "h-8"} />
+      ),
+    },
+    Spalten: {
+      label: "Spalten",
+      fields: {
+        anzahl: {
+          type: "select",
+          label: "Anzahl",
+          options: [
+            { label: "2 Spalten", value: "2" },
+            { label: "3 Spalten", value: "3" },
+          ],
+        },
+      },
+      defaultProps: { anzahl: "2" },
+      render: ({ anzahl }) => (
+        <div className={anzahl === "3" ? "grid gap-6 sm:grid-cols-3" : "grid gap-6 sm:grid-cols-2"}>
+          <DropZone zone="spalte-1" />
+          <DropZone zone="spalte-2" />
+          {anzahl === "3" ? <DropZone zone="spalte-3" /> : null}
+        </div>
       ),
     },
   },

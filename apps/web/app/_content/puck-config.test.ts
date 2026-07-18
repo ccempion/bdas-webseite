@@ -144,4 +144,10 @@ describe("puckConfig", () => {
       "h-16",
     );
   });
+
+  it("Spalten offers a 2/3 column select", () => {
+    const anzahl = puckConfig.components.Spalten?.fields?.anzahl;
+    if (anzahl?.type !== "select") throw new Error("Spalten needs an anzahl select");
+    expect(anzahl.options?.map((o) => o.value)).toEqual(["2", "3"]);
+  });
 });
