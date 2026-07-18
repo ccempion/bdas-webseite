@@ -20,6 +20,13 @@ describe("safeHref", () => {
     expect(safeHref("   ")).toBeNull();
     expect(safeHref("not a url")).toBeNull();
   });
+
+  it("rejects backslash and control-character smuggling of protocol-relative targets", () => {
+    expect(safeHref("/\\evil.com")).toBeNull();
+    expect(safeHref("/\t/evil.com")).toBeNull();
+    expect(safeHref("/\nevil.com")).toBeNull();
+    expect(safeHref("https:\\evil.com")).toBeNull();
+  });
 });
 
 describe("isExternalHref", () => {
@@ -28,5 +35,9 @@ describe("isExternalHref", () => {
     expect(isExternalHref("http://x.de")).toBe(true);
     expect(isExternalHref("/impressum")).toBe(false);
     expect(isExternalHref("#kontakt")).toBe(false);
+  });
+
+  it("agrees with safeHref on single-slash absolute URLs", () => {
+    expect(isExternalHref("https:/x")).toBe(true);
   });
 });
