@@ -22,9 +22,9 @@ export const metadata: Metadata = {
 };
 
 /**
- * BDAJ — board-editable via Puck (ADR 0024). When the content flag is off or
- * the board has not authored a document, the page falls back to the static
- * placeholder copy below (finale Texte liefert der Bundesvorstand, Spec §8).
+ * BDAJ — board-editable via Puck (ADR 0024). Content is authored entirely in
+ * the Puck editor; when the content flag is off or no document exists yet, only
+ * the header renders (no static fallback body).
  */
 export default async function BdajPage() {
   requirePublicShellFlag();
@@ -49,27 +49,7 @@ export default async function BdajPage() {
           </Link>
         ) : null}
       </div>
-      {page ? (
-        <Render config={puckConfig} data={page.data as Data} />
-      ) : (
-        <>
-          <p className="text-bdas-ink-body">
-            Der BDAJ ist die Jugendorganisation der Alevitischen Gemeinde Deutschland und vertritt
-            über 78.000 Kinder, Jugendliche und junge Erwachsene. Der BDAS ist eng mit dem BDAJ
-            verbunden — viele unserer Mitglieder sind dort groß geworden.
-          </p>
-          <p>
-            <a
-              href="https://bdaj.de"
-              rel="noopener noreferrer"
-              target="_blank"
-              className="text-bdas-red hover:underline"
-            >
-              Zur Website des BDAJ →
-            </a>
-          </p>
-        </>
-      )}
+      {page ? <Render config={puckConfig} data={page.data as Data} /> : null}
     </main>
   );
 }

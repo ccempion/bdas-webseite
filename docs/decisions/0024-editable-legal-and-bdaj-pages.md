@@ -56,3 +56,16 @@ but a 404 (or blank page) on a legal notice is a legal exposure.
   BSR pattern (flag-gated render, generic fallback).
 - No schema, module, or new-flag change, exactly as ADR 0023 predicted. The
   change is six route files plus extended E2E coverage.
+
+## Amendment (2026-07-18)
+
+The static text fallback was dropped at the product owner's request: the
+hardcoded copy was not visible in (nor editable via) the Puck editor, which was
+confusing. All three pages now render **header-only** when the `content` flag is
+off or no document has been authored — content comes entirely from Puck.
+
+The core decision stands: Impressum and Datenschutz are still never flag-gated on
+render (always reachable, no `notFound()`). The trade-off changes — while the
+flag is off in production these legal pages show only their heading, so the
+`content` flag must be turned on and the board must author the reviewed legal
+wording (§ 5 DDG / § 18 MStV; DSGVO) before production launch.
