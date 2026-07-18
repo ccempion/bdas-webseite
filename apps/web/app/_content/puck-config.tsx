@@ -1,8 +1,11 @@
 import type { Config } from "@puckeditor/core";
+import React from "react";
 
 import { Card } from "@bdas/design-system";
 
 import { FotoField } from "./FotoField";
+import { RichTextField } from "./RichTextField";
+import { renderRichText } from "./rich-text";
 
 type Person = {
   foto: string;
@@ -16,6 +19,9 @@ type Blocks = {
   Ueberschrift: { text: string; ebene: "h2" | "h3" };
   Absatz: { text: string };
   PersonenRaster: { personen: Person[] };
+  Fliesstext: {
+    inhalt: unknown;
+  };
 };
 
 /**
@@ -51,6 +57,18 @@ export const puckConfig: Config<Blocks> = {
       fields: { text: { type: "textarea", label: "Text" } },
       defaultProps: { text: "" },
       render: ({ text }) => <p className="whitespace-pre-line text-bdas-ink-body">{text}</p>,
+    },
+    Fliesstext: {
+      label: "Fließtext",
+      fields: {
+        inhalt: {
+          type: "custom",
+          label: "Text",
+          render: ({ value, onChange }) => <RichTextField value={value} onChange={onChange} />,
+        },
+      },
+      defaultProps: { inhalt: { type: "doc", content: [{ type: "paragraph" }] } },
+      render: ({ inhalt }) => <>{renderRichText(inhalt)}</>,
     },
     PersonenRaster: {
       label: "Personen-Raster",

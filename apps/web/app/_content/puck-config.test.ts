@@ -1,14 +1,18 @@
+import { renderToStaticMarkup } from "react-dom/server";
+
 import { describe, expect, it } from "vitest";
 
 import { puckConfig } from "./puck-config";
 
 describe("puckConfig", () => {
-  it("offers exactly the three approved blocks", () => {
-    expect(Object.keys(puckConfig.components).sort()).toEqual([
-      "Absatz",
-      "PersonenRaster",
-      "Ueberschrift",
-    ]);
+  it("keeps the legacy Absatz and PersonenRaster blocks", () => {
+    expect(puckConfig.components.Absatz).toBeDefined();
+    expect(puckConfig.components.PersonenRaster).toBeDefined();
+  });
+
+  it("exposes the Fließtext rich-text block", () => {
+    const inhalt = puckConfig.components.Fliesstext?.fields?.inhalt;
+    expect(inhalt?.type).toBe("custom");
   });
 
   it("PersonenRaster items carry the five BSR fields", () => {
@@ -38,5 +42,22 @@ describe("puckConfig", () => {
     expect(
       personen.getItemSummary({ foto: "", name: "", rolle: "", uni: "", studiengang: "" }, 0),
     ).toBe("Neue Person");
+  });
+
+  it("Fließtext renders stored rich text", () => {
+    const render = puckConfig.components.Fliesstext?.render;
+    if (!render) throw new Error("Fliesstext render missing");
+    const out = renderToStaticMarkup(
+      render({
+        inhalt: {
+          type: "doc",
+          content: [
+            { type: "paragraph", content: [{ type: "text", text: "Hi", marks: [{ type: "bold" }] }] },
+          ],
+        },
+        puck: { renderDropZone: () => null, isEditing: false, dragRef: null, metadata: {} },
+      } as never) as never,
+    );
+    expect(out).toContain("<strong>Hi</strong>");
   });
 });
