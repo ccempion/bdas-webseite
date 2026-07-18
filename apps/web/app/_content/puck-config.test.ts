@@ -52,7 +52,10 @@ describe("puckConfig", () => {
         inhalt: {
           type: "doc",
           content: [
-            { type: "paragraph", content: [{ type: "text", text: "Hi", marks: [{ type: "bold" }] }] },
+            {
+              type: "paragraph",
+              content: [{ type: "text", text: "Hi", marks: [{ type: "bold" }] }],
+            },
           ],
         },
         puck: { renderDropZone: () => null, isEditing: false, dragRef: null, metadata: {} },

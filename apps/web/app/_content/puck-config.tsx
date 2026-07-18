@@ -160,10 +160,14 @@ export const puckConfig: Config<Blocks> = {
           <figure className={breite === "halb" ? "sm:max-w-md" : "w-full"}>
             <img src={bild} alt={altText} className="w-full rounded-bdas" />
             {bildunterschrift ? (
-              <figcaption className="mt-2 text-sm text-bdas-ink-muted">{bildunterschrift}</figcaption>
+              <figcaption className="mt-2 text-sm text-bdas-ink-muted">
+                {bildunterschrift}
+              </figcaption>
             ) : null}
           </figure>
-        ) : (<></>),
+        ) : (
+          <></>
+        ),
     },
     Button: {
       label: "Button",
@@ -234,7 +238,10 @@ export const puckConfig: Config<Blocks> = {
       },
       defaultProps: { hoehe: "mittel" },
       render: ({ hoehe }) => (
-        <div aria-hidden className={hoehe === "klein" ? "h-4" : hoehe === "gross" ? "h-16" : "h-8"} />
+        <div
+          aria-hidden
+          className={hoehe === "klein" ? "h-4" : hoehe === "gross" ? "h-16" : "h-8"}
+        />
       ),
     },
     Spalten: {
