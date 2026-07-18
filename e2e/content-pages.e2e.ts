@@ -31,7 +31,9 @@ test.describe("content pages", () => {
     });
     await page.goto("/ueber-uns/bundessprecherinnenrat");
     await page.getByRole("link", { name: "Seite bearbeiten" }).click();
-    // Puck's chrome is English (ADR 0023); the German blocks live in the side panel.
+    // Puck's chrome is English (ADR 0023). On mobile viewports its header
+    // collapses the actions behind a "Toggle menu bar" chevron.
+    await page.getByRole("button", { name: "Toggle menu bar" }).click();
     await expect(page.getByRole("button", { name: "Publish" })).toBeVisible();
   });
 });
