@@ -33,4 +33,23 @@ describe("navItems", () => {
       href: "/dateien",
     });
   });
+
+  it("adds the BSR page to Über uns only while the content flag is on", () => {
+    const prev = process.env["BDAS_FLAG_CONTENT"];
+
+    process.env["BDAS_FLAG_CONTENT"] = "true";
+    const on = byLabel(navItems(), "Über uns");
+    expect(on && "children" in on ? on.children.map((c) => c.href) : []).toContain(
+      "/ueber-uns/bundessprecherinnenrat",
+    );
+
+    process.env["BDAS_FLAG_CONTENT"] = "false";
+    const off = byLabel(navItems(), "Über uns");
+    expect(off && "children" in off ? off.children.map((c) => c.href) : []).not.toContain(
+      "/ueber-uns/bundessprecherinnenrat",
+    );
+
+    if (prev === undefined) delete process.env["BDAS_FLAG_CONTENT"];
+    else process.env["BDAS_FLAG_CONTENT"] = prev;
+  });
 });

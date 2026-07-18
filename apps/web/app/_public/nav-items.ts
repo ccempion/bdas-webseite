@@ -21,6 +21,9 @@ export function navItems({
       label: "Über uns",
       children: [
         { label: "Kurzportrait", href: "/ueber-uns" },
+        ...(isFlagOn("content")
+          ? [{ label: "Bundessprecher*innenrat", href: "/ueber-uns/bundessprecherinnenrat" }]
+          : []),
         { label: "Verbandsstruktur", href: "/ueber-uns/verbandsstruktur" },
         { label: "Bund der Alevitischen Jugendlichen (BDAJ)", href: "/ueber-uns/bdaj" },
       ],
