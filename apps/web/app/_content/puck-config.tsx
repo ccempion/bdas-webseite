@@ -6,6 +6,7 @@ import { Card } from "@bdas/design-system";
 import { FotoField } from "./FotoField";
 import { RichTextField } from "./RichTextField";
 import { renderRichText } from "./rich-text";
+import { isExternalHref, safeHref } from "./href";
 
 type Person = {
   foto: string;
@@ -21,6 +22,17 @@ type Blocks = {
   PersonenRaster: { personen: Person[] };
   Fliesstext: {
     inhalt: unknown;
+  };
+  Bild: {
+    bild: string;
+    altText: string;
+    bildunterschrift: string;
+    breite: "voll" | "halb";
+  };
+  Button: {
+    label: string;
+    href: string;
+    variante: "primaer" | "sekundaer";
   };
 };
 
@@ -111,6 +123,69 @@ export const puckConfig: Config<Blocks> = {
           ))}
         </div>
       ),
+    },
+    Bild: {
+      label: "Bild",
+      fields: {
+        bild: {
+          type: "custom",
+          label: "Bild",
+          render: ({ value, onChange }) => <FotoField value={value} onChange={onChange} />,
+        },
+        altText: { type: "text", label: "Alt-Text (Barrierefreiheit)" },
+        bildunterschrift: { type: "text", label: "Bildunterschrift (optional)" },
+        breite: {
+          type: "select",
+          label: "Breite",
+          options: [
+            { label: "Volle Breite", value: "voll" },
+            { label: "Halbe Breite", value: "halb" },
+          ],
+        },
+      },
+      defaultProps: { bild: "", altText: "", bildunterschrift: "", breite: "voll" },
+      render: ({ bild, altText, bildunterschrift, breite }) =>
+        bild ? (
+          <figure className={breite === "halb" ? "sm:max-w-md" : "w-full"}>
+            <img src={bild} alt={altText} className="w-full rounded-bdas" />
+            {bildunterschrift ? (
+              <figcaption className="mt-2 text-sm text-bdas-ink-muted">{bildunterschrift}</figcaption>
+            ) : null}
+          </figure>
+        ) : (null as unknown as JSX.Element),
+    },
+    Button: {
+      label: "Button",
+      fields: {
+        label: { type: "text", label: "Beschriftung" },
+        href: { type: "text", label: "Link (https://… oder /pfad)" },
+        variante: {
+          type: "select",
+          label: "Variante",
+          options: [
+            { label: "Primär", value: "primaer" },
+            { label: "Sekundär", value: "sekundaer" },
+          ],
+        },
+      },
+      defaultProps: { label: "Mehr erfahren", href: "", variante: "primaer" },
+      render: ({ label, href, variante }) => {
+        const safe = safeHref(href);
+        if (!safe) return null as unknown as JSX.Element;
+        const cls =
+          variante === "sekundaer"
+            ? "inline-flex items-center rounded-bdas-sm border border-bdas-strong px-4 py-2 text-sm text-bdas-ink transition-colors duration-bdas-quick ease-bdas hover:bg-bdas-surface-hover"
+            : "inline-flex items-center rounded-bdas-sm bg-bdas-red px-4 py-2 text-sm font-medium text-white transition-colors duration-bdas-quick ease-bdas hover:opacity-90";
+        return isExternalHref(safe) ? (
+          <a href={safe} rel="noopener noreferrer" target="_blank" className={cls}>
+            {label}
+          </a>
+        ) : (
+          <a href={safe} className={cls}>
+            {label}
+          </a>
+        );
+      },
     },
   },
 };

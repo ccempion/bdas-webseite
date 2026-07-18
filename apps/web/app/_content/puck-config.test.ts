@@ -60,4 +60,63 @@ describe("puckConfig", () => {
     );
     expect(out).toContain("<strong>Hi</strong>");
   });
+
+  it("Bild renders an accessible image and hides when empty", () => {
+    const render = puckConfig.components.Bild?.render;
+    if (!render) throw new Error("Bild render missing");
+    const withImg = renderToStaticMarkup(
+      render({
+        bild: "https://cdn.test/x.jpg",
+        altText: "Gruppenfoto",
+        bildunterschrift: "",
+        breite: "voll",
+        puck: {},
+      } as never) as never,
+    );
+    expect(withImg).toContain('alt="Gruppenfoto"');
+    const empty = renderToStaticMarkup(
+      render({
+        bild: "",
+        altText: "",
+        bildunterschrift: "",
+        breite: "voll",
+        puck: {},
+      } as never) as never,
+    );
+    expect(empty).toBe("");
+  });
+
+  it("Button applies safeHref and rel/target for external links", () => {
+    const render = puckConfig.components.Button?.render;
+    if (!render) throw new Error("Button render missing");
+    const ext = renderToStaticMarkup(
+      render({
+        label: "BDAJ",
+        href: "https://bdaj.de",
+        variante: "primaer",
+        puck: {},
+      } as never) as never,
+    );
+    expect(ext).toContain('href="https://bdaj.de"');
+    expect(ext).toContain('rel="noopener noreferrer"');
+    const bad = renderToStaticMarkup(
+      render({
+        label: "x",
+        href: "javascript:alert(1)",
+        variante: "primaer",
+        puck: {},
+      } as never) as never,
+    );
+    expect(bad).toBe("");
+    const internal = renderToStaticMarkup(
+      render({
+        label: "Impressum",
+        href: "/impressum",
+        variante: "sekundaer",
+        puck: {},
+      } as never) as never,
+    );
+    expect(internal).toContain('href="/impressum"');
+    expect(internal).not.toContain("target=");
+  });
 });
