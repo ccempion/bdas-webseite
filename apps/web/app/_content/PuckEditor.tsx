@@ -27,7 +27,7 @@ export function PuckEditor({ slug, initialData }: { slug: string; initialData: D
       <Puck
         config={puckConfig}
         data={initialData}
-        headerTitle="Bundessprecher*innenrat"
+        headerTitle="BDAS Editor"
         headerPath={`/${slug}`}
         onPublish={async (data: Data) => {
           setError(null);
