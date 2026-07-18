@@ -22,9 +22,9 @@ export const metadata: Metadata = {
 /**
  * Impressum — hosted in-app (ADR 0009), board-editable via Puck (ADR 0024).
  * Legally required and therefore always reachable: it is never gated behind a
- * feature flag. When the content flag is off or the board has not authored a
- * document, it falls back to the static placeholder below, which must still be
- * replaced with the reviewed Impressum (§ 5 DDG / § 18 MStV) before launch.
+ * feature flag. Content is authored entirely in the Puck editor; when the
+ * content flag is off or no document exists yet, only the header renders. The
+ * reviewed Impressum (§ 5 DDG / § 18 MStV) must be authored before launch.
  */
 export default async function ImpressumPage() {
   const contentOn = isFlagOn("content");
@@ -45,24 +45,7 @@ export default async function ImpressumPage() {
           </Link>
         ) : null}
       </div>
-      {page ? (
-        <Render config={puckConfig} data={page.data as Data} />
-      ) : (
-        <>
-          <div className="rounded-bdas border border-bdas-soft bg-bdas-overlay-hover px-4 py-3 text-sm text-bdas-ink-muted">
-            Platzhalter — die Angaben nach § 5 DDG / § 18 MStV werden vom Bundesvorstand
-            (e.&nbsp;V.) bereitgestellt und müssen vor dem Produktivstart hier eingesetzt werden.
-          </div>
-
-          <div className="flex flex-col gap-4 text-bdas-ink-body">
-            <p>
-              Hier sind Name und Anschrift des Vereins, die Vertretungsberechtigten, das
-              Vereinsregister und die Registernummer, Kontaktdaten (E-Mail, ggf. Telefon) sowie ggf.
-              die Umsatzsteuer-Identifikationsnummer einzufügen.
-            </p>
-          </div>
-        </>
-      )}
+      {page ? <Render config={puckConfig} data={page.data as Data} /> : null}
     </main>
   );
 }
