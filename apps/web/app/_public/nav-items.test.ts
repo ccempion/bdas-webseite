@@ -34,6 +34,26 @@ describe("navItems", () => {
     });
   });
 
+  it("renders Events as a flat link for everyone, including federal", () => {
+    const prev = process.env["BDAS_FLAG_EVENTS"];
+    process.env["BDAS_FLAG_EVENTS"] = "true";
+
+    for (const isFederal of [false, true]) {
+      const items = navItems({ isFederal });
+      expect(byLabel(items, "Events")).toEqual({ label: "Events", href: "/events" });
+    }
+
+    // No management link is ever produced by the nav for events.
+    const federal = navItems({ isFederal: true });
+    const hrefs = federal.flatMap((i) =>
+      "children" in i ? i.children.map((c) => c.href) : [i.href],
+    );
+    expect(hrefs).not.toContain("/admin/events");
+
+    if (prev === undefined) delete process.env["BDAS_FLAG_EVENTS"];
+    else process.env["BDAS_FLAG_EVENTS"] = prev;
+  });
+
   it("adds the BSR page to Über uns only while the content flag is on", () => {
     const prev = process.env["BDAS_FLAG_CONTENT"];
 
