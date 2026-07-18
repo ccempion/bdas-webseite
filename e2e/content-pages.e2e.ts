@@ -32,8 +32,9 @@ test.describe("content pages", () => {
     await page.goto("/ueber-uns/bundessprecherinnenrat");
     await page.getByRole("link", { name: "Seite bearbeiten" }).click();
     // Puck's chrome is English (ADR 0023). On mobile viewports its header
-    // collapses the actions behind a "Toggle menu bar" chevron.
+    // collapses the actions behind a "Toggle menu bar" chevron, and the
+    // Publish control renders as a <span>, not a <button> (Puck 0.22).
     await page.getByRole("button", { name: "Toggle menu bar" }).click();
-    await expect(page.getByRole("button", { name: "Publish" })).toBeVisible();
+    await expect(page.getByText("Publish", { exact: true })).toBeVisible();
   });
 });
