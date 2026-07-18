@@ -1,3 +1,4 @@
+import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 
 import { describe, expect, it } from "vitest";
@@ -152,5 +153,20 @@ describe("puckConfig", () => {
     const anzahl = puckConfig.components.Spalten?.fields?.anzahl;
     if (anzahl?.type !== "select") throw new Error("Spalten needs an anzahl select");
     expect(anzahl.options?.map((o) => o.value)).toEqual(["2", "3"]);
+  });
+
+  it("Spalten renders its drop zones and gates the third on anzahl", () => {
+    const render = puckConfig.components.Spalten?.render;
+    if (!render) throw new Error("Spalten render missing");
+    const stub = {
+      renderDropZone: ({ zone }: { zone: string }) =>
+        React.createElement("div", { "data-zone": zone }),
+    };
+    const two = renderToStaticMarkup(render({ anzahl: "2", puck: stub } as never) as never);
+    expect(two).toContain('data-zone="spalte-1"');
+    expect(two).toContain('data-zone="spalte-2"');
+    expect(two).not.toContain('data-zone="spalte-3"');
+    const three = renderToStaticMarkup(render({ anzahl: "3", puck: stub } as never) as never);
+    expect(three).toContain('data-zone="spalte-3"');
   });
 });

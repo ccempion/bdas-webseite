@@ -1,4 +1,4 @@
-import { DropZone, type Config } from "@puckeditor/core";
+import { type Config } from "@puckeditor/core";
 import React from "react";
 
 import { Card } from "@bdas/design-system";
@@ -257,11 +257,11 @@ export const puckConfig: Config<Blocks> = {
         },
       },
       defaultProps: { anzahl: "2" },
-      render: ({ anzahl }) => (
+      render: ({ anzahl, puck }) => (
         <div className={anzahl === "3" ? "grid gap-6 sm:grid-cols-3" : "grid gap-6 sm:grid-cols-2"}>
-          <DropZone zone="spalte-1" />
-          <DropZone zone="spalte-2" />
-          {anzahl === "3" ? <DropZone zone="spalte-3" /> : null}
+          {puck.renderDropZone({ zone: "spalte-1" })}
+          {puck.renderDropZone({ zone: "spalte-2" })}
+          {anzahl === "3" ? puck.renderDropZone({ zone: "spalte-3" }) : null}
         </div>
       ),
     },
