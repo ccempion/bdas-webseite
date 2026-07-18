@@ -119,4 +119,29 @@ describe("puckConfig", () => {
     expect(internal).toContain('href="/impressum"');
     expect(internal).not.toContain("target=");
   });
+
+  it("Zitat renders text and an optional source", () => {
+    const render = puckConfig.components.Zitat?.render;
+    if (!render) throw new Error("Zitat render missing");
+    const out = renderToStaticMarkup(
+      render({ text: "Ein Zitat", quelle: "BSR", puck: {} } as never) as never,
+    );
+    expect(out).toContain("Ein Zitat");
+    expect(out).toContain("BSR");
+    expect(out).toContain("<blockquote");
+  });
+
+  it("Trenner renders a horizontal rule", () => {
+    const render = puckConfig.components.Trenner?.render;
+    if (!render) throw new Error("Trenner render missing");
+    expect(renderToStaticMarkup(render({ puck: {} } as never) as never)).toContain("<hr");
+  });
+
+  it("Abstand renders a spacer sized by hoehe", () => {
+    const render = puckConfig.components.Abstand?.render;
+    if (!render) throw new Error("Abstand render missing");
+    expect(renderToStaticMarkup(render({ hoehe: "gross", puck: {} } as never) as never)).toContain(
+      "h-16",
+    );
+  });
 });

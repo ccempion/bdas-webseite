@@ -34,6 +34,14 @@ type Blocks = {
     href: string;
     variante: "primaer" | "sekundaer";
   };
+  Zitat: {
+    text: string;
+    quelle: string;
+  };
+  Trenner: Record<string, never>;
+  Abstand: {
+    hoehe: "klein" | "mittel" | "gross";
+  };
 };
 
 /**
@@ -187,6 +195,44 @@ export const puckConfig: Config<Blocks> = {
           </a>
         );
       },
+    },
+    Zitat: {
+      label: "Zitat / Hinweis",
+      fields: {
+        text: { type: "textarea", label: "Text" },
+        quelle: { type: "text", label: "Quelle (optional)" },
+      },
+      defaultProps: { text: "", quelle: "" },
+      render: ({ text, quelle }) => (
+        <blockquote className="rounded-bdas border-l-4 border-bdas-red bg-bdas-overlay-hover px-4 py-3">
+          <p className="whitespace-pre-line text-bdas-ink-body">{text}</p>
+          {quelle ? <footer className="mt-2 text-sm text-bdas-ink-muted">— {quelle}</footer> : null}
+        </blockquote>
+      ),
+    },
+    Trenner: {
+      label: "Trenner",
+      fields: {},
+      defaultProps: {},
+      render: () => <hr className="border-t border-bdas-soft" />,
+    },
+    Abstand: {
+      label: "Abstand",
+      fields: {
+        hoehe: {
+          type: "select",
+          label: "Höhe",
+          options: [
+            { label: "Klein", value: "klein" },
+            { label: "Mittel", value: "mittel" },
+            { label: "Groß", value: "gross" },
+          ],
+        },
+      },
+      defaultProps: { hoehe: "mittel" },
+      render: ({ hoehe }) => (
+        <div aria-hidden className={hoehe === "klein" ? "h-4" : hoehe === "gross" ? "h-16" : "h-8"} />
+      ),
     },
   },
 };
