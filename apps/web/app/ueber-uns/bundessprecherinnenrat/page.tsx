@@ -33,8 +33,10 @@ export default async function BsrPage() {
 
   return (
     <main className="mx-auto flex max-w-5xl flex-col gap-6 px-4 py-12">
-      <div className="flex items-start justify-between gap-4">
-        <h1 className="text-3xl font-semibold text-bdas-ink">Bundessprecher*innenrat</h1>
+      <div className="flex flex-col items-start gap-4 sm:flex-row sm:justify-between">
+        <h1 className="break-words text-3xl font-semibold text-bdas-ink">
+          Bundessprecher*innenrat
+        </h1>
         {canEdit ? (
           <Link
             href="/ueber-uns/bundessprecherinnenrat/bearbeiten"
