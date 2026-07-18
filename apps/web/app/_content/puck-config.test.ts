@@ -1,14 +1,19 @@
+import React from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+
 import { describe, expect, it } from "vitest";
 
 import { puckConfig } from "./puck-config";
 
 describe("puckConfig", () => {
-  it("offers exactly the three approved blocks", () => {
-    expect(Object.keys(puckConfig.components).sort()).toEqual([
-      "Absatz",
-      "PersonenRaster",
-      "Ueberschrift",
-    ]);
+  it("keeps the legacy Absatz and PersonenRaster blocks", () => {
+    expect(puckConfig.components.Absatz).toBeDefined();
+    expect(puckConfig.components.PersonenRaster).toBeDefined();
+  });
+
+  it("exposes the Fließtext rich-text block", () => {
+    const inhalt = puckConfig.components.Fliesstext?.fields?.inhalt;
+    expect(inhalt?.type).toBe("custom");
   });
 
   it("PersonenRaster items carry the five BSR fields", () => {
@@ -38,5 +43,130 @@ describe("puckConfig", () => {
     expect(
       personen.getItemSummary({ foto: "", name: "", rolle: "", uni: "", studiengang: "" }, 0),
     ).toBe("Neue Person");
+  });
+
+  it("Fließtext renders stored rich text", () => {
+    const render = puckConfig.components.Fliesstext?.render;
+    if (!render) throw new Error("Fliesstext render missing");
+    const out = renderToStaticMarkup(
+      render({
+        inhalt: {
+          type: "doc",
+          content: [
+            {
+              type: "paragraph",
+              content: [{ type: "text", text: "Hi", marks: [{ type: "bold" }] }],
+            },
+          ],
+        },
+        puck: { renderDropZone: () => null, isEditing: false, dragRef: null, metadata: {} },
+      } as never) as never,
+    );
+    expect(out).toContain("<strong>Hi</strong>");
+  });
+
+  it("Bild renders an accessible image and hides when empty", () => {
+    const render = puckConfig.components.Bild?.render;
+    if (!render) throw new Error("Bild render missing");
+    const withImg = renderToStaticMarkup(
+      render({
+        bild: "https://cdn.test/x.jpg",
+        altText: "Gruppenfoto",
+        bildunterschrift: "",
+        breite: "voll",
+        puck: {},
+      } as never) as never,
+    );
+    expect(withImg).toContain('alt="Gruppenfoto"');
+    const empty = renderToStaticMarkup(
+      render({
+        bild: "",
+        altText: "",
+        bildunterschrift: "",
+        breite: "voll",
+        puck: {},
+      } as never) as never,
+    );
+    expect(empty).toBe("");
+  });
+
+  it("Button applies safeHref and rel/target for external links", () => {
+    const render = puckConfig.components.Button?.render;
+    if (!render) throw new Error("Button render missing");
+    const ext = renderToStaticMarkup(
+      render({
+        label: "BDAJ",
+        href: "https://bdaj.de",
+        variante: "primaer",
+        puck: {},
+      } as never) as never,
+    );
+    expect(ext).toContain('href="https://bdaj.de"');
+    expect(ext).toContain('rel="noopener noreferrer"');
+    const bad = renderToStaticMarkup(
+      render({
+        label: "x",
+        href: "javascript:alert(1)",
+        variante: "primaer",
+        puck: {},
+      } as never) as never,
+    );
+    expect(bad).toBe("");
+    const internal = renderToStaticMarkup(
+      render({
+        label: "Impressum",
+        href: "/impressum",
+        variante: "sekundaer",
+        puck: {},
+      } as never) as never,
+    );
+    expect(internal).toContain('href="/impressum"');
+    expect(internal).not.toContain("target=");
+  });
+
+  it("Zitat renders text and an optional source", () => {
+    const render = puckConfig.components.Zitat?.render;
+    if (!render) throw new Error("Zitat render missing");
+    const out = renderToStaticMarkup(
+      render({ text: "Ein Zitat", quelle: "BSR", puck: {} } as never) as never,
+    );
+    expect(out).toContain("Ein Zitat");
+    expect(out).toContain("BSR");
+    expect(out).toContain("<blockquote");
+  });
+
+  it("Trenner renders a horizontal rule", () => {
+    const render = puckConfig.components.Trenner?.render;
+    if (!render) throw new Error("Trenner render missing");
+    expect(renderToStaticMarkup(render({ puck: {} } as never) as never)).toContain("<hr");
+  });
+
+  it("Abstand renders a spacer sized by hoehe", () => {
+    const render = puckConfig.components.Abstand?.render;
+    if (!render) throw new Error("Abstand render missing");
+    expect(renderToStaticMarkup(render({ hoehe: "gross", puck: {} } as never) as never)).toContain(
+      "h-16",
+    );
+  });
+
+  it("Spalten offers a 2/3 column select", () => {
+    const anzahl = puckConfig.components.Spalten?.fields?.anzahl;
+    if (anzahl?.type !== "select") throw new Error("Spalten needs an anzahl select");
+    expect(anzahl.options?.map((o) => o.value)).toEqual(["2", "3"]);
+  });
+
+  it("Spalten renders its drop zones and gates the third on anzahl", () => {
+    const render = puckConfig.components.Spalten?.render;
+    if (!render) throw new Error("Spalten render missing");
+    const stub = {
+      renderDropZone: ({ zone }: { zone: string }) =>
+        React.createElement("div", { "data-zone": zone }),
+    };
+    const two = renderToStaticMarkup(render({ anzahl: "2", puck: stub } as never) as never);
+    expect(two).toContain('data-zone="spalte-1"');
+    expect(two).toContain('data-zone="spalte-2"');
+    expect(two).not.toContain('data-zone="spalte-3"');
+    const three = renderToStaticMarkup(render({ anzahl: "3", puck: stub } as never) as never);
+    expect(three).toContain('data-zone="spalte-3"');
   });
 });

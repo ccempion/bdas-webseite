@@ -59,4 +59,23 @@ test.describe("content pages", () => {
       await expect(page.getByText("Publish", { exact: true })).toBeVisible();
     }
   });
+
+  test("federal board adds a Button block and the visitor sees the link", async ({ page }) => {
+    await deleteUserByEmail(FEDERAL_EMAIL);
+    await registerVerifyLogin(page, { email: FEDERAL_EMAIL, firstName: "Fed", lastName: "Eral" });
+
+    await page.goto("/ueber-uns/bdaj/bearbeiten");
+    // Add the Button block from the Puck component list, then fill its fields.
+    await page.getByText("Button", { exact: true }).click();
+    await page.getByLabel("Beschriftung").fill("Zur BDAJ-Website");
+    await page.getByLabel(/^Link/).fill("https://bdaj.de");
+    // Publish (open the collapsed menu bar on mobile chrome — see BSR test note).
+    await page.getByRole("button", { name: "Toggle menu bar" }).click();
+    await page.getByText("Publish", { exact: true }).click();
+
+    await page.goto("/ueber-uns/bdaj");
+    const link = page.getByRole("link", { name: "Zur BDAJ-Website" });
+    await expect(link).toHaveAttribute("href", "https://bdaj.de");
+    await expect(link).toHaveAttribute("rel", /noopener/);
+  });
 });

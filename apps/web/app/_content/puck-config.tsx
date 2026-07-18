@@ -1,8 +1,12 @@
-import type { Config } from "@puckeditor/core";
+import { type Config } from "@puckeditor/core";
+import React from "react";
 
 import { Card } from "@bdas/design-system";
 
 import { FotoField } from "./FotoField";
+import { RichTextField } from "./RichTextField";
+import { renderRichText } from "./rich-text";
+import { isExternalHref, safeHref } from "./href";
 
 type Person = {
   foto: string;
@@ -16,6 +20,31 @@ type Blocks = {
   Ueberschrift: { text: string; ebene: "h2" | "h3" };
   Absatz: { text: string };
   PersonenRaster: { personen: Person[] };
+  Fliesstext: {
+    inhalt: unknown;
+  };
+  Bild: {
+    bild: string;
+    altText: string;
+    bildunterschrift: string;
+    breite: "voll" | "halb";
+  };
+  Button: {
+    label: string;
+    href: string;
+    variante: "primaer" | "sekundaer";
+  };
+  Zitat: {
+    text: string;
+    quelle: string;
+  };
+  Trenner: Record<string, never>;
+  Abstand: {
+    hoehe: "klein" | "mittel" | "gross";
+  };
+  Spalten: {
+    anzahl: "2" | "3";
+  };
 };
 
 /**
@@ -51,6 +80,18 @@ export const puckConfig: Config<Blocks> = {
       fields: { text: { type: "textarea", label: "Text" } },
       defaultProps: { text: "" },
       render: ({ text }) => <p className="whitespace-pre-line text-bdas-ink-body">{text}</p>,
+    },
+    Fliesstext: {
+      label: "Fließtext",
+      fields: {
+        inhalt: {
+          type: "custom",
+          label: "Text",
+          render: ({ value, onChange }) => <RichTextField value={value} onChange={onChange} />,
+        },
+      },
+      defaultProps: { inhalt: { type: "doc", content: [{ type: "paragraph" }] } },
+      render: ({ inhalt }) => <>{renderRichText(inhalt)}</>,
     },
     PersonenRaster: {
       label: "Personen-Raster",
@@ -91,6 +132,136 @@ export const puckConfig: Config<Blocks> = {
               </div>
             </Card>
           ))}
+        </div>
+      ),
+    },
+    Bild: {
+      label: "Bild",
+      fields: {
+        bild: {
+          type: "custom",
+          label: "Bild",
+          render: ({ value, onChange }) => <FotoField value={value} onChange={onChange} />,
+        },
+        altText: { type: "text", label: "Alt-Text (Barrierefreiheit)" },
+        bildunterschrift: { type: "text", label: "Bildunterschrift (optional)" },
+        breite: {
+          type: "select",
+          label: "Breite",
+          options: [
+            { label: "Volle Breite", value: "voll" },
+            { label: "Halbe Breite", value: "halb" },
+          ],
+        },
+      },
+      defaultProps: { bild: "", altText: "", bildunterschrift: "", breite: "voll" },
+      render: ({ bild, altText, bildunterschrift, breite }) =>
+        bild ? (
+          <figure className={breite === "halb" ? "sm:max-w-md" : "w-full"}>
+            <img src={bild} alt={altText} className="w-full rounded-bdas" />
+            {bildunterschrift ? (
+              <figcaption className="mt-2 text-sm text-bdas-ink-muted">
+                {bildunterschrift}
+              </figcaption>
+            ) : null}
+          </figure>
+        ) : (
+          <></>
+        ),
+    },
+    Button: {
+      label: "Button",
+      fields: {
+        label: { type: "text", label: "Beschriftung" },
+        href: { type: "text", label: "Link (https://… oder /pfad)" },
+        variante: {
+          type: "select",
+          label: "Variante",
+          options: [
+            { label: "Primär", value: "primaer" },
+            { label: "Sekundär", value: "sekundaer" },
+          ],
+        },
+      },
+      defaultProps: { label: "Mehr erfahren", href: "", variante: "primaer" },
+      render: ({ label, href, variante }) => {
+        const safe = safeHref(href);
+        if (!safe) return <></>;
+
+        const cls =
+          variante === "sekundaer"
+            ? "inline-flex items-center rounded-bdas-sm border border-bdas-strong px-4 py-2 text-sm text-bdas-ink transition-colors duration-bdas-quick ease-bdas hover:bg-bdas-surface-hover"
+            : "inline-flex items-center rounded-bdas-sm bg-bdas-red px-4 py-2 text-sm font-medium text-white transition-colors duration-bdas-quick ease-bdas hover:opacity-90";
+        return isExternalHref(safe) ? (
+          <a href={safe} rel="noopener noreferrer" target="_blank" className={cls}>
+            {label}
+          </a>
+        ) : (
+          <a href={safe} className={cls}>
+            {label}
+          </a>
+        );
+      },
+    },
+    Zitat: {
+      label: "Zitat / Hinweis",
+      fields: {
+        text: { type: "textarea", label: "Text" },
+        quelle: { type: "text", label: "Quelle (optional)" },
+      },
+      defaultProps: { text: "", quelle: "" },
+      render: ({ text, quelle }) => (
+        <blockquote className="rounded-bdas border-l-4 border-bdas-red bg-bdas-overlay-hover px-4 py-3">
+          <p className="whitespace-pre-line text-bdas-ink-body">{text}</p>
+          {quelle ? <footer className="mt-2 text-sm text-bdas-ink-muted">— {quelle}</footer> : null}
+        </blockquote>
+      ),
+    },
+    Trenner: {
+      label: "Trenner",
+      fields: {},
+      defaultProps: {},
+      render: () => <hr className="border-t border-bdas-soft" />,
+    },
+    Abstand: {
+      label: "Abstand",
+      fields: {
+        hoehe: {
+          type: "select",
+          label: "Höhe",
+          options: [
+            { label: "Klein", value: "klein" },
+            { label: "Mittel", value: "mittel" },
+            { label: "Groß", value: "gross" },
+          ],
+        },
+      },
+      defaultProps: { hoehe: "mittel" },
+      render: ({ hoehe }) => (
+        <div
+          aria-hidden
+          className={hoehe === "klein" ? "h-4" : hoehe === "gross" ? "h-16" : "h-8"}
+        />
+      ),
+    },
+    Spalten: {
+      label: "Spalten",
+      fields: {
+        anzahl: {
+          type: "select",
+          label: "Anzahl",
+          options: [
+            { label: "2 Spalten", value: "2" },
+            { label: "3 Spalten", value: "3" },
+          ],
+        },
+      },
+      defaultProps: { anzahl: "2" },
+      render: ({ anzahl, puck }) => (
+        <div className={anzahl === "3" ? "grid gap-6 sm:grid-cols-3" : "grid gap-6 sm:grid-cols-2"}>
+          {puck.renderDropZone({ zone: "spalte-1" })}
+          {puck.renderDropZone({ zone: "spalte-2" })}
+          {anzahl === "3" ? puck.renderDropZone({ zone: "spalte-3" }) : null}
         </div>
       ),
     },
