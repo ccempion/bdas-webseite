@@ -85,10 +85,10 @@ the `groups` table. Design tokens only. German copy. Tests ship with the code.
   - `Freigeben` / `Ablehnen` calling `decideGroupChangeAction(c.id, decision, revalidatePath)`
     inside the existing `start`/`setError` transition, when `c.canDecide`; otherwise a
     muted `Entscheidet ein anderer Vorstand.` note.
-        Tokens only: `rounded-bdas`, `rounded-bdas-sm`, `rounded-bdas-pill`, `border-bdas-soft`,
-        `bg-bdas-surface`, `bg-bdas-surface-hover`, `shadow-bdas-card`, `text-bdas-ink`,
-        `text-bdas-ink-body`, `text-bdas-ink-muted`, `text-bdas-red`, `bg-bdas-red`.
-        `/federal/members` passes no `incoming` and renders exactly as before.
+    Tokens only: `rounded-bdas`, `rounded-bdas-sm`, `rounded-bdas-pill`, `border-bdas-soft`,
+    `bg-bdas-surface`, `bg-bdas-surface-hover`, `shadow-bdas-card`, `text-bdas-ink`,
+    `text-bdas-ink-body`, `text-bdas-ink-muted`, `text-bdas-red`, `bg-bdas-red`.
+    `/federal/members` passes no `incoming` and renders exactly as before.
 
 - [ ] **Step 3:** `pnpm --filter @bdas/web typecheck && pnpm lint && pnpm format`, then commit:
       `feat(web): inbound transfer queue on the group members dashboard`

@@ -21,6 +21,7 @@ export const FLAGS = [
   "blog",
   "public_shell",
   "group_map",
+  "content",
 ] as const;
 
 export type FlagName = (typeof FLAGS)[number];

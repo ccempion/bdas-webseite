@@ -21,4 +21,5 @@ export const MIGRATION_MANIFEST: ReadonlyArray<string> = [
   "notifications",
   "events",
   // Phase 3 onward — append as modules land.
+  "content",
 ];
