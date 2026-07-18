@@ -1,8 +1,6 @@
 import { z } from "zod";
 
-const PuckComponent = z
-  .object({ type: z.string(), props: z.record(z.unknown()) })
-  .passthrough();
+const PuckComponent = z.object({ type: z.string(), props: z.record(z.unknown()) }).passthrough();
 
 /**
  * Structural check of Puck's `Data` shape. The module stores documents

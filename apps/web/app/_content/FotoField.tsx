@@ -46,10 +46,7 @@ export function FotoField({
 
   return (
     <div className="flex flex-col gap-2">
-      {value ? (
-        // eslint-disable-next-line @next/next/no-img-element -- Supabase-hosted, next/image needs remotePatterns
-        <img src={value} alt="" className="h-24 w-24 rounded-bdas-sm object-cover" />
-      ) : null}
+      {value ? <img src={value} alt="" className="h-24 w-24 rounded-bdas-sm object-cover" /> : null}
       <input
         ref={inputRef}
         type="file"

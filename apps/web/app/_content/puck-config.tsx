@@ -79,7 +79,6 @@ export const puckConfig: Config<Blocks> = {
           {personen.map((p, i) => (
             <Card key={i} className="overflow-hidden">
               {p.foto ? (
-                // eslint-disable-next-line @next/next/no-img-element -- Supabase-hosted, next/image needs remotePatterns
                 <img src={p.foto} alt={p.name} className="aspect-square w-full object-cover" />
               ) : (
                 <div className="aspect-square w-full bg-bdas-surface-hover" aria-hidden />

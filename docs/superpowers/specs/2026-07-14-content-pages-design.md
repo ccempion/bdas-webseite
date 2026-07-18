@@ -36,12 +36,12 @@ New module `modules/content`, owning one table:
 
 ### `content_pages`
 
-| Column       | Type        | Notes                                            |
-| ------------ | ----------- | ------------------------------------------------ |
-| `slug`       | text PK     | e.g. `ueber-uns/bundessprecherinnenrat`          |
-| `data`       | jsonb       | the Puck document (`{ root, content, zones? }`)  |
-| `updated_at` | timestamptz | not null, default now                            |
-| `updated_by` | text        | user id of the saving actor, not null            |
+| Column       | Type        | Notes                                           |
+| ------------ | ----------- | ----------------------------------------------- |
+| `slug`       | text PK     | e.g. `ueber-uns/bundessprecherinnenrat`         |
+| `data`       | jsonb       | the Puck document (`{ root, content, zones? }`) |
+| `updated_at` | timestamptz | not null, default now                           |
+| `updated_by` | text        | user id of the saving actor, not null           |
 
 - Migration lives in `modules/content/migrations/` and is registered in `infra/migrations/manifest.ts`.
 - RLS lockdown like the members tables: RLS enabled, no policies — only the service-role connection reads/writes.
@@ -82,12 +82,12 @@ Storage keys: `<slug-with-slashes-replaced>/<uuid>.<ext>`. Orphaned images (uplo
 
 ## 5. Routes and navigation
 
-| Route                                              | Kind                          | Behaviour                                                                                                                                                              |
-| -------------------------------------------------- | ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `/ueber-uns/bundessprecherinnenrat`                | Server Component, public      | Flag check (`public_shell` + `content`), `getPage(...)`, `<Render config data>`. No row → placeholder „Inhalte folgen in Kürze“. Federal board viewers see a „Seite bearbeiten“ button. Metadata title „Bundessprecher\*innenrat“. |
-| `/ueber-uns/bundessprecherinnenrat/bearbeiten`     | Server Component → client editor | Server-side session + `federal_board` check, otherwise 404 (`notFound()`). Loads current data, renders the client `<PuckEditor>`. „Veröffentlichen“ → PUT → redirect to the public page. |
-| `PUT /api/content/pages/[...slug]`                 | Route handler                 | Flag + session + grants resolved, then `savePage`. 401 without session, 403 without `federal_board`, 422 on invalid/oversized data.                                     |
-| `POST /api/content/upload-url`                     | Route handler                 | See §4.                                                                                                                                                                 |
+| Route                                          | Kind                             | Behaviour                                                                                                                                                                                                                          |
+| ---------------------------------------------- | -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `/ueber-uns/bundessprecherinnenrat`            | Server Component, public         | Flag check (`public_shell` + `content`), `getPage(...)`, `<Render config data>`. No row → placeholder „Inhalte folgen in Kürze“. Federal board viewers see a „Seite bearbeiten“ button. Metadata title „Bundessprecher\*innenrat“. |
+| `/ueber-uns/bundessprecherinnenrat/bearbeiten` | Server Component → client editor | Server-side session + `federal_board` check, otherwise 404 (`notFound()`). Loads current data, renders the client `<PuckEditor>`. „Veröffentlichen“ → PUT → redirect to the public page.                                           |
+| `PUT /api/content/pages/[...slug]`             | Route handler                    | Flag + session + grants resolved, then `savePage`. 401 without session, 403 without `federal_board`, 422 on invalid/oversized data.                                                                                                |
+| `POST /api/content/upload-url`                 | Route handler                    | See §4.                                                                                                                                                                                                                            |
 
 The page routes are **hardcoded for the BSR slug** in this iteration; the API and service are slug-generic. Enabling another page later means adding its route (a five-line Server Component) — deliberately not a catch-all route, so only intentionally released slugs are reachable.
 

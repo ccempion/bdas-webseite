@@ -53,9 +53,7 @@ describeIfDb("content pages service", () => {
   it("preserves unknown top-level keys on components (opaque storage)", async () => {
     const doc = {
       root: { props: {} },
-      content: [
-        { type: "Absatz", props: { id: "Absatz-1", text: "Hallo BSR" }, readOnly: true },
-      ],
+      content: [{ type: "Absatz", props: { id: "Absatz-1", text: "Hallo BSR" }, readOnly: true }],
     };
     await savePage(t.db, { slug: SLUG, data: doc, actor: FEDERAL });
     const page = await getPage(t.db, SLUG);

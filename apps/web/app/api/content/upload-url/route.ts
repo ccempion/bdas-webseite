@@ -35,8 +35,7 @@ export async function POST(req: Request) {
   }
 
   const ext = (body.filename?.split(".").pop() ?? "img").toLowerCase().replace(/[^a-z0-9]/g, "");
-  const prefix =
-    (body.slug ?? "").replace(/[^a-z0-9/-]/g, "").replace(/\//g, "-") || "seite";
+  const prefix = (body.slug ?? "").replace(/[^a-z0-9/-]/g, "").replace(/\//g, "-") || "seite";
   const storageKey = `${prefix}/${crypto.randomUUID()}.${ext}`;
   const storage = getContentMediaStorage();
   const signed = await storage.signedUploadUrl({

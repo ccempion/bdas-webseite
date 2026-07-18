@@ -1218,8 +1218,7 @@ export async function POST(req: Request) {
   }
 
   const ext = (body.filename?.split(".").pop() ?? "img").toLowerCase().replace(/[^a-z0-9]/g, "");
-  const prefix =
-    (body.slug ?? "").replace(/[^a-z0-9/-]/g, "").replace(/\//g, "-") || "seite";
+  const prefix = (body.slug ?? "").replace(/[^a-z0-9/-]/g, "").replace(/\//g, "-") || "seite";
   const storageKey = `${prefix}/${crypto.randomUUID()}.${ext}`;
   const storage = getContentMediaStorage();
   const signed = await storage.signedUploadUrl({
@@ -1527,24 +1526,24 @@ Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>"
 Append to `apps/web/app/_public/nav-items.test.ts` inside `describe("navItems", …)`:
 
 ```ts
-  it("adds the BSR page to Über uns only while the content flag is on", () => {
-    const prev = process.env["BDAS_FLAG_CONTENT"];
+it("adds the BSR page to Über uns only while the content flag is on", () => {
+  const prev = process.env["BDAS_FLAG_CONTENT"];
 
-    process.env["BDAS_FLAG_CONTENT"] = "true";
-    const on = byLabel(navItems(), "Über uns");
-    expect(on && "children" in on ? on.children.map((c) => c.href) : []).toContain(
-      "/ueber-uns/bundessprecherinnenrat",
-    );
+  process.env["BDAS_FLAG_CONTENT"] = "true";
+  const on = byLabel(navItems(), "Über uns");
+  expect(on && "children" in on ? on.children.map((c) => c.href) : []).toContain(
+    "/ueber-uns/bundessprecherinnenrat",
+  );
 
-    process.env["BDAS_FLAG_CONTENT"] = "false";
-    const off = byLabel(navItems(), "Über uns");
-    expect(off && "children" in off ? off.children.map((c) => c.href) : []).not.toContain(
-      "/ueber-uns/bundessprecherinnenrat",
-    );
+  process.env["BDAS_FLAG_CONTENT"] = "false";
+  const off = byLabel(navItems(), "Über uns");
+  expect(off && "children" in off ? off.children.map((c) => c.href) : []).not.toContain(
+    "/ueber-uns/bundessprecherinnenrat",
+  );
 
-    if (prev === undefined) delete process.env["BDAS_FLAG_CONTENT"];
-    else process.env["BDAS_FLAG_CONTENT"] = prev;
-  });
+  if (prev === undefined) delete process.env["BDAS_FLAG_CONTENT"];
+  else process.env["BDAS_FLAG_CONTENT"] = prev;
+});
 ```
 
 - [ ] **Step 2: Run test to verify it fails**
@@ -1573,9 +1572,9 @@ In `apps/web/app/_public/nav-items.ts`, change the Über-uns children to:
 In `apps/web/app/sitemap.ts`, inside the existing `if (isFlagOn("public_shell")) { … }` block, after the four `entries.push(…)` lines add:
 
 ```ts
-    if (isFlagOn("content")) {
-      entries.push({ url: url("/ueber-uns/bundessprecherinnenrat"), changeFrequency: "monthly" });
-    }
+if (isFlagOn("content")) {
+  entries.push({ url: url("/ueber-uns/bundessprecherinnenrat"), changeFrequency: "monthly" });
+}
 ```
 
 - [ ] **Step 4: Run tests to verify they pass**
@@ -1619,7 +1618,7 @@ Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>"
 `.github/workflows/ci.yml`, in the e2e job's `env:` block (the one containing `BDAS_FLAG_PUBLIC_SHELL: "true"`), add:
 
 ```yaml
-      BDAS_FLAG_CONTENT: "true"
+BDAS_FLAG_CONTENT: "true"
 ```
 
 Check whether other CI jobs' env blocks (unit tests around lines 93/135) also list flags — the content module tests don't need a flag, so only the e2e job changes.
