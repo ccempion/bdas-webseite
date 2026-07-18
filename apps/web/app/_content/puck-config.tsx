@@ -152,7 +152,7 @@ export const puckConfig: Config<Blocks> = {
               <figcaption className="mt-2 text-sm text-bdas-ink-muted">{bildunterschrift}</figcaption>
             ) : null}
           </figure>
-        ) : (null as unknown as JSX.Element),
+        ) : (<></>),
     },
     Button: {
       label: "Button",
@@ -171,7 +171,8 @@ export const puckConfig: Config<Blocks> = {
       defaultProps: { label: "Mehr erfahren", href: "", variante: "primaer" },
       render: ({ label, href, variante }) => {
         const safe = safeHref(href);
-        if (!safe) return null as unknown as JSX.Element;
+        if (!safe) return <></>;
+
         const cls =
           variante === "sekundaer"
             ? "inline-flex items-center rounded-bdas-sm border border-bdas-strong px-4 py-2 text-sm text-bdas-ink transition-colors duration-bdas-quick ease-bdas hover:bg-bdas-surface-hover"
