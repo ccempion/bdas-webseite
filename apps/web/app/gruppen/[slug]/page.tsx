@@ -1,11 +1,23 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { Render, type Data } from "@puckeditor/core";
+
+import { getPage } from "@bdas/content";
 import { getDb } from "@bdas/db";
 import { Alert, Card } from "@bdas/design-system";
+import { listUpcomingEvents } from "@bdas/events-module";
+import { isFlagOn } from "@bdas/feature-flags";
 import { getGroupBySlug } from "@bdas/groups";
+import { canEditGroupPage } from "@bdas/members";
 
+import { puckConfig } from "../../_content/puck-config";
+import { loadCurrentMember } from "../../_dashboard/session";
 import { requireGroupsFlag } from "../../_groups/flag";
+import { viewerFrom } from "../../../lib/event-viewer";
+import { formatDateTime } from "../../../lib/format";
+
+export const dynamic = "force-dynamic";
 
 export async function generateMetadata({
   params,
@@ -21,6 +33,14 @@ export default async function GruppeDetailPage({ params }: { params: { slug: str
   const group = await getGroupBySlug(getDb(), params.slug);
   if (!group || group.status === "archived") notFound();
 
+  const contentOn = isFlagOn("content");
+  const me = contentOn ? await loadCurrentMember() : null;
+  const canEdit = me !== null && canEditGroupPage(me.grants, group.id);
+  const page = contentOn ? await getPage(getDb(), `gruppen/${group.slug}`) : null;
+  const upcoming = isFlagOn("events")
+    ? await listUpcomingEvents(getDb(), viewerFrom(me), { groupId: group.id })
+    : [];
+
   return (
     <main className="mx-auto flex max-w-3xl flex-col gap-6 px-4 py-12">
       <p className="text-sm text-bdas-ink-muted">
@@ -29,9 +49,19 @@ export default async function GruppeDetailPage({ params }: { params: { slug: str
         </Link>
       </p>
 
-      <header className="flex flex-col gap-1">
-        <p className="text-sm text-bdas-ink-muted">{group.city}</p>
-        <h1 className="text-3xl font-semibold text-bdas-ink">{group.name}</h1>
+      <header className="flex flex-col items-start gap-4 sm:flex-row sm:justify-between">
+        <div className="flex flex-col gap-1">
+          <p className="text-sm text-bdas-ink-muted">{group.city}</p>
+          <h1 className="text-3xl font-semibold text-bdas-ink">{group.name}</h1>
+        </div>
+        {canEdit ? (
+          <Link
+            href={`/gruppen/${group.slug}/bearbeiten`}
+            className="inline-flex shrink-0 items-center rounded-bdas-sm border border-bdas-strong px-3 py-1.5 text-sm text-bdas-ink transition-colors duration-bdas-quick ease-bdas hover:bg-bdas-surface-hover"
+          >
+            Seite bearbeiten
+          </Link>
+        ) : null}
       </header>
 
       {group.status === "dormant" ? (
@@ -82,6 +112,25 @@ export default async function GruppeDetailPage({ params }: { params: { slug: str
           ) : null}
         </ul>
       </Card>
+
+      {page ? <Render config={puckConfig} data={page.data as Data} /> : null}
+
+      {upcoming.length > 0 ? (
+        <section className="flex flex-col gap-3">
+          <h2 className="text-lg font-semibold text-bdas-ink">Kommende Events</h2>
+          {upcoming.map((e) => (
+            <Link key={e.id} href={`/events/${e.id}`} className="block focus:outline-none">
+              <Card className="p-5">
+                <p className="text-sm text-bdas-ink-muted">{formatDateTime(e.startsAt)}</p>
+                <h3 className="mt-1 text-lg font-semibold text-bdas-ink">{e.title}</h3>
+                {e.location ? (
+                  <p className="mt-1 text-sm text-bdas-ink-body">{e.location}</p>
+                ) : null}
+              </Card>
+            </Link>
+          ))}
+        </section>
+      ) : null}
     </main>
   );
 }
