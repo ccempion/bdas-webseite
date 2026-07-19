@@ -6,7 +6,13 @@ import { getEventBus } from "@bdas/events";
 
 import type { ContentPageSaved } from "../events";
 import { contentPages } from "../schema";
-import { PuckDataSchema, type ContentActor, type ContentPage, type PageData } from "../types";
+import {
+  PuckDataSchema,
+  type ContentActor,
+  type ContentPage,
+  type PageData,
+  type SaveScope,
+} from "../types";
 
 export type Db = PostgresJsDatabase<Record<string, never>>;
 
@@ -23,9 +29,20 @@ export async function getPage(db: Db, slug: string): Promise<ContentPage | null>
 
 export async function savePage(
   db: Db,
-  input: { slug: string; data: unknown; actor: ContentActor },
+  input: { slug: string; data: unknown; actor: ContentActor; scope?: SaveScope },
 ): Promise<ContentPage> {
-  if (!input.actor.grants.some((g) => g.role === "federal_board")) {
+  const scope = input.scope;
+  if (scope) {
+    const may = input.actor.grants.some(
+      (g) =>
+        g.role === "federal_board" ||
+        ((g.role === "local_board_lead" || g.role === "page_editor") &&
+          g.groupId === scope.groupId),
+    );
+    if (!may) {
+      throw new ForbiddenError("Keine Berechtigung, diese Gruppenseite zu bearbeiten.");
+    }
+  } else if (!input.actor.grants.some((g) => g.role === "federal_board")) {
     throw new ForbiddenError("Nur der Bundesvorstand darf Seiten bearbeiten.");
   }
   if (input.slug.length > MAX_SLUG_LENGTH || !SLUG_RE.test(input.slug)) {

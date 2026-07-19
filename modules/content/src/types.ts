@@ -32,3 +32,9 @@ export type ContentActor = {
   readonly userId: string;
   readonly grants: ReadonlyArray<ActorGrant>;
 };
+
+/** Scope of a group-owned page (ADR 0025). The caller (route layer) resolves
+ *  the slug to a group; the module only checks grants against the id. */
+export type SaveScope = {
+  readonly groupId: string;
+};
