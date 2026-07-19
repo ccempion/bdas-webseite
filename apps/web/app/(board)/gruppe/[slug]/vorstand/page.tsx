@@ -41,6 +41,7 @@ export default async function VorstandPage({
           roleOptions={[
             { role: "local_board", label: "Vorstand", groupId },
             { role: "event_organizer", label: "Organisator", groupId },
+            { role: "page_editor", label: "Seiten-Editor", groupId },
           ]}
           revalidatePath={revalidate}
         />
