@@ -31,17 +31,7 @@ export function navItems({
     { label: "Unsere Arbeit", href: "/unsere-arbeit" },
   ];
   if (isFlagOn("events")) {
-    items.push(
-      isFederal
-        ? {
-            label: "Events",
-            children: [
-              { label: "Übersicht", href: "/events" },
-              { label: "Verwalten", href: "/admin/events" },
-            ],
-          }
-        : { label: "Events", href: "/events" },
-    );
+    items.push({ label: "Events", href: "/events" });
   }
   if (isFlagOn("blog")) items.push({ label: "Blog", href: "/blog" });
   if (isFlagOn("groups")) {
