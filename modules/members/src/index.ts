@@ -24,6 +24,7 @@ export {
   isFederalBoard,
   canManageGroup,
   canGrantLocalBoard,
+  canEditGroupPage,
   canDecideJoinRequest,
 } from "./roles";
 
