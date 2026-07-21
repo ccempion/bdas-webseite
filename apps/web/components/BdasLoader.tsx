@@ -37,10 +37,12 @@ export function BdasLoader({
     >
       <Image src={logo} alt="" priority className="h-full w-auto" />
 
-      {/* White shine, clipped to the logo silhouette, travelling tail → head. */}
+      {/* White shine (bg-bdas-loader-shine), clipped to the logo silhouette,
+          travelling tail → head. background-size is oversized so the swept
+          gradient band has room to travel across the mask. */}
       <span
         aria-hidden="true"
-        className="pointer-events-none absolute inset-0 animate-bdas-loader-sweep motion-reduce:hidden"
+        className="pointer-events-none absolute inset-0 bg-bdas-loader-shine animate-bdas-loader-sweep motion-reduce:hidden"
         style={{
           WebkitMaskImage: `url(${LOGO_URL})`,
           maskImage: `url(${LOGO_URL})`,
@@ -50,14 +52,15 @@ export function BdasLoader({
           maskRepeat: "no-repeat",
           WebkitMaskPosition: "center",
           maskPosition: "center",
-          backgroundImage:
-            "linear-gradient(115deg, transparent 42%, rgba(255,255,255,0.85) 50%, transparent 58%)",
           backgroundSize: "220% 220%",
           backgroundRepeat: "no-repeat",
         }}
       />
 
-      {/* A cap-clipped copy of the same logo that bobs + flicks on arrival. */}
+      {/* A cap-clipped copy of the same logo that bobs + flicks on arrival.
+          The clip-path and transform-origin below are hand-fitted to
+          bdas-logo.png's composition (cap in the upper-right); re-fit them if
+          that asset is ever re-exported. */}
       <span
         aria-hidden="true"
         className="pointer-events-none absolute inset-0 animate-bdas-loader-cap motion-reduce:animate-none"

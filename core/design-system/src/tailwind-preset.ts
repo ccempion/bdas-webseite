@@ -70,6 +70,7 @@ export const tailwindPreset: TailwindPreset = {
       },
       backgroundImage: {
         "bdas-hero-scrim": colors.surface.overlay.heroScrim,
+        "bdas-loader-shine": colors.surface.overlay.loaderShine,
       },
       keyframes: {
         "bdas-fade-slide-down": keyframes.fadeSlideDown,

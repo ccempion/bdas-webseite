@@ -38,8 +38,10 @@ vector paths without re-tracing.
   (1600ms) and `loaderSweep` / `loaderCap` keyframes are added to
   `core/design-system/src/tokens.ts` and surfaced as `animate-bdas-loader-sweep`
   / `animate-bdas-loader-cap` through `tailwind-preset.ts` — the same path
-  `bdas-fade-slide-down` already takes. Only `ease` easing and the existing
-  white/red brand colours are used.
+  `bdas-fade-slide-down` already takes. Only `ease` easing is used; the swept
+  highlight is a tokenised gradient (`colors.surface.overlay.loaderShine` →
+  `bg-bdas-loader-shine`) alongside the existing hero-scrim gradient, so no
+  colour is inlined ad-hoc in the component.
 - Accessibility: `role="status"`, `aria-label="Wird geladen"`, and
   `prefers-reduced-motion` drops both animations, leaving the static logo.
 - Consumed in a reusable `apps/web/components/BdasLoader.tsx` (`sm`/`md`/`lg`),
