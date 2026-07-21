@@ -93,7 +93,15 @@ function isEmptyDoc(doc: TiptapDoc | null | undefined): boolean {
 
 export function renderPostContentHtml(doc: TiptapDoc | null | undefined): string {
   if (isEmptyDoc(doc)) return "";
-  const raw = generateHTML(doc as Parameters<typeof generateHTML>[0], EXTENSIONS);
+  // The repo runs two @tiptap/core majors side by side (the app's editors on
+  // v2, Puck's editor on v3). Depending on how pnpm dedupes, the extension
+  // instances and generateHTML can be typed against different cores — a purely
+  // nominal mismatch (runtime is unaffected; see content.test.ts). Cast both
+  // args to generateHTML's own parameter types to bridge it.
+  const raw = generateHTML(
+    doc as Parameters<typeof generateHTML>[0],
+    EXTENSIONS as Parameters<typeof generateHTML>[1],
+  );
   return sanitizeHtml(raw, SANITIZE_OPTS).trim();
 }
 
