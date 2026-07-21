@@ -140,4 +140,32 @@ export function blogMediaPublicUrl(storageKey: string): string {
   return `${url.replace(/\/$/, "")}/storage/v1/object/public/${bucket}/${storageKey}`;
 }
 
+let _contentMedia: SupabaseStorageClient | null = null;
+
+/** Storage client for the public `content-media` bucket (board-editable page imagery, ADR 0023). */
+export function getContentMediaStorage(): SupabaseStorageClient {
+  if (_contentMedia) return _contentMedia;
+  const url = process.env["SUPABASE_URL"];
+  const serviceRoleKey = process.env["SUPABASE_SERVICE_ROLE_KEY"];
+  const bucket = process.env["SUPABASE_CONTENT_MEDIA_BUCKET"] ?? "content-media";
+  if (!url || !serviceRoleKey) {
+    throw new Error(
+      "content-media storage is not configured (need SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY).",
+    );
+  }
+  _contentMedia = new SupabaseStorageClient({ url, serviceRoleKey, bucket });
+  return _contentMedia;
+}
+
+/** Deterministic public URL for a content-media object. Needs only SUPABASE_URL
+ *  (no service-role key) — safe to call on public read paths. */
+export function contentMediaPublicUrl(storageKey: string): string {
+  const url = process.env["SUPABASE_URL"];
+  const bucket = process.env["SUPABASE_CONTENT_MEDIA_BUCKET"] ?? "content-media";
+  if (!url) {
+    throw new Error("content-media public URL needs SUPABASE_URL.");
+  }
+  return `${url.replace(/\/$/, "")}/storage/v1/object/public/${bucket}/${storageKey}`;
+}
+
 export { SupabaseStorageClient };

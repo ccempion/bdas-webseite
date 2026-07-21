@@ -21,6 +21,9 @@ export function navItems({
       label: "Über uns",
       children: [
         { label: "Kurzportrait", href: "/ueber-uns" },
+        ...(isFlagOn("content")
+          ? [{ label: "Bundessprecher*innenrat", href: "/ueber-uns/bundessprecherinnenrat" }]
+          : []),
         { label: "Verbandsstruktur", href: "/ueber-uns/verbandsstruktur" },
         { label: "Bund der Alevitischen Jugendlichen (BDAJ)", href: "/ueber-uns/bdaj" },
       ],
@@ -28,17 +31,7 @@ export function navItems({
     { label: "Unsere Arbeit", href: "/unsere-arbeit" },
   ];
   if (isFlagOn("events")) {
-    items.push(
-      isFederal
-        ? {
-            label: "Events",
-            children: [
-              { label: "Übersicht", href: "/events" },
-              { label: "Verwalten", href: "/admin/events" },
-            ],
-          }
-        : { label: "Events", href: "/events" },
-    );
+    items.push({ label: "Events", href: "/events" });
   }
   if (isFlagOn("blog")) items.push({ label: "Blog", href: "/blog" });
   if (isFlagOn("groups")) {

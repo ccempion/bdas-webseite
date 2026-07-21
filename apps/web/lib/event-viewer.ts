@@ -19,3 +19,10 @@ export function viewerFrom(me: CurrentMember | null): Viewer {
       .map((g) => g.groupId as string),
   };
 }
+
+/** Whether this viewer may manage any events at all (federal, local board of
+ *  any group, or event organizer of any group). Mirrors the guard used by the
+ *  /admin/events pages. */
+export function canManageAny(v: Viewer): boolean {
+  return v.isFederal || v.boardGroupIds.length > 0 || v.organizerGroupIds.length > 0;
+}

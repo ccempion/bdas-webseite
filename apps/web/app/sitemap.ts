@@ -22,6 +22,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       { url: url("/ueber-uns/bdaj"), changeFrequency: "monthly" },
       { url: url("/unsere-arbeit"), changeFrequency: "monthly" },
     );
+    if (isFlagOn("content")) {
+      entries.push({ url: url("/ueber-uns/bundessprecherinnenrat"), changeFrequency: "monthly" });
+    }
   }
 
   const db = getDb();

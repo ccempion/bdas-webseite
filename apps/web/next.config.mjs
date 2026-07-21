@@ -14,6 +14,7 @@ const nextConfig = {
     "@bdas/files",
     "@bdas/errors",
     "@bdas/auth",
+    "@bdas/content",
     "@bdas/content-bridge",
     "@bdas/db",
     "@bdas/events",
@@ -47,7 +48,7 @@ const nextConfig = {
       { source: "/news", destination: "/", permanent: true },
       { source: "/news/:slug", destination: "/", permanent: true },
       {
-        source: "/ueber-uns/:slug((?!verbandsstruktur|bdaj).*)",
+        source: "/ueber-uns/:slug((?!verbandsstruktur|bdaj|bundessprecherinnenrat).*)",
         destination: "/ueber-uns",
         permanent: true,
       },

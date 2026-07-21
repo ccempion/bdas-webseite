@@ -90,6 +90,7 @@ const cardStyle = {
 - Border radii outside `{6, 12, 20}` px
 - Custom-tuned easing curves (we use plain `ease`)
 - Reds other than `#d12020` and the `redGlow` rgba
-- Animations beyond `fadeSlideDown` and the lift-on-hover pattern
+- Animations beyond `fadeSlideDown`, the lift-on-hover pattern, and the brand
+  loader (`loaderSweep` / `loaderCap`, see ADR 0026)
 
 If a screen needs more, raise it — don't quietly add it.

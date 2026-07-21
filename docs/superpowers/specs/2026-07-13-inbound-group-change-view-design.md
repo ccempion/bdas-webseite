@@ -53,7 +53,7 @@ export async function listIncomingGroupChanges(
   applicant's name and status in one query (no N+1 over `getMember`).
 - Newest request first.
 - `canDecide` is computed exactly as in `listOpenGroupChanges`: `canDecideJoinRequest(
-  actor.grants, toGroupId, await groupHasActiveLocalBoard(db, toGroupId))`. One probe —
+actor.grants, toGroupId, await groupHasActiveLocalBoard(db, toGroupId))`. One probe —
   the destination is fixed. This preserves ADR 0021's federal fallback for a group with no
   active board seat.
 - Visibility mirrors `listOpenGroupChanges`: returns `[]` unless the actor is federal
@@ -84,7 +84,7 @@ above the filter toolbar:
 
 - Origin group name from `groupNames`, or "keine Gruppe" when `fromGroupId` is null.
 - Freigeben / Ablehnen call the existing `decideGroupChangeAction(request.id, decision,
-  revalidatePath)`. Authority is enforced server-side inside `decideGroupChange`; the
+revalidatePath)`. Authority is enforced server-side inside `decideGroupChange`; the
   buttons are a convenience, not the gate.
 - When `canDecide` is false (the federal fallback does not apply and this board is not the
   destination's), the buttons are replaced by a muted note. In practice this cannot happen
