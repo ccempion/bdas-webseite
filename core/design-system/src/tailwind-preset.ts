@@ -73,9 +73,13 @@ export const tailwindPreset: TailwindPreset = {
       },
       keyframes: {
         "bdas-fade-slide-down": keyframes.fadeSlideDown,
+        "bdas-loader-sweep": keyframes.loaderSweep,
+        "bdas-loader-cap": keyframes.loaderCap,
       },
       animation: {
         "bdas-fade-slide-down": "bdas-fade-slide-down 400ms ease forwards",
+        "bdas-loader-sweep": `bdas-loader-sweep ${motion.durationLoop} ease infinite`,
+        "bdas-loader-cap": `bdas-loader-cap ${motion.durationLoop} ease infinite`,
       },
     },
   },

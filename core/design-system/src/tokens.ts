@@ -80,6 +80,8 @@ export const motion = {
   durationSoft: "300ms",
   /** Expand / fade-in transitions (accordion content). */
   durationSlow: "400ms",
+  /** Full period of the brand loader loop (logo sweep + cap flick). */
+  durationLoop: "1600ms",
   easing: "ease",
   lift: {
     /** Subtle hover lift for cards and accordions. */
@@ -114,6 +116,24 @@ export const keyframes = {
   fadeSlideDown: {
     from: { opacity: "0", transform: "translateY(-5px)" },
     to: { opacity: "1", transform: "translateY(0)" },
+  },
+  /**
+   * Brand loader — a white highlight band sweeps along the logo silhouette
+   * from tail (lower-left) to head (upper-right): "momentum toward graduation".
+   */
+  loaderSweep: {
+    "0%": { backgroundPosition: "0% 100%" },
+    "70%,100%": { backgroundPosition: "100% 0%" },
+  },
+  /**
+   * Brand loader — the graduation cap holds still while the sweep travels,
+   * then bobs + flicks its tassel as the highlight reaches the head.
+   */
+  loaderCap: {
+    "0%,60%": { transform: "translateY(0) rotate(0deg)" },
+    "72%": { transform: "translateY(-2px) rotate(-4deg)" },
+    "84%": { transform: "translateY(0) rotate(3deg)" },
+    "100%": { transform: "translateY(0) rotate(0deg)" },
   },
 } as const;
 
