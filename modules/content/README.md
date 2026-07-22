@@ -12,9 +12,14 @@ Board-editable content pages stored as Puck JSON documents
 ## Public surface
 
 - `getPage(db, slug)` — read a page (public; no auth).
-- `savePage(db, { slug, data, actor })` — upsert a page. Throws `ForbiddenError`
-  unless the actor's grants include `federal_board`; validates the Puck `Data`
-  shape (zod) and caps the document at 512 KB.
+- `savePage(db, { slug, data, actor, scope? })` — upsert a page. Without
+  `scope`, throws `ForbiddenError` unless the actor's grants include
+  `federal_board`. With `scope: { groupId }` (group-owned pages, e.g.
+  `gruppen/<slug>`), also allows `local_board_lead`/`page_editor` grants
+  matching that `groupId` (ADR 0026) — the module checks the passed
+  `ActorGrant[]` directly and never imports `@bdas/groups` or `@bdas/members`;
+  the route layer resolves the slug to a group and builds the scope. Also
+  validates the Puck `Data` shape (zod) and caps the document at 512 KB.
 - `PuckDataSchema`, types `ContentPage`, `PageData`, `ContentActor`, `ActorGrant`.
 - Event `content.page.saved` via `core/events`.
 

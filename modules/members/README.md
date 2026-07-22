@@ -46,6 +46,7 @@ import {
   canManageGroup,
   canApproveMember,
   canTransition,
+  canEditGroupPage,
   isRole,
   type CurrentMember,
   type Member,
@@ -77,6 +78,11 @@ predicates — never inspect a raw role list:
   primary group.
 - `canGrantLocalBoard(grants, groupId)` — federal_board (any) **or**
   `local_board_lead` scoped to `groupId`.
+- `canEditGroupPage(grants, groupId)` — federal_board (any) **or**
+  `local_board_lead`/`page_editor` scoped to `groupId` (ADR 0026). `page_editor`
+  is a group-scoped, lead-delegable role for the group's public content page —
+  granted/revoked the same way as `event_organizer` (ADR 0013/0017); plain
+  `local_board` does not get it automatically.
 
 Grants are resolved from the DB on every request, **not** carried in the JWT
 (ADR 0007 §2) — a revoked grant takes effect immediately and ADR 0002 / the
