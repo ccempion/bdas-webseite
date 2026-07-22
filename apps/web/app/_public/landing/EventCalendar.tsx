@@ -63,7 +63,7 @@ export function EventCalendar({
               onClick={() => setView(v)}
               className={
                 "rounded-bdas-pill px-4 py-1 text-sm font-semibold transition-colors duration-bdas-quick ease-bdas " +
-                (view === v ? "text-bdas-red" : "text-bdas-ink-muted hover:text-bdas-ink-body")
+                (view === v ? "bg-bdas-red text-white" : "text-bdas-ink-muted hover:text-bdas-ink-body")
               }
             >
               {v === "list" ? "Liste" : "Monat"}

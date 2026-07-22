@@ -19,6 +19,7 @@ ad-hoc.
 | Card / dropdown / accordion radius | `radii.md` (`12px`)                                       |
 | Desktop nav pill radius            | `radii.pill` (`20px`)                                     |
 | Inner-item radius (dropdown links) | `radii.sm` (`6px`)                                        |
+| Circular controls (nav buttons, markers, dots) | `radii.full` (`9999px`)                       |
 | Card shadow at rest                | `shadows.cardResting`                                     |
 | Card shadow on hover (default)     | `shadows.cardLiftSm`                                      |
 | Hero card shadow on hover          | `shadows.cardLiftLg`                                      |
@@ -87,7 +88,8 @@ const cardStyle = {
 ## What is NOT in the language
 
 - Drop shadows other than the seven listed above
-- Border radii outside `{6, 12, 20}` px
+- Border radii outside `{6, 12, 20}` px — circular elements use the sanctioned
+  `radii.full` instead of an ad-hoc value
 - Custom-tuned easing curves (we use plain `ease`)
 - Reds other than `#d12020` and the `redGlow` rgba
 - Animations beyond `fadeSlideDown`, the lift-on-hover pattern, and the brand

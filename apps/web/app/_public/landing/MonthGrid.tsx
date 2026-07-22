@@ -35,7 +35,7 @@ export function MonthGrid({ events }: { events: CalendarEvent[] }) {
 
   const weeks = buildMonthWeeks(cursor.year, cursor.month, events);
   const navBtn =
-    "flex h-8 w-8 items-center justify-center rounded-full border border-bdas-strong bg-bdas-surface text-bdas-ink-body transition-colors duration-bdas-quick ease-bdas hover:bg-bdas-surface-hover";
+    "flex h-8 w-8 items-center justify-center rounded-bdas-full border border-bdas-strong bg-bdas-surface text-bdas-ink-body transition-colors duration-bdas-quick ease-bdas hover:bg-bdas-surface-hover";
 
   return (
     <div className="rounded-bdas border border-bdas-soft bg-bdas-surface p-2 shadow-bdas-card">
@@ -66,7 +66,7 @@ export function MonthGrid({ events }: { events: CalendarEvent[] }) {
             <span
               className={
                 cell.date === today
-                  ? "inline-flex h-[22px] w-[22px] items-center justify-center rounded-full bg-bdas-red text-xs font-bold tabular-nums text-white"
+                  ? "inline-flex h-[22px] w-[22px] items-center justify-center rounded-bdas-full bg-bdas-red text-xs font-bold tabular-nums text-white"
                   : "text-sm tabular-nums " +
                     (cell.inMonth ? "text-bdas-ink-body" : "text-bdas-ink-muted opacity-50")
               }
@@ -80,7 +80,7 @@ export function MonthGrid({ events }: { events: CalendarEvent[] }) {
             {cell.events.length > 0 ? (
               <span
                 className={
-                  "mt-auto h-1.5 w-1.5 rounded-full sm:hidden " +
+                  "mt-auto h-1.5 w-1.5 rounded-bdas-full sm:hidden " +
                   (cell.events.some((e) => e.groupId === null) ? "bg-bdas-red" : "bg-bdas-ink-muted")
                 }
                 aria-hidden="true"

@@ -30,6 +30,7 @@ export const tailwindPreset: TailwindPreset = {
         bdas: radii.md,
         "bdas-sm": radii.sm,
         "bdas-pill": radii.pill,
+        "bdas-full": radii.full,
       },
       borderColor: {
         "bdas-soft": colors.border.soft,
