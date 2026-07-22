@@ -55,16 +55,16 @@ New module `modules/blog`, owning one table.
 
 ### `posts`
 
-| Column       | Type          | Notes                                                    |
-| ------------ | ------------- | -------------------------------------------------------- |
-| `id`         | `text` PK     | `post_…` (`@bdas/id`)                                     |
-| `slug`       | `text` UNIQUE | readable base + 6-char random suffix; immutable          |
-| `title`      | `text`        | 3–160 chars                                              |
-| `content`    | `jsonb`       | Tiptap/ProseMirror doc                                   |
-| `visibility` | `text`        | `CHECK IN ('public','members','board')`, default public  |
-| `created_by` | `text`        | auth user id, **no FK** (matches events)                 |
-| `created_at` | `timestamptz` | default now(); feed order                                |
-| `updated_at` | `timestamptz` | default now()                                            |
+| Column       | Type          | Notes                                                   |
+| ------------ | ------------- | ------------------------------------------------------- |
+| `id`         | `text` PK     | `post_…` (`@bdas/id`)                                   |
+| `slug`       | `text` UNIQUE | readable base + 6-char random suffix; immutable         |
+| `title`      | `text`        | 3–160 chars                                             |
+| `content`    | `jsonb`       | Tiptap/ProseMirror doc                                  |
+| `visibility` | `text`        | `CHECK IN ('public','members','board')`, default public |
+| `created_by` | `text`        | auth user id, **no FK** (matches events)                |
+| `created_at` | `timestamptz` | default now(); feed order                               |
+| `updated_at` | `timestamptz` | default now()                                           |
 
 Indexes on `created_at` (feed), `visibility`, `created_by`. Migration
 `modules/blog/migrations/0001_init.sql`, declared in the manifest **after

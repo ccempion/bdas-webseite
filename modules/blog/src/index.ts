@@ -14,13 +14,7 @@ export { getPostBySlug, getPostById } from "./services/get";
 export { renderPostContentHtml, plainTextToDoc } from "./content";
 
 // Central visibility rules — reused by the app's page/route guards.
-export {
-  ANON,
-  visibleLevelsFor,
-  canViewPost,
-  canModeratePost,
-  type Viewer,
-} from "./visibility";
+export { ANON, visibleLevelsFor, canViewPost, canModeratePost, type Viewer } from "./visibility";
 
 // Slug helpers (the app previews a post's URL before publish).
 export { slugifyTitle } from "./slug";

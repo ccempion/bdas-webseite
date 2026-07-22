@@ -59,9 +59,7 @@ export default async function BlogFeedPage() {
                       </span>
                       <span className="text-sm text-bdas-ink-muted">
                         {formatDate(p.createdAt)}
-                        {p.visibility !== "public"
-                          ? ` · ${VISIBILITY_LABEL[p.visibility]}`
-                          : ""}
+                        {p.visibility !== "public" ? ` · ${VISIBILITY_LABEL[p.visibility]}` : ""}
                       </span>
                     </div>
                   </div>

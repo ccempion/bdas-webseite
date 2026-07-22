@@ -62,10 +62,7 @@ export function canViewPost(
  * (moderation). Creating a post only requires being signed in — that gate
  * lives at the app layer since it needs no post context.
  */
-export function canModeratePost(
-  v: Viewer,
-  post: { readonly createdBy: string },
-): boolean {
+export function canModeratePost(v: Viewer, post: { readonly createdBy: string }): boolean {
   if (v.isFederal) return true;
   return v.userId !== null && post.createdBy === v.userId;
 }

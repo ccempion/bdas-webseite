@@ -38,7 +38,9 @@ describe("renderPostContentHtml", () => {
   it("strips a script injected via raw text", () => {
     const doc = {
       type: "doc",
-      content: [{ type: "paragraph", content: [{ type: "text", text: "<script>alert(1)</script>" }] }],
+      content: [
+        { type: "paragraph", content: [{ type: "text", text: "<script>alert(1)</script>" }] },
+      ],
     } as unknown as TiptapDoc;
     expect(renderPostContentHtml(doc)).not.toContain("<script>");
   });

@@ -5,11 +5,7 @@ import { useFormState, useFormStatus } from "react-dom";
 import type { PostVisibility, TiptapDoc } from "@bdas/blog";
 import { Alert, Button, Field, Form, Input } from "@bdas/design-system";
 
-import {
-  createPostAction,
-  updatePostAction,
-  type PostFormState,
-} from "../blog/actions";
+import { createPostAction, updatePostAction, type PostFormState } from "../blog/actions";
 import { PostEditor } from "./PostEditor";
 
 const SELECT_CLASS =
@@ -35,10 +31,7 @@ export function PostForm({
   };
 }) {
   const editing = post !== undefined;
-  const [state, action] = useFormState(
-    editing ? updatePostAction : createPostAction,
-    initialState,
-  );
+  const [state, action] = useFormState(editing ? updatePostAction : createPostAction, initialState);
   const err = (k: string) => (state.fields?.[k] ? { error: state.fields[k] } : {});
 
   return (
@@ -76,11 +69,7 @@ function SubmitButton({ editing }: { editing: boolean }) {
   const { pending } = useFormStatus();
   return (
     <Button type="submit" disabled={pending}>
-      {pending
-        ? "Wird gespeichert…"
-        : editing
-          ? "Änderungen speichern"
-          : "Veröffentlichen"}
+      {pending ? "Wird gespeichert…" : editing ? "Änderungen speichern" : "Veröffentlichen"}
     </Button>
   );
 }

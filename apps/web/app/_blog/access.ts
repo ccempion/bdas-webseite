@@ -11,7 +11,12 @@ import { redirect } from "next/navigation";
 
 import { ANON, canModeratePost, type Post, type Viewer } from "@bdas/blog";
 import { getDb } from "@bdas/db";
-import { getMemberByUserId, getCurrentMember, isFederalBoard, type CurrentMember } from "@bdas/members";
+import {
+  getMemberByUserId,
+  getCurrentMember,
+  isFederalBoard,
+  type CurrentMember,
+} from "@bdas/members";
 
 import { readSessionCookie } from "../../lib/auth-cookie";
 
@@ -57,8 +62,7 @@ const FALLBACK: AuthorDisplay = { name: "BDAS-Mitglied", initials: "?" };
 
 function displayFrom(first: string, last: string): AuthorDisplay {
   const name = `${first} ${last}`.trim() || FALLBACK.name;
-  const initials =
-    `${first[0] ?? ""}${last[0] ?? ""}`.toUpperCase() || FALLBACK.initials;
+  const initials = `${first[0] ?? ""}${last[0] ?? ""}`.toUpperCase() || FALLBACK.initials;
   return { name, initials };
 }
 
