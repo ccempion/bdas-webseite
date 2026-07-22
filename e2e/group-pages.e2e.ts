@@ -5,7 +5,14 @@
  */
 import { expect, test } from "@playwright/test";
 
-import { memberIdByEmail, seedGroup, seedRoleGrant, uniqueEmail, uniqueSlug } from "./helpers/db";
+import {
+  memberIdByEmail,
+  seedEvent,
+  seedGroup,
+  seedRoleGrant,
+  uniqueEmail,
+  uniqueSlug,
+} from "./helpers/db";
 import { createProfile, registerVerifyLogin } from "./helpers/flows";
 
 test("anonymous visitors see the group page without an edit entry; /bearbeiten is 404", async ({
@@ -65,4 +72,69 @@ test("a page_editor reaches the Puck editor from the group page", async ({ page 
   // mobile viewports (same caveats as content-pages.e2e.ts).
   await page.getByRole("button", { name: "Toggle menu bar" }).click();
   await expect(page.getByText("Publish", { exact: true })).toBeVisible();
+});
+
+test("a page_editor publishes Puck content and the public group page renders it", async ({
+  page,
+}) => {
+  const slug = uniqueSlug("e2e-puckcontent");
+  const groupId = await seedGroup({ slug, name: "E2E Puckgruppe", city: "Teststadt" });
+  const email = uniqueEmail("puckeditor");
+  await registerVerifyLogin(page, { email, firstName: "Puck", lastName: "Editor" });
+  await createProfile(page, { firstName: "Puck", lastName: "Editor" });
+
+  let memberId: string | null = null;
+  await expect(async () => {
+    memberId = await memberIdByEmail(email);
+    expect(memberId, `member id for ${email}`).toBeTruthy();
+  }).toPass({ timeout: 10_000 });
+  await seedRoleGrant(memberId as string, "page_editor", groupId);
+
+  // Save Puck content via the same PUT route the editor's Publish button
+  // calls (PuckEditor -> PUT /api/content/pages/gruppen/<slug>). Driving this
+  // through the actual Puck drawer would need real drag-and-drop —
+  // @puckeditor/core@0.22.2 (installed under the ^0.22.1 range) only adds a
+  // drawer component on drop, not on click, so the click-based flow the
+  // *editor gating* test above and content-pages.e2e.ts's Button test use is
+  // for reaching/gating the editor, not for reliably placing a block. The
+  // route itself re-checks canEditGroupPage via `me.grants`, so this still
+  // exercises the authorization this test cares about — only the drag
+  // interaction is swapped out. page.request shares this page's session
+  // cookie for same-origin requests.
+  await page.goto(`/gruppen/${slug}`);
+  const headingText = `Puck Inhalt ${slug}`;
+  const res = await page.request.put(`/api/content/pages/gruppen/${slug}`, {
+    data: {
+      data: {
+        root: { props: {} },
+        content: [
+          { type: "Ueberschrift", props: { id: "e2e-heading-1", text: headingText, ebene: "h2" } },
+        ],
+      },
+    },
+  });
+  expect(res.ok(), `PUT /api/content/pages/gruppen/${slug} -> ${res.status()}`).toBe(true);
+
+  await page.goto(`/gruppen/${slug}`);
+  await expect(page.getByRole("heading", { level: 2, name: headingText })).toBeVisible();
+});
+
+test("the group page shows an upcoming published event under Kommende Events", async ({ page }) => {
+  const slug = uniqueSlug("e2e-events");
+  const groupId = await seedGroup({ slug, name: "E2E Eventgruppe", city: "Teststadt" });
+  const eventTitle = `E2E Gruppentreffen ${slug}`;
+  const startsAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+  const eventId = await seedEvent({
+    title: eventTitle,
+    groupId,
+    visibility: "public",
+    startsAt,
+    createdBy: "usr_e2e_seed",
+  });
+
+  await page.goto(`/gruppen/${slug}`);
+  await expect(page.getByRole("heading", { level: 2, name: "Kommende Events" })).toBeVisible();
+  const eventLink = page.getByRole("link", { name: new RegExp(eventTitle) });
+  await expect(eventLink).toBeVisible();
+  await expect(eventLink).toHaveAttribute("href", `/events/${eventId}`);
 });
