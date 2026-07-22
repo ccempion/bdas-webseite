@@ -148,6 +148,17 @@ export async function activateMemberByEmail(email: string): Promise<string> {
   return memberId;
 }
 
+/** Insert an active role grant for a member directly (bypasses the UI). */
+export async function seedRoleGrant(
+  memberId: string,
+  role: string,
+  groupId: string | null,
+): Promise<void> {
+  await sql`
+    INSERT INTO member_role_grants (id, member_id, role, group_id, granted_by)
+    VALUES (${"mrg_e2e_" + rand()}, ${memberId}, ${role}, ${groupId}, 'usr_e2e_seed')`;
+}
+
 /** Insert an event directly and return its id. `events.id` has no DB default,
  *  so the id is generated here (same convention as `seedGroup`). Only sets
  *  the NOT NULL columns plus what the facets test needs; `status` is always
