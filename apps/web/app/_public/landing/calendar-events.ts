@@ -13,6 +13,8 @@ export type CalendarEvent = {
   readonly start: string;
   readonly end: string;
   readonly groupId: string | null;
+  readonly summary: string | null;
+  readonly location: string | null;
 };
 
 const HOUR_MS = 60 * 60 * 1000;
@@ -25,6 +27,13 @@ function fmt(d: Date): string {
   return `${p["year"]}-${pad(p["month"]!)}-${pad(p["day"]!)} ${pad(p["hour"]!)}:${pad(p["minute"]!)}`;
 }
 
+function locationOf(e: EventWithCounts): string | null {
+  if (e.locationName) {
+    return e.locationAddress ? `${e.locationName}, ${e.locationAddress}` : e.locationName;
+  }
+  return e.location ?? null;
+}
+
 export function toCalendarEvents(events: ReadonlyArray<EventWithCounts>): CalendarEvent[] {
   return events.map((e) => ({
     id: e.id,
@@ -32,5 +41,7 @@ export function toCalendarEvents(events: ReadonlyArray<EventWithCounts>): Calend
     start: fmt(e.startsAt),
     end: fmt(e.endsAt ?? new Date(e.startsAt.getTime() + HOUR_MS)),
     groupId: e.groupId,
+    summary: e.summary,
+    location: locationOf(e),
   }));
 }
