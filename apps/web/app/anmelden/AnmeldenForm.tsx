@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useFormState, useFormStatus } from "react-dom";
 
-import { Alert, Button, Field, Form, Input } from "@bdas/design-system";
+import { Alert, Button, Field, Form, Input, PasswordInput } from "@bdas/design-system";
 
 import { loginAction, type LoginFormState } from "./actions";
 
@@ -25,10 +25,9 @@ export function AnmeldenForm() {
         <Input id="email" name="email" type="email" autoComplete="email" required />
       </Field>
       <Field label="Passwort" htmlFor="password">
-        <Input
+        <PasswordInput
           id="password"
           name="password"
-          type="password"
           autoComplete="current-password"
           required
         />

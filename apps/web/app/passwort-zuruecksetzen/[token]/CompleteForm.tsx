@@ -2,7 +2,7 @@
 
 import { useFormState, useFormStatus } from "react-dom";
 
-import { Alert, Button, Field, Form, Input } from "@bdas/design-system";
+import { Alert, Button, Field, Form, PasswordInput } from "@bdas/design-system";
 
 import { completeResetAction, type CompleteResetState } from "../actions";
 
@@ -21,10 +21,9 @@ export function CompleteResetForm({
       {state.error ? <Alert variant="error">{state.error}</Alert> : null}
       <input type="hidden" name="token" value={token} />
       <Field label="Neues Passwort" htmlFor="password" hint={passwordHint}>
-        <Input
+        <PasswordInput
           id="password"
           name="password"
-          type="password"
           autoComplete="new-password"
           minLength={10}
           required
