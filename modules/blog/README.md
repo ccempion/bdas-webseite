@@ -29,11 +29,11 @@ Every read path runs through `visibility.ts` — feed SQL filter, single-post
 fetch, and the app's page guards — so the rule is enforced **server-side**, never
 in the UI alone.
 
-| Level     | German UI label   | Who may see it                          |
-| --------- | ----------------- | --------------------------------------- |
-| `public`  | Öffentlich        | everyone, incl. signed-out visitors     |
-| `members` | Nur Mitglieder    | signed-in active members                |
-| `board`   | Nur Vorstände     | **federal board only**                  |
+| Level     | German UI label | Who may see it                      |
+| --------- | --------------- | ----------------------------------- |
+| `public`  | Öffentlich      | everyone, incl. signed-out visitors |
+| `members` | Nur Mitglieder  | signed-in active members            |
+| `board`   | Nur Vorstände   | **federal board only**              |
 
 The author always sees their own post regardless of level.
 

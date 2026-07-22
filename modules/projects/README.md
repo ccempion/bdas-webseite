@@ -6,9 +6,9 @@ member can browse projects across all groups at `/projekte`.
 
 ## Owned tables
 
-| Table      | Purpose                                                        |
-| ---------- | ------------------------------------------------------------- |
-| `projects` | Title, description, status, topic, contact, artifact refs     |
+| Table      | Purpose                                                   |
+| ---------- | --------------------------------------------------------- |
+| `projects` | Title, description, status, topic, contact, artifact refs |
 
 `project_updates` (the changelog feature) is deliberately omitted this
 PR — it lands as a separate follow-up. No other module reads or writes
@@ -42,7 +42,7 @@ import {
 - **Get one.** `getProject(db, id)` → the project enriched with its
   owning group's name/slug.
 - **Adopt this project.** `adoptProject(db, sourceId, targetGroupId,
-  adoptedBy)` forks a copy scoped to the adopting group. The copy keeps
+adoptedBy)` forks a copy scoped to the adopting group. The copy keeps
   title/description/topic/contact, resets `status` to the default, starts
   with no artifacts (the originals live in the source group's
   `local_board` folder), and records `adoptedFromProjectId` for
@@ -57,11 +57,11 @@ Services are **auth-agnostic** (same convention as `events`/`groups`):
 they take no grants and never check permissions. The app action layer
 gates before calling, via `@bdas/members`:
 
-| Operation        | Gate                                          |
-| ---------------- | --------------------------------------------- |
-| create / edit    | `canManageGroup(grants, project.groupId)`     |
-| adopt            | `canManageGroup(grants, targetGroupId)`       |
-| list / get       | any authenticated member (no group restriction) |
+| Operation     | Gate                                            |
+| ------------- | ----------------------------------------------- |
+| create / edit | `canManageGroup(grants, project.groupId)`       |
+| adopt         | `canManageGroup(grants, targetGroupId)`         |
+| list / get    | any authenticated member (no group restriction) |
 
 ## Dependencies
 
@@ -77,9 +77,9 @@ gates before calling, via `@bdas/members`:
 
 ## Routes (in `apps/web`)
 
-| Path                | Behavior                                            |
-| ------------------- | --------------------------------------------------- |
-| `/projekte`         | Cross-group browse. 404 unless `BDAS_FLAG_PROJECTS=true`. |
+| Path        | Behavior                                                  |
+| ----------- | --------------------------------------------------------- |
+| `/projekte` | Cross-group browse. 404 unless `BDAS_FLAG_PROJECTS=true`. |
 
 The route pages are a follow-up PR; they call `requireProjectsFlag()`
 (`apps/web/app/_projects/flag.ts`). The flag defaults OFF.
