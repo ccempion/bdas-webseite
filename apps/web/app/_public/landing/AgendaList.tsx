@@ -23,8 +23,13 @@ export function AgendaList({
     return <p className="text-bdas-ink-body">Keine anstehenden Termine.</p>;
   }
 
+  // Events arrive ascending by start (listUpcomingEvents orders asc(startsAt)).
+  // Sort a copy defensively so the "merge into last group" logic and the
+  // month-label keys stay correct even if that upstream ordering ever changes —
+  // the wall-clock "YYYY-MM-DD HH:mm" format sorts lexicographically by time.
+  const sorted = [...events].sort((a, b) => a.start.localeCompare(b.start));
   const groups: { label: string; items: CalendarEvent[] }[] = [];
-  for (const ev of events) {
+  for (const ev of sorted) {
     const label = monthLabel(ev.start);
     const last = groups[groups.length - 1];
     if (last && last.label === label) last.items.push(ev);

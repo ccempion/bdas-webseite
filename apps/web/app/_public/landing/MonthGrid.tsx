@@ -76,15 +76,26 @@ export function MonthGrid({ events }: { events: CalendarEvent[] }) {
               {cell.day}
             </span>
 
-            {/* Mobile: a dot when the day has any event */}
+            {/* Mobile: one tappable dot per event (pills are desktop-only) */}
             {cell.events.length > 0 ? (
-              <span
-                className={
-                  "mt-auto h-1.5 w-1.5 rounded-bdas-full sm:hidden " +
-                  (cell.events.some((e) => e.groupId === null) ? "bg-bdas-red" : "bg-bdas-ink-muted")
-                }
-                aria-hidden="true"
-              />
+              <span className="mt-auto flex flex-wrap gap-0.5 sm:hidden">
+                {cell.events.map((ev) => (
+                  <Link
+                    key={ev.id}
+                    href={`/events/${ev.id}` as Route}
+                    aria-label={ev.title}
+                    className="flex items-center justify-center p-1"
+                  >
+                    <span
+                      className={
+                        "h-1.5 w-1.5 rounded-bdas-full " +
+                        (ev.groupId === null ? "bg-bdas-red" : "bg-bdas-ink-muted")
+                      }
+                      aria-hidden="true"
+                    />
+                  </Link>
+                ))}
+              </span>
             ) : null}
 
             {/* Desktop: full event pills */}
