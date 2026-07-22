@@ -656,6 +656,24 @@ describeIfDb("members integration", () => {
     );
   });
 
+  it("listRoleHolders includes page_editor grants (ADR 0026)", async () => {
+    await createGroup("grp_a", "aachen");
+    await createUser("usr_pe1", "pe1@example.de");
+    const m = await createProfile(t.db, {
+      userId: "usr_pe1",
+      firstName: "Petra",
+      lastName: "Editorin",
+      primaryGroupId: "grp_a",
+    });
+    await approveMember(t.db, m.id, BOARD);
+    await grantRole(t.db, m.id, "page_editor", BOARD, "grp_a");
+
+    const holders = await listRoleHolders(t.db);
+    expect(holders).toContainEqual(
+      expect.objectContaining({ memberId: m.id, role: "page_editor", groupId: "grp_a" }),
+    );
+  });
+
   it("listRoleHolders and listGrantAudit expose roster + history", async () => {
     await createGroup("grp_a", "aachen");
     await createUser("usr_h1", "h1@example.de");
