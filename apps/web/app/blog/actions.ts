@@ -3,13 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
-import {
-  canModeratePost,
-  createPost,
-  deletePost,
-  getPostById,
-  updatePost,
-} from "@bdas/blog";
+import { canModeratePost, createPost, deletePost, getPostById, updatePost } from "@bdas/blog";
 import { getDb } from "@bdas/db";
 import { ForbiddenError, isAppError, NotFoundError } from "@bdas/errors";
 import { isFlagOn } from "@bdas/feature-flags";
@@ -52,10 +46,7 @@ function appErr(err: unknown): PostFormState {
 }
 
 /** Create a post. Any signed-in (registered) user may author one. */
-export async function createPostAction(
-  _prev: PostFormState,
-  fd: FormData,
-): Promise<PostFormState> {
+export async function createPostAction(_prev: PostFormState, fd: FormData): Promise<PostFormState> {
   if (!isFlagOn("blog")) return { error: "Nicht verfügbar." };
   const me = await loadBlogMe();
   if (!me) return { error: "Anmeldung erforderlich." };
@@ -84,10 +75,7 @@ async function assertModerable(postId: string) {
   return post;
 }
 
-export async function updatePostAction(
-  _prev: PostFormState,
-  fd: FormData,
-): Promise<PostFormState> {
+export async function updatePostAction(_prev: PostFormState, fd: FormData): Promise<PostFormState> {
   if (!isFlagOn("blog")) return { error: "Nicht verfügbar." };
   const postId = s(fd, "postId");
   let slug: string;

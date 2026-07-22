@@ -36,10 +36,7 @@ export const ProjectInput = z.object({
   topic: z.string().max(80, "Thema darf höchstens 80 Zeichen haben").optional().nullable(),
   contact: z.string().max(240, "Kontakt darf höchstens 240 Zeichen haben").optional().nullable(),
   // References to files already stored via @bdas/files — opaque ids, no bytes.
-  artifactFileIds: z
-    .array(z.string().min(1).max(100))
-    .max(20, "Höchstens 20 Anhänge")
-    .default([]),
+  artifactFileIds: z.array(z.string().min(1).max(100)).max(20, "Höchstens 20 Anhänge").default([]),
 });
 export type ProjectInput = z.infer<typeof ProjectInput>;
 
@@ -88,11 +85,7 @@ async function loadOrThrow(db: Db, id: string): Promise<typeof projects.$inferSe
 }
 
 /** Create a project owned by `groupId`. The owning group must exist. */
-export async function createProject(
-  db: Db,
-  input: unknown,
-  createdBy: string,
-): Promise<Project> {
+export async function createProject(db: Db, input: unknown, createdBy: string): Promise<Project> {
   const v = parseOrThrow(CreateProjectInput, input);
   const group = await resolveGroupRef(db, v.groupId);
 

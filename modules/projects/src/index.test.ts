@@ -132,18 +132,14 @@ describeIfDb("projects integration", () => {
   });
 
   it("updateProject throws NOT_FOUND for an unknown id", async () => {
-    await expect(
-      updateProject(t.db, "prj_missing", { title: "Nirgendwo" }),
-    ).rejects.toMatchObject({ code: "NOT_FOUND" });
+    await expect(updateProject(t.db, "prj_missing", { title: "Nirgendwo" })).rejects.toMatchObject({
+      code: "NOT_FOUND",
+    });
   });
 
   it("getProject returns the enriched project, null for unknown", async () => {
     await seedGroup("grp_aachen", "aachen", "BDAS Aachen");
-    const p = await createProject(
-      t.db,
-      { groupId: "grp_aachen", title: "Mentoring" },
-      "usr_board",
-    );
+    const p = await createProject(t.db, { groupId: "grp_aachen", title: "Mentoring" }, "usr_board");
 
     const fetched = await getProject(t.db, p.id);
     expect(fetched).toMatchObject({ id: p.id, title: "Mentoring", groupSlug: "aachen" });
@@ -221,14 +217,10 @@ describeIfDb("projects integration", () => {
 
   it("adoptProject rejects a non-existent target group with NOT_FOUND", async () => {
     await seedGroup("grp_aachen", "aachen", "BDAS Aachen");
-    const source = await createProject(
-      t.db,
-      { groupId: "grp_aachen", title: "Workshop" },
-      "usr_a",
-    );
-    await expect(
-      adoptProject(t.db, source.id, "grp_ghost", "usr_x"),
-    ).rejects.toMatchObject({ code: "NOT_FOUND" });
+    const source = await createProject(t.db, { groupId: "grp_aachen", title: "Workshop" }, "usr_a");
+    await expect(adoptProject(t.db, source.id, "grp_ghost", "usr_x")).rejects.toMatchObject({
+      code: "NOT_FOUND",
+    });
   });
 
   it("the DB CHECK constraint rejects a status outside the allowed set", async () => {

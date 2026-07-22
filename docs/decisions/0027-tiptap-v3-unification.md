@@ -22,7 +22,7 @@ therefore held only because nothing forced pnpm to re-resolve.
 
 Adding `@bdas/blog` forces exactly that re-resolve. pnpm then collapses the
 app's Tiptap subtree onto the **highest major present (`@tiptap/core@3.27.4`,
-from Puck)**. There is no lockfile state that keeps blog on the graph *and*
+from Puck)**. There is no lockfile state that keeps blog on the graph _and_
 holds the app editors on core@2 without a working override — the frozen v2
 artifact cannot survive any Tiptap-consuming addition.
 

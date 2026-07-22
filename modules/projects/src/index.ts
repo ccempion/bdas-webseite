@@ -16,9 +16,4 @@ export { getProject } from "./services/get";
 export { listProjects, type ListOpts } from "./services/list";
 
 export type { Project, ProjectSummary, ProjectStatus } from "./types";
-export type {
-  ProjectsEvent,
-  ProjectCreated,
-  ProjectUpdated,
-  ProjectAdopted,
-} from "./events";
+export type { ProjectsEvent, ProjectCreated, ProjectUpdated, ProjectAdopted } from "./events";
