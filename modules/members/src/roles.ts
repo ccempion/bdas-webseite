@@ -78,7 +78,7 @@ export function canGrantLocalBoard(grants: ReadonlyArray<Grant>, groupId: string
 }
 
 /**
- * May the actor edit the group's public content page (ADR 0025)? Federal board
+ * May the actor edit the group's public content page (ADR 0026)? Federal board
  * → any group. A `local_board_lead` or `page_editor` → only the group its
  * grant is scoped to. Plain `local_board` does NOT edit — the lead delegates
  * explicitly via `page_editor`.

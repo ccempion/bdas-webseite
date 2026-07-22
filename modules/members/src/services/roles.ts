@@ -1,5 +1,5 @@
 /**
- * Role grant / revoke (ADR 0007, amended by ADR 0013, extended by ADR 0025).
+ * Role grant / revoke (ADR 0007, amended by ADR 0013, extended by ADR 0026).
  * Writes scoped rows to `member_role_grants`. Federal board may grant any
  * role; a `local_board_lead` may grant/revoke `local_board`, `event_organizer`,
  * and `page_editor` within its own group only (see requireCanGrant).
@@ -26,7 +26,7 @@ export type Db = PostgresJsDatabase<Record<string, never>>;
 
 /**
  * Who may grant/revoke (ADR 0013, supersedes the federal-only rule; extended
- * by ADR 0025 to include `page_editor`):
+ * by ADR 0026 to include `page_editor`):
  *  - `local_board`, `event_organizer`, `page_editor` → federal_board OR a local_board_lead of that group
  *  - everything else                   → federal_board only
  *    (appointing leads and federal_board stays central; member/alumnus are
@@ -52,7 +52,7 @@ function requireValidRole(role: string): asserts role is Role {
 }
 
 /**
- * local_board, local_board_lead, event_organizer and page_editor (ADR 0025)
+ * local_board, local_board_lead, event_organizer and page_editor (ADR 0026)
  * are group-scoped; federal_board is unscoped.
  */
 function requireValidScope(role: Role, groupId: string | null): void {

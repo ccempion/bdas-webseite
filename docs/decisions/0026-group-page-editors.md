@@ -7,13 +7,7 @@
 > Numbering note: the design brief for this work (issue #48) drafted this
 > decision as "ADR 0025". That number was taken in the meantime by the
 > unrelated Puck-palette-expansion ADR merged from `main`. This document is
-> the same decision, filed as **0026**; in-code comments written during
-> implementation (migration `members/0007_page_editor.sql`,
-> `modules/members/src/roles.ts` and `services/roles.ts`,
-> `modules/content/src/types.ts` and `index.test.ts`,
-> `apps/web/lib/content-scope.ts`, `apps/web/app/_content/content-slug-context.ts`)
-> still say "ADR 0025" and should be relabelled to 0026 in a follow-up —
-> out of scope here (docs-only task).
+> the same decision, filed as **0026**.
 
 ## Context
 

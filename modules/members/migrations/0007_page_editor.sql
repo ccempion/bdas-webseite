@@ -1,4 +1,4 @@
--- Members module — add the `page_editor` role to the grant domain (ADR 0025).
+-- Members module — add the `page_editor` role to the grant domain (ADR 0026).
 -- Group-scoped: a per-group content delegate for the public group page
 -- ("local_board restricted to the page surface"). Additive; the CHECK domain
 -- widens via the drop+recreate shape established in 0003. No backfill.

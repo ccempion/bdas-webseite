@@ -1,5 +1,5 @@
 /**
- * Editable group pages (spec 2026-07-18, ADR 0025): public view, editor
+ * Editable group pages (spec 2026-07-18, ADR 0026): public view, editor
  * gating, lead entry into Puck. Requires BDAS_FLAG_GROUPS, BDAS_FLAG_CONTENT,
  * BDAS_FLAG_PUBLIC_SHELL and BDAS_FLAG_AUTH in the e2e env.
  */

@@ -125,7 +125,7 @@ describeIfDb("content pages service", () => {
   });
 });
 
-describeIfDb("group-scoped saves (ADR 0025)", () => {
+describeIfDb("group-scoped saves (ADR 0026)", () => {
   let t: TestDb;
   const GROUP_SLUG = "gruppen/aachen";
   const SCOPE = { groupId: "grp_aachen" };

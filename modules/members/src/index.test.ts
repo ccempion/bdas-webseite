@@ -593,7 +593,7 @@ describeIfDb("members integration", () => {
     ).rejects.toMatchObject({ code: "FORBIDDEN" });
   });
 
-  it("a lead may grant/revoke page_editor scoped to its group (ADR 0025)", async () => {
+  it("a lead may grant/revoke page_editor scoped to its group (ADR 0026)", async () => {
     await createGroup("grp_a", "aachen");
     await createUser("usr_pe", "pe@example.de");
     const m = await createProfile(t.db, {
