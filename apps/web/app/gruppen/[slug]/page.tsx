@@ -34,8 +34,8 @@ export default async function GruppeDetailPage({ params }: { params: { slug: str
   if (!group || group.status === "archived") notFound();
 
   const contentOn = isFlagOn("content");
-  const me = contentOn ? await loadCurrentMember() : null;
-  const canEdit = me !== null && canEditGroupPage(me.grants, group.id);
+  const me = await loadCurrentMember();
+  const canEdit = contentOn && me !== null && canEditGroupPage(me.grants, group.id);
   const page = contentOn ? await getPage(getDb(), `gruppen/${group.slug}`) : null;
   const upcoming = isFlagOn("events")
     ? await listUpcomingEvents(getDb(), viewerFrom(me), { groupId: group.id })
