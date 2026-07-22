@@ -1,0 +1,177 @@
+/**
+ * Blog integration tests against a real Postgres schema.
+ * Skips when DATABASE_URL is unreachable; CI brings up a Postgres service.
+ *
+ * The blog table has no cross-module FKs (created_by is a plain user id), so
+ * only the blog migration is applied.
+ */
+import { promises as fs } from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import postgres from "postgres";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
+
+import { createTestDb, type TestDb } from "@bdas/db/test";
+import { getEventBus, resetEventBus } from "@bdas/events";
+
+import type { BlogEvent } from "./events";
+import { plainTextToDoc } from "./content";
+import { getPostBySlug } from "./services/get";
+import { listPosts } from "./services/list";
+import { createPost, deletePost, updatePost } from "./services/manage";
+import { ANON, type Viewer } from "./visibility";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const DEFAULT_URL = "postgres://bdas:bdas@localhost:5432/bdas";
+
+async function dbReachable(): Promise<boolean> {
+  const url = process.env["DATABASE_URL"] ?? DEFAULT_URL;
+  const sql = postgres(url, { max: 1, onnotice: () => {}, connect_timeout: 2 });
+  try {
+    await sql`select 1`;
+    await sql.end();
+    return true;
+  } catch {
+    try {
+      await sql.end();
+    } catch {
+      /* ignore */
+    }
+    return false;
+  }
+}
+
+const reachable = await dbReachable();
+const describeIfDb = reachable ? describe : describe.skip;
+
+const member: Viewer = { userId: "usr_m", isMember: true, isFederal: false };
+const federal: Viewer = { userId: "usr_f", isMember: true, isFederal: true };
+
+const doc = (text: string) => plainTextToDoc(text);
+
+describeIfDb("blog integration", () => {
+  let t: TestDb;
+
+  beforeEach(async () => {
+    t = await createTestDb();
+    const sql = await fs.readFile(
+      path.join(__dirname, "..", "migrations", "0001_init.sql"),
+      "utf8",
+    );
+    await t.client.unsafe(sql);
+    resetEventBus();
+  });
+
+  afterEach(async () => {
+    await t.cleanup();
+  });
+
+  function capture(type: BlogEvent["type"]): BlogEvent[] {
+    const out: BlogEvent[] = [];
+    getEventBus().subscribe<BlogEvent>(type, (e) => {
+      out.push(e);
+    });
+    return out;
+  }
+
+  it("createPost inserts, defaults visibility public, mints a slug, and emits", async () => {
+    const published = capture("blog.post.published");
+    const p = await createPost(
+      t.db,
+      { title: "Nowruz-Fest", content: doc("Wir feiern Nowruz.") },
+      "usr_m",
+    );
+
+    expect(p.id).toMatch(/^post_/);
+    expect(p.visibility).toBe("public");
+    expect(p.slug).toMatch(/^nowruz-fest-[a-z0-9]{6}$/);
+    expect(p.createdBy).toBe("usr_m");
+    expect(published).toMatchObject([
+      { type: "blog.post.published", postId: p.id, visibility: "public", authorId: "usr_m" },
+    ]);
+  });
+
+  it("createPost rejects a too-short title with VALIDATION", async () => {
+    await expect(
+      createPost(t.db, { title: "x", content: doc("egal") }, "usr_m"),
+    ).rejects.toMatchObject({ code: "VALIDATION" });
+  });
+
+  it("updatePost edits title/content/visibility and emits", async () => {
+    const updated = capture("blog.post.updated");
+    const p = await createPost(t.db, { title: "Entwurf", content: doc("alt") }, "usr_m");
+
+    const edited = await updatePost(t.db, p.id, {
+      title: "Fertiger Beitrag",
+      content: doc("neu"),
+      visibility: "members",
+    });
+
+    expect(edited.slug).toBe(p.slug); // slug immutable
+    expect(edited.title).toBe("Fertiger Beitrag");
+    expect(edited.visibility).toBe("members");
+    expect(updated).toMatchObject([{ type: "blog.post.updated", postId: p.id }]);
+  });
+
+  it("deletePost removes the row and emits", async () => {
+    const deleted = capture("blog.post.deleted");
+    const p = await createPost(t.db, { title: "Weg damit", content: doc("x") }, "usr_m");
+
+    await deletePost(t.db, p.id);
+
+    expect(await getPostBySlug(t.db, p.slug, federal)).toBeNull();
+    expect(deleted).toMatchObject([{ type: "blog.post.deleted", postId: p.id }]);
+  });
+
+  it("listPosts filters by visibility and returns newest first", async () => {
+    const pub = await createPost(
+      t.db,
+      { title: "Oeffentlich", content: doc("a"), visibility: "public" },
+      "usr_author",
+    );
+    const mem = await createPost(
+      t.db,
+      { title: "Mitglieder", content: doc("b"), visibility: "members" },
+      "usr_author",
+    );
+    const board = await createPost(
+      t.db,
+      { title: "Vorstand", content: doc("c"), visibility: "board" },
+      "usr_author",
+    );
+
+    // Guest: only public.
+    const guestFeed = await listPosts(t.db, ANON);
+    expect(guestFeed.map((p) => p.id)).toEqual([pub.id]);
+
+    // Member: public + members, newest first.
+    const memberFeed = await listPosts(t.db, member);
+    expect(memberFeed.map((p) => p.id)).toEqual([mem.id, pub.id]);
+
+    // Federal: all three, newest first.
+    const federalFeed = await listPosts(t.db, federal);
+    expect(federalFeed.map((p) => p.id)).toEqual([board.id, mem.id, pub.id]);
+  });
+
+  it("author sees their own restricted post in the feed and by slug", async () => {
+    const board = await createPost(
+      t.db,
+      { title: "Nur Vorstand", content: doc("geheim"), visibility: "board" },
+      "usr_m",
+    );
+
+    // usr_m is a plain member but the author → sees it.
+    const feed = await listPosts(t.db, member);
+    expect(feed.map((p) => p.id)).toContain(board.id);
+    expect(await getPostBySlug(t.db, board.slug, member)).not.toBeNull();
+  });
+
+  it("getPostBySlug hides a board post from a guest (share-link guard)", async () => {
+    const board = await createPost(
+      t.db,
+      { title: "Geheim", content: doc("x"), visibility: "board" },
+      "usr_author",
+    );
+    expect(await getPostBySlug(t.db, board.slug, ANON)).toBeNull();
+  });
+});

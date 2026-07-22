@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "@tiptap/extension-link";
-import { EditorContent, useEditor, type Content } from "@tiptap/react";
+import { EditorContent, useEditor, type Content, type Extensions } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 
 import { RICH_TEXT_STARTERKIT_CONFIG } from "./rich-text-config";
@@ -47,7 +47,8 @@ export function RichTextField({
   onChange: (doc: unknown) => void;
 }) {
   const editor = useEditor({
-    extensions: EXTENSIONS,
+    // Cast bridges the two @tiptap/core majors (app v2 / Puck v3); nominal-only.
+    extensions: EXTENSIONS as Extensions,
     content: (value as Content) ?? EMPTY_DOC,
     immediatelyRender: false,
     onUpdate: ({ editor }) => onChange(editor.getJSON()),
