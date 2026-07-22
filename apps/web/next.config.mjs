@@ -48,7 +48,7 @@ const nextConfig = {
       { source: "/news", destination: "/", permanent: true },
       { source: "/news/:slug", destination: "/", permanent: true },
       {
-        source: "/ueber-uns/:slug((?!verbandsstruktur|bdaj|bundessprecherinnenrat).*)",
+        source: "/ueber-uns/:slug((?!verbandsstruktur|bdaj|bundessprecherinnenrat|bearbeiten).*)",
         destination: "/ueber-uns",
         permanent: true,
       },
