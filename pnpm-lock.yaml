@@ -104,15 +104,6 @@ importers:
       '@puckeditor/core':
         specifier: ^0.22.1
         version: 0.22.2(@floating-ui/dom@1.8.0)(@types/react-dom@18.3.7(@types/react@18.3.28))(@types/react@18.3.28)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(use-sync-external-store@1.6.0(react@18.3.1))
-      '@schedule-x/calendar':
-        specifier: ^4.6.0
-        version: 4.6.0(@preact/signals@2.9.2(preact@10.29.4))(preact@10.29.4)(temporal-polyfill@0.3.0)
-      '@schedule-x/react':
-        specifier: ^4.1.0
-        version: 4.1.0(@schedule-x/calendar@4.6.0(@preact/signals@2.9.2(preact@10.29.4))(preact@10.29.4)(temporal-polyfill@0.3.0))(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
-      '@schedule-x/theme-default':
-        specifier: ^4.6.0
-        version: 4.6.0
       '@tiptap/extension-image':
         specifier: ^2.10.0
         version: 2.27.2(@tiptap/core@3.27.4(@tiptap/pm@2.27.2))
@@ -143,9 +134,6 @@ importers:
       react-dom:
         specifier: ^18.3.1
         version: 18.3.1(react@18.3.1)
-      temporal-polyfill:
-        specifier: 0.3.0
-        version: 0.3.0
     devDependencies:
       '@tailwindcss/typography':
         specifier: ^0.5.15
@@ -1429,11 +1417,6 @@ packages:
   '@preact/signals-core@1.14.3':
     resolution: {integrity: sha512-m0K3vnbSLC5rHs2ZVfeAMvBtT1zIyq4mxx5OlNncSgMj5Iz6W5Rn3kPrDxAC+iIKmiVe0lSl6U37t5ZkEWoVAw==}
 
-  '@preact/signals@2.9.2':
-    resolution: {integrity: sha512-DvFPISNMSh3vPqRwPa1tAVAHl85aDq4pTyNu1bTGfrKr64F3EOCHjdUl9aUdohKBf1v9PRGLYuGFcJpfztkdoQ==}
-    peerDependencies:
-      preact: '>= 10.25.0 || >=11.0.0-0'
-
   '@puckeditor/core@0.22.2':
     resolution: {integrity: sha512-pFflZGoCGkULZtXo2JGReGxizAmJnPnjm1sUE0yCNQUMBfzPId8Oj2mmy5Mthw4DPFCjjXLeWjEvfgnoYgnjqQ==}
     engines: {node: '>=20.0.0'}
@@ -1799,23 +1782,6 @@ packages:
 
   '@rtsao/scc@1.1.0':
     resolution: {integrity: sha512-zt6OdqaDoOnJ1ZYsCYGt9YmWzDXl4vQdKTyJev62gFhRGKdx7mcT54V9KIjg+d2wi9EXsPvAPKe7i7WjfVWB8g==}
-
-  '@schedule-x/calendar@4.6.0':
-    resolution: {integrity: sha512-8Rf5bUf0DVphJB2BaudtG4IHkw21wgMJiiuk5o+7SIOq6YH4hkVJo+Kk12pWSfp2KTZ9mnnUuLV+szBVhiEPlg==}
-    peerDependencies:
-      '@preact/signals': ^2.0.2
-      preact: ^10.19.2
-      temporal-polyfill: 0.3.0
-
-  '@schedule-x/react@4.1.0':
-    resolution: {integrity: sha512-l2hn1kdTModk4Lbt+nEr/VAcuNMA+w+hAAtgz8VLOj5UeieM7PWoK+cDapzPHCjUKisCSPd8QZfAX966Ma82kQ==}
-    peerDependencies:
-      '@schedule-x/calendar': ^3.1.0 || ^4.0.0
-      react: ^16.7.0 || ^17 || ^18 || ^19
-      react-dom: ^16.7.0 || ^17 || ^18 || ^19
-
-  '@schedule-x/theme-default@4.6.0':
-    resolution: {integrity: sha512-SM3bcvROJeG7ScH14lBIHZSTOBTR8h+oTswbpx1gpscddUfQfAnu7cFW4OJJI+ii+Si1IdTd4T3+rrnKd4HDDg==}
 
   '@selderee/plugin-htmlparser2@0.11.0':
     resolution: {integrity: sha512-P33hHGdldxGabLFjPPpaTxVolMrzrcegejx+0GxjrIb9Zv48D8yAIA/QTDR2dFl7Uz7urX8aX6+5bCZslr+gWQ==}
@@ -3514,9 +3480,6 @@ packages:
     resolution: {integrity: sha512-GD3qdB0x1z9xgFI6cdRD6xu2Sp2WCOEoe3mtnyB5Ee0XrrL5Pe+e4CCnJrRMnL1zYtRDZmQQVbvOttLnKDLnaw==}
     engines: {node: '>=12'}
 
-  preact@10.29.4:
-    resolution: {integrity: sha512-GMpwh9+NJ8tSmqwIaVyFRQkiKfBEzQ+k7r7tle4W+kaJ+7wJiB9hFz9BixAomMtenPPSBfM4bZhXozGxhf0uFQ==}
-
   prelude-ls@1.2.1:
     resolution: {integrity: sha512-vkcDPrRZo1QZLbn5RLGPpg/WmIQ65qoWWhcGKf/b5eplkkarX0m9z8ppCat4mlOqUsWpyNuYgO3VRyrYHSzX5g==}
     engines: {node: '>= 0.8.0'}
@@ -3838,12 +3801,6 @@ packages:
     resolution: {integrity: sha512-3ofp+LL8E+pK/JuPLPggVAIaEuhvIz4qNcf3nA1Xn2o/7fb7s/TYpHhwGDv1ZU3PkBluUVaF8PyCHcm48cKLWQ==}
     engines: {node: '>=14.0.0'}
     hasBin: true
-
-  temporal-polyfill@0.3.0:
-    resolution: {integrity: sha512-qNsTkX9K8hi+FHDfHmf22e/OGuXmfBm9RqNismxBrnSmZVJKegQ+HYYXT+R7Ha8F/YSm2Y34vmzD4cxMu2u95g==}
-
-  temporal-spec@0.3.0:
-    resolution: {integrity: sha512-n+noVpIqz4hYgFSMOSiINNOUOMFtV5cZQNCmmszA6GiVFVRt3G7AqVyhXjhCSmowvQn+NsGn+jMDMKJYHd3bSQ==}
 
   thenify-all@1.6.0:
     resolution: {integrity: sha512-RNxQH/qI8/t3thXJDwcstUO4zeqo64+Uy/+sNVRBx4Xn2OX+OZ9oP+iJnNFqplFra2ZUVeKCSa2oVWi3T4uVmA==}
@@ -4693,11 +4650,6 @@ snapshots:
 
   '@preact/signals-core@1.14.3': {}
 
-  '@preact/signals@2.9.2(preact@10.29.4)':
-    dependencies:
-      '@preact/signals-core': 1.14.3
-      preact: 10.29.4
-
   '@puckeditor/core@0.22.2(@floating-ui/dom@1.8.0)(@types/react-dom@18.3.7(@types/react@18.3.28))(@types/react@18.3.28)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(use-sync-external-store@1.6.0(react@18.3.1))':
     dependencies:
       '@dnd-kit/abstract': 0.4.0
@@ -5012,20 +4964,6 @@ snapshots:
     optional: true
 
   '@rtsao/scc@1.1.0': {}
-
-  '@schedule-x/calendar@4.6.0(@preact/signals@2.9.2(preact@10.29.4))(preact@10.29.4)(temporal-polyfill@0.3.0)':
-    dependencies:
-      '@preact/signals': 2.9.2(preact@10.29.4)
-      preact: 10.29.4
-      temporal-polyfill: 0.3.0
-
-  '@schedule-x/react@4.1.0(@schedule-x/calendar@4.6.0(@preact/signals@2.9.2(preact@10.29.4))(preact@10.29.4)(temporal-polyfill@0.3.0))(react-dom@18.3.1(react@18.3.1))(react@18.3.1)':
-    dependencies:
-      '@schedule-x/calendar': 4.6.0(@preact/signals@2.9.2(preact@10.29.4))(preact@10.29.4)(temporal-polyfill@0.3.0)
-      react: 18.3.1
-      react-dom: 18.3.1(react@18.3.1)
-
-  '@schedule-x/theme-default@4.6.0': {}
 
   '@selderee/plugin-htmlparser2@0.11.0':
     dependencies:
@@ -6887,8 +6825,6 @@ snapshots:
 
   postgres@3.4.9: {}
 
-  preact@10.29.4: {}
-
   prelude-ls@1.2.1: {}
 
   prettier@3.8.3: {}
@@ -7336,12 +7272,6 @@ snapshots:
     transitivePeerDependencies:
       - tsx
       - yaml
-
-  temporal-polyfill@0.3.0:
-    dependencies:
-      temporal-spec: 0.3.0
-
-  temporal-spec@0.3.0: {}
 
   thenify-all@1.6.0:
     dependencies:
