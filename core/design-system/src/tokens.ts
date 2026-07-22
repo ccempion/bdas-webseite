@@ -59,6 +59,8 @@ export const radii = {
   md: "12px",
   /** Desktop nav pills. */
   pill: "20px",
+  /** Genuinely circular elements — nav buttons, markers, dots. */
+  full: "9999px",
 } as const;
 
 export const shadows = {
