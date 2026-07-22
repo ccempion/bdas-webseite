@@ -70,7 +70,9 @@ export function MonthGrid({ events }: { events: CalendarEvent[] }) {
                   : "text-sm tabular-nums " +
                     (cell.inMonth ? "text-bdas-ink-body" : "text-bdas-ink-muted opacity-50")
               }
+              {...(cell.date === today && { "aria-current": "date" })}
             >
+              {cell.date === today && <span className="sr-only">Heute </span>}
               {cell.day}
             </span>
 

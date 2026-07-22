@@ -2,11 +2,11 @@ import type { EventWithCounts } from "@bdas/events-module";
 
 import { berlinParts } from "../../lib/datetime";
 
-/** Wire shape passed from the server page into the Schedule-X client island.
+/** Wire shape passed from the server to client components.
  *  start/end use the "YYYY-MM-DD HH:mm" wall-clock format (Europe/Berlin) —
- *  plain strings so this crosses the RSC server→client boundary as ordinary
- *  serializable data. EventCalendar converts them to Schedule-X's Temporal
- *  values at render time (see EventCalendar.tsx for why). */
+ *  plain strings that cross the RSC server→client boundary as ordinary
+ *  serializable data. They are parsed at render time by AgendaList,
+ *  EventAccordion, and MonthGrid (via buildMonthWeeks). */
 export type CalendarEvent = {
   readonly id: string;
   readonly title: string;
