@@ -32,7 +32,7 @@ const base = {
 };
 
 describe("toCalendarEvents", () => {
-  it("formats start/end as YYYY-MM-DD HH:mm", () => {
+  it("formats start/end and carries summary + location", () => {
     const [ev] = toCalendarEvents([base]);
     expect(ev).toEqual({
       id: "ev-1",
@@ -40,6 +40,8 @@ describe("toCalendarEvents", () => {
       start: "2026-09-05 14:30",
       end: "2026-09-05 18:00",
       groupId: null,
+      summary: null,
+      location: null,
     });
   });
 
@@ -53,5 +55,27 @@ describe("toCalendarEvents", () => {
     // Europe/Berlin rather than using the process's local TZ getters.
     const [ev] = toCalendarEvents([base]);
     expect(ev!.start).toBe("2026-09-05 14:30");
+  });
+
+  it("passes summary through", () => {
+    const [ev] = toCalendarEvents([{ ...base, summary: "Kurzbeschreibung" }]);
+    expect(ev!.summary).toBe("Kurzbeschreibung");
+  });
+
+  it("derives location from name + address", () => {
+    const [ev] = toCalendarEvents([
+      { ...base, locationName: "Rathaus", locationAddress: "Marktplatz 1" },
+    ]);
+    expect(ev!.location).toBe("Rathaus, Marktplatz 1");
+  });
+
+  it("uses location name alone when address is absent", () => {
+    const [ev] = toCalendarEvents([{ ...base, locationName: "Online" }]);
+    expect(ev!.location).toBe("Online");
+  });
+
+  it("falls back to the legacy location field", () => {
+    const [ev] = toCalendarEvents([{ ...base, location: "Berlin" }]);
+    expect(ev!.location).toBe("Berlin");
   });
 });

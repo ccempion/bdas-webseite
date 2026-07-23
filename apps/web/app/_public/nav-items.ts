@@ -3,17 +3,17 @@ import { isFlagOn } from "@bdas/feature-flags";
 export type NavLeaf = { label: string; href: string };
 export type NavItem = NavLeaf | { label: string; children: NavLeaf[] };
 
-/** Top navigation. Computed per-request so flags apply. Federal board members
- *  get the management pages folded in as sub-items under Events / Gruppen.
- *  Signed-in members additionally get a "Meine Gruppe" dropdown and a "Dateien"
- *  item (both decided by the caller, which has the session + flags). */
+/** Top navigation. Computed per-request so flags apply. Signed-out visitors get
+ *  a "Gruppen" link to browse all groups; signed-in members instead get their
+ *  own local group as a named dropdown (plus a "Dateien" item). The caller owns
+ *  the session + flags and passes the derived values in. */
 export function navItems({
-  isFederal = false,
+  isLoggedIn = false,
   myGroup,
   showFiles = false,
 }: {
-  isFederal?: boolean;
-  myGroup?: { slug: string };
+  isLoggedIn?: boolean;
+  myGroup?: { slug: string; name: string };
   showFiles?: boolean;
 } = {}): NavItem[] {
   const items: NavItem[] = [
@@ -34,22 +34,14 @@ export function navItems({
     items.push({ label: "Events", href: "/events" });
   }
   if (isFlagOn("blog")) items.push({ label: "Blog", href: "/blog" });
-  if (isFlagOn("groups")) {
-    items.push(
-      isFederal
-        ? {
-            label: "Gruppen",
-            children: [
-              { label: "Übersicht", href: "/gruppen" },
-              { label: "Verwalten", href: "/admin/gruppen" },
-            ],
-          }
-        : { label: "Gruppen", href: "/gruppen" },
-    );
+  // Browse-all-groups link, for signed-out visitors only. Signed-in members
+  // navigate via their own group below, so "Gruppen" is dropped for them.
+  if (isFlagOn("groups") && !isLoggedIn) {
+    items.push({ label: "Gruppen", href: "/gruppen" });
   }
   if (myGroup) {
     items.push({
-      label: "Meine Gruppe",
+      label: myGroup.name,
       children: [
         { label: "Übersicht", href: `/gruppen/${myGroup.slug}` },
         { label: "Events", href: `/events?groups=${myGroup.slug}` },

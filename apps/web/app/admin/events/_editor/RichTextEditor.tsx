@@ -2,7 +2,7 @@
 
 import Image from "@tiptap/extension-image";
 import Link from "@tiptap/extension-link";
-import { EditorContent, useEditor, type Content } from "@tiptap/react";
+import { EditorContent, useEditor, type Content, type Extensions } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { useCallback, useState } from "react";
 
@@ -39,7 +39,8 @@ export function RichTextEditor({
 }) {
   const [json, setJson] = useState<string>(defaultDoc ? JSON.stringify(defaultDoc) : "");
   const editor = useEditor({
-    extensions: [StarterKit, ImageWithWidth, Link.configure({ openOnClick: false })],
+    // Cast bridges the two @tiptap/core majors (app v2 / Puck v3); nominal-only.
+    extensions: [StarterKit, ImageWithWidth, Link.configure({ openOnClick: false })] as Extensions,
     content: (defaultDoc ?? "") as Content,
     immediatelyRender: false,
     onUpdate: ({ editor }) => setJson(JSON.stringify(editor.getJSON())),

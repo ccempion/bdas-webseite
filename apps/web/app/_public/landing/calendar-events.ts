@@ -2,17 +2,19 @@ import type { EventWithCounts } from "@bdas/events-module";
 
 import { berlinParts } from "../../lib/datetime";
 
-/** Wire shape passed from the server page into the Schedule-X client island.
+/** Wire shape passed from the server to client components.
  *  start/end use the "YYYY-MM-DD HH:mm" wall-clock format (Europe/Berlin) —
- *  plain strings so this crosses the RSC server→client boundary as ordinary
- *  serializable data. EventCalendar converts them to Schedule-X's Temporal
- *  values at render time (see EventCalendar.tsx for why). */
+ *  plain strings that cross the RSC server→client boundary as ordinary
+ *  serializable data. They are parsed at render time by AgendaList,
+ *  EventAccordion, and MonthGrid (via buildMonthWeeks). */
 export type CalendarEvent = {
   readonly id: string;
   readonly title: string;
   readonly start: string;
   readonly end: string;
   readonly groupId: string | null;
+  readonly summary: string | null;
+  readonly location: string | null;
 };
 
 const HOUR_MS = 60 * 60 * 1000;
@@ -25,6 +27,13 @@ function fmt(d: Date): string {
   return `${p["year"]}-${pad(p["month"]!)}-${pad(p["day"]!)} ${pad(p["hour"]!)}:${pad(p["minute"]!)}`;
 }
 
+function locationOf(e: EventWithCounts): string | null {
+  if (e.locationName) {
+    return e.locationAddress ? `${e.locationName}, ${e.locationAddress}` : e.locationName;
+  }
+  return e.location ?? null;
+}
+
 export function toCalendarEvents(events: ReadonlyArray<EventWithCounts>): CalendarEvent[] {
   return events.map((e) => ({
     id: e.id,
@@ -32,5 +41,7 @@ export function toCalendarEvents(events: ReadonlyArray<EventWithCounts>): Calend
     start: fmt(e.startsAt),
     end: fmt(e.endsAt ?? new Date(e.startsAt.getTime() + HOUR_MS)),
     groupId: e.groupId,
+    summary: e.summary,
+    location: locationOf(e),
   }));
 }

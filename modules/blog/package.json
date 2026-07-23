@@ -1,0 +1,32 @@
+{
+  "name": "@bdas/blog",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run --dir src"
+  },
+  "dependencies": {
+    "@bdas/db": "workspace:*",
+    "@bdas/errors": "workspace:*",
+    "@bdas/events": "workspace:*",
+    "@bdas/id": "workspace:*",
+    "@tiptap/extension-image": "^2.10.0",
+    "@tiptap/extension-link": "^2.10.0",
+    "@tiptap/extension-youtube": "^2.10.0",
+    "@tiptap/html": "^2.10.0",
+    "@tiptap/pm": "^2.10.0",
+    "@tiptap/starter-kit": "^2.10.0",
+    "drizzle-orm": "^0.36.0",
+    "postgres": "^3.4.5",
+    "sanitize-html": "^2.13.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/sanitize-html": "^2.13.0"
+  }
+}

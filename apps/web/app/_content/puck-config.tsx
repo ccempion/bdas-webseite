@@ -1,4 +1,4 @@
-import { type Config } from "@puckeditor/core";
+import { type Config, type Data } from "@puckeditor/core";
 import React from "react";
 
 import { Card } from "@bdas/design-system";
@@ -47,12 +47,45 @@ type Blocks = {
   };
 };
 
+/** Content-column width. Carried on the page's root so the same value frames
+ *  the blocks in the editor preview (`<Puck>`) and the public page (`<Render>`).
+ *  `breit` gives the person grid room; text pages stay at reading width. */
+export type Breite = "schmal" | "breit";
+
+export const breiteClass = (breite: Breite): string =>
+  breite === "breit" ? "max-w-5xl" : "max-w-3xl";
+
+/** Ensure a document carries a `breite` before it reaches `<Puck>`/`<Render>`.
+ *  Documents authored before the root existed have none; fall back per page so
+ *  the editor and the published page frame them identically. */
+export function withBreite(data: Data, fallback: Breite): Data {
+  const props = (data.root?.props ?? {}) as Record<string, unknown>;
+  if (props.breite === "schmal" || props.breite === "breit") return data;
+  return { ...data, root: { ...data.root, props: { ...props, breite: fallback } } } as Data;
+}
+
 /**
  * Block palette for board-editable pages (spec §4). Deliberately small —
  * every extra block is maintenance. No raw-HTML block, ever: text renders
  * React-escaped, which is the structural XSS exclusion the spec relies on.
+ *
+ * `root.render` supplies the page container (centered column, width, block
+ * spacing) so the editor preview matches the published page — without it, the
+ * layout lives only in the route's `<main>` and the editor renders full-bleed.
  */
 export const puckConfig: Config<Blocks> = {
+  // `breite` is carried on root.props (seeded by withBreite), not a Puck field —
+  // it's a per-page layout constant, not something the board edits.
+  root: {
+    render: ({ children, ...props }) => {
+      const breite = ((props as unknown as { breite?: Breite }).breite ?? "schmal") as Breite;
+      return (
+        <div className={`mx-auto flex w-full flex-col gap-6 px-4 ${breiteClass(breite)}`}>
+          {children}
+        </div>
+      );
+    },
+  },
   components: {
     Ueberschrift: {
       label: "Überschrift",

@@ -8,7 +8,7 @@ import { getDb } from "@bdas/db";
 import { isFlagOn } from "@bdas/feature-flags";
 import { isFederalBoard } from "@bdas/members";
 
-import { puckConfig } from "../../_content/puck-config";
+import { breiteClass, puckConfig, withBreite } from "../../_content/puck-config";
 import { loadCurrentMember } from "../../_dashboard/session";
 import { requirePublicShellFlag } from "../../_public/flag";
 
@@ -35,8 +35,10 @@ export default async function BdajPage() {
   const canEdit = me !== null && isFederalBoard(me.grants);
 
   return (
-    <main className="mx-auto flex max-w-3xl flex-col gap-6 px-4 py-12">
-      <div className="flex flex-col items-start gap-4 sm:flex-row sm:justify-between">
+    <main className="py-12">
+      <div
+        className={`mx-auto flex w-full flex-col items-start gap-4 px-4 sm:flex-row sm:justify-between ${breiteClass("schmal")}`}
+      >
         <h1 className="break-words text-3xl font-semibold text-bdas-ink">
           Bund der Alevitischen Jugendlichen (BDAJ)
         </h1>
@@ -49,7 +51,11 @@ export default async function BdajPage() {
           </Link>
         ) : null}
       </div>
-      {page ? <Render config={puckConfig} data={page.data as Data} /> : null}
+      {page ? (
+        <div className="mt-6">
+          <Render config={puckConfig} data={withBreite(page.data as Data, "schmal")} />
+        </div>
+      ) : null}
     </main>
   );
 }

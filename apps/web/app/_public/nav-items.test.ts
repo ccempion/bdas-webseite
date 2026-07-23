@@ -7,18 +7,18 @@ function byLabel(items: NavItem[], label: string): NavItem | undefined {
 }
 
 describe("navItems", () => {
-  it("omits Meine Gruppe and Dateien by default", () => {
+  it("omits the group dropdown and Dateien by default", () => {
     const items = navItems();
-    expect(byLabel(items, "Meine Gruppe")).toBeUndefined();
+    expect(byLabel(items, "BDAS Köln")).toBeUndefined();
     expect(byLabel(items, "Dateien")).toBeUndefined();
   });
 
-  it("adds a Meine Gruppe dropdown when myGroup is given", () => {
-    const items = navItems({ myGroup: { slug: "koeln" } });
-    const mg = byLabel(items, "Meine Gruppe");
+  it("adds the member's own group as a named dropdown when myGroup is given", () => {
+    const items = navItems({ myGroup: { slug: "koeln", name: "BDAS Köln" } });
+    const mg = byLabel(items, "BDAS Köln");
     expect(mg).toBeDefined();
     expect(mg).toMatchObject({
-      label: "Meine Gruppe",
+      label: "BDAS Köln",
       children: [
         { label: "Übersicht", href: "/gruppen/koeln" },
         { label: "Events", href: "/events?groups=koeln" },
@@ -34,24 +34,36 @@ describe("navItems", () => {
     });
   });
 
-  it("renders Events as a flat link for everyone, including federal", () => {
+  it("renders Events as a flat link, and never exposes a management link", () => {
     const prev = process.env["BDAS_FLAG_EVENTS"];
     process.env["BDAS_FLAG_EVENTS"] = "true";
 
-    for (const isFederal of [false, true]) {
-      const items = navItems({ isFederal });
+    for (const isLoggedIn of [false, true]) {
+      const items = navItems({ isLoggedIn });
       expect(byLabel(items, "Events")).toEqual({ label: "Events", href: "/events" });
+      const hrefs = items.flatMap((i) =>
+        "children" in i ? i.children.map((c) => c.href) : [i.href],
+      );
+      expect(hrefs).not.toContain("/admin/events");
+      expect(hrefs).not.toContain("/admin/gruppen");
     }
-
-    // No management link is ever produced by the nav for events.
-    const federal = navItems({ isFederal: true });
-    const hrefs = federal.flatMap((i) =>
-      "children" in i ? i.children.map((c) => c.href) : [i.href],
-    );
-    expect(hrefs).not.toContain("/admin/events");
 
     if (prev === undefined) delete process.env["BDAS_FLAG_EVENTS"];
     else process.env["BDAS_FLAG_EVENTS"] = prev;
+  });
+
+  it("shows the Gruppen browse link only to signed-out visitors", () => {
+    const prev = process.env["BDAS_FLAG_GROUPS"];
+    process.env["BDAS_FLAG_GROUPS"] = "true";
+
+    expect(byLabel(navItems({ isLoggedIn: false }), "Gruppen")).toEqual({
+      label: "Gruppen",
+      href: "/gruppen",
+    });
+    expect(byLabel(navItems({ isLoggedIn: true }), "Gruppen")).toBeUndefined();
+
+    if (prev === undefined) delete process.env["BDAS_FLAG_GROUPS"];
+    else process.env["BDAS_FLAG_GROUPS"] = prev;
   });
 
   it("adds the BSR page to Über uns only while the content flag is on", () => {

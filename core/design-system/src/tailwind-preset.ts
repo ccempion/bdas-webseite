@@ -30,6 +30,7 @@ export const tailwindPreset: TailwindPreset = {
         bdas: radii.md,
         "bdas-sm": radii.sm,
         "bdas-pill": radii.pill,
+        "bdas-full": radii.full,
       },
       borderColor: {
         "bdas-soft": colors.border.soft,
@@ -70,12 +71,17 @@ export const tailwindPreset: TailwindPreset = {
       },
       backgroundImage: {
         "bdas-hero-scrim": colors.surface.overlay.heroScrim,
+        "bdas-loader-shine": colors.surface.overlay.loaderShine,
       },
       keyframes: {
         "bdas-fade-slide-down": keyframes.fadeSlideDown,
+        "bdas-loader-sweep": keyframes.loaderSweep,
+        "bdas-loader-cap": keyframes.loaderCap,
       },
       animation: {
         "bdas-fade-slide-down": "bdas-fade-slide-down 400ms ease forwards",
+        "bdas-loader-sweep": `bdas-loader-sweep ${motion.durationLoop} ease infinite`,
+        "bdas-loader-cap": `bdas-loader-cap ${motion.durationLoop} ease infinite`,
       },
     },
   },

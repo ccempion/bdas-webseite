@@ -66,8 +66,13 @@ function isEmptyDoc(doc: TiptapDoc | null | undefined): boolean {
 
 export function renderEventContentHtml(doc: TiptapDoc | null | undefined): string {
   if (isEmptyDoc(doc)) return "";
-  // generateHTML accepts the ProseMirror JSON shape.
-  const raw = generateHTML(doc as Parameters<typeof generateHTML>[0], EXTENSIONS);
+  // generateHTML accepts the ProseMirror JSON shape. The EXTENSIONS cast bridges
+  // the two @tiptap/core majors the repo runs side by side (app editors v2, Puck
+  // v3) — a nominal-only mismatch depending on pnpm dedupe; runtime is unaffected.
+  const raw = generateHTML(
+    doc as Parameters<typeof generateHTML>[0],
+    EXTENSIONS as Parameters<typeof generateHTML>[1],
+  );
   return sanitizeHtml(raw, SANITIZE_OPTS).trim();
 }
 

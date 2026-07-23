@@ -2,7 +2,7 @@
 
 import { useFormState, useFormStatus } from "react-dom";
 
-import { Alert, Button, Field, Form, Input } from "@bdas/design-system";
+import { Alert, Button, Field, Form, Input, PasswordInput } from "@bdas/design-system";
 
 import { registerAction, type RegisterFormState } from "./actions";
 
@@ -40,10 +40,9 @@ export function RegistrierenForm({
         hint={passwordHint}
         {...(state.fields?.["password"] ? { error: state.fields["password"] } : {})}
       >
-        <Input
+        <PasswordInput
           id="password"
           name="password"
-          type="password"
           autoComplete="new-password"
           minLength={10}
           required
