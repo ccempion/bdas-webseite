@@ -9,13 +9,14 @@ import { getDb } from "@bdas/db";
 import { isFlagOn } from "@bdas/feature-flags";
 import { isFederalBoard } from "@bdas/members";
 
-import { puckConfig } from "../../_content/puck-config";
+import { type Breite, breiteClass, puckConfig, withBreite } from "../../_content/puck-config";
 import { loadCurrentMember } from "../../_dashboard/session";
 import { requirePublicShellFlag } from "../../_public/flag";
 
 export const dynamic = "force-dynamic";
 
 const SLUG = "ueber-uns/bundessprecherinnenrat";
+const BREITE: Breite = "breit";
 
 export const metadata: Metadata = {
   title: "Bundessprecher*innenrat",
@@ -30,10 +31,13 @@ export default async function BsrPage() {
   const page = await getPage(getDb(), SLUG);
   const me = await loadCurrentMember();
   const canEdit = me !== null && isFederalBoard(me.grants);
+  const width = breiteClass(BREITE);
 
   return (
-    <main className="mx-auto flex max-w-5xl flex-col gap-6 px-4 py-12">
-      <div className="flex flex-col items-start gap-4 sm:flex-row sm:justify-between">
+    <main className="py-12">
+      <div
+        className={`mx-auto flex w-full flex-col items-start gap-4 px-4 sm:flex-row sm:justify-between ${width}`}
+      >
         <h1 className="break-words text-3xl font-semibold text-bdas-ink">
           Bundessprecher*innenrat
         </h1>
@@ -47,9 +51,13 @@ export default async function BsrPage() {
         ) : null}
       </div>
       {page ? (
-        <Render config={puckConfig} data={page.data as Data} />
+        <div className="mt-6">
+          <Render config={puckConfig} data={withBreite(page.data as Data, BREITE)} />
+        </div>
       ) : (
-        <p className="text-bdas-ink-body">Inhalte folgen in Kürze.</p>
+        <p className={`mx-auto mt-6 w-full px-4 text-bdas-ink-body ${width}`}>
+          Inhalte folgen in Kürze.
+        </p>
       )}
     </main>
   );

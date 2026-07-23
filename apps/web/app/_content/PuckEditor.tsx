@@ -5,17 +5,26 @@ import "@puckeditor/core/puck.css";
 import { Puck, type Data } from "@puckeditor/core";
 import type { Route } from "next";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 import { Alert } from "@bdas/design-system";
 
-import { puckConfig } from "./puck-config";
+import { type Breite, puckConfig, withBreite } from "./puck-config";
 
 /** Full-page Puck editor. Publish = save-is-live (spec §1): PUT the document,
  *  then return to the public page. */
-export function PuckEditor({ slug, initialData }: { slug: string; initialData: Data }) {
+export function PuckEditor({
+  slug,
+  initialData,
+  defaultBreite = "schmal",
+}: {
+  slug: string;
+  initialData: Data;
+  defaultBreite?: Breite;
+}) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
+  const data = useMemo(() => withBreite(initialData, defaultBreite), [initialData, defaultBreite]);
 
   return (
     <div className="min-h-screen">
@@ -26,7 +35,7 @@ export function PuckEditor({ slug, initialData }: { slug: string; initialData: D
       ) : null}
       <Puck
         config={puckConfig}
-        data={initialData}
+        data={data}
         headerTitle="BDAS Editor"
         headerPath={`/${slug}`}
         onPublish={async (data: Data) => {
