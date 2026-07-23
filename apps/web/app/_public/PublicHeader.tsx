@@ -1,7 +1,6 @@
 import Link from "next/link";
 
 import { canAdministerBoard } from "@bdas/dashboard-shell";
-import { isFederalBoard } from "@bdas/members";
 import { getDb } from "@bdas/db";
 import { isFlagOn } from "@bdas/feature-flags";
 import { getGroup } from "@bdas/groups";
@@ -57,14 +56,15 @@ export async function PublicHeader() {
   // group is not archived (its public page 404s otherwise).
   const groupId = me?.member?.primaryGroupId ?? null;
   const group = groupId && isFlagOn("groups") ? await getGroup(getDb(), groupId) : null;
-  const myGroup = group && group.status !== "archived" ? { slug: group.slug } : undefined;
+  const myGroup =
+    group && group.status !== "archived" ? { slug: group.slug, name: group.name } : undefined;
 
   // Files access is per member-kind, independent of the group page; flag-gate it
   // so the item never renders while BDAS_FLAG_FILES is off (no dead link).
   const showFiles = Boolean(me?.member) && isFlagOn("files");
 
   const items = navItems({
-    isFederal: me ? isFederalBoard(me.grants) : false,
+    isLoggedIn: Boolean(me),
     ...(myGroup ? { myGroup } : {}),
     showFiles,
   });
