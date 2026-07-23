@@ -11,7 +11,7 @@ import { isFlagOn } from "@bdas/feature-flags";
 import { getGroupBySlug } from "@bdas/groups";
 import { canEditGroupPage } from "@bdas/members";
 
-import { puckConfig } from "../../_content/puck-config";
+import { breiteClass, puckConfig, withBreite } from "../../_content/puck-config";
 import { loadCurrentMember } from "../../_dashboard/session";
 import { requireGroupsFlag } from "../../_groups/flag";
 import { viewerFrom } from "../../../lib/event-viewer";
@@ -41,82 +41,92 @@ export default async function GruppeDetailPage({ params }: { params: { slug: str
     ? await listUpcomingEvents(getDb(), viewerFrom(me), { groupId: group.id })
     : [];
 
+  // Group pages read at `schmal` width; the chrome below and the Puck `<Render>`
+  // (whose root supplies the same container) must share it so they align.
+  const width = breiteClass("schmal");
+
   return (
-    <main className="mx-auto flex max-w-3xl flex-col gap-6 px-4 py-12">
-      <p className="text-sm text-bdas-ink-muted">
-        <Link href="/gruppen" className="hover:underline">
-          ← Alle Hochschulgruppen
-        </Link>
-      </p>
-
-      <header className="flex flex-col items-start gap-4 sm:flex-row sm:justify-between">
-        <div className="flex flex-col gap-1">
-          <p className="text-sm text-bdas-ink-muted">{group.city}</p>
-          <h1 className="text-3xl font-semibold text-bdas-ink">{group.name}</h1>
-        </div>
-        {canEdit ? (
-          <Link
-            href={`/gruppen/${group.slug}/bearbeiten`}
-            className="inline-flex shrink-0 items-center rounded-bdas-sm border border-bdas-strong px-3 py-1.5 text-sm text-bdas-ink transition-colors duration-bdas-quick ease-bdas hover:bg-bdas-surface-hover"
-          >
-            Seite bearbeiten
+    <main className="py-12">
+      <div className={`mx-auto flex w-full flex-col gap-6 px-4 ${width}`}>
+        <p className="text-sm text-bdas-ink-muted">
+          <Link href="/gruppen" className="hover:underline">
+            ← Alle Hochschulgruppen
           </Link>
-        ) : null}
-      </header>
+        </p>
 
-      {group.status === "dormant" ? (
-        <Alert variant="info" title="Inaktive Gruppe">
-          Diese Hochschulgruppe ist derzeit nicht aktiv.
-        </Alert>
+        <header className="flex flex-col items-start gap-4 sm:flex-row sm:justify-between">
+          <div className="flex flex-col gap-1">
+            <p className="text-sm text-bdas-ink-muted">{group.city}</p>
+            <h1 className="text-3xl font-semibold text-bdas-ink">{group.name}</h1>
+          </div>
+          {canEdit ? (
+            <Link
+              href={`/gruppen/${group.slug}/bearbeiten`}
+              className="inline-flex shrink-0 items-center rounded-bdas-sm border border-bdas-strong px-3 py-1.5 text-sm text-bdas-ink transition-colors duration-bdas-quick ease-bdas hover:bg-bdas-surface-hover"
+            >
+              Seite bearbeiten
+            </Link>
+          ) : null}
+        </header>
+
+        {group.status === "dormant" ? (
+          <Alert variant="info" title="Inaktive Gruppe">
+            Diese Hochschulgruppe ist derzeit nicht aktiv.
+          </Alert>
+        ) : null}
+
+        <Card className="p-6">
+          <h2 className="mb-3 text-lg font-semibold text-bdas-ink">Kontakt</h2>
+          <ul className="flex flex-col gap-2 text-bdas-ink-body">
+            {group.contactEmail ? (
+              <li>
+                <span className="text-bdas-ink-muted">E-Mail:</span>{" "}
+                <a href={`mailto:${group.contactEmail}`} className="text-bdas-red hover:underline">
+                  {group.contactEmail}
+                </a>
+              </li>
+            ) : null}
+            {group.instagramUrl ? (
+              <li>
+                <span className="text-bdas-ink-muted">Instagram:</span>{" "}
+                <a
+                  href={group.instagramUrl}
+                  target="_blank"
+                  rel="noreferrer noopener"
+                  className="text-bdas-red hover:underline"
+                >
+                  {group.instagramUrl.replace(/^https?:\/\/(www\.)?/, "")}
+                </a>
+              </li>
+            ) : null}
+            {group.websiteUrl ? (
+              <li>
+                <span className="text-bdas-ink-muted">Website:</span>{" "}
+                <a
+                  href={group.websiteUrl}
+                  target="_blank"
+                  rel="noreferrer noopener"
+                  className="text-bdas-red hover:underline"
+                >
+                  {group.websiteUrl}
+                </a>
+              </li>
+            ) : null}
+            {!group.contactEmail && !group.instagramUrl && !group.websiteUrl ? (
+              <li className="text-bdas-ink-muted">Kontaktdaten folgen.</li>
+            ) : null}
+          </ul>
+        </Card>
+      </div>
+
+      {page ? (
+        <div className="mt-6">
+          <Render config={puckConfig} data={withBreite(page.data as Data, "schmal")} />
+        </div>
       ) : null}
 
-      <Card className="p-6">
-        <h2 className="mb-3 text-lg font-semibold text-bdas-ink">Kontakt</h2>
-        <ul className="flex flex-col gap-2 text-bdas-ink-body">
-          {group.contactEmail ? (
-            <li>
-              <span className="text-bdas-ink-muted">E-Mail:</span>{" "}
-              <a href={`mailto:${group.contactEmail}`} className="text-bdas-red hover:underline">
-                {group.contactEmail}
-              </a>
-            </li>
-          ) : null}
-          {group.instagramUrl ? (
-            <li>
-              <span className="text-bdas-ink-muted">Instagram:</span>{" "}
-              <a
-                href={group.instagramUrl}
-                target="_blank"
-                rel="noreferrer noopener"
-                className="text-bdas-red hover:underline"
-              >
-                {group.instagramUrl.replace(/^https?:\/\/(www\.)?/, "")}
-              </a>
-            </li>
-          ) : null}
-          {group.websiteUrl ? (
-            <li>
-              <span className="text-bdas-ink-muted">Website:</span>{" "}
-              <a
-                href={group.websiteUrl}
-                target="_blank"
-                rel="noreferrer noopener"
-                className="text-bdas-red hover:underline"
-              >
-                {group.websiteUrl}
-              </a>
-            </li>
-          ) : null}
-          {!group.contactEmail && !group.instagramUrl && !group.websiteUrl ? (
-            <li className="text-bdas-ink-muted">Kontaktdaten folgen.</li>
-          ) : null}
-        </ul>
-      </Card>
-
-      {page ? <Render config={puckConfig} data={page.data as Data} /> : null}
-
       {upcoming.length > 0 ? (
-        <section className="flex flex-col gap-3">
+        <section className={`mx-auto mt-6 flex w-full flex-col gap-3 px-4 ${width}`}>
           <h2 className="text-lg font-semibold text-bdas-ink">Kommende Events</h2>
           {upcoming.map((e) => (
             <Link key={e.id} href={`/events/${e.id}`} className="block focus:outline-none">
