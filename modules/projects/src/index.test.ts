@@ -2,8 +2,10 @@
  * Projects integration tests against a real Postgres schema.
  * Skips when DATABASE_URL is unreachable; CI brings up a Postgres service.
  *
- * Applies the groups migration because projects.group_id FKs into groups(id),
- * then the projects migration. Owning groups are seeded with raw SQL.
+ * Applies the full groups migration chain because projects.group_id FKs into
+ * groups(id) and group enrichment reads the groups schema as Drizzle declares
+ * it — including columns added after 0001 — then the projects migration.
+ * Owning groups are seeded with raw SQL.
  */
 import { promises as fs } from "node:fs";
 import path from "node:path";
@@ -49,6 +51,9 @@ describeIfDb("projects integration", () => {
     t = await createTestDb();
     for (const file of [
       ["..", "..", "groups", "migrations", "0001_init.sql"],
+      ["..", "..", "groups", "migrations", "0002_status_check.sql"],
+      ["..", "..", "groups", "migrations", "0003_drop_university_description.sql"],
+      ["..", "..", "groups", "migrations", "0004_location.sql"],
       ["..", "migrations", "0001_init.sql"],
     ]) {
       const sql = await fs.readFile(path.join(__dirname, ...file), "utf8");
