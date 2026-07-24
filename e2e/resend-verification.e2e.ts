@@ -24,7 +24,7 @@ test("unverified login surfaces the resend link, which issues a fresh token", as
   await resetRateLimits();
   await page.goto("/anmelden");
   await page.getByLabel("E-Mail").fill(email);
-  await page.getByLabel("Passwort").fill(PASSWORD);
+  await page.getByLabel("Passwort", { exact: true }).fill(PASSWORD);
   await page.getByRole("button", { name: "Anmelden" }).click();
 
   const resendLink = page.getByRole("link", { name: "Bestätigungsmail erneut senden" });
