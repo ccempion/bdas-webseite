@@ -66,7 +66,9 @@ test.describe("content pages", () => {
 
     await page.goto("/ueber-uns/bdaj/bearbeiten");
     // Add the Button block from the Puck component list, then fill its fields.
-    await page.getByText("Button", { exact: true }).click();
+    // Puck keeps two copies of the component drawer in the DOM (desktop
+    // sidebar + mobile overlay); only one is visible on this viewport.
+    await page.getByText("Button", { exact: true }).filter({ visible: true }).first().click();
     await page.getByLabel("Beschriftung").fill("Zur BDAJ-Website");
     await page.getByLabel(/^Link/).fill("https://bdaj.de");
     // Publish (open the collapsed menu bar on mobile chrome — see BSR test note).
