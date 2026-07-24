@@ -12,7 +12,8 @@ export type TransactionalTemplate =
   | "event_cancelled"
   | "event_organizer_message"
   | "event_organizer_granted"
-  | "event_organizer_revoked";
+  | "event_organizer_revoked"
+  | "member_application_received";
 
 /** Which aspects of an event changed, for the `event_changed` email. */
 export type EventChangeKind = "time" | "location";
@@ -33,6 +34,8 @@ export type TemplateData = {
   readonly messageBody?: string | undefined;
   /** `event_organizer_*`: the group the organizer role applies to. */
   readonly groupName?: string | undefined;
+  /** `member_application_received`: the applicant's full name. */
+  readonly applicantName?: string | undefined;
 };
 
 /** Outcome of a send attempt, returned by sendTransactional. */

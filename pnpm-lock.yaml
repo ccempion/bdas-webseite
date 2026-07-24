@@ -498,6 +498,9 @@ importers:
       '@bdas/members':
         specifier: workspace:*
         version: link:../members
+      '@bdas/profile':
+        specifier: workspace:*
+        version: link:../profile
       drizzle-orm:
         specifier: ^0.36.0
         version: 0.36.4(@types/react@18.3.28)(postgres@3.4.9)(react@18.3.1)

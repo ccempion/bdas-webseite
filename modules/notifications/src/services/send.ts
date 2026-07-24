@@ -15,6 +15,7 @@ type Extra = {
   readonly subject?: string | undefined;
   readonly messageBody?: string | undefined;
   readonly groupName?: string | undefined;
+  readonly applicantName?: string | undefined;
 };
 
 /** The resolved recipient: a member (memberId set) or a guest (memberId null). */
@@ -44,6 +45,7 @@ async function sendToRecipient(
     subject: extra.subject,
     messageBody: extra.messageBody,
     groupName: extra.groupName,
+    applicantName: extra.applicantName,
   };
   const email = render(template, data);
   const id = createId("ntfy");
