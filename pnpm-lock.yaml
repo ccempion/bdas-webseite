@@ -95,6 +95,9 @@ importers:
       '@bdas/notifications':
         specifier: workspace:*
         version: link:../../modules/notifications
+      '@bdas/profile':
+        specifier: workspace:*
+        version: link:../../modules/profile
       '@bdas/storage':
         specifier: workspace:*
         version: link:../../core/storage
