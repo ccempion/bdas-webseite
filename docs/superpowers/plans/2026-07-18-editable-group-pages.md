@@ -26,6 +26,7 @@
 ### Task 1: `page_editor` role — domain layer
 
 **Files:**
+
 - Modify: `modules/auth/src/sso.ts:19-25` (Role union)
 - Create: `modules/members/migrations/0007_page_editor.sql`
 - Modify: `modules/members/src/test-db.ts` (migration list)
@@ -36,6 +37,7 @@
 - Modify: `modules/members/src/index.test.ts` (integration tests)
 
 **Interfaces:**
+
 - Produces: `Role` now includes `"page_editor"`; `canEditGroupPage(grants: ReadonlyArray<Grant>, groupId: string): boolean` exported from `@bdas/members`; `grantRole/revokeRole` accept `page_editor` (lead-delegable, group-scoped).
 
 - [ ] **Step 1: Write the failing pure test**
@@ -130,6 +132,7 @@ export function canEditGroupPage(grants: ReadonlyArray<Grant>, groupId: string):
 ```
 
 In `modules/members/src/services/roles.ts`:
+
 - `requireCanGrant`: change the first condition to
   `if (role === "local_board" || role === "event_organizer" || role === "page_editor") {`
 - `requireValidScope`: add `page_editor` to the group-scoped list:
@@ -161,50 +164,50 @@ Expected: PASS
 In `modules/members/src/index.test.ts`, next to the existing `event_organizer` tests (~line 548), add:
 
 ```ts
-  it("a lead may grant/revoke page_editor scoped to its group (ADR 0025)", async () => {
-    await createGroup("grp_a", "aachen");
-    await createUser("usr_pe", "pe@example.de");
-    const m = await createProfile(t.db, {
-      userId: "usr_pe",
-      firstName: "P",
-      lastName: "x",
-      primaryGroupId: "grp_a",
-    });
-    await approveMember(t.db, m.id, BOARD);
+it("a lead may grant/revoke page_editor scoped to its group (ADR 0025)", async () => {
+  await createGroup("grp_a", "aachen");
+  await createUser("usr_pe", "pe@example.de");
+  const m = await createProfile(t.db, {
+    userId: "usr_pe",
+    firstName: "P",
+    lastName: "x",
+    primaryGroupId: "grp_a",
+  });
+  await approveMember(t.db, m.id, BOARD);
 
-    // page_editor is group-scoped: a null scope is rejected.
-    await expect(grantRole(t.db, m.id, "page_editor", BOARD)).rejects.toMatchObject({
-      code: "VALIDATION",
-    });
-
-    await grantRole(t.db, m.id, "page_editor", leadOf("usr_lead", "grp_a"), "grp_a");
-    expect(await getGrants(t.db, m.id)).toContainEqual({ role: "page_editor", groupId: "grp_a" });
-
-    await revokeRole(t.db, m.id, "page_editor", leadOf("usr_lead", "grp_a"), "grp_a");
-    expect(await getGrants(t.db, m.id)).not.toContainEqual({
-      role: "page_editor",
-      groupId: "grp_a",
-    });
+  // page_editor is group-scoped: a null scope is rejected.
+  await expect(grantRole(t.db, m.id, "page_editor", BOARD)).rejects.toMatchObject({
+    code: "VALIDATION",
   });
 
-  it("a plain local_board member may NOT grant page_editor; nor may a foreign lead", async () => {
-    await createGroup("grp_a", "aachen");
-    await createUser("usr_pe2", "pe2@example.de");
-    const m = await createProfile(t.db, {
-      userId: "usr_pe2",
-      firstName: "P",
-      lastName: "y",
-      primaryGroupId: "grp_a",
-    });
-    await approveMember(t.db, m.id, BOARD);
+  await grantRole(t.db, m.id, "page_editor", leadOf("usr_lead", "grp_a"), "grp_a");
+  expect(await getGrants(t.db, m.id)).toContainEqual({ role: "page_editor", groupId: "grp_a" });
 
-    await expect(
-      grantRole(t.db, m.id, "page_editor", localBoardOf("usr_lb", "grp_a"), "grp_a"),
-    ).rejects.toMatchObject({ code: "FORBIDDEN" });
-    await expect(
-      grantRole(t.db, m.id, "page_editor", leadOf("usr_lead_b", "grp_b"), "grp_a"),
-    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+  await revokeRole(t.db, m.id, "page_editor", leadOf("usr_lead", "grp_a"), "grp_a");
+  expect(await getGrants(t.db, m.id)).not.toContainEqual({
+    role: "page_editor",
+    groupId: "grp_a",
   });
+});
+
+it("a plain local_board member may NOT grant page_editor; nor may a foreign lead", async () => {
+  await createGroup("grp_a", "aachen");
+  await createUser("usr_pe2", "pe2@example.de");
+  const m = await createProfile(t.db, {
+    userId: "usr_pe2",
+    firstName: "P",
+    lastName: "y",
+    primaryGroupId: "grp_a",
+  });
+  await approveMember(t.db, m.id, BOARD);
+
+  await expect(
+    grantRole(t.db, m.id, "page_editor", localBoardOf("usr_lb", "grp_a"), "grp_a"),
+  ).rejects.toMatchObject({ code: "FORBIDDEN" });
+  await expect(
+    grantRole(t.db, m.id, "page_editor", leadOf("usr_lead_b", "grp_b"), "grp_a"),
+  ).rejects.toMatchObject({ code: "FORBIDDEN" });
+});
 ```
 
 (`createGroup`, `createUser`, `createProfile`, `approveMember`, `BOARD`, `leadOf`, `localBoardOf`, `getGrants` all already exist in this file — mirror the adjacent `event_organizer` tests.)
@@ -226,12 +229,14 @@ git commit -m "feat(members): page_editor role — group-scoped, lead-delegable 
 ### Task 2: Content module — scope-aware `savePage`
 
 **Files:**
+
 - Modify: `modules/content/src/types.ts`
 - Modify: `modules/content/src/services/pages.ts`
 - Modify: `modules/content/src/index.ts`
 - Modify: `modules/content/src/index.test.ts`
 
 **Interfaces:**
+
 - Consumes: nothing new (grant check runs on the `ActorGrant[]` the caller passes).
 - Produces: `savePage(db, { slug, data, actor, scope? })` with `scope?: SaveScope`; `export type SaveScope = { readonly groupId: string }` from `@bdas/content`.
 
@@ -355,12 +360,14 @@ git commit -m "feat(content): scope-aware savePage — group pages editable by l
 ### Task 3: Routes — group resolution for save + upload
 
 **Files:**
+
 - Create: `apps/web/lib/content-scope.ts`
 - Create: `apps/web/lib/content-scope.test.ts`
 - Modify: `apps/web/app/api/content/pages/[...slug]/route.ts`
 - Modify: `apps/web/app/api/content/upload-url/route.ts`
 
 **Interfaces:**
+
 - Consumes: `savePage(..., scope?)` and `SaveScope` (Task 2); `canEditGroupPage` (Task 1); `getGroupBySlug(db, slug)` from `@bdas/groups`.
 - Produces: `groupPageSlug(contentSlug: string): string | null` in `apps/web/lib/content-scope.ts`; upload route authorizes group editors when the request body's `slug` is a group-page slug.
 
@@ -424,28 +431,28 @@ import { groupPageSlug } from "../../../../../lib/content-scope";
 Between the member load and the body parse, resolve the scope:
 
 ```ts
-  const slugPath = params.slug.join("/");
-  const gSlug = groupPageSlug(slugPath);
-  let scope: SaveScope | undefined;
-  if (gSlug !== null) {
-    if (!isFlagOn("groups")) return Response.json({ error: "Nicht verfügbar." }, { status: 404 });
-    const group = await getGroupBySlug(db, gSlug);
-    if (!group || group.status === "archived") {
-      return Response.json({ error: "Gruppe nicht gefunden." }, { status: 404 });
-    }
-    scope = { groupId: group.id };
+const slugPath = params.slug.join("/");
+const gSlug = groupPageSlug(slugPath);
+let scope: SaveScope | undefined;
+if (gSlug !== null) {
+  if (!isFlagOn("groups")) return Response.json({ error: "Nicht verfügbar." }, { status: 404 });
+  const group = await getGroupBySlug(db, gSlug);
+  if (!group || group.status === "archived") {
+    return Response.json({ error: "Gruppe nicht gefunden." }, { status: 404 });
   }
+  scope = { groupId: group.id };
+}
 ```
 
 and pass it through:
 
 ```ts
-    const page = await savePage(db, {
-      slug: slugPath,
-      data: body.data,
-      actor: { userId: me.user.id, grants: me.grants },
-      scope,
-    });
+const page = await savePage(db, {
+  slug: slugPath,
+  data: body.data,
+  actor: { userId: me.user.id, grants: me.grants },
+  scope,
+});
 ```
 
 - [ ] **Step 5: Wire the upload route**
@@ -453,36 +460,36 @@ and pass it through:
 In `apps/web/app/api/content/upload-url/route.ts`: parse the body **before** the authorization check, then authorize per scope. Replace the section from `const me = await getCurrentMember(...)` down to the storage-key computation with:
 
 ```ts
-  const me = await getCurrentMember(getDb(), session);
-  if (!me) return Response.json({ error: "Anmeldung erforderlich." }, { status: 401 });
+const me = await getCurrentMember(getDb(), session);
+if (!me) return Response.json({ error: "Anmeldung erforderlich." }, { status: 401 });
 
-  const body = (await req.json().catch(() => null)) as {
-    filename?: string;
-    mimeType?: string;
-    sizeBytes?: number;
-    slug?: string;
-  } | null;
+const body = (await req.json().catch(() => null)) as {
+  filename?: string;
+  mimeType?: string;
+  sizeBytes?: number;
+  slug?: string;
+} | null;
 
-  const gSlug = groupPageSlug(body?.slug ?? "");
-  if (gSlug !== null) {
-    if (!isFlagOn("groups")) return Response.json({ error: "Nicht verfügbar." }, { status: 404 });
-    const group = await getGroupBySlug(getDb(), gSlug);
-    if (!group || group.status === "archived") {
-      return Response.json({ error: "Gruppe nicht gefunden." }, { status: 404 });
-    }
-    if (!canEditGroupPage(me.grants, group.id)) {
-      return Response.json({ error: "Keine Berechtigung." }, { status: 403 });
-    }
-  } else if (!isFederalBoard(me.grants)) {
+const gSlug = groupPageSlug(body?.slug ?? "");
+if (gSlug !== null) {
+  if (!isFlagOn("groups")) return Response.json({ error: "Nicht verfügbar." }, { status: 404 });
+  const group = await getGroupBySlug(getDb(), gSlug);
+  if (!group || group.status === "archived") {
+    return Response.json({ error: "Gruppe nicht gefunden." }, { status: 404 });
+  }
+  if (!canEditGroupPage(me.grants, group.id)) {
     return Response.json({ error: "Keine Berechtigung." }, { status: 403 });
   }
+} else if (!isFederalBoard(me.grants)) {
+  return Response.json({ error: "Keine Berechtigung." }, { status: 403 });
+}
 
-  if (!body?.mimeType || !ALLOWED.has(body.mimeType)) {
-    return Response.json({ error: "Nur Bilddateien (JPG, PNG, WebP, AVIF)." }, { status: 422 });
-  }
-  if (!body.sizeBytes || body.sizeBytes <= 0 || body.sizeBytes > MAX_BYTES) {
-    return Response.json({ error: "Datei zu groß (max. 10 MB)." }, { status: 422 });
-  }
+if (!body?.mimeType || !ALLOWED.has(body.mimeType)) {
+  return Response.json({ error: "Nur Bilddateien (JPG, PNG, WebP, AVIF)." }, { status: 422 });
+}
+if (!body.sizeBytes || body.sizeBytes <= 0 || body.sizeBytes > MAX_BYTES) {
+  return Response.json({ error: "Datei zu groß (max. 10 MB)." }, { status: 422 });
+}
 ```
 
 Imports: add `canEditGroupPage` to the `@bdas/members` import, `getGroupBySlug` from `@bdas/groups`, `groupPageSlug` from `../../../../lib/content-scope`. The storage-key code below stays unchanged (it already prefixes with `body.slug`).
@@ -504,6 +511,7 @@ git commit -m "feat(web): group-scoped authorization for content save + uploads"
 ### Task 4: Puck palette — Bild block, generalized Rolle label, slug-aware uploads
 
 **Files:**
+
 - Create: `apps/web/app/_content/content-slug-context.ts`
 - Modify: `apps/web/app/_content/PuckEditor.tsx`
 - Modify: `apps/web/app/_content/FotoField.tsx`
@@ -511,6 +519,7 @@ git commit -m "feat(web): group-scoped authorization for content save + uploads"
 - Modify: `apps/web/app/_content/puck-config.test.ts`
 
 **Interfaces:**
+
 - Consumes: upload route accepting `slug` in the body (Task 3).
 - Produces: `Bild` block `{ bild: string; alt: string; unterschrift: string }` in `puckConfig`; `ContentSlugContext` (React context, default `""`).
 
@@ -519,28 +528,28 @@ git commit -m "feat(web): group-scoped authorization for content save + uploads"
 In `apps/web/app/_content/puck-config.test.ts`: change the first assertion to
 
 ```ts
-    expect(Object.keys(puckConfig.components).sort()).toEqual([
-      "Absatz",
-      "Bild",
-      "PersonenRaster",
-      "Ueberschrift",
-    ]);
+expect(Object.keys(puckConfig.components).sort()).toEqual([
+  "Absatz",
+  "Bild",
+  "PersonenRaster",
+  "Ueberschrift",
+]);
 ```
 
 and add:
 
 ```ts
-  it("Bild carries upload, alt text, and optional caption", () => {
-    const bild = puckConfig.components.Bild;
-    expect(bild).toBeDefined();
-    expect(Object.keys(bild?.fields ?? {}).sort()).toEqual(["alt", "bild", "unterschrift"]);
-  });
+it("Bild carries upload, alt text, and optional caption", () => {
+  const bild = puckConfig.components.Bild;
+  expect(bild).toBeDefined();
+  expect(Object.keys(bild?.fields ?? {}).sort()).toEqual(["alt", "bild", "unterschrift"]);
+});
 
-  it("PersonenRaster's rolle label is generic (not BSR-specific)", () => {
-    const personen = puckConfig.components.PersonenRaster?.fields?.personen;
-    if (personen?.type !== "array") throw new Error("personen must be an array field");
-    expect(personen.arrayFields.rolle?.label).toBe("Rolle");
-  });
+it("PersonenRaster's rolle label is generic (not BSR-specific)", () => {
+  const personen = puckConfig.components.PersonenRaster?.fields?.personen;
+  if (personen?.type !== "array") throw new Error("personen must be an array field");
+  expect(personen.arrayFields.rolle?.label).toBe("Rolle");
+});
 ```
 
 Run: `pnpm --filter web exec vitest run app/_content/puck-config.test.ts`
@@ -563,9 +572,9 @@ export const ContentSlugContext = createContext<string>("");
 In `apps/web/app/_content/PuckEditor.tsx`: import the context and wrap the returned tree:
 
 ```tsx
-    <ContentSlugContext.Provider value={slug}>
-      <div className="min-h-screen">…unchanged…</div>
-    </ContentSlugContext.Provider>
+<ContentSlugContext.Provider value={slug}>
+  <div className="min-h-screen">…unchanged…</div>
+</ContentSlugContext.Provider>
 ```
 
 In `apps/web/app/_content/FotoField.tsx`: `import { useContext } from "react";`, `import { ContentSlugContext } from "./content-slug-context";`; inside the component `const slug = useContext(ContentSlugContext);`; include it in the POST body:
@@ -635,9 +644,11 @@ git commit -m "feat(web): Bild block, generic Rolle label, slug-aware FotoField 
 ### Task 5: Public group page — Puck content, edit link, events
 
 **Files:**
+
 - Modify: `apps/web/app/gruppen/[slug]/page.tsx`
 
 **Interfaces:**
+
 - Consumes: `getPage` (`@bdas/content`), `puckConfig`, `canEditGroupPage` (`@bdas/members`), `listUpcomingEvents` + `viewerFrom` (`@bdas/events-module` / `apps/web/lib/event-viewer.ts`, signature `viewerFrom(me: CurrentMember | null): Viewer`), `loadCurrentMember` (`apps/web/app/_dashboard/session.ts`), `formatDateTime` (`apps/web/lib/format.ts`).
 
 - [ ] **Step 1: Rewrite the page**
@@ -670,55 +681,57 @@ export const dynamic = "force-dynamic";
 Body: after the existing `group` load + `notFound()` guard, add
 
 ```tsx
-  const contentOn = isFlagOn("content");
-  const me = contentOn ? await loadCurrentMember() : null;
-  const canEdit = me !== null && canEditGroupPage(me.grants, group.id);
-  const page = contentOn ? await getPage(getDb(), `gruppen/${group.slug}`) : null;
-  const upcoming = isFlagOn("events")
-    ? await listUpcomingEvents(getDb(), viewerFrom(me), { groupId: group.id })
-    : [];
+const contentOn = isFlagOn("content");
+const me = contentOn ? await loadCurrentMember() : null;
+const canEdit = me !== null && canEditGroupPage(me.grants, group.id);
+const page = contentOn ? await getPage(getDb(), `gruppen/${group.slug}`) : null;
+const upcoming = isFlagOn("events")
+  ? await listUpcomingEvents(getDb(), viewerFrom(me), { groupId: group.id })
+  : [];
 ```
 
 Header block gains the edit link (same idiom as `apps/web/app/impressum/page.tsx`):
 
 ```tsx
-      <header className="flex flex-col items-start gap-4 sm:flex-row sm:justify-between">
-        <div className="flex flex-col gap-1">
-          <p className="text-sm text-bdas-ink-muted">{group.city}</p>
-          <h1 className="text-3xl font-semibold text-bdas-ink">{group.name}</h1>
-        </div>
-        {canEdit ? (
-          <Link
-            href={`/gruppen/${group.slug}/bearbeiten`}
-            className="inline-flex shrink-0 items-center rounded-bdas-sm border border-bdas-strong px-3 py-1.5 text-sm text-bdas-ink transition-colors duration-bdas-quick ease-bdas hover:bg-bdas-surface-hover"
-          >
-            Seite bearbeiten
-          </Link>
-        ) : null}
-      </header>
+<header className="flex flex-col items-start gap-4 sm:flex-row sm:justify-between">
+  <div className="flex flex-col gap-1">
+    <p className="text-sm text-bdas-ink-muted">{group.city}</p>
+    <h1 className="text-3xl font-semibold text-bdas-ink">{group.name}</h1>
+  </div>
+  {canEdit ? (
+    <Link
+      href={`/gruppen/${group.slug}/bearbeiten`}
+      className="inline-flex shrink-0 items-center rounded-bdas-sm border border-bdas-strong px-3 py-1.5 text-sm text-bdas-ink transition-colors duration-bdas-quick ease-bdas hover:bg-bdas-surface-hover"
+    >
+      Seite bearbeiten
+    </Link>
+  ) : null}
+</header>
 ```
 
 Keep the dormant alert and the Kontakt card unchanged. After the Kontakt card, render content then events:
 
 ```tsx
-      {page ? <Render config={puckConfig} data={page.data as Data} /> : null}
+{
+  page ? <Render config={puckConfig} data={page.data as Data} /> : null;
+}
 
-      {upcoming.length > 0 ? (
-        <section className="flex flex-col gap-3">
-          <h2 className="text-lg font-semibold text-bdas-ink">Kommende Events</h2>
-          {upcoming.map((e) => (
-            <Link key={e.id} href={`/events/${e.id}`} className="block focus:outline-none">
-              <Card className="p-5">
-                <p className="text-sm text-bdas-ink-muted">{formatDateTime(e.startsAt)}</p>
-                <h3 className="mt-1 text-lg font-semibold text-bdas-ink">{e.title}</h3>
-                {e.location ? (
-                  <p className="mt-1 text-sm text-bdas-ink-body">{e.location}</p>
-                ) : null}
-              </Card>
-            </Link>
-          ))}
-        </section>
-      ) : null}
+{
+  upcoming.length > 0 ? (
+    <section className="flex flex-col gap-3">
+      <h2 className="text-lg font-semibold text-bdas-ink">Kommende Events</h2>
+      {upcoming.map((e) => (
+        <Link key={e.id} href={`/events/${e.id}`} className="block focus:outline-none">
+          <Card className="p-5">
+            <p className="text-sm text-bdas-ink-muted">{formatDateTime(e.startsAt)}</p>
+            <h3 className="mt-1 text-lg font-semibold text-bdas-ink">{e.title}</h3>
+            {e.location ? <p className="mt-1 text-sm text-bdas-ink-body">{e.location}</p> : null}
+          </Card>
+        </Link>
+      ))}
+    </section>
+  ) : null;
+}
 ```
 
 - [ ] **Step 2: Verify**
@@ -738,9 +751,11 @@ git commit -m "feat(web): group page renders Puck content, edit entry, upcoming 
 ### Task 6: Editor route `/gruppen/[slug]/bearbeiten`
 
 **Files:**
+
 - Create: `apps/web/app/gruppen/[slug]/bearbeiten/page.tsx`
 
 **Interfaces:**
+
 - Consumes: `PuckEditor` (slug + initialData), `canEditGroupPage`, `getGroupBySlug`, `getPage`, `loadCurrentMember`, flags.
 
 - [ ] **Step 1: Create the route**
@@ -806,11 +821,13 @@ git commit -m "feat(web): Puck editor route for group pages, canEditGroupPage-ga
 ### Task 7: Board UI wiring — grant option, roster label, sidebar entry
 
 **Files:**
+
 - Modify: `apps/web/app/(board)/gruppe/[slug]/vorstand/page.tsx`
 - Modify: `apps/web/app/(board)/_components/RoleRoster.tsx`
 - Modify: `apps/web/app/(board)/nav.ts`
 
 **Interfaces:**
+
 - Consumes: `grantRole`/`revokeRole` accepting `page_editor` (Task 1).
 
 - [ ] **Step 1: Grant option on the Vorstand page**
@@ -866,6 +883,7 @@ git commit -m "feat(web): Seiten-Editor grant option, roster label, sidebar link
 ### Task 8: E2E — group page editing
 
 **Files:**
+
 - Modify: `e2e/helpers/db.ts` (add `seedRoleGrant` — check first whether an equivalent grant-seeding helper already exists further down the file; if so, reuse it)
 - Create: `e2e/group-pages.e2e.ts`
 
@@ -970,6 +988,7 @@ git commit -m "test(e2e): group page editing — public view, gating, editor ent
 ### Task 9: ADR + READMEs
 
 **Files:**
+
 - Create: `docs/decisions/0025-group-page-editors.md`
 - Modify: `modules/members/README.md` (roles table: `page_editor`, lead-delegable)
 - Modify: `modules/content/README.md` (save-authorization: scoped saves)

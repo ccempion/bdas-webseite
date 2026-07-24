@@ -11,24 +11,24 @@ ad-hoc.
 
 ## The visual language at a glance
 
-| Concept                            | Token                                                     |
-| ---------------------------------- | --------------------------------------------------------- |
-| Brand accent (active/open)         | `colors.brand.red` `#d12020`                              |
-| Red accent halo                    | `shadows.redGlow`                                         |
-| Body ink scale                     | `colors.ink.strong / body / muted` (`#333 / #555 / #888`) |
-| Card / dropdown / accordion radius | `radii.md` (`12px`)                                       |
-| Desktop nav pill radius            | `radii.pill` (`20px`)                                     |
-| Inner-item radius (dropdown links) | `radii.sm` (`6px`)                                        |
-| Circular controls (nav buttons, markers, dots) | `radii.full` (`9999px`)                       |
-| Card shadow at rest                | `shadows.cardResting`                                     |
-| Card shadow on hover (default)     | `shadows.cardLiftSm`                                      |
-| Hero card shadow on hover          | `shadows.cardLiftLg`                                      |
-| Dropdown panel float               | `shadows.dropdown`                                        |
-| Color/background transition        | `motion.durationQuick` (`200ms`)                          |
-| Transform/shadow transition        | `motion.durationSoft` (`300ms`)                           |
-| Expand/fade-in                     | `motion.durationSlow` (`400ms`)                           |
-| Hover lift (cards/accordions)      | `motion.lift.sm` (`-2px`)                                 |
-| Hover lift (hero cards)            | `motion.lift.md` (`-5px`)                                 |
+| Concept                                        | Token                                                     |
+| ---------------------------------------------- | --------------------------------------------------------- |
+| Brand accent (active/open)                     | `colors.brand.red` `#d12020`                              |
+| Red accent halo                                | `shadows.redGlow`                                         |
+| Body ink scale                                 | `colors.ink.strong / body / muted` (`#333 / #555 / #888`) |
+| Card / dropdown / accordion radius             | `radii.md` (`12px`)                                       |
+| Desktop nav pill radius                        | `radii.pill` (`20px`)                                     |
+| Inner-item radius (dropdown links)             | `radii.sm` (`6px`)                                        |
+| Circular controls (nav buttons, markers, dots) | `radii.full` (`9999px`)                                   |
+| Card shadow at rest                            | `shadows.cardResting`                                     |
+| Card shadow on hover (default)                 | `shadows.cardLiftSm`                                      |
+| Hero card shadow on hover                      | `shadows.cardLiftLg`                                      |
+| Dropdown panel float                           | `shadows.dropdown`                                        |
+| Color/background transition                    | `motion.durationQuick` (`200ms`)                          |
+| Transform/shadow transition                    | `motion.durationSoft` (`300ms`)                           |
+| Expand/fade-in                                 | `motion.durationSlow` (`400ms`)                           |
+| Hover lift (cards/accordions)                  | `motion.lift.sm` (`-2px`)                                 |
+| Hover lift (hero cards)                        | `motion.lift.md` (`-5px`)                                 |
 
 ## Component recipes
 
