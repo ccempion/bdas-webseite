@@ -23,7 +23,7 @@ export const SaveProfileFields = z
       .string()
       .regex(/^\d{4}-\d{2}-\d{2}$/, "Bitte gib ein gültiges Datum an.")
       .refine((s) => {
-        const [yearStr, monthStr, dayStr] = s.split("-");
+        const [yearStr, monthStr, dayStr] = s.split("-") as [string, string, string];
         const year = parseInt(yearStr, 10);
         const month = parseInt(monthStr, 10);
         const day = parseInt(dayStr, 10);
