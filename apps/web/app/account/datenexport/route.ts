@@ -2,7 +2,9 @@ import { NextResponse } from "next/server";
 
 import { getUserExport } from "@bdas/auth";
 import { getDb } from "@bdas/db";
+import { isFlagOn } from "@bdas/feature-flags";
 import { getCurrentMember } from "@bdas/members";
+import { getProfile } from "@bdas/profile";
 
 import { requireAuthFlag } from "../../_auth/flag";
 import { requireMembersFlag } from "../../_members/flag";
@@ -34,6 +36,7 @@ export async function GET(): Promise<NextResponse> {
   }
 
   const account = await getUserExport(db, me.user.id);
+  const profileData = isFlagOn("profile") ? await getProfile(db, me.user.id) : null;
 
   const payload = {
     exportedAt: new Date().toISOString(),
@@ -42,6 +45,7 @@ export async function GET(): Promise<NextResponse> {
       "gespeichert hat (Phase 1: Konto und Mitgliedsprofil). Weitere Module folgen.",
     account,
     profile: me.member,
+    profileData,
     roleGrants: me.grants,
   };
 
