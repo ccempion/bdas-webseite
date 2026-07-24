@@ -66,8 +66,10 @@ test.describe("content pages", () => {
 
     await page.goto("/ueber-uns/bdaj/bearbeiten");
     // Add the Button block from the Puck component list, then fill its fields.
-    // Puck keeps two copies of the component drawer in the DOM (desktop
-    // sidebar + mobile overlay); only one is visible on this viewport.
+    // On this mobile viewport Puck collapses its sidebars into Blocks/Outline/
+    // Fields tabs, and keeps a second (hidden) copy of the component drawer in
+    // the DOM — so open Blocks first, then take the one visible drawer item.
+    await page.getByText("Blocks", { exact: true }).click();
     await page.getByText("Button", { exact: true }).filter({ visible: true }).first().click();
     await page.getByLabel("Beschriftung").fill("Zur BDAJ-Website");
     await page.getByLabel(/^Link/).fill("https://bdaj.de");
