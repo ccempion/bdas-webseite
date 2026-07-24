@@ -45,6 +45,12 @@ describe("puckConfig", () => {
     ).toBe("Neue Person");
   });
 
+  it("PersonenRaster's rolle label is generic (not BSR-specific)", () => {
+    const personen = puckConfig.components.PersonenRaster?.fields?.personen;
+    if (personen?.type !== "array") throw new Error("personen must be an array field");
+    expect(personen.arrayFields.rolle?.label).toBe("Rolle");
+  });
+
   it("Fließtext renders stored rich text", () => {
     const render = puckConfig.components.Fliesstext?.render;
     if (!render) throw new Error("Fliesstext render missing");

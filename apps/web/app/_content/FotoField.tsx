@@ -1,9 +1,12 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useContext, useRef, useState } from "react";
+
+import { ContentSlugContext } from "./content-slug-context";
 
 /** Custom Puck field: uploads an image via /api/content/upload-url (signed
- *  Supabase upload, federal-board gated) and stores the public URL. */
+ *  Supabase upload, federal- or group-editor gated per slug) and stores the
+ *  public URL. */
 export function FotoField({
   value,
   onChange,
@@ -14,6 +17,7 @@ export function FotoField({
   const inputRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const slug = useContext(ContentSlugContext);
 
   async function upload(file: File) {
     setBusy(true);
@@ -22,7 +26,12 @@ export function FotoField({
       const res = await fetch("/api/content/upload-url", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ filename: file.name, mimeType: file.type, sizeBytes: file.size }),
+        body: JSON.stringify({
+          filename: file.name,
+          mimeType: file.type,
+          sizeBytes: file.size,
+          slug,
+        }),
       });
       if (!res.ok) {
         const body = (await res.json().catch(() => ({}))) as { error?: string };

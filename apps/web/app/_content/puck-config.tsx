@@ -139,7 +139,7 @@ export const puckConfig: Config<Blocks> = {
               render: ({ value, onChange }) => <FotoField value={value} onChange={onChange} />,
             },
             name: { type: "text", label: "Name" },
-            rolle: { type: "text", label: "Rolle im BSR" },
+            rolle: { type: "text", label: "Rolle" },
             uni: { type: "text", label: "Universität" },
             studiengang: { type: "text", label: "Studiengang" },
           },

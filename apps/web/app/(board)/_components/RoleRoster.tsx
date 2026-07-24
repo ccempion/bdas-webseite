@@ -11,6 +11,7 @@ const ROLE_LABEL: Record<string, string> = {
   local_board_lead: "Lead",
   local_board: "Vorstand",
   event_organizer: "Organisator",
+  page_editor: "Seiten-Editor",
 };
 
 export function RoleRoster({

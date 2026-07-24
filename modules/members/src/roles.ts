@@ -9,6 +9,7 @@ const ALL_ROLES: ReadonlyArray<Role> = [
   "federal_board",
   "alumnus",
   "event_organizer",
+  "page_editor",
 ];
 
 export function isRole(value: string): value is Role {
@@ -74,6 +75,19 @@ export function canGrantLocalBoard(grants: ReadonlyArray<Grant>, groupId: string
   if (isFederalBoard(grants)) return true;
   if (groupId === null) return false;
   return grants.some((g) => g.role === "local_board_lead" && g.groupId === groupId);
+}
+
+/**
+ * May the actor edit the group's public content page (ADR 0026)? Federal board
+ * → any group. A `local_board_lead` or `page_editor` → only the group its
+ * grant is scoped to. Plain `local_board` does NOT edit — the lead delegates
+ * explicitly via `page_editor`.
+ */
+export function canEditGroupPage(grants: ReadonlyArray<Grant>, groupId: string): boolean {
+  if (isFederalBoard(grants)) return true;
+  return grants.some(
+    (g) => (g.role === "local_board_lead" || g.role === "page_editor") && g.groupId === groupId,
+  );
 }
 
 /**

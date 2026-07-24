@@ -25,6 +25,10 @@ const PLAIN: ContentActor = {
   userId: "usr_plain",
   grants: [{ role: "member", groupId: null }],
 };
+const scoped = (role: string, groupId: string): ContentActor => ({
+  userId: `usr_${role}_${groupId}`,
+  grants: [{ role, groupId }],
+});
 
 const DOC = {
   root: { props: {} },
@@ -118,5 +122,50 @@ describeIfDb("content pages service", () => {
     await savePage(t.db, { slug: SLUG, data: DOC, actor: FEDERAL });
     expect(seen).toHaveLength(1);
     expect(seen[0]).toMatchObject({ slug: SLUG, updatedBy: "usr_federal" });
+  });
+});
+
+describeIfDb("group-scoped saves (ADR 0026)", () => {
+  let t: TestDb;
+  const GROUP_SLUG = "gruppen/aachen";
+  const SCOPE = { groupId: "grp_aachen" };
+
+  beforeEach(async () => {
+    t = await setupContentDb();
+    resetEventBus();
+  });
+  afterEach(async () => {
+    await t.cleanup();
+  });
+
+  it("lead, page_editor, and federal may save a scoped page", async () => {
+    for (const actor of [
+      scoped("local_board_lead", "grp_aachen"),
+      scoped("page_editor", "grp_aachen"),
+      FEDERAL,
+    ]) {
+      await savePage(t.db, { slug: GROUP_SLUG, data: DOC, actor, scope: SCOPE });
+    }
+    expect((await getPage(t.db, GROUP_SLUG))?.data).toEqual(DOC);
+  });
+
+  it("plain local_board and foreign-group grants are rejected", async () => {
+    for (const actor of [
+      scoped("local_board", "grp_aachen"),
+      scoped("page_editor", "grp_koeln"),
+      scoped("local_board_lead", "grp_koeln"),
+      PLAIN,
+    ]) {
+      await expect(
+        savePage(t.db, { slug: GROUP_SLUG, data: DOC, actor, scope: SCOPE }),
+      ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    }
+    expect(await getPage(t.db, GROUP_SLUG)).toBeNull();
+  });
+
+  it("an unscoped save stays federal-only even for a lead", async () => {
+    await expect(
+      savePage(t.db, { slug: SLUG, data: DOC, actor: scoped("local_board_lead", "grp_aachen") }),
+    ).rejects.toThrow(/Bundesvorstand/);
   });
 });
