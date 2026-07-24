@@ -70,7 +70,11 @@ test.describe("content pages", () => {
     // Fields tabs, and keeps a second (hidden) copy of the component drawer in
     // the DOM — so open Blocks first, then take the one visible drawer item.
     await page.getByText("Blocks", { exact: true }).click();
-    await page.getByText("Button", { exact: true }).filter({ visible: true }).first().click();
+    const buttonItem = page.getByText("Button", { exact: true }).filter({ visible: true }).first();
+    await expect(buttonItem).toBeVisible();
+    // The panel slides in while the preview iframe reflows behind it, so the
+    // item never satisfies Playwright's stability check; click past it.
+    await buttonItem.click({ force: true });
     await page.getByLabel("Beschriftung").fill("Zur BDAJ-Website");
     await page.getByLabel(/^Link/).fill("https://bdaj.de");
     // Publish (open the collapsed menu bar on mobile chrome — see BSR test note).
