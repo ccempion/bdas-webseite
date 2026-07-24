@@ -25,12 +25,7 @@ export function AnmeldenForm() {
         <Input id="email" name="email" type="email" autoComplete="email" required />
       </Field>
       <Field label="Passwort" htmlFor="password">
-        <PasswordInput
-          id="password"
-          name="password"
-          autoComplete="current-password"
-          required
-        />
+        <PasswordInput id="password" name="password" autoComplete="current-password" required />
       </Field>
       <div className="flex items-center justify-between">
         <Link href="/passwort-zuruecksetzen" className="text-sm text-bdas-red hover:underline">
