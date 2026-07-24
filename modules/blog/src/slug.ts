@@ -29,9 +29,10 @@ export function slugifyTitle(title: string): string {
 /** Build a unique slug: readable base + 6-char random alphanumeric suffix. */
 export function buildSlug(title: string): string {
   // createId("bp") → "bp_<nanoid>"; the nanoid alphabet includes _ and -, so
-  // drop the prefix and strip non-alphanumerics before taking a short suffix.
+  // strip only the prefix (not on every _, which would truncate the id at its
+  // first underscore) and drop non-alphanumerics before taking a short suffix.
   const suffix = createId("bp", 32)
-    .split("_")[1]!
+    .replace(/^bp_/, "")
     .toLowerCase()
     .replace(/[^a-z0-9]/g, "")
     .slice(0, 6);
