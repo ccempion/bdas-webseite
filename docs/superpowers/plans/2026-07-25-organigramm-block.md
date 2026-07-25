@@ -165,7 +165,7 @@ describe("buildTree", () => {
 - [ ] **Step 3: Run the test to verify it fails**
 
 Run: `pnpm --filter @bdas/web test organigramm`
-Expected: FAIL — cannot resolve `./organigramm`.
+Expected: FAIL — cannot resolve `./org-tree`.
 
 - [ ] **Step 4: Write the implementation**
 
@@ -240,7 +240,7 @@ guarantee of ADRs 0023/0025 and hide the page's content from crawlers."
 - Test: `apps/web/app/_content/Organigramm.test.tsx`
 
 **Interfaces:**
-- Consumes: `buildTree`, `Kasten`, `OrgNode` from `./organigramm`; `safeHref`, `isExternalHref` from `./href`; `Card` from `@bdas/design-system`.
+- Consumes: `buildTree`, `Kasten`, `OrgNode` from `./org-tree`; `safeHref`, `isExternalHref` from `./href`; `Card` from `@bdas/design-system`.
 - Produces: `Organigramm({ kaesten }: { kaesten: Kasten[] })` — a React component returning `null` for an empty list.
 
 - [ ] **Step 1: Write the failing test**
@@ -597,7 +597,7 @@ Deliberately ahead of the page conversion: a new drawer item is exactly the chan
 - Test: `apps/web/app/_content/puck-config.test.ts`
 
 **Interfaces:**
-- Consumes: `Organigramm` from `./Organigramm`, `Kasten` from `./organigramm`, `FotoField` from `./FotoField` (already imported in this file).
+- Consumes: `Organigramm` from `./Organigramm`, `Kasten` from `./org-tree`, `FotoField` from `./FotoField` (already imported in this file).
 - Produces: `puckConfig.components.Organigramm` with a single `kaesten` array field.
 
 - [ ] **Step 1: Write the failing test**

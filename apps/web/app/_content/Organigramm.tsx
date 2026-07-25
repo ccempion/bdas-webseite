@@ -73,7 +73,9 @@ export function Organigramm({ kaesten }: { kaesten: Kasten[] }) {
   if (wurzeln.length === 0) return null;
 
   return (
-    <div className="bdas-organigramm overflow-x-auto">
+    // pt-1: overflow-x:auto makes overflow-y compute to auto too, so the root
+    // card's hover:-translate-y-0.5 lift would clip against the flush top edge.
+    <div className="bdas-organigramm overflow-x-auto pt-1">
       <ul>
         {wurzeln.map((wurzel, i) => (
           <Knoten key={i} node={wurzel} />

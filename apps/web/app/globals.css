@@ -99,7 +99,12 @@
     margin: 0;
     padding: 0;
     display: flex;
-    justify-content: center;
+    /* `safe` keeps the alignment symmetric once content overflows: plain
+       `center` centers on the container's start/end and lets the excess
+       spill equally past both edges, but a scroll container's scrollable
+       overflow only ever extends past the end edge — so the start-edge
+       spill becomes permanently unreachable dead space. */
+    justify-content: safe center;
   }
 
   /* Only the root list is an unconnected forest, so only it gets a real
