@@ -53,6 +53,10 @@ function toWizardValues(
 
 const EMPTY_STATE: EditProfileState = {};
 
+/** `/account` also renders the members profile form, which owns its own
+ *  `primaryGroupId` select — namespace these ids so no two controls collide. */
+const ID_PREFIX = "konto-";
+
 export function EditProfileForm({ initial, primaryGroupId, groups }: EditProfileFormProps) {
   const [values, setValues] = useState<WizardValues>(() =>
     toWizardValues(initial, primaryGroupId),
@@ -69,10 +73,16 @@ export function EditProfileForm({ initial, primaryGroupId, groups }: EditProfile
       {state.error ? <Alert variant="error">{state.error}</Alert> : null}
       {state.notice ? <Alert variant="info">{state.notice}</Alert> : null}
 
-      <StudiumFields values={values} set={set} errors={errors} />
-      <UniGruppeFields values={values} set={set} errors={errors} groups={groups} />
-      <GeburtsdatumField values={values} set={set} errors={errors} />
-      <GefundenFields values={values} set={set} errors={errors} />
+      <StudiumFields values={values} set={set} errors={errors} idPrefix={ID_PREFIX} />
+      <UniGruppeFields
+        values={values}
+        set={set}
+        errors={errors}
+        groups={groups}
+        idPrefix={ID_PREFIX}
+      />
+      <GeburtsdatumField values={values} set={set} errors={errors} idPrefix={ID_PREFIX} />
+      <GefundenFields values={values} set={set} errors={errors} idPrefix={ID_PREFIX} />
       <FotoStep values={values} set={set} />
 
       <input type="hidden" name="studiengang" value={values.studiengang} />

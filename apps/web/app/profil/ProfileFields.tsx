@@ -17,28 +17,34 @@ export const SELECT_CLASS =
 type Groups = ReadonlyArray<{ id: string; name: string; city: string }>;
 type Setter = <K extends keyof WizardValues>(k: K, v: WizardValues[K]) => void;
 
+/** Prefix for the field element ids. `/account` renders these fields alongside
+ *  the members profile form, which owns a `primaryGroupId` select of its own —
+ *  duplicate ids would bind that form's control to this form's label. */
+type WithIdPrefix = { idPrefix?: string };
+
 export function StudiumFields({
   values,
   set,
   errors,
+  idPrefix = "",
 }: {
   values: WizardValues;
   set: Setter;
   errors: Record<string, string>;
-}) {
+} & WithIdPrefix) {
   return (
     <>
-      <Field label="Studiengang" htmlFor="studiengang" {...(errors["studiengang"] ? { error: errors["studiengang"] } : {})}>
+      <Field label="Studiengang" htmlFor={`${idPrefix}studiengang`} {...(errors["studiengang"] ? { error: errors["studiengang"] } : {})}>
         <Input
-          id="studiengang"
+          id={`${idPrefix}studiengang`}
           value={values.studiengang}
           onChange={(e) => set("studiengang", e.currentTarget.value)}
           required
         />
       </Field>
-      <Field label="Abschlussart" htmlFor="abschlussart" {...(errors["abschlussart"] ? { error: errors["abschlussart"] } : {})}>
+      <Field label="Abschlussart" htmlFor={`${idPrefix}abschlussart`} {...(errors["abschlussart"] ? { error: errors["abschlussart"] } : {})}>
         <select
-          id="abschlussart"
+          id={`${idPrefix}abschlussart`}
           className={SELECT_CLASS}
           value={values.abschlussart}
           onChange={(e) => set("abschlussart", e.currentTarget.value)}
@@ -60,17 +66,18 @@ export function UniGruppeFields({
   set,
   errors,
   groups,
+  idPrefix = "",
 }: {
   values: WizardValues;
   set: Setter;
   errors: Record<string, string>;
   groups: Groups;
-}) {
+} & WithIdPrefix) {
   return (
     <>
-      <Field label="Hochschule" htmlFor="uni" {...(errors["uni"] ? { error: errors["uni"] } : {})}>
+      <Field label="Hochschule" htmlFor={`${idPrefix}uni`} {...(errors["uni"] ? { error: errors["uni"] } : {})}>
         <select
-          id="uni"
+          id={`${idPrefix}uni`}
           className={SELECT_CLASS}
           value={values.uni}
           onChange={(e) => set("uni", e.currentTarget.value)}
@@ -93,9 +100,9 @@ export function UniGruppeFields({
           />
         ) : null}
       </Field>
-      <Field label="BDAS-Gruppe" htmlFor="primaryGroupId" {...(errors["primaryGroupId"] ? { error: errors["primaryGroupId"] } : {})}>
+      <Field label="BDAS-Gruppe" htmlFor={`${idPrefix}primaryGroupId`} {...(errors["primaryGroupId"] ? { error: errors["primaryGroupId"] } : {})}>
         <select
-          id="primaryGroupId"
+          id={`${idPrefix}primaryGroupId`}
           className={SELECT_CLASS}
           value={values.primaryGroupId}
           onChange={(e) => set("primaryGroupId", e.currentTarget.value)}
@@ -116,15 +123,16 @@ export function GeburtsdatumField({
   values,
   set,
   errors,
+  idPrefix = "",
 }: {
   values: WizardValues;
   set: Setter;
   errors: Record<string, string>;
-}) {
+} & WithIdPrefix) {
   return (
-    <Field label="Geburtsdatum" htmlFor="geburtsdatum" {...(errors["geburtsdatum"] ? { error: errors["geburtsdatum"] } : {})}>
+    <Field label="Geburtsdatum" htmlFor={`${idPrefix}geburtsdatum`} {...(errors["geburtsdatum"] ? { error: errors["geburtsdatum"] } : {})}>
       <Input
-        id="geburtsdatum"
+        id={`${idPrefix}geburtsdatum`}
         type="date"
         value={values.geburtsdatum}
         onChange={(e) => set("geburtsdatum", e.currentTarget.value)}
@@ -138,16 +146,17 @@ export function GefundenFields({
   values,
   set,
   errors,
+  idPrefix = "",
 }: {
   values: WizardValues;
   set: Setter;
   errors: Record<string, string>;
-}) {
+} & WithIdPrefix) {
   return (
     <>
-      <Field label="Wie hast du BDAS gefunden?" htmlFor="gefundenDurch" {...(errors["gefundenDurch"] ? { error: errors["gefundenDurch"] } : {})}>
+      <Field label="Wie hast du BDAS gefunden?" htmlFor={`${idPrefix}gefundenDurch`} {...(errors["gefundenDurch"] ? { error: errors["gefundenDurch"] } : {})}>
         <select
-          id="gefundenDurch"
+          id={`${idPrefix}gefundenDurch`}
           className={SELECT_CLASS}
           value={values.gefundenDurch}
           onChange={(e) => set("gefundenDurch", e.currentTarget.value)}
@@ -161,9 +170,9 @@ export function GefundenFields({
         </select>
       </Field>
       {values.gefundenDurch === "empfehlung" ? (
-        <Field label="Von wem wurdest du empfohlen?" htmlFor="empfehlerName" {...(errors["empfehlerName"] ? { error: errors["empfehlerName"] } : {})}>
+        <Field label="Von wem wurdest du empfohlen?" htmlFor={`${idPrefix}empfehlerName`} {...(errors["empfehlerName"] ? { error: errors["empfehlerName"] } : {})}>
           <Input
-            id="empfehlerName"
+            id={`${idPrefix}empfehlerName`}
             value={values.empfehlerName}
             onChange={(e) => set("empfehlerName", e.currentTarget.value)}
           />

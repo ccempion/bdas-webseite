@@ -14,7 +14,11 @@ test("register → verify → login → logout → reset → re-login", async ({
   await register(page, { email });
   await verify(page, email);
 
+  // With the `profile` flag on, sign-in routes a pending member with an
+  // unfinished profile to the wizard (anmelden/actions.ts) — this spec is about
+  // the session, so go to /account explicitly rather than assume the landing.
   await login(page, email);
+  await page.goto("/account");
   await expect(page.getByRole("heading", { name: "Mein Konto" })).toBeVisible();
 
   // The global header (role=banner) must reflect the session, and must survive a
@@ -58,5 +62,6 @@ test("register → verify → login → logout → reset → re-login", async ({
 
   // The old password must no longer work; the new one must.
   await login(page, email, newPassword);
+  await page.goto("/account");
   await expect(page.getByRole("heading", { name: "Mein Konto" })).toBeVisible();
 });

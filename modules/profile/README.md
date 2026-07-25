@@ -11,3 +11,11 @@ the service. Emits `profile.completed` / `profile.updated` on the core bus.
 Photos live in the **private** `profile-media` bucket (`core/storage`
 `getProfileMediaStorage()`); the app mints short-lived signed URLs — never a
 public URL, never proxied bytes.
+
+Completing a profile grants no membership status: `members.approveMember` stays
+the sole `pending → active` decision. This module only emits `profile.completed`,
+which the notifications module turns into a mail to the applicant's local board.
+
+Gated by the `profile` feature flag. Before enabling it in an environment, create
+the private `profile-media` bucket (set `SUPABASE_PROFILE_MEDIA_BUCKET` if it is
+not the default name). Rationale and alternatives: ADR 0028.
