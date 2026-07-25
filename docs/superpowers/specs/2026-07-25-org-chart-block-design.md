@@ -158,8 +158,10 @@ Styling consumes tokens only, no inline hex/radius/shadow/duration values:
 - Box — `rounded-bdas` (12px), `border-bdas-soft`, `shadow-bdas-card`; on hover
   `-translate-y-bdas-lift-sm` and `shadow-bdas-lift-sm` over `duration-bdas-soft`
   `ease-bdas`. This is the documented card idiom.
-- Accent box (`hervorheben`) — brand red border plus `shadow-bdas-red-glow`,
-  matching the design system's active/open idiom.
+- Accent box (`hervorheben`) — brand red left border (`border-l-4
+  border-l-bdas-red`) plus `shadow-bdas-red-glow`: the design system's
+  active/open idiom. A side-specific border colour also avoids an
+  equal-specificity collision with `Card`'s own all-sides `border-bdas-soft`.
 - Connectors — `border-bdas-strong`.
 - Text — `text-bdas-ink` (title), `text-bdas-ink-body` (subtitle).
 
