@@ -70,7 +70,7 @@ test("register → verify → wizard → the local board sees the application", 
 
   // Step 4 — a referral carries the referrer's name through to the board.
   await page.locator("#gefundenDurch").selectOption("empfehlung");
-  await page.getByLabel("Von wem wurdest du empfohlen?").fill(empfehler);
+  await page.getByLabel("Wer hat es dir empfohlen?").fill(empfehler);
   await weiter.click();
 
   // Step 5 — Profilbild is optional; skip it.
