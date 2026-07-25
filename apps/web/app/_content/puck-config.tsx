@@ -4,6 +4,8 @@ import React from "react";
 import { Card } from "@bdas/design-system";
 
 import { FotoField } from "./FotoField";
+import { Organigramm } from "./Organigramm";
+import type { Kasten } from "./org-tree";
 import { RichTextField } from "./RichTextField";
 import { renderRichText } from "./rich-text";
 import { isExternalHref, safeHref } from "./href";
@@ -45,6 +47,7 @@ type Blocks = {
   Spalten: {
     anzahl: "2" | "3";
   };
+  Organigramm: { kaesten: Kasten[] };
 };
 
 /** Content-column width. Carried on the page's root so the same value frames
@@ -297,6 +300,55 @@ export const puckConfig: Config<Blocks> = {
           {anzahl === "3" ? puck.renderDropZone({ zone: "spalte-3" }) : null}
         </div>
       ),
+    },
+    Organigramm: {
+      label: "Organigramm",
+      fields: {
+        kaesten: {
+          type: "array",
+          label: "Kästen",
+          arrayFields: {
+            ebene: {
+              type: "select",
+              label: "Ebene",
+              options: [
+                { label: "1 — oberste Ebene", value: "1" },
+                { label: "2", value: "2" },
+                { label: "3", value: "3" },
+                { label: "4", value: "4" },
+              ],
+            },
+            titel: { type: "text", label: "Titel" },
+            untertitel: { type: "text", label: "Untertitel" },
+            link: { type: "text", label: "Link (optional)" },
+            logo: {
+              type: "custom",
+              label: "Logo (optional)",
+              render: ({ value, onChange }) => <FotoField value={value} onChange={onChange} />,
+            },
+            hervorheben: {
+              type: "radio",
+              label: "Hervorheben",
+              options: [
+                { label: "Nein", value: false },
+                { label: "Ja", value: true },
+              ],
+            },
+          },
+          defaultItemProps: {
+            ebene: "1",
+            titel: "",
+            untertitel: "",
+            link: "",
+            logo: "",
+            hervorheben: false,
+          },
+          getItemSummary: (kasten) =>
+            kasten.titel ? `${kasten.ebene} · ${kasten.titel}` : "Neuer Kasten",
+        },
+      },
+      defaultProps: { kaesten: [] },
+      render: ({ kaesten }) => <Organigramm kaesten={kaesten} />,
     },
   },
 };
