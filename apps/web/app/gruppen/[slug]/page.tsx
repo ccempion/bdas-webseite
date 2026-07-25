@@ -74,7 +74,15 @@ export default async function GruppeDetailPage({ params }: { params: { slug: str
             Diese Hochschulgruppe ist derzeit nicht aktiv.
           </Alert>
         ) : null}
+      </div>
 
+      {page ? (
+        <div className="mt-6">
+          <Render config={puckConfig} data={withBreite(page.data as Data, "schmal")} />
+        </div>
+      ) : null}
+
+      <section className={`mx-auto mt-6 flex w-full flex-col px-4 ${width}`}>
         <Card className="p-6">
           <h2 className="mb-3 text-lg font-semibold text-bdas-ink">Kontakt</h2>
           <ul className="flex flex-col gap-2 text-bdas-ink-body">
@@ -117,13 +125,7 @@ export default async function GruppeDetailPage({ params }: { params: { slug: str
             ) : null}
           </ul>
         </Card>
-      </div>
-
-      {page ? (
-        <div className="mt-6">
-          <Render config={puckConfig} data={withBreite(page.data as Data, "schmal")} />
-        </div>
-      ) : null}
+      </section>
 
       {upcoming.length > 0 ? (
         <section className={`mx-auto mt-6 flex w-full flex-col gap-3 px-4 ${width}`}>
