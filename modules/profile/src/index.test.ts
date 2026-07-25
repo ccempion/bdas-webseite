@@ -4,7 +4,7 @@ import type { TestDb } from "@bdas/db/test";
 import { getEventBus, resetEventBus, type AnyEvent } from "@bdas/events";
 
 import { getProfile, saveProfile } from "./services/profile";
-import { dbReachable, setupProfileDb } from "./test-db";
+import { dbReachable, seedAuthUser, setupProfileDb } from "./test-db";
 import type { ProfileActor } from "./types";
 import type { ProfileCompleted } from "./events";
 
@@ -32,6 +32,7 @@ describeIfDb("profile service", () => {
   let t: TestDb;
   beforeEach(async () => {
     t = await setupProfileDb();
+    await seedAuthUser(t, OWNER.userId);
     resetEventBus();
   });
   afterEach(async () => {
@@ -84,5 +85,27 @@ describeIfDb("profile service", () => {
         actor: OWNER,
       }),
     ).rejects.toThrow(/ungültig/i);
+  });
+
+  // GDPR erasure (ADR 0008): the profile holds birth date, university, referral
+  // and the private photo key. Deleting the identity must take all of it.
+  it("erases the profile when the user is deleted", async () => {
+    await saveProfile(t.db, {
+      userId: OWNER.userId,
+      fields: FIELDS,
+      actor: OWNER,
+      groupId: "grp_1",
+    });
+    expect(await getProfile(t.db, OWNER.userId)).not.toBeNull();
+
+    await t.client`DELETE FROM auth_users WHERE id = ${OWNER.userId}`;
+
+    expect(await getProfile(t.db, OWNER.userId)).toBeNull();
+  });
+
+  it("refuses a profile for an identity that does not exist", async () => {
+    await expect(
+      saveProfile(t.db, { userId: OTHER.userId, fields: FIELDS, actor: OTHER }),
+    ).rejects.toThrow();
   });
 });
