@@ -4,7 +4,7 @@
  * BDAS_FLAG_CONTENT=true and BDAS_FLAG_PUBLIC_SHELL=true in the e2e env, plus
  * federal@e2e.bdas.test on BDAS_FEDERAL_BOARD_EMAILS (CI has both).
  */
-import { expect, test } from "@playwright/test";
+import { expect, test, type Locator, type Page } from "@playwright/test";
 
 import { deleteUserByEmail } from "./helpers/db";
 import { registerVerifyLogin } from "./helpers/flows";
@@ -65,30 +65,84 @@ test.describe("content pages", () => {
     }
   });
 
-  test("federal board adds a Button block and the visitor sees the link", async ({ page }) => {
-    await deleteUserByEmail(FEDERAL_EMAIL);
-    await registerVerifyLogin(page, { email: FEDERAL_EMAIL, firstName: "Fed", lastName: "Eral" });
+  // Authoring runs on a desktop viewport. §23 asks for mobile because it is
+  // about what *visitors* see; the Puck editor is a board tool. On a 380px
+  // viewport the open Blocks panel covers the canvas — the root DropZone sits
+  // above the viewport (measured y = -270) and any drop that lands does so by
+  // accident. Desktop puts drawer and canvas on screen together.
+  test.describe("authoring", () => {
+    test.use({ viewport: { width: 1280, height: 900 }, isMobile: false, hasTouch: false });
 
-    await page.goto("/ueber-uns/bdaj/bearbeiten");
-    // Add the Button block from the Puck component list, then fill its fields.
-    // On this mobile viewport Puck collapses its sidebars into Blocks/Outline/
-    // Fields tabs, and keeps a second (hidden) copy of the component drawer in
-    // the DOM — so open Blocks first, then take the one visible drawer item.
-    await page.getByText("Blocks", { exact: true }).click();
-    const buttonItem = page.getByText("Button", { exact: true }).filter({ visible: true }).first();
-    await expect(buttonItem).toBeVisible();
-    // The panel slides in while the preview iframe reflows behind it, so the
-    // item never satisfies Playwright's stability check; click past it.
-    await buttonItem.click({ force: true });
-    await page.getByLabel("Beschriftung").fill("Zur BDAJ-Website");
-    await page.getByLabel(/^Link/).fill("https://bdaj.de");
-    // Publish (open the collapsed menu bar on mobile chrome — see BSR test note).
-    await page.getByRole("button", { name: "Toggle menu bar" }).click();
-    await page.getByText("Publish", { exact: true }).click();
+    test("federal board adds a Button block and the visitor sees the link", async ({ page }) => {
+      await deleteUserByEmail(FEDERAL_EMAIL);
+      await registerVerifyLogin(page, { email: FEDERAL_EMAIL, firstName: "Fed", lastName: "Eral" });
 
-    await page.goto("/ueber-uns/bdaj");
-    const link = page.getByRole("link", { name: "Zur BDAJ-Website" });
-    await expect(link).toHaveAttribute("href", "https://bdaj.de");
-    await expect(link).toHaveAttribute("rel", /noopener/);
+      await page.goto("/ueber-uns/bdaj/bearbeiten");
+      await dragBlockIntoCanvas(page, "Button");
+
+      // Publishing appends to whatever the page already holds, and content
+      // survives between runs — label this run's block uniquely so the
+      // assertion cannot match a leftover from an earlier one.
+      const label = `Zur BDAJ-Website ${Math.random().toString(36).slice(2, 8)}`;
+
+      // Insertion selects the new block, so the inspector shows its fields.
+      // Puck keeps a second, hidden copy of its sidebars in the DOM — always
+      // take the visible one.
+      await visible(page.getByLabel("Beschriftung")).fill(label);
+      await visible(page.getByLabel(/^Link/)).fill("https://bdaj.de");
+      // Publishing is a PUT to the content route; wait for it rather than
+      // navigating away mid-save.
+      const saved = page.waitForResponse(
+        (r) => r.request().method() === "PUT" && r.url().includes("/api/content/pages/"),
+      );
+      await visible(page.getByText("Publish", { exact: true })).click();
+      expect((await saved).ok()).toBe(true);
+
+      await page.goto("/ueber-uns/bdaj");
+      const link = page.getByRole("link", { name: label });
+      await expect(link).toHaveAttribute("href", "https://bdaj.de");
+      await expect(link).toHaveAttribute("rel", /noopener/);
+    });
   });
 });
+
+/** Puck renders a hidden duplicate of its sidebars; take the on-screen one. */
+function visible(locator: Locator): Locator {
+  return locator.filter({ visible: true }).first();
+}
+
+/**
+ * Drag a block from Puck's drawer into the page canvas.
+ *
+ * Puck inserts through dnd-kit, which tracks pointer events: `click()` does not
+ * insert, and `dragTo()` jumps straight to the target without the intermediate
+ * moves that let dnd-kit start a drag and run collision detection. Drive the
+ * mouse by hand — press, cross the activation threshold, then travel to the
+ * root DropZone inside the preview iframe. `frameLocator(...).boundingBox()`
+ * already returns page coordinates, so no manual offset maths is needed.
+ */
+async function dragBlockIntoCanvas(page: Page, blockName: string): Promise<void> {
+  const item = visible(page.locator("[data-puck-drawer-item]").filter({ hasText: blockName }));
+  await expect(item).toBeVisible();
+  const zone = page.frameLocator("iframe").locator('[data-puck-dropzone="root:default-zone"]');
+  await expect(zone).toBeVisible();
+
+  const from = await item.boundingBox();
+  const to = await zone.boundingBox();
+  if (!from || !to)
+    throw new Error(`dragBlockIntoCanvas: ${blockName} or the canvas is off-screen`);
+
+  const sx = from.x + from.width / 2;
+  const sy = from.y + from.height / 2;
+  const tx = to.x + to.width / 2;
+  const ty = to.y + Math.min(60, to.height / 2);
+
+  await page.mouse.move(sx, sy);
+  await page.mouse.down();
+  await page.mouse.move(sx + 8, sy + 8); // past dnd-kit's activation distance
+  for (let i = 1; i <= 20; i++) {
+    await page.mouse.move(sx + ((tx - sx) * i) / 20, sy + ((ty - sy) * i) / 20);
+  }
+  await page.mouse.up();
+  await expect(page.getByText("No items", { exact: true })).toHaveCount(0);
+}
