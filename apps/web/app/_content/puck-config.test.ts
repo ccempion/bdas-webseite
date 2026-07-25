@@ -175,4 +175,56 @@ describe("puckConfig", () => {
     const three = renderToStaticMarkup(render({ anzahl: "3", puck: stub } as never) as never);
     expect(three).toContain('data-zone="spalte-3"');
   });
+
+  it("exposes the Organigramm block with the six box fields", () => {
+    const kaesten = puckConfig.components.Organigramm?.fields?.kaesten;
+    if (kaesten?.type !== "array") throw new Error("kaesten must be an array field");
+    expect(Object.keys(kaesten.arrayFields).sort()).toEqual([
+      "ebene",
+      "hervorheben",
+      "link",
+      "logo",
+      "titel",
+      "untertitel",
+    ]);
+  });
+
+  it("offers four Organigramm levels", () => {
+    const kaesten = puckConfig.components.Organigramm?.fields?.kaesten;
+    if (kaesten?.type !== "array") throw new Error("kaesten must be an array field");
+    const ebene = kaesten.arrayFields.ebene;
+    if (ebene?.type !== "select") throw new Error("ebene must be a select field");
+    expect(ebene.options.map((o) => o.value)).toEqual(["1", "2", "3", "4"]);
+  });
+
+  it("pins hervorheben's option values as real booleans, not strings", () => {
+    const kaesten = puckConfig.components.Organigramm?.fields?.kaesten;
+    if (kaesten?.type !== "array") throw new Error("kaesten must be an array field");
+    const hervorheben = kaesten.arrayFields.hervorheben;
+    if (hervorheben?.type !== "radio") throw new Error("hervorheben must be a radio field");
+    expect(hervorheben.options.map((o) => o.value)).toEqual([false, true]);
+    expect(hervorheben.options.map((o) => typeof o.value)).toEqual(["boolean", "boolean"]);
+    expect(hervorheben.options.map((o) => o.label)).toEqual(["Nein", "Ja"]);
+  });
+
+  it("summarises a box by level and title with a German fallback", () => {
+    const kaesten = puckConfig.components.Organigramm?.fields?.kaesten;
+    if (kaesten?.type !== "array" || !kaesten.getItemSummary) {
+      throw new Error("array field with getItemSummary expected");
+    }
+    const box = {
+      ebene: "2" as const,
+      titel: "BDAJ",
+      untertitel: "",
+      link: "",
+      logo: "",
+      hervorheben: false,
+    };
+    expect(kaesten.getItemSummary(box, 0)).toBe("2 · BDAJ");
+    expect(kaesten.getItemSummary({ ...box, titel: "" }, 0)).toBe("Neuer Kasten");
+  });
+
+  it("starts an Organigramm empty so an unfilled block renders nothing", () => {
+    expect(puckConfig.components.Organigramm?.defaultProps).toEqual({ kaesten: [] });
+  });
 });

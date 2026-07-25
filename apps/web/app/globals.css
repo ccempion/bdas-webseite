@@ -90,3 +90,137 @@
     animation: bdas-fade-slide-down 400ms ease forwards;
   }
 }
+
+@layer base {
+  /* Org-chart connectors. Every rule keys off `li > ul`, so the outermost list
+     gets no incoming line and the roots sit unconnected as a forest. */
+  .bdas-organigramm ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    /* `safe` is dropped as invalid by older browsers; `center` is the fallback. */
+    justify-content: center;
+    justify-content: safe center;
+  }
+
+  /* Only the root list is an unconnected forest, so only it gets a real
+     flex gap. Nested lists get none: flex gap is empty space owned by
+     neither sibling, which would leave the rail below as N disconnected
+     dashes instead of one continuous line (spacing there comes from
+     padding on the li instead, so adjacent padding boxes touch). */
+  .bdas-organigramm > ul {
+    gap: 24px;
+  }
+
+  .bdas-organigramm li {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .bdas-organigramm li > ul {
+    position: relative;
+    margin-top: 24px;
+  }
+
+  /* Drop from the parent box down to the sibling rail. */
+  .bdas-organigramm li > ul::before {
+    content: "";
+    position: absolute;
+    top: -24px;
+    left: 50%;
+    width: 1px;
+    height: 24px;
+    background: theme("borderColor.bdas-strong");
+  }
+
+  /* The 24px vertical gap plus 12px on each side — half the 24px sibling
+     separation — so two adjacent li padding boxes touch at their shared
+     edge and the rail segments below (left:0; right:0) join seamlessly. */
+  .bdas-organigramm li > ul > li {
+    padding: 24px 12px 0;
+  }
+
+  /* Stub from the rail down into this child. */
+  .bdas-organigramm li > ul > li::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 50%;
+    width: 1px;
+    height: 24px;
+    background: theme("borderColor.bdas-strong");
+  }
+
+  /* The rail itself, trimmed to a half-width at each end of the row. */
+  .bdas-organigramm li > ul > li::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: theme("borderColor.bdas-strong");
+  }
+
+  .bdas-organigramm li > ul > li:first-child::after {
+    left: 50%;
+  }
+
+  .bdas-organigramm li > ul > li:last-child::after {
+    right: 50%;
+  }
+
+  .bdas-organigramm li > ul > li:only-child::after {
+    content: none;
+  }
+
+  /* Below the md breakpoint the tree collapses to an indented list with a left
+     rail, so nothing is ever off-screen on a phone. */
+  @media (max-width: 767px) {
+    .bdas-organigramm ul {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 12px;
+    }
+
+    .bdas-organigramm li {
+      align-items: stretch;
+    }
+
+    .bdas-organigramm li > ul {
+      margin-top: 12px;
+      margin-left: 24px;
+      padding-left: 16px;
+      border-left: 1px solid theme("borderColor.bdas-strong");
+      gap: 12px;
+    }
+
+    .bdas-organigramm li > ul::before,
+    .bdas-organigramm li > ul > li::before {
+      content: none;
+    }
+
+    /* Zero out the desktop horizontal padding too — the indented-list rail
+       below comes from margin-left/padding-left/border-left on the ul, and
+       leftover 12px side padding here would just add stray indentation. */
+    .bdas-organigramm li > ul > li {
+      padding: 0;
+    }
+
+    /* Short tick from the left rail across to the box. */
+    .bdas-organigramm li > ul > li::after,
+    .bdas-organigramm li > ul > li:first-child::after,
+    .bdas-organigramm li > ul > li:last-child::after,
+    .bdas-organigramm li > ul > li:only-child::after {
+      content: "";
+      top: 24px;
+      left: -16px;
+      right: auto;
+      width: 16px;
+      height: 1px;
+    }
+  }
+}
