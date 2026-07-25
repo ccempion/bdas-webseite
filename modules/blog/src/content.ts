@@ -7,8 +7,8 @@
  * defense in depth. The allowed set mirrors the editor's capabilities: text
  * formatting, headings, lists, links, images (with width), and YouTube embeds.
  */
+import type { JSONContent } from "@tiptap/core";
 import Image from "@tiptap/extension-image";
-import Link from "@tiptap/extension-link";
 import Youtube from "@tiptap/extension-youtube";
 import { generateHTML } from "@tiptap/html";
 import StarterKit from "@tiptap/starter-kit";
@@ -31,10 +31,11 @@ const ImageWithWidth = Image.extend({
   },
 });
 
+// StarterKit v3 bundles Link and Underline; Link is configured through it
+// rather than added twice. Underline stays off to match the editor.
 const EXTENSIONS = [
-  StarterKit,
+  StarterKit.configure({ underline: false, link: { openOnClick: false } }),
   ImageWithWidth,
-  Link.configure({ openOnClick: false }),
   Youtube.configure({ nocookie: true }),
 ];
 
@@ -85,16 +86,12 @@ function isEmptyDoc(doc: TiptapDoc | null | undefined): boolean {
 }
 
 export function renderPostContentHtml(doc: TiptapDoc | null | undefined): string {
-  if (isEmptyDoc(doc)) return "";
-  // The repo runs two @tiptap/core majors side by side (the app's editors on
-  // v2, Puck's editor on v3). Depending on how pnpm dedupes, the extension
-  // instances and generateHTML can be typed against different cores — a purely
-  // nominal mismatch (runtime is unaffected; see content.test.ts). Cast both
-  // args to generateHTML's own parameter types to bridge it.
-  const raw = generateHTML(
-    doc as Parameters<typeof generateHTML>[0],
-    EXTENSIONS as Parameters<typeof generateHTML>[1],
-  );
+  if (!doc || isEmptyDoc(doc)) return "";
+  // TiptapDoc is deliberately loose (`ReadonlyArray<unknown>`) so this module's
+  // public surface never leaks Tiptap's own types (rule 8). generateHTML takes a
+  // JSONContent; widen at this single boundary. Unlike the cast this replaces,
+  // it bridges a module-boundary type choice, not two @tiptap/core majors.
+  const raw = generateHTML(doc as JSONContent, EXTENSIONS);
   return sanitizeHtml(raw, SANITIZE_OPTS).trim();
 }
 

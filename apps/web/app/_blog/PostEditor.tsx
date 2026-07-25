@@ -1,9 +1,8 @@
 "use client";
 
 import Image from "@tiptap/extension-image";
-import Link from "@tiptap/extension-link";
 import Youtube from "@tiptap/extension-youtube";
-import { EditorContent, useEditor, type Content, type Extensions } from "@tiptap/react";
+import { EditorContent, useEditor, type Content } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { useCallback, useState } from "react";
 
@@ -39,14 +38,14 @@ const IMAGE_WIDTHS = ["25%", "50%", "75%", "100%"] as const;
 export function PostEditor({ name, defaultDoc }: { name: string; defaultDoc: TiptapDoc | null }) {
   const [json, setJson] = useState<string>(defaultDoc ? JSON.stringify(defaultDoc) : "");
   const editor = useEditor({
-    // Cast bridges the two @tiptap/core majors the repo runs (app v2 / Puck v3);
-    // nominal-only, runtime unaffected.
+    // StarterKit v3 bundles Link and Underline; Link is configured through it.
+    // Underline stays off — it was unavailable under v2 and this migration does
+    // not change what authors can produce (see @bdas/blog content.ts).
     extensions: [
-      StarterKit,
+      StarterKit.configure({ underline: false, link: { openOnClick: false } }),
       ImageWithWidth,
-      Link.configure({ openOnClick: false }),
       Youtube.configure({ nocookie: true, width: 640, height: 360 }),
-    ] as Extensions,
+    ],
     content: (defaultDoc ?? "") as Content,
     immediatelyRender: false,
     onUpdate: ({ editor }) => setJson(JSON.stringify(editor.getJSON())),
