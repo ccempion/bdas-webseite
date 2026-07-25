@@ -197,6 +197,16 @@ describe("puckConfig", () => {
     expect(ebene.options.map((o) => o.value)).toEqual(["1", "2", "3", "4"]);
   });
 
+  it("pins hervorheben's option values as real booleans, not strings", () => {
+    const kaesten = puckConfig.components.Organigramm?.fields?.kaesten;
+    if (kaesten?.type !== "array") throw new Error("kaesten must be an array field");
+    const hervorheben = kaesten.arrayFields.hervorheben;
+    if (hervorheben?.type !== "radio") throw new Error("hervorheben must be a radio field");
+    expect(hervorheben.options.map((o) => o.value)).toEqual([false, true]);
+    expect(hervorheben.options.map((o) => typeof o.value)).toEqual(["boolean", "boolean"]);
+    expect(hervorheben.options.map((o) => o.label)).toEqual(["Nein", "Ja"]);
+  });
+
   it("summarises a box by level and title with a German fallback", () => {
     const kaesten = puckConfig.components.Organigramm?.fields?.kaesten;
     if (kaesten?.type !== "array" || !kaesten.getItemSummary) {
