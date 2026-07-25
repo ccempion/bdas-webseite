@@ -3,7 +3,7 @@ import React from "react";
 import { Card } from "@bdas/design-system";
 
 import { isExternalHref, safeHref } from "./href";
-import { buildTree, type Kasten, type OrgNode } from "./organigramm";
+import { buildTree, type Kasten, type OrgNode } from "./org-tree";
 
 /** A single box. An unsafe or empty href renders unlinked rather than
  *  dropping the box, so bad input never loses content. */

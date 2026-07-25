@@ -83,8 +83,8 @@ no new feature flag — the block rides the existing `content` flag.
 
 | File | Change |
 | --- | --- |
-| `apps/web/app/_content/organigramm.ts` | new — `Kasten` type and `buildTree`, pure, no React |
-| `apps/web/app/_content/organigramm.test.ts` | new — `buildTree` edge cases |
+| `apps/web/app/_content/org-tree.ts` | new — `Kasten` type and `buildTree`, pure, no React |
+| `apps/web/app/_content/org-tree.test.ts` | new — `buildTree` edge cases |
 | `apps/web/app/_content/Organigramm.tsx` | new — renderer |
 | `apps/web/app/_content/Organigramm.test.tsx` | new — render, links, accent, logo |
 | `apps/web/app/_content/puck-config.tsx` | edit — register the block |
@@ -201,7 +201,7 @@ Confirmed as intended: consistent with ADR 0025, and harmless where unused.
 
 ## 8. Testing
 
-**Unit — `organigramm.test.ts`:** well-formed 3-level tree; level jump 1→3;
+**Unit — `org-tree.test.ts`:** well-formed 3-level tree; level jump 1→3;
 leading non-root row; several level-1 roots; empty list; deep-then-shallow
 return to a higher level.
 

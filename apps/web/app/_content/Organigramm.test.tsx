@@ -4,7 +4,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
 import { Organigramm } from "./Organigramm";
-import type { Kasten } from "./organigramm";
+import type { Kasten } from "./org-tree";
 
 const k = (over: Partial<Kasten> = {}): Kasten => ({
   ebene: "1",

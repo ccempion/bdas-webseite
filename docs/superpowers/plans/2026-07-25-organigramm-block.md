@@ -18,6 +18,7 @@
 - **Comments explain why, not what.** The codebase does not narrate code.
 - Unit tests: `pnpm --filter @bdas/web test`. Lint: `pnpm lint`. Typecheck: `pnpm --filter @bdas/web typecheck`. E2E: `pnpm e2e`.
 - Work happens on branch `feat/organigramm-block`, already created.
+- The pure logic module is `org-tree.ts`, not `organigramm.ts`: a file name differing from `Organigramm.tsx` only by the case of its first letter resolves ambiguously on case-insensitive filesystems (default macOS/Windows), since Vite's resolver treats the two as the same candidate.
 
 ---
 
@@ -27,8 +28,8 @@ Records the decision, then builds the pure outline→tree function all rendering
 
 **Files:**
 - Create: `docs/decisions/0028-org-chart-without-chart-library.md`
-- Create: `apps/web/app/_content/organigramm.ts`
-- Test: `apps/web/app/_content/organigramm.test.ts`
+- Create: `apps/web/app/_content/org-tree.ts`
+- Test: `apps/web/app/_content/org-tree.test.ts`
 
 **Interfaces:**
 - Consumes: nothing.
@@ -97,12 +98,12 @@ codebase. `react-d3-tree` drags in d3-hierarchy v1, uuid v8 and a forked
 
 - [ ] **Step 2: Write the failing test**
 
-Create `apps/web/app/_content/organigramm.test.ts`:
+Create `apps/web/app/_content/org-tree.test.ts`:
 
 ```ts
 import { describe, expect, it } from "vitest";
 
-import { buildTree, type Kasten } from "./organigramm";
+import { buildTree, type Kasten } from "./org-tree";
 
 const k = (ebene: Kasten["ebene"], titel: string): Kasten => ({
   ebene,
@@ -168,7 +169,7 @@ Expected: FAIL — cannot resolve `./organigramm`.
 
 - [ ] **Step 4: Write the implementation**
 
-Create `apps/web/app/_content/organigramm.ts`:
+Create `apps/web/app/_content/org-tree.ts`:
 
 ```ts
 /** One authored box. The board writes a flat outline; `ebene` carries the
@@ -220,8 +221,8 @@ Expected: PASS — 7 tests.
 
 ```bash
 git add docs/decisions/0028-org-chart-without-chart-library.md \
-        apps/web/app/_content/organigramm.ts \
-        apps/web/app/_content/organigramm.test.ts
+        apps/web/app/_content/org-tree.ts \
+        apps/web/app/_content/org-tree.test.ts
 git commit -m "feat(content): build the Organigramm outline-to-tree function
 
 Records ADR 0028: no chart library. d3-org-chart's node API is a raw HTML
@@ -253,7 +254,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
 import { Organigramm } from "./Organigramm";
-import type { Kasten } from "./organigramm";
+import type { Kasten } from "./org-tree";
 
 const k = (over: Partial<Kasten> = {}): Kasten => ({
   ebene: "1",
@@ -343,7 +344,7 @@ import React from "react";
 import { Card } from "@bdas/design-system";
 
 import { isExternalHref, safeHref } from "./href";
-import { buildTree, type Kasten, type OrgNode } from "./organigramm";
+import { buildTree, type Kasten, type OrgNode } from "./org-tree";
 
 /** A single box. An unsafe or empty href renders unlinked rather than
  *  dropping the box, so bad input never loses content. */
@@ -646,7 +647,7 @@ Add to the imports, alongside the existing `./FotoField` and `./RichTextField` i
 
 ```tsx
 import { Organigramm } from "./Organigramm";
-import type { Kasten } from "./organigramm";
+import type { Kasten } from "./org-tree";
 ```
 
 Add to the `Blocks` type, after the `Spalten` entry:

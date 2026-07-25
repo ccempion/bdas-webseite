@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { buildTree, type Kasten } from "./organigramm";
+import { buildTree, type Kasten } from "./org-tree";
 
 const k = (ebene: Kasten["ebene"], titel: string): Kasten => ({
   ebene,
