@@ -29,9 +29,9 @@ describe("buildTree", () => {
   });
 
   it("returns to a higher level after a deeper branch", () => {
-    expect(
-      shape(buildTree([k("1", "BDAS"), k("2", "BuVo"), k("3", "AG"), k("2", "BSR")])),
-    ).toEqual([{ BDAS: [{ BuVo: [{ AG: [] }] }, { BSR: [] }] }]);
+    expect(shape(buildTree([k("1", "BDAS"), k("2", "BuVo"), k("3", "AG"), k("2", "BSR")]))).toEqual(
+      [{ BDAS: [{ BuVo: [{ AG: [] }] }, { BSR: [] }] }],
+    );
   });
 
   it("attaches a skipped level to the nearest shallower ancestor", () => {

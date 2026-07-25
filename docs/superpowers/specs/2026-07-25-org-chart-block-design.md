@@ -31,13 +31,13 @@ The starting proposal was [`bumbeishvili/org-chart`](https://github.com/bumbeish
 `react-organizational-chart`, `react-d3-tree`, and a dependency-free custom
 block.
 
-| | d3-org-chart | @xyflow/react | react-organizational-chart | react-d3-tree |
-| --- | --- | --- | --- | --- |
-| Latest npm release | v3.1.1, **Sep 2023** | v12.11.2, Jul 2026 | v2.2.1, Apr 2023 | v3.6.6, Feb 2025 |
-| Stars / weekly downloads | 1.2k / 105k | 37.8k / 9.1M | 194 / 91k | 1.2k / 325k |
-| Open issues | 137 | 136 | 15 | 149 |
-| First-party TS types | no | yes | yes | yes |
-| License | MIT | MIT | MIT | MIT |
+|                          | d3-org-chart         | @xyflow/react      | react-organizational-chart | react-d3-tree    |
+| ------------------------ | -------------------- | ------------------ | -------------------------- | ---------------- |
+| Latest npm release       | v3.1.1, **Sep 2023** | v12.11.2, Jul 2026 | v2.2.1, Apr 2023           | v3.6.6, Feb 2025 |
+| Stars / weekly downloads | 1.2k / 105k          | 37.8k / 9.1M       | 194 / 91k                  | 1.2k / 325k      |
+| Open issues              | 137                  | 136                | 15                         | 149              |
+| First-party TS types     | no                   | yes                | yes                        | yes              |
+| License                  | MIT                  | MIT                | MIT                        | MIT              |
 
 `d3-org-chart` is popular and well built for its use case: a searchable,
 zoomable directory of thousands of nodes. Four properties make it the wrong
@@ -62,7 +62,7 @@ tool for an 8–15 box public page:
    no longer flows with the page.
 
 The alternatives do not clear the bar either. React Flow is the healthiest
-package and uses real React nodes, but at 57 kB gzip it is a node-*editor*
+package and uses real React nodes, but at 57 kB gzip it is a node-_editor_
 built around a client-only pan/zoom canvas — same SEO and accessibility
 trade-off, more weight. `react-organizational-chart` is unreleased since April
 2023 and would pull `@emotion/css` into a Tailwind codebase.
@@ -81,17 +81,17 @@ content pages. **No `@bdas/content` change**: the module stores block props
 opaquely and already validates the Puck `Data` shape generically. No migration,
 no new feature flag — the block rides the existing `content` flag.
 
-| File | Change |
-| --- | --- |
-| `apps/web/app/_content/org-tree.ts` | new — `Kasten` type and `buildTree`, pure, no React |
-| `apps/web/app/_content/org-tree.test.ts` | new — `buildTree` edge cases |
-| `apps/web/app/_content/Organigramm.tsx` | new — renderer |
-| `apps/web/app/_content/Organigramm.test.tsx` | new — render, links, accent, logo |
-| `apps/web/app/_content/puck-config.tsx` | edit — register the block |
-| `apps/web/app/ueber-uns/verbandsstruktur/page.tsx` | edit — static → editable |
-| `apps/web/app/ueber-uns/verbandsstruktur/bearbeiten/page.tsx` | new — editor route |
-| `e2e/content-pages.e2e.ts` | edit — add the page to `EDITABLE_PAGES` |
-| `docs/decisions/0028-org-chart-without-chart-library.md` | new |
+| File                                                          | Change                                              |
+| ------------------------------------------------------------- | --------------------------------------------------- |
+| `apps/web/app/_content/org-tree.ts`                           | new — `Kasten` type and `buildTree`, pure, no React |
+| `apps/web/app/_content/org-tree.test.ts`                      | new — `buildTree` edge cases                        |
+| `apps/web/app/_content/Organigramm.tsx`                       | new — renderer                                      |
+| `apps/web/app/_content/Organigramm.test.tsx`                  | new — render, links, accent, logo                   |
+| `apps/web/app/_content/puck-config.tsx`                       | edit — register the block                           |
+| `apps/web/app/ueber-uns/verbandsstruktur/page.tsx`            | edit — static → editable                            |
+| `apps/web/app/ueber-uns/verbandsstruktur/bearbeiten/page.tsx` | new — editor route                                  |
+| `e2e/content-pages.e2e.ts`                                    | edit — add the page to `EDITABLE_PAGES`             |
+| `docs/decisions/0028-org-chart-without-chart-library.md`      | new                                                 |
 
 Splitting `buildTree` out as a pure function is deliberate: every structural
 edge case is unit-testable without rendering, and the renderer stays a plain
@@ -131,12 +131,12 @@ branch means dragging its rows.
 level N attaches to the nearest preceding row at level N−1. Malformed input is
 never silently dropped:
 
-| Input | Behaviour |
-| --- | --- |
-| First row is not level 1 | Treated as a root |
-| Level jumps (1 → 3) | Attaches to the nearest shallower ancestor |
-| Several level-1 rows | Multiple roots, rendered side by side as a forest |
-| Empty list | Renders nothing — no empty shell, no stray heading |
+| Input                    | Behaviour                                          |
+| ------------------------ | -------------------------------------------------- |
+| First row is not level 1 | Treated as a root                                  |
+| Level jumps (1 → 3)      | Attaches to the nearest shallower ancestor         |
+| Several level-1 rows     | Multiple roots, rendered side by side as a forest  |
+| Empty list               | Renders nothing — no empty shell, no stray heading |
 
 `titel` is the item summary in the Puck sidebar (`getItemSummary`), falling
 back to "Neuer Kasten" so unnamed rows stay identifiable.
@@ -159,7 +159,7 @@ Styling consumes tokens only, no inline hex/radius/shadow/duration values:
   `-translate-y-bdas-lift-sm` and `shadow-bdas-lift-sm` over `duration-bdas-soft`
   `ease-bdas`. This is the documented card idiom.
 - Accent box (`hervorheben`) — brand red left border (`border-l-4
-  border-l-bdas-red`) plus `shadow-bdas-red-glow`: the design system's
+border-l-bdas-red`) plus `shadow-bdas-red-glow`: the design system's
   active/open idiom. A side-specific border colour also avoids an
   equal-specificity collision with `Card`'s own all-sides `border-bdas-soft`.
 - Connectors — `border-bdas-strong`.

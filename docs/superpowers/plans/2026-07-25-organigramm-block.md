@@ -17,6 +17,7 @@
 - **Tests run in the `node` environment.** There is no jsdom and no `@testing-library/react`. Assert on markup via `renderToStaticMarkup` from `react-dom/server`, as `rich-text.test.ts` and `puck-config.test.ts` already do.
 - **Comments explain why, not what.** The codebase does not narrate code.
 - Unit tests: `pnpm --filter @bdas/web test`. Lint: `pnpm lint`. Typecheck: `pnpm --filter @bdas/web typecheck`. E2E: `pnpm e2e`.
+- **Formatting: `pnpm format:check`** (Prettier). CI's "Lint, typecheck, format" job runs this separately from `pnpm lint`, so ESLint passing does not mean CI is green — run it before every commit.
 - Work happens on branch `feat/organigramm-block`, already created.
 - The pure logic module is `org-tree.ts`, not `organigramm.ts`: a file name differing from `Organigramm.tsx` only by the case of its first letter resolves ambiguously on case-insensitive filesystems (default macOS/Windows), since Vite's resolver treats the two as the same candidate.
 
@@ -27,11 +28,13 @@
 Records the decision, then builds the pure outline→tree function all rendering depends on. No React here — this file must stay importable from a plain node test.
 
 **Files:**
+
 - Create: `docs/decisions/0028-org-chart-without-chart-library.md`
 - Create: `apps/web/app/_content/org-tree.ts`
 - Test: `apps/web/app/_content/org-tree.test.ts`
 
 **Interfaces:**
+
 - Consumes: nothing.
 - Produces: `type Kasten = { ebene: "1"|"2"|"3"|"4"; titel: string; untertitel: string; link: string; logo: string; hervorheben: boolean }`, `type OrgNode = { kasten: Kasten; kinder: OrgNode[] }`, and `buildTree(kaesten: Kasten[]): OrgNode[]`.
 
@@ -132,9 +135,9 @@ describe("buildTree", () => {
   });
 
   it("returns to a higher level after a deeper branch", () => {
-    expect(
-      shape(buildTree([k("1", "BDAS"), k("2", "BuVo"), k("3", "AG"), k("2", "BSR")])),
-    ).toEqual([{ BDAS: [{ BuVo: [{ AG: [] }] }, { BSR: [] }] }]);
+    expect(shape(buildTree([k("1", "BDAS"), k("2", "BuVo"), k("3", "AG"), k("2", "BSR")]))).toEqual(
+      [{ BDAS: [{ BuVo: [{ AG: [] }] }, { BSR: [] }] }],
+    );
   });
 
   it("attaches a skipped level to the nearest shallower ancestor", () => {
@@ -235,11 +238,13 @@ guarantee of ADRs 0023/0025 and hide the page's content from crawlers."
 ### Task 2: Renderer + connector CSS
 
 **Files:**
+
 - Create: `apps/web/app/_content/Organigramm.tsx`
 - Modify: `apps/web/app/globals.css` (append a `@layer base` block at the end)
 - Test: `apps/web/app/_content/Organigramm.test.tsx`
 
 **Interfaces:**
+
 - Consumes: `buildTree`, `Kasten`, `OrgNode` from `./org-tree`; `safeHref`, `isExternalHref` from `./href`; `Card` from `@bdas/design-system`.
 - Produces: `Organigramm({ kaesten }: { kaesten: Kasten[] })` — a React component returning `null` for an empty list.
 
@@ -593,10 +598,12 @@ indented list below 768px."
 Deliberately ahead of the page conversion: a new drawer item is exactly the change that broke the Puck E2E selectors in `b7fb2e1`, `991efd3` and `99d873f`, so the drawer is re-verified before anything else is built on top.
 
 **Files:**
+
 - Modify: `apps/web/app/_content/puck-config.tsx`
 - Test: `apps/web/app/_content/puck-config.test.ts`
 
 **Interfaces:**
+
 - Consumes: `Organigramm` from `./Organigramm`, `Kasten` from `./org-tree`, `FotoField` from `./FotoField` (already imported in this file).
 - Produces: `puckConfig.components.Organigramm` with a single `kaesten` array field.
 
@@ -605,47 +612,47 @@ Deliberately ahead of the page conversion: a new drawer item is exactly the chan
 Append these cases inside the existing `describe("puckConfig", …)` block in `apps/web/app/_content/puck-config.test.ts`:
 
 ```ts
-  it("exposes the Organigramm block with the six box fields", () => {
-    const kaesten = puckConfig.components.Organigramm?.fields?.kaesten;
-    if (kaesten?.type !== "array") throw new Error("kaesten must be an array field");
-    expect(Object.keys(kaesten.arrayFields).sort()).toEqual([
-      "ebene",
-      "hervorheben",
-      "link",
-      "logo",
-      "titel",
-      "untertitel",
-    ]);
-  });
+it("exposes the Organigramm block with the six box fields", () => {
+  const kaesten = puckConfig.components.Organigramm?.fields?.kaesten;
+  if (kaesten?.type !== "array") throw new Error("kaesten must be an array field");
+  expect(Object.keys(kaesten.arrayFields).sort()).toEqual([
+    "ebene",
+    "hervorheben",
+    "link",
+    "logo",
+    "titel",
+    "untertitel",
+  ]);
+});
 
-  it("offers four Organigramm levels", () => {
-    const kaesten = puckConfig.components.Organigramm?.fields?.kaesten;
-    if (kaesten?.type !== "array") throw new Error("kaesten must be an array field");
-    const ebene = kaesten.arrayFields.ebene;
-    if (ebene?.type !== "select") throw new Error("ebene must be a select field");
-    expect(ebene.options.map((o) => o.value)).toEqual(["1", "2", "3", "4"]);
-  });
+it("offers four Organigramm levels", () => {
+  const kaesten = puckConfig.components.Organigramm?.fields?.kaesten;
+  if (kaesten?.type !== "array") throw new Error("kaesten must be an array field");
+  const ebene = kaesten.arrayFields.ebene;
+  if (ebene?.type !== "select") throw new Error("ebene must be a select field");
+  expect(ebene.options.map((o) => o.value)).toEqual(["1", "2", "3", "4"]);
+});
 
-  it("summarises a box by level and title with a German fallback", () => {
-    const kaesten = puckConfig.components.Organigramm?.fields?.kaesten;
-    if (kaesten?.type !== "array" || !kaesten.getItemSummary) {
-      throw new Error("array field with getItemSummary expected");
-    }
-    const box = {
-      ebene: "2",
-      titel: "BDAJ",
-      untertitel: "",
-      link: "",
-      logo: "",
-      hervorheben: false,
-    };
-    expect(kaesten.getItemSummary(box, 0)).toBe("2 · BDAJ");
-    expect(kaesten.getItemSummary({ ...box, titel: "" }, 0)).toBe("Neuer Kasten");
-  });
+it("summarises a box by level and title with a German fallback", () => {
+  const kaesten = puckConfig.components.Organigramm?.fields?.kaesten;
+  if (kaesten?.type !== "array" || !kaesten.getItemSummary) {
+    throw new Error("array field with getItemSummary expected");
+  }
+  const box = {
+    ebene: "2",
+    titel: "BDAJ",
+    untertitel: "",
+    link: "",
+    logo: "",
+    hervorheben: false,
+  };
+  expect(kaesten.getItemSummary(box, 0)).toBe("2 · BDAJ");
+  expect(kaesten.getItemSummary({ ...box, titel: "" }, 0)).toBe("Neuer Kasten");
+});
 
-  it("starts an Organigramm empty so an unfilled block renders nothing", () => {
-    expect(puckConfig.components.Organigramm?.defaultProps).toEqual({ kaesten: [] });
-  });
+it("starts an Organigramm empty so an unfilled block renders nothing", () => {
+  expect(puckConfig.components.Organigramm?.defaultProps).toEqual({ kaesten: [] });
+});
 ```
 
 - [ ] **Step 2: Run the test to verify it fails**
@@ -746,11 +753,13 @@ git commit -m "feat(content): add the Organigramm block to the shared palette"
 ### Task 4: Convert the Verbandsstruktur page
 
 **Files:**
+
 - Modify: `apps/web/app/ueber-uns/verbandsstruktur/page.tsx`
 - Create: `apps/web/app/ueber-uns/verbandsstruktur/bearbeiten/page.tsx`
 - Modify: `e2e/content-pages.e2e.ts:15-28` (the `EDITABLE_PAGES` array)
 
 **Interfaces:**
+
 - Consumes: `puckConfig`, `breiteClass`, `withBreite` from `../../_content/puck-config`; `PuckEditor` from `../../../_content/PuckEditor`; `getPage`, `getDb`, `isFlagOn`, `isFederalBoard`, `loadCurrentMember`, `requirePublicShellFlag`.
 - Produces: nothing consumed by later tasks.
 
@@ -890,14 +899,15 @@ Run `pnpm --filter @bdas/web dev`, sign in as a federal-board member, open
 `/ueber-uns/verbandsstruktur/bearbeiten`, add an Organigramm block and author
 this outline:
 
-| Ebene | Titel | Untertitel | Link | Hervorheben |
-| --- | --- | --- | --- | --- |
-| 1 | Bundeskonferenz | Höchstes beschlussfassendes Gremium | | Nein |
-| 2 | Bundesvorstand | Koordiniert die gemeinsame Arbeit | | Ja |
-| 2 | Bundessprecher*innenrat | | /ueber-uns/bundessprecherinnenrat | Nein |
-| 2 | BDAJ | Bund der Alevitischen Jugendlichen | https://bdaj.de | Nein |
+| Ebene | Titel                    | Untertitel                          | Link                              | Hervorheben |
+| ----- | ------------------------ | ----------------------------------- | --------------------------------- | ----------- |
+| 1     | Bundeskonferenz          | Höchstes beschlussfassendes Gremium |                                   | Nein        |
+| 2     | Bundesvorstand           | Koordiniert die gemeinsame Arbeit   |                                   | Ja          |
+| 2     | Bundessprecher\*innenrat |                                     | /ueber-uns/bundessprecherinnenrat | Nein        |
+| 2     | BDAJ                     | Bund der Alevitischen Jugendlichen  | https://bdaj.de                   | Nein        |
 
 Publish, then confirm on the public page:
+
 - connector lines join each child to its parent, with the rail trimmed at both ends of the row;
 - the Bundesvorstand box shows the red left accent border and halo;
 - the BDAJ box shows ↗ and opens in a new tab;
