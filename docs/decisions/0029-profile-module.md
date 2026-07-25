@@ -1,4 +1,4 @@
-# ADR 0028 — Extended member data lives in a `profile` module, not in `members`
+# ADR 0029 — Extended member data lives in a `profile` module, not in `members`
 
 **Status:** Accepted
 **Date:** 2026-07-25

@@ -18,4 +18,4 @@ which the notifications module turns into a mail to the applicant's local board.
 
 Gated by the `profile` feature flag. Before enabling it in an environment, create
 the private `profile-media` bucket (set `SUPABASE_PROFILE_MEDIA_BUCKET` if it is
-not the default name). Rationale and alternatives: ADR 0028.
+not the default name). Rationale and alternatives: ADR 0029.
