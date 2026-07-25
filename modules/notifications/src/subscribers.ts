@@ -24,7 +24,9 @@ import type {
   WaitlistPromoted,
 } from "@bdas/events-module";
 import { getGroup } from "@bdas/groups";
+import { getMemberByUserId, listBoardRecipientsForGroup } from "@bdas/members";
 import type { RoleGranted, RoleRevoked } from "@bdas/members";
+import type { ProfileCompleted } from "@bdas/profile";
 
 import { sendTransactional, sendTransactionalToGuest } from "./services/send";
 
@@ -235,6 +237,21 @@ export function registerNotificationSubscribers(db: Db, opts: { siteUrl?: string
         await sendTransactional(db, "event_organizer_revoked", e.memberId, {
           groupName: group?.name,
         });
+      }),
+    ),
+    getEventBus().subscribe<ProfileCompleted>(
+      "profile.completed",
+      safe<ProfileCompleted>(async (e) => {
+        const applicant = await getMemberByUserId(db, e.userId);
+        // Only genuine applications (pending members) notify the board; an
+        // already-active member backfilling their profile does not.
+        if (applicant?.status !== "pending") return;
+        const recipients = await listBoardRecipientsForGroup(db, e.groupId);
+        for (const memberId of recipients) {
+          await sendTransactional(db, "member_application_received", memberId, {
+            applicantName: `${applicant.firstName} ${applicant.lastName}`,
+          });
+        }
       }),
     ),
   ];

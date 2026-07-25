@@ -1,9 +1,11 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 
 import { verifyEmail } from "@bdas/auth";
 import { getDb } from "@bdas/db";
 import { Alert } from "@bdas/design-system";
 import { isAppError } from "@bdas/errors";
+import { isFlagOn } from "@bdas/feature-flags";
 
 import { requireAuthFlag } from "../../_auth/flag";
 
@@ -18,6 +20,10 @@ export default async function VerifizierenTokenPage({ params }: { params: { toke
     result = await verifyEmail(getDb(), params.token);
   } catch (err) {
     error = isAppError(err) ? err.message : "Unbekannter Fehler.";
+  }
+
+  if (result && !result.alreadyVerified && isFlagOn("profile")) {
+    redirect("/profil");
   }
 
   return (

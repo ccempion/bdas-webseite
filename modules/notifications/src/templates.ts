@@ -74,6 +74,14 @@ export function render(template: TransactionalTemplate, data: TemplateData): Ren
         firstName,
         `deine Organisator:innen-Rolle für die Gruppe „${data.groupName ?? "deine Gruppe"}“ wurde entzogen. Du kannst die Veranstaltungen dieser Gruppe nicht mehr verwalten.`,
       );
+    case "member_application_received":
+      return body(
+        "BDAS — Neue Bewerbung zur Prüfung",
+        firstName,
+        `es liegt eine neue Mitgliedsbewerbung${data.applicantName ? ` von ${data.applicantName}` : ""}${
+          data.groupName ? ` für ${data.groupName}` : ""
+        } vor. Bitte prüfe sie im Vorstandsbereich.`,
+      );
   }
 }
 

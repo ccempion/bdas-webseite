@@ -7,6 +7,7 @@ import { buildVerifyUrl, getNotifier, register } from "@bdas/auth";
 import { getDb } from "@bdas/db";
 import { isAppError, ValidationError } from "@bdas/errors";
 import { requireFlag } from "@bdas/feature-flags";
+import { createProfile } from "@bdas/members";
 
 import { bootAuth } from "../../lib/auth-bootstrap";
 
@@ -27,6 +28,15 @@ export async function registerAction(
   const consent = formData.get("consent") === "true";
   const ip = clientIp();
 
+  const firstName = String(formData.get("firstName") ?? "").trim();
+  const lastName = String(formData.get("lastName") ?? "").trim();
+  const nameErrors: Record<string, string> = {};
+  if (!firstName) nameErrors["firstName"] = "Bitte gib deinen Vornamen an.";
+  if (!lastName) nameErrors["lastName"] = "Bitte gib deinen Nachnamen an.";
+  if (Object.keys(nameErrors).length > 0) {
+    return { error: "Bitte fülle alle Pflichtfelder aus.", fields: nameErrors };
+  }
+
   let result;
   try {
     result = await register(
@@ -43,6 +53,18 @@ export async function registerAction(
     }
     if (isAppError(err)) return { error: err.message };
     throw err;
+  }
+
+  try {
+    await createProfile(getDb(), {
+      userId: result.userId,
+      firstName,
+      lastName,
+    });
+  } catch (err) {
+    // Account already exists; the /account profile form is the recovery path.
+    // Never fail the response for a member-row hiccup — log and continue.
+    console.error("[auth] createProfile after register failed:", err);
   }
 
   const verifyUrl = buildVerifyUrl(

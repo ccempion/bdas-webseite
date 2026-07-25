@@ -168,4 +168,26 @@ export function contentMediaPublicUrl(storageKey: string): string {
   return `${url.replace(/\/$/, "")}/storage/v1/object/public/${bucket}/${storageKey}`;
 }
 
+let _profileMedia: SupabaseStorageClient | null = null;
+
+/**
+ * Storage client for the **private** `profile-media` bucket (member profile
+ * photos). Unlike event/blog/content media there is deliberately no public-URL
+ * helper: reads go through short-lived `signedDownloadUrl` only (spec §7,
+ * personal data).
+ */
+export function getProfileMediaStorage(): SupabaseStorageClient {
+  if (_profileMedia) return _profileMedia;
+  const url = process.env["SUPABASE_URL"];
+  const serviceRoleKey = process.env["SUPABASE_SERVICE_ROLE_KEY"];
+  const bucket = process.env["SUPABASE_PROFILE_MEDIA_BUCKET"] ?? "profile-media";
+  if (!url || !serviceRoleKey) {
+    throw new Error(
+      "profile-media storage is not configured (need SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY).",
+    );
+  }
+  _profileMedia = new SupabaseStorageClient({ url, serviceRoleKey, bucket });
+  return _profileMedia;
+}
+
 export { SupabaseStorageClient };

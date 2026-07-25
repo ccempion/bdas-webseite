@@ -4,7 +4,7 @@
  * Password fields need `{ exact: true }`: PasswordInput's reveal toggle carries
  * `aria-label="Passwort anzeigen"`, which a substring match also picks up.
  */
-import { expect, type Page } from "@playwright/test";
+import { expect, type Locator, type Page } from "@playwright/test";
 
 import { latestVerifyToken, resetRateLimits } from "./db";
 
@@ -37,13 +37,29 @@ export async function verify(page: Page, email: string): Promise<void> {
   await page.goto(`/verifizieren/${token}`);
 }
 
-export async function login(page: Page, email: string, password: string = PASSWORD): Promise<void> {
+/**
+ * Sign in. With the `profile` flag on, a pending member whose extended profile
+ * is unfinished is routed to the onboarding wizard instead of `/account`
+ * (anmelden/actions.ts) — accept either landing page. Pass `expect: "profil"`
+ * to require the wizard.
+ */
+export async function login(
+  page: Page,
+  email: string,
+  password: string = PASSWORD,
+  opts: { expect?: "account" | "profil" | "either" } = {},
+): Promise<void> {
   await resetRateLimits();
   await page.goto("/anmelden");
   await page.getByLabel("E-Mail").fill(email);
   await page.getByLabel("Passwort", { exact: true }).fill(password);
   await page.getByRole("button", { name: "Anmelden" }).click();
-  await page.waitForURL("**/account");
+  const want = opts.expect ?? "either";
+  await page.waitForURL((url) =>
+    want === "either"
+      ? url.pathname.startsWith("/account") || url.pathname.startsWith("/profil")
+      : url.pathname.startsWith(`/${want}`),
+  );
 }
 
 /** Force-open the mobile "Menü" disclosure (PublicHeader, public_shell flag)
@@ -79,18 +95,40 @@ export async function registerVerifyLogin(
   await login(page, opts.email, opts.password ?? PASSWORD);
 }
 
-/** On /account, fill and submit the member-profile form (creates a pending member). */
+/**
+ * On /account, fill and submit the member-profile form (name + group).
+ *
+ * Registration itself now creates the member row (the name-drop fix), so the
+ * submit reads "Speichern"; "Profil einreichen" only appears for a member row
+ * that doesn't exist yet. With the `profile` flag on, /account also renders the
+ * extended-profile form — which has a "Speichern" of its own — so everything is
+ * scoped to the members form (the one owning `#firstName`).
+ */
 export async function createProfile(
   page: Page,
   opts: { firstName?: string; lastName?: string; groupId?: string },
 ): Promise<void> {
   await page.goto("/account");
-  await page.getByLabel("Vorname").fill(opts.firstName ?? "Test");
-  await page.getByLabel("Nachname").fill(opts.lastName ?? "Nutzer");
+  const form = page.locator("form:has(#firstName)");
+  await form.getByLabel("Vorname").fill(opts.firstName ?? "Test");
+  await form.getByLabel("Nachname").fill(opts.lastName ?? "Nutzer");
   if (opts.groupId) {
-    await page.locator("#primaryGroupId").selectOption(opts.groupId);
+    await form.locator("#primaryGroupId").selectOption(opts.groupId);
   }
-  await page.getByRole("button", { name: "Profil einreichen" }).click();
-  // Server Action revalidates /account; wait for the submit to settle.
-  await expect(page.getByRole("button", { name: "Profil einreichen" })).toHaveCount(0);
+  await submitAndSettle(page, form.getByRole("button", { name: /Profil einreichen|Speichern/ }));
+}
+
+/**
+ * Click a Server-Action submit and wait for the action's POST to come back —
+ * the response carries the re-rendered tree, so the write has committed by the
+ * time it resolves. Deterministic where "wait for the button label to change"
+ * is not.
+ */
+export async function submitAndSettle(page: Page, submit: Locator): Promise<void> {
+  const path = new URL(page.url()).pathname;
+  const settled = page.waitForResponse(
+    (r) => r.request().method() === "POST" && new URL(r.url()).pathname === path,
+  );
+  await submit.click();
+  await settled;
 }

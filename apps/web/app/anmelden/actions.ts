@@ -6,10 +6,12 @@ import { redirect } from "next/navigation";
 import { login } from "@bdas/auth";
 import { getDb } from "@bdas/db";
 import { isAppError } from "@bdas/errors";
-import { requireFlag } from "@bdas/feature-flags";
+import { isFlagOn, requireFlag } from "@bdas/feature-flags";
+import { getMemberByUserId } from "@bdas/members";
 
 import { bootAuth } from "../../lib/auth-bootstrap";
 import { setSessionCookie } from "../../lib/auth-cookie";
+import { isProfileComplete } from "../_profile/complete";
 
 export type LoginFormState = {
   readonly error?: string;
@@ -45,5 +47,16 @@ export async function loginAction(
   }
 
   setSessionCookie(result.token);
+
+  // Guide pending members who verified but never finished onboarding straight
+  // into the wizard; everyone else (incl. active members with missing profile
+  // data, who backfill via /account) lands on their account.
+  if (isFlagOn("profile")) {
+    const db = getDb();
+    const member = await getMemberByUserId(db, result.userId);
+    if (member?.status === "pending" && !(await isProfileComplete(db, result.userId))) {
+      redirect("/profil");
+    }
+  }
   redirect("/account");
 }

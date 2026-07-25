@@ -52,6 +52,7 @@ export default defineConfig({
       BDAS_FLAG_PUBLIC_SHELL: "true",
       BDAS_FLAG_CONTENT: "true",
       BDAS_FLAG_BLOG: "true",
+      BDAS_FLAG_PROFILE: "true",
     },
   },
 });

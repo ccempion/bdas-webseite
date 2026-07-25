@@ -3,12 +3,15 @@ import { redirect } from "next/navigation";
 
 import { getDb } from "@bdas/db";
 import { Alert, Button, Card } from "@bdas/design-system";
+import { isFlagOn } from "@bdas/feature-flags";
 import { listGroups } from "@bdas/groups";
 import { getCurrentMember, getOpenGroupChange, isFederalBoard } from "@bdas/members";
+import { getProfile } from "@bdas/profile";
 
 import { requireAuthFlag } from "../_auth/flag";
 import { requireMembersFlag } from "../_members/flag";
 import { readSessionCookie } from "../../lib/auth-cookie";
+import { EditProfileForm } from "./EditProfileForm";
 import { ProfileForm } from "./ProfileForm";
 import { WithdrawChangeButton } from "./WithdrawChangeButton";
 
@@ -31,6 +34,8 @@ export default async function AccountPage() {
 
   const groups = await listGroups(db, { status: "active" });
   const openChange = me.member ? await getOpenGroupChange(db, me.member.id) : null;
+  const profileFlagOn = isFlagOn("profile");
+  const profile = profileFlagOn ? await getProfile(db, me.user.id) : null;
 
   const groupName = (id: string | null): string | null =>
     id === null ? null : (groups.find((g) => g.id === id)?.name ?? null);
@@ -97,6 +102,24 @@ export default async function AccountPage() {
           isNew={!me.member}
           openChangeGroupName={targetGroupName}
         />
+        {profileFlagOn && me.member ? (
+          <div className="mt-8 border-t border-bdas-soft pt-6">
+            <h3 className="mb-4 text-lg font-semibold text-bdas-ink">Erweitertes Profil</h3>
+            <EditProfileForm
+              initial={{
+                studiengang: profile?.studiengang ?? "",
+                abschlussart: profile?.abschlussart ?? "",
+                uni: profile?.uni ?? "",
+                geburtsdatum: profile?.geburtsdatum ?? "",
+                gefundenDurch: profile?.gefundenDurch ?? "",
+                empfehlerName: profile?.empfehlerName ?? null,
+                photoStorageKey: profile?.photoStorageKey ?? null,
+              }}
+              primaryGroupId={me.member.primaryGroupId}
+              groups={groups.map((g) => ({ id: g.id, name: g.name, city: g.city }))}
+            />
+          </div>
+        ) : null}
       </Card>
 
       <div className="flex flex-wrap items-center gap-3">
