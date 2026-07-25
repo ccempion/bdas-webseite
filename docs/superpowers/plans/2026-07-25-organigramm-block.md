@@ -444,6 +444,14 @@ Append to the end of `apps/web/app/globals.css`, after the existing `@layer base
     padding: 0;
     display: flex;
     justify-content: center;
+  }
+
+  /* Only the root list is an unconnected forest, so only it gets a real
+     flex gap. Nested lists get none: flex gap is empty space owned by
+     neither sibling, which would leave the rail below as N disconnected
+     dashes instead of one continuous line (spacing there comes from
+     padding on the li instead, so adjacent padding boxes touch). */
+  .bdas-organigramm > ul {
     gap: 24px;
   }
 
@@ -470,8 +478,11 @@ Append to the end of `apps/web/app/globals.css`, after the existing `@layer base
     background: theme("borderColor.bdas-strong");
   }
 
+  /* The 24px vertical gap plus 12px on each side — half the 24px sibling
+     separation — so two adjacent li padding boxes touch at their shared
+     edge and the rail segments below (left:0; right:0) join seamlessly. */
   .bdas-organigramm li > ul > li {
-    padding-top: 24px;
+    padding: 24px 12px 0;
   }
 
   /* Stub from the rail down into this child. */
@@ -534,8 +545,11 @@ Append to the end of `apps/web/app/globals.css`, after the existing `@layer base
       content: none;
     }
 
+    /* Zero out the desktop horizontal padding too — the indented-list rail
+       below comes from margin-left/padding-left/border-left on the ul, and
+       leftover 12px side padding here would just add stray indentation. */
     .bdas-organigramm li > ul > li {
-      padding-top: 0;
+      padding: 0;
     }
 
     /* Short tick from the left rail across to the box. */
