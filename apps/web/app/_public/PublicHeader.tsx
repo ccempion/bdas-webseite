@@ -51,9 +51,9 @@ export async function PublicHeader() {
   const me = await loadCurrentMember();
   const isBoard = me ? canAdministerBoard(me.grants) : false;
 
-  // "Meine Gruppe" links into the public group page + group-filtered events; it
-  // needs the group's slug and only makes sense while groups are enabled and the
-  // group is not archived (its public page 404s otherwise).
+  // "Meine Gruppe" links into the public group page; it needs the group's slug
+  // and only makes sense while groups are enabled and the group is not archived
+  // (its public page 404s otherwise).
   const groupId = me?.member?.primaryGroupId ?? null;
   const group = groupId && isFlagOn("groups") ? await getGroup(getDb(), groupId) : null;
   const myGroup =

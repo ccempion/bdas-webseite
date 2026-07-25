@@ -7,22 +7,17 @@ function byLabel(items: NavItem[], label: string): NavItem | undefined {
 }
 
 describe("navItems", () => {
-  it("omits the group dropdown and Dateien by default", () => {
+  it("omits the group link and Dateien by default", () => {
     const items = navItems();
     expect(byLabel(items, "BDAS Köln")).toBeUndefined();
     expect(byLabel(items, "Dateien")).toBeUndefined();
   });
 
-  it("adds the member's own group as a named dropdown when myGroup is given", () => {
+  it("adds the member's own group as a flat link when myGroup is given", () => {
     const items = navItems({ myGroup: { slug: "koeln", name: "BDAS Köln" } });
-    const mg = byLabel(items, "BDAS Köln");
-    expect(mg).toBeDefined();
-    expect(mg).toMatchObject({
+    expect(byLabel(items, "BDAS Köln")).toEqual({
       label: "BDAS Köln",
-      children: [
-        { label: "Übersicht", href: "/gruppen/koeln" },
-        { label: "Events", href: "/events?groups=koeln" },
-      ],
+      href: "/gruppen/koeln",
     });
   });
 
