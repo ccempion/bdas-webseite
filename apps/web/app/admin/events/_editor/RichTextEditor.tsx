@@ -1,8 +1,7 @@
 "use client";
 
 import Image from "@tiptap/extension-image";
-import Link from "@tiptap/extension-link";
-import { EditorContent, useEditor, type Content, type Extensions } from "@tiptap/react";
+import { EditorContent, useEditor, type Content } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { useCallback, useState } from "react";
 
@@ -39,8 +38,13 @@ export function RichTextEditor({
 }) {
   const [json, setJson] = useState<string>(defaultDoc ? JSON.stringify(defaultDoc) : "");
   const editor = useEditor({
-    // Cast bridges the two @tiptap/core majors (app v2 / Puck v3); nominal-only.
-    extensions: [StarterKit, ImageWithWidth, Link.configure({ openOnClick: false })] as Extensions,
+    // StarterKit v3 bundles Link and Underline; Link is configured through it.
+    // Underline stays off — it was unavailable under v2 and this migration does
+    // not change what authors can produce (see @bdas/events-module content.ts).
+    extensions: [
+      StarterKit.configure({ underline: false, link: { openOnClick: false } }),
+      ImageWithWidth,
+    ],
     content: (defaultDoc ?? "") as Content,
     immediatelyRender: false,
     onUpdate: ({ editor }) => setJson(JSON.stringify(editor.getJSON())),
