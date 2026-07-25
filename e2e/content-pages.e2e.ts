@@ -23,6 +23,11 @@ const EDITABLE_PAGES = [
     path: "/ueber-uns/bdaj",
     heading: "Bund der Alevitischen Jugendlichen (BDAJ)",
   },
+  {
+    name: "Verbandsstruktur",
+    path: "/ueber-uns/verbandsstruktur",
+    heading: "Verbandsstruktur",
+  },
   { name: "Impressum", path: "/impressum", heading: "Impressum" },
   { name: "Datenschutz", path: "/datenschutz", heading: "Datenschutzerklärung" },
 ] as const;
