@@ -24,10 +24,16 @@ same read paths as the membership status every module already consults.
 ## Decision
 
 1. **A new `modules/profile` owns `member_profiles`, keyed by `user_id`.**
-   `members` is untouched. There is no cross-module FK — the two are joined by
-   `user_id` at the app layer (`apps/web/app/_profile/complete.ts`), which is the
-   only place that needs both. Rule 1 of the working agreement applies as
-   written: nothing outside the module reads `member_profiles`.
+   `members` is untouched: there is no FK between `member_profiles` and
+   `members`, and the two are joined by `user_id` at the app layer
+   (`apps/web/app/_profile/complete.ts`), which is the only place that needs
+   both. Rule 1 of the working agreement applies as written: nothing outside the
+   module reads `member_profiles`.
+
+   `user_id` **does** FK `auth_users(id) ON DELETE CASCADE` — see the amendment
+   below. Identity is not a peer module here but the thing the row belongs to,
+   and `members.user_id` already carries exactly that constraint.
+
 2. **The board's decision does not move.** `approveMember` in `members` remains
    the sole `pending → active` transition. This module contributes _evidence_ to
    that decision and nothing else; completing a profile grants no status.
@@ -84,3 +90,27 @@ same read paths as the membership status every module already consults.
   render, but an unguessable public URL is still a public URL, and a member photo
   is not public information.
 - **Auto-vouching from the referral field.** Rejected — see decision 4.
+
+## Amendment 2026-07-25 — `user_id` FKs `auth_users` with ON DELETE CASCADE
+
+As first written, decision 1 said "there is no cross-module FK" and the code
+followed it. That was wrong, on a point that matters: the consequences section
+already claimed birth date and photo "cascade with the user", and they did not.
+`member_profiles` outlived the identity it described, retaining personal data
+indefinitely — a GDPR erasure gap (ADR 0008, spec §503), not a style question.
+
+The claim rested on a misreading of `members`, which was cited as the precedent
+for having no FK. `members.user_id` has carried
+`REFERENCES auth_users(id) ON DELETE CASCADE` since members/0001.
+
+`modules/profile/migrations/0002_user_fk.sql` adds the same constraint, after
+erasing any already-orphaned row so the ALTER cannot fail on one. Module rule 1
+is untouched: identity is what the row belongs to, not a peer module reaching
+in, and nothing outside `profile` reads or writes `member_profiles`. The Drizzle
+schema stays free of cross-module imports — the reference exists only in SQL,
+exactly as it does for members. The profile test harness now applies the auth
+migrations first, mirroring the members harness.
+
+Note this does not create an account-deletion _feature_: per ADR 0008 that is
+still deferred to Phase 6. It makes sure that when deletion does arrive — or when
+a row is removed by hand today — the profile cannot be left behind.

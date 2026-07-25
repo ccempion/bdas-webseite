@@ -1,9 +1,11 @@
 import { pgTable, text, date, timestamp } from "drizzle-orm/pg-core";
 
 /**
- * Extended member profile, owned solely by @bdas/profile. Linked to identity
- * by `userId` (matches auth_users.id) with no cross-module FK, like
- * members.userId. `completed_at` stamps the first successful full submit.
+ * Extended member profile, owned solely by @bdas/profile. Keyed by `userId`,
+ * which FKs `auth_users(id) ON DELETE CASCADE` so a GDPR erasure takes the
+ * profile with it (profile/0002) — the same shape members.user_id has. The
+ * constraint lives in the migration, not here, so this schema needs no
+ * cross-module import. `completed_at` stamps the first successful full submit.
  */
 export const memberProfiles = pgTable("member_profiles", {
   userId: text("user_id").primaryKey(),

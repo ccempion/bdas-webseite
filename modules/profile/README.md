@@ -2,8 +2,11 @@
 
 Owns `member_profiles` — the federation's extended member data (course of
 study, degree type, university, birth date, "found BDAS via", optional photo).
-Keyed by `user_id`, no cross-module FK. The `members` module deliberately does
-**not** model these fields (platform spec §1); this module is the home for them.
+Keyed by `user_id`, which FKs `auth_users(id) ON DELETE CASCADE` so erasing an
+identity erases the profile with it — this row holds personal data (birth date,
+university, referral, private photo key), so it must not outlive its user. The
+`members` module deliberately does **not** model these fields (platform spec
+§1); this module is the home for them.
 
 Public surface: `src/index.ts` only. Authorization (owner-only writes) lives in
 the service. Emits `profile.completed` / `profile.updated` on the core bus.
