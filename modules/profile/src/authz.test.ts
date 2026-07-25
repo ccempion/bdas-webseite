@@ -21,11 +21,15 @@ describe("canViewProfile", () => {
   });
   it("allows any board role", () => {
     for (const role of ["federal_board", "local_board", "local_board_lead"]) {
-      expect(canViewProfile({ userId: "usr_x", grants: [{ role, groupId: null }] }, "usr_owner")).toBe(true);
+      expect(
+        canViewProfile({ userId: "usr_x", grants: [{ role, groupId: null }] }, "usr_owner"),
+      ).toBe(true);
     }
   });
   it("denies a non-owner plain member", () => {
-    expect(canViewProfile({ userId: "usr_x", grants: [{ role: "member", groupId: null }] }, "usr_owner")).toBe(false);
+    expect(
+      canViewProfile({ userId: "usr_x", grants: [{ role: "member", groupId: null }] }, "usr_owner"),
+    ).toBe(false);
   });
 });
 

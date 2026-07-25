@@ -25,6 +25,7 @@
 ### Task 1: Scaffold `modules/profile` — package, schema, migration, flag, manifest, test harness
 
 **Files:**
+
 - Create: `modules/profile/package.json`
 - Create: `modules/profile/tsconfig.json`
 - Create: `modules/profile/README.md`
@@ -36,11 +37,13 @@
 - Test: `modules/profile/src/schema.test.ts`
 
 **Interfaces:**
+
 - Produces: Drizzle table `memberProfiles` (export from `schema.ts`); `MemberProfileRow = typeof memberProfiles.$inferSelect`. Test harness `setupProfileDb(): Promise<TestDb>`, `dbReachable(): Promise<boolean>`.
 
 - [ ] **Step 1: Create the package manifest**
 
 `modules/profile/package.json`:
+
 ```json
 {
   "name": "@bdas/profile",
@@ -66,6 +69,7 @@
 ```
 
 `modules/profile/tsconfig.json`:
+
 ```json
 {
   "extends": "../../tsconfig.base.json",
@@ -78,6 +82,7 @@
 ```
 
 `modules/profile/README.md`:
+
 ```markdown
 # @bdas/profile
 
@@ -97,6 +102,7 @@ public URL, never proxied bytes.
 - [ ] **Step 2: Write the schema**
 
 `modules/profile/src/schema.ts`:
+
 ```ts
 import { pgTable, text, date, timestamp } from "drizzle-orm/pg-core";
 
@@ -125,6 +131,7 @@ export type MemberProfileRow = typeof memberProfiles.$inferSelect;
 - [ ] **Step 3: Write the migration**
 
 `modules/profile/migrations/0001_init.sql`:
+
 ```sql
 -- Profile module — extended member data (course of study, degree, university,
 -- birth date, referral, optional photo). Owned solely by @bdas/profile.
@@ -153,6 +160,7 @@ ALTER TABLE member_profiles ENABLE ROW LEVEL SECURITY;
 - [ ] **Step 4: Register the flag and migration**
 
 In `core/feature-flags/src/index.ts`, add `"profile"` to the `FLAGS` array (append after `"content"`):
+
 ```ts
   "content",
   "profile",
@@ -160,6 +168,7 @@ In `core/feature-flags/src/index.ts`, add `"profile"` to the `FLAGS` array (appe
 ```
 
 In `infra/migrations/src/manifest.ts`, append to `MIGRATION_MANIFEST` (order matters — after `members`, and it has no FK so appending at the end is fine):
+
 ```ts
   "content",
   "profile",
@@ -169,6 +178,7 @@ In `infra/migrations/src/manifest.ts`, append to `MIGRATION_MANIFEST` (order mat
 - [ ] **Step 5: Write the test harness**
 
 `modules/profile/src/test-db.ts`:
+
 ```ts
 /**
  * Private test harness for the profile module. Not re-exported from index.ts.
@@ -220,6 +230,7 @@ export async function setupProfileDb(): Promise<TestDb> {
 - [ ] **Step 6: Write the smoke test (fails until migration applies cleanly)**
 
 `modules/profile/src/schema.test.ts`:
+
 ```ts
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
@@ -280,11 +291,13 @@ git commit -m "feat(profile): scaffold module, schema, migration, flag"
 ### Task 2: Types, enum options, university list, and `SaveProfileInput` validation
 
 **Files:**
+
 - Create: `modules/profile/src/data.ts` (enum options + university list)
 - Create: `modules/profile/src/types.ts` (`SaveProfileInput`, `MemberProfile`, `ProfileActor`, `ProfileFields`)
 - Test: `modules/profile/src/validation.test.ts`
 
 **Interfaces:**
+
 - Consumes: nothing from earlier tasks.
 - Produces:
   - `ABSCHLUSSART_OPTIONS: ReadonlyArray<{ value: string; label: string }>`
@@ -297,6 +310,7 @@ git commit -m "feat(profile): scaffold module, schema, migration, flag"
 - [ ] **Step 1: Write the enum options + university list**
 
 `modules/profile/src/data.ts`:
+
 ```ts
 /** Stable enum keys + German UI labels. Keys are stored; labels are display. */
 export const ABSCHLUSSART_OPTIONS = [
@@ -401,6 +415,7 @@ export function isKnownUniversity(value: string): boolean {
 - [ ] **Step 2: Write the types + zod validation**
 
 `modules/profile/src/types.ts`:
+
 ```ts
 import { z } from "zod";
 
@@ -480,6 +495,7 @@ export type MemberProfile = {
 - [ ] **Step 3: Write failing validation tests**
 
 `modules/profile/src/validation.test.ts`:
+
 ```ts
 import { describe, expect, it } from "vitest";
 
@@ -556,6 +572,7 @@ git commit -m "feat(profile): profile field validation, enum options, university
 ### Task 3: `getProfile` / `saveProfile` / `canViewProfile` services, events, public surface
 
 **Files:**
+
 - Create: `modules/profile/src/events.ts`
 - Create: `modules/profile/src/services/profile.ts`
 - Create: `modules/profile/src/index.ts`
@@ -563,6 +580,7 @@ git commit -m "feat(profile): profile field validation, enum options, university
 - Test: `modules/profile/src/index.export.test.ts`
 
 **Interfaces:**
+
 - Consumes: `SaveProfileFields`, `SaveProfileInput`, `MemberProfile`, `ProfileActor` (Task 2); `memberProfiles`, `MemberProfileRow` (Task 1).
 - Produces (public surface `index.ts`):
   - `getProfile(db: Db, userId: string): Promise<MemberProfile | null>`
@@ -574,6 +592,7 @@ git commit -m "feat(profile): profile field validation, enum options, university
 - [ ] **Step 1: Write the events**
 
 `modules/profile/src/events.ts`:
+
 ```ts
 /**
  * Events emitted by the profile module. Subscribers depend on the types, not
@@ -599,6 +618,7 @@ export type ProfileEvent = ProfileCompleted | ProfileUpdated;
 - [ ] **Step 2: Write the service**
 
 `modules/profile/src/services/profile.ts`:
+
 ```ts
 import { eq } from "drizzle-orm";
 import type { PostgresJsDatabase } from "drizzle-orm/postgres-js";
@@ -735,6 +755,7 @@ function flatten(err: z.ZodError): Record<string, string> {
 - [ ] **Step 3: Write the public surface**
 
 `modules/profile/src/index.ts`:
+
 ```ts
 /**
  * @bdas/profile — public surface.
@@ -758,6 +779,7 @@ export type { ProfileEvent, ProfileCompleted, ProfileUpdated } from "./events";
 - [ ] **Step 4: Write the export-surface guard test**
 
 `modules/profile/src/index.export.test.ts`:
+
 ```ts
 import { describe, expect, it } from "vitest";
 
@@ -785,6 +807,7 @@ describe("@bdas/profile public surface", () => {
 - [ ] **Step 5: Write the integration tests (fail first)**
 
 `modules/profile/src/index.test.ts`:
+
 ```ts
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
@@ -826,7 +849,12 @@ describeIfDb("profile service", () => {
   });
 
   it("create → get roundtrip", async () => {
-    await saveProfile(t.db, { userId: OWNER.userId, fields: FIELDS, actor: OWNER, groupId: "grp_1" });
+    await saveProfile(t.db, {
+      userId: OWNER.userId,
+      fields: FIELDS,
+      actor: OWNER,
+      groupId: "grp_1",
+    });
     const p = await getProfile(t.db, OWNER.userId);
     expect(p?.studiengang).toBe("Informatik");
     expect(p?.completedAt).toBeInstanceOf(Date);
@@ -887,15 +915,18 @@ git commit -m "feat(profile): getProfile/saveProfile services, events, public su
 ### Task 4: Private `profile-media` storage accessor
 
 **Files:**
+
 - Modify: `core/storage/src/index.ts` (add `getProfileMediaStorage()`)
 - Test: `core/storage/src/profile-media.test.ts`
 
 **Interfaces:**
+
 - Produces: `getProfileMediaStorage(): SupabaseStorageClient` — a **private** bucket client (env `SUPABASE_PROFILE_MEDIA_BUCKET`, default `profile-media`). No public-URL helper (private ⇒ signed downloads only), unlike the content/event/blog accessors.
 
 - [ ] **Step 1: Write the failing test**
 
 `core/storage/src/profile-media.test.ts`:
+
 ```ts
 import { afterEach, describe, expect, it } from "vitest";
 
@@ -927,6 +958,7 @@ Run: `pnpm --filter @bdas/storage test -- profile-media` → FAIL (`getProfileMe
 - [ ] **Step 2: Implement the accessor**
 
 In `core/storage/src/index.ts`, after the `getContentMediaStorage`/`contentMediaPublicUrl` block and before `export { SupabaseStorageClient };`, add:
+
 ```ts
 let _profileMedia: SupabaseStorageClient | null = null;
 
@@ -970,10 +1002,12 @@ git commit -m "feat(storage): private profile-media bucket accessor"
 ### Task 5: Fix the registration name-drop — persist first/last name at sign-up
 
 **Files:**
+
 - Modify: `apps/web/app/registrieren/actions.ts`
 - Test: `apps/web/app/registrieren/actions.test.ts`
 
 **Interfaces:**
+
 - Consumes: `register` (auth), `createProfile` (members) — existing.
 - Produces: `registerAction` now persists `firstName`/`lastName` into a `members` row (status `pending`, no group) immediately after `register`, before sending the verify email. Validation errors for empty names surface as `state.fields`.
 
@@ -982,6 +1016,7 @@ git commit -m "feat(storage): private profile-media bucket accessor"
 - [ ] **Step 1: Write the failing test**
 
 `apps/web/app/registrieren/actions.test.ts`:
+
 ```ts
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -1059,6 +1094,7 @@ Run: `pnpm --filter @bdas/web test -- registrieren/actions` → FAIL.
 - [ ] **Step 2: Implement the fix**
 
 Edit `apps/web/app/registrieren/actions.ts`. Add the members import and name handling:
+
 ```ts
 import { buildVerifyUrl, getNotifier, register } from "@bdas/auth";
 import { getDb } from "@bdas/db";
@@ -1070,30 +1106,32 @@ import { bootAuth } from "../../lib/auth-bootstrap";
 ```
 
 Inside `registerAction`, after reading `email`/`password`/`consent`, read and validate names before the `register` call:
+
 ```ts
-  const firstName = String(formData.get("firstName") ?? "").trim();
-  const lastName = String(formData.get("lastName") ?? "").trim();
-  const nameErrors: Record<string, string> = {};
-  if (!firstName) nameErrors["firstName"] = "Bitte gib deinen Vornamen an.";
-  if (!lastName) nameErrors["lastName"] = "Bitte gib deinen Nachnamen an.";
-  if (Object.keys(nameErrors).length > 0) {
-    return { error: "Bitte fülle alle Pflichtfelder aus.", fields: nameErrors };
-  }
+const firstName = String(formData.get("firstName") ?? "").trim();
+const lastName = String(formData.get("lastName") ?? "").trim();
+const nameErrors: Record<string, string> = {};
+if (!firstName) nameErrors["firstName"] = "Bitte gib deinen Vornamen an.";
+if (!lastName) nameErrors["lastName"] = "Bitte gib deinen Nachnamen an.";
+if (Object.keys(nameErrors).length > 0) {
+  return { error: "Bitte fülle alle Pflichtfelder aus.", fields: nameErrors };
+}
 ```
 
 After the `register(...)` call succeeds (right after the `try/catch` that assigns `result`), persist the member row:
+
 ```ts
-  try {
-    await createProfile(getDb(), {
-      userId: result.userId,
-      firstName,
-      lastName,
-    });
-  } catch (err) {
-    // Account already exists; the /account profile form is the recovery path.
-    // Never fail the response for a member-row hiccup — log and continue.
-    console.error("[auth] createProfile after register failed:", err);
-  }
+try {
+  await createProfile(getDb(), {
+    userId: result.userId,
+    firstName,
+    lastName,
+  });
+} catch (err) {
+  // Account already exists; the /account profile form is the recovery path.
+  // Never fail the response for a member-row hiccup — log and continue.
+  console.error("[auth] createProfile after register failed:", err);
+}
 ```
 
 (The verify-email send and `redirect("/registrieren/erfolg")` stay as-is below.)
@@ -1115,16 +1153,19 @@ git commit -m "fix(auth): persist first/last name at registration (name-drop bug
 ### Task 6: Profile photo upload route (`/api/profile/upload-url`)
 
 **Files:**
+
 - Create: `apps/web/app/api/profile/upload-url/route.ts`
 - Test: `apps/web/app/api/profile/upload-url/route.test.ts`
 
 **Interfaces:**
+
 - Consumes: `isFlagOn`, `getCurrentMember` (members), `getProfileMediaStorage` (Task 4), `readSessionCookie`.
 - Produces: `POST` returning `{ uploadUrl, storageKey }`. Gates: flag on (else 404), authenticated (else 401), own-photo-only (actor uploads under their own `userId` prefix). Mime allowlist `image/{jpeg,png,webp,avif}`, size ≤ 5 MB (else 422). Storage key `<userId>/<uuid>.<ext>`. **No `publicUrl`** in the response — private bucket.
 
 - [ ] **Step 1: Write the failing gate test**
 
 `apps/web/app/api/profile/upload-url/route.test.ts`:
+
 ```ts
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -1166,6 +1207,7 @@ Run: `pnpm --filter @bdas/web test -- api/profile/upload-url` → FAIL (route mi
 - [ ] **Step 2: Implement the route**
 
 `apps/web/app/api/profile/upload-url/route.ts`:
+
 ```ts
 import { getDb } from "@bdas/db";
 import { isFlagOn } from "@bdas/feature-flags";
@@ -1229,10 +1271,12 @@ git commit -m "feat(profile): private photo upload-url route (own-photo-only, 5M
 ### Task 7: Wizard step-validation (pure) + shared field option data
 
 **Files:**
+
 - Create: `apps/web/app/_profile/steps.ts`
 - Test: `apps/web/app/_profile/steps.test.ts`
 
 **Interfaces:**
+
 - Consumes: `SaveProfileFields`, `isKnownUniversity`, `SONSTIGE` (from `@bdas/profile`).
 - Produces:
   - `type WizardValues` — the flat client form state.
@@ -1243,6 +1287,7 @@ git commit -m "feat(profile): private photo upload-url route (own-photo-only, 5M
 - [ ] **Step 1: Write failing tests**
 
 `apps/web/app/_profile/steps.test.ts`:
+
 ```ts
 import { describe, expect, it } from "vitest";
 
@@ -1276,9 +1321,9 @@ describe("validateStep", () => {
   });
 
   it("blocks uni_gruppe when Sonstige is chosen but free text is empty", () => {
-    expect(
-      validateStep("uni_gruppe", { ...base, uni: "Sonstige", uniOther: "" }),
-    ).toHaveProperty("uni");
+    expect(validateStep("uni_gruppe", { ...base, uni: "Sonstige", uniOther: "" })).toHaveProperty(
+      "uni",
+    );
   });
 
   it("blocks gefunden=empfehlung without a referrer name", () => {
@@ -1308,6 +1353,7 @@ Run: `pnpm --filter @bdas/web test -- _profile/steps` → FAIL.
 - [ ] **Step 2: Implement the module**
 
 `apps/web/app/_profile/steps.ts`:
+
 ```ts
 import { SaveProfileFields, SONSTIGE } from "@bdas/profile";
 
@@ -1398,6 +1444,7 @@ git commit -m "feat(profile): pure wizard step-validation"
 ### Task 8: Wizard route — flag helper, profile-complete gate, submit action, UI, verify redirect
 
 **Files:**
+
 - Create: `apps/web/app/_profile/flag.ts`
 - Create: `apps/web/app/_profile/complete.ts`
 - Create: `apps/web/app/profil/actions.ts`
@@ -1409,6 +1456,7 @@ git commit -m "feat(profile): pure wizard step-validation"
 - Test: `apps/web/app/_profile/complete.test.ts`
 
 **Interfaces:**
+
 - Consumes: `WIZARD_STEPS`, `WizardValues`, `validateStep`, `resolveUni` (Task 7); `getProfile`, `saveProfile`, option/university constants (Task 3); `getCurrentMember`, `changePrimaryGroup` (members); `listGroups` (groups).
 - Produces:
   - `requireProfileFlag(): void` (calls `notFound()` when off).
@@ -1418,6 +1466,7 @@ git commit -m "feat(profile): pure wizard step-validation"
 - [ ] **Step 1: Write the flag helper**
 
 `apps/web/app/_profile/flag.ts`:
+
 ```ts
 import { notFound } from "next/navigation";
 
@@ -1431,6 +1480,7 @@ export function requireProfileFlag(): void {
 - [ ] **Step 2: Write the profile-complete gate (with failing test)**
 
 `apps/web/app/_profile/complete.test.ts`:
+
 ```ts
 import { describe, expect, it, vi } from "vitest";
 
@@ -1471,6 +1521,7 @@ describe("isProfileComplete", () => {
 ```
 
 `apps/web/app/_profile/complete.ts`:
+
 ```ts
 import type { Db } from "@bdas/db";
 import { getMemberByUserId } from "@bdas/members";
@@ -1498,6 +1549,7 @@ Run: `pnpm --filter @bdas/web test -- _profile/complete` → PASS.
 - [ ] **Step 3: Write the submit action**
 
 `apps/web/app/profil/actions.ts`:
+
 ```ts
 "use server";
 
@@ -1526,7 +1578,8 @@ export async function submitWizardAction(
   if (!me?.member) return { error: "Anmeldung erforderlich." };
 
   const groupId = String(formData.get("primaryGroupId") ?? "").trim();
-  if (groupId === "") return { error: "Bitte wähle deine BDAS-Gruppe.", fields: { primaryGroupId: "Pflichtfeld." } };
+  if (groupId === "")
+    return { error: "Bitte wähle deine BDAS-Gruppe.", fields: { primaryGroupId: "Pflichtfeld." } };
 
   const fields = {
     studiengang: String(formData.get("studiengang") ?? "").trim(),
@@ -1563,6 +1616,7 @@ export async function submitWizardAction(
 - [ ] **Step 4: Write the shared field components**
 
 `apps/web/app/profil/ProfileFields.tsx` — client building blocks reused by the wizard and the account edit form. Uses design-system primitives + the native-select class (copied from `ProfileForm.tsx`; extract as `SELECT_CLASS`). Renders labelled `<Field>`s for studiengang, abschlussart (`<select>` from `ABSCHLUSSART_OPTIONS`), uni (`<select>` from `UNIVERSITIES` + `SONSTIGE`, revealing a free-text `<Input>` when Sonstige), group (`<select>` from passed `groups`), geburtsdatum (`<Input type="date">`), gefundenDurch (`<select>` from `GEFUNDEN_DURCH_OPTIONS`, revealing empfehlerName `<Input>` when `empfehlung`). Each field takes `value`, `onChange`, and `error?`. No inline hex/radius — only tokens + `SELECT_CLASS`.
+
 ```tsx
 "use client";
 
@@ -1594,7 +1648,11 @@ export function StudiumFields({
 }) {
   return (
     <>
-      <Field label="Studiengang" htmlFor="studiengang" {...(errors["studiengang"] ? { error: errors["studiengang"] } : {})}>
+      <Field
+        label="Studiengang"
+        htmlFor="studiengang"
+        {...(errors["studiengang"] ? { error: errors["studiengang"] } : {})}
+      >
         <Input
           id="studiengang"
           value={values.studiengang}
@@ -1602,7 +1660,11 @@ export function StudiumFields({
           required
         />
       </Field>
-      <Field label="Abschlussart" htmlFor="abschlussart" {...(errors["abschlussart"] ? { error: errors["abschlussart"] } : {})}>
+      <Field
+        label="Abschlussart"
+        htmlFor="abschlussart"
+        {...(errors["abschlussart"] ? { error: errors["abschlussart"] } : {})}
+      >
         <select
           id="abschlussart"
           className={SELECT_CLASS}
@@ -1659,7 +1721,11 @@ export function UniGruppeFields({
           />
         ) : null}
       </Field>
-      <Field label="BDAS-Gruppe" htmlFor="primaryGroupId" {...(errors["primaryGroupId"] ? { error: errors["primaryGroupId"] } : {})}>
+      <Field
+        label="BDAS-Gruppe"
+        htmlFor="primaryGroupId"
+        {...(errors["primaryGroupId"] ? { error: errors["primaryGroupId"] } : {})}
+      >
         <select
           id="primaryGroupId"
           className={SELECT_CLASS}
@@ -1688,7 +1754,11 @@ export function GeburtsdatumField({
   errors: Record<string, string>;
 }) {
   return (
-    <Field label="Geburtsdatum" htmlFor="geburtsdatum" {...(errors["geburtsdatum"] ? { error: errors["geburtsdatum"] } : {})}>
+    <Field
+      label="Geburtsdatum"
+      htmlFor="geburtsdatum"
+      {...(errors["geburtsdatum"] ? { error: errors["geburtsdatum"] } : {})}
+    >
       <Input
         id="geburtsdatum"
         type="date"
@@ -1711,7 +1781,11 @@ export function GefundenFields({
 }) {
   return (
     <>
-      <Field label="Wie hast du BDAS gefunden?" htmlFor="gefundenDurch" {...(errors["gefundenDurch"] ? { error: errors["gefundenDurch"] } : {})}>
+      <Field
+        label="Wie hast du BDAS gefunden?"
+        htmlFor="gefundenDurch"
+        {...(errors["gefundenDurch"] ? { error: errors["gefundenDurch"] } : {})}
+      >
         <select
           id="gefundenDurch"
           className={SELECT_CLASS}
@@ -1727,7 +1801,11 @@ export function GefundenFields({
         </select>
       </Field>
       {values.gefundenDurch === "empfehlung" ? (
-        <Field label="Von wem wurdest du empfohlen?" htmlFor="empfehlerName" {...(errors["empfehlerName"] ? { error: errors["empfehlerName"] } : {})}>
+        <Field
+          label="Von wem wurdest du empfohlen?"
+          htmlFor="empfehlerName"
+          {...(errors["empfehlerName"] ? { error: errors["empfehlerName"] } : {})}
+        >
           <Input
             id="empfehlerName"
             value={values.empfehlerName}
@@ -1752,6 +1830,7 @@ export function FotoStep({ values, set }: { values: WizardValues; set: Setter })
 - [ ] **Step 5: Write the photo field**
 
 `apps/web/app/profil/PhotoField.tsx` — mirrors `apps/web/app/_content/FotoField.tsx` but posts to `/api/profile/upload-url`, stores the returned **storageKey** (not a public URL), and previews via a signed URL fetched from a tiny helper endpoint or a passed-in preview URL. Since the bucket is private, the preview uses an `<img>` only when a freshly-minted signed URL is available; on first upload show a "Bild hochgeladen ✓" confirmation instead of a raw key.
+
 ```tsx
 "use client";
 
@@ -1832,6 +1911,7 @@ export function PhotoField({
 `apps/web/app/profil/Wizard.tsx` — client component holding `WizardValues` state, current step index, a token-built progress indicator (steps from `WIZARD_STEPS`), Weiter/Zurück buttons calling `validateStep` before advancing, and a final hidden-input `<form action={submitWizardAction}>` on the review step that serializes all values (using `resolveUni` for `uni`). On `state.ok` it `router.push("/account")`. Renders the step components from `ProfileFields.tsx`. Brand red only for the active step/accent (tokens). Accepts `groups` as a prop.
 
 Key wiring (abbreviated to the load-bearing parts; the rest is straightforward step switching):
+
 ```tsx
 "use client";
 
@@ -1863,7 +1943,11 @@ const EMPTY: WizardValues = {
   photoStorageKey: null,
 };
 
-export function Wizard({ groups }: { groups: ReadonlyArray<{ id: string; name: string; city: string }> }) {
+export function Wizard({
+  groups,
+}: {
+  groups: ReadonlyArray<{ id: string; name: string; city: string }>;
+}) {
   const router = useRouter();
   const [values, setValues] = useState<WizardValues>(EMPTY);
   const [step, setStep] = useState(0);
@@ -1949,10 +2033,14 @@ function ReviewSummary({
   const group = groups.find((g) => g.id === values.primaryGroupId)?.name ?? "—";
   return (
     <dl className="grid grid-cols-2 gap-2 text-sm text-bdas-ink-body">
-      <dt>Studiengang</dt><dd>{values.studiengang}</dd>
-      <dt>Hochschule</dt><dd>{resolveUni(values)}</dd>
-      <dt>Gruppe</dt><dd>{group}</dd>
-      <dt>Geburtsdatum</dt><dd>{values.geburtsdatum}</dd>
+      <dt>Studiengang</dt>
+      <dd>{values.studiengang}</dd>
+      <dt>Hochschule</dt>
+      <dd>{resolveUni(values)}</dd>
+      <dt>Gruppe</dt>
+      <dd>{group}</dd>
+      <dt>Geburtsdatum</dt>
+      <dd>{values.geburtsdatum}</dd>
     </dl>
   );
 }
@@ -1961,6 +2049,7 @@ function ReviewSummary({
 - [ ] **Step 7: Write the wizard page**
 
 `apps/web/app/profil/page.tsx` — server component: `requireAuthFlag()`, `requireProfileFlag()`; load `me` via session; redirect anonymous → `/anmelden`; if the profile is already complete (`isProfileComplete`), redirect → `/account`; load active groups; render `<Wizard groups={...} />`.
+
 ```tsx
 import { redirect } from "next/navigation";
 
@@ -2003,29 +2092,35 @@ export default async function ProfilPage() {
 - [ ] **Step 8: Redirect verification into the wizard**
 
 In `apps/web/app/verifizieren/[token]/page.tsx`, after a successful (non-error) verification, when the `profile` flag is on route the just-verified user into the wizard. Add near the top imports `import { redirect } from "next/navigation";` and `import { isFlagOn } from "@bdas/feature-flags";`. After the `verifyEmail` try/catch, before rendering:
+
 ```tsx
-  if (result && !result.alreadyVerified && isFlagOn("profile")) {
-    redirect("/profil");
-  }
+if (result && !result.alreadyVerified && isFlagOn("profile")) {
+  redirect("/profil");
+}
 ```
+
 (Leave the static success page for `alreadyVerified` and the flag-off case unchanged.)
 
 - [ ] **Step 9: Route incomplete profiles to the wizard on sign-in**
 
 Spec §3: "On sign-in, an incomplete profile routes the user to the wizard." In `apps/web/app/anmelden/actions.ts`, replace the unconditional `redirect("/account")` at the end of `loginAction` with a completeness check. Add imports:
+
 ```ts
 import { isFlagOn } from "@bdas/feature-flags";
 import { isProfileComplete } from "../_profile/complete";
 ```
+
 Then, after `setSessionCookie(result.token);`:
+
 ```ts
-  // Guide members who verified but never finished onboarding straight into the
-  // wizard; everyone else lands on their account.
-  if (isFlagOn("profile") && !(await isProfileComplete(getDb(), result.userId))) {
-    redirect("/profil");
-  }
-  redirect("/account");
+// Guide members who verified but never finished onboarding straight into the
+// wizard; everyone else lands on their account.
+if (isFlagOn("profile") && !(await isProfileComplete(getDb(), result.userId))) {
+  redirect("/profil");
+}
+redirect("/account");
 ```
+
 (If `login`'s result does not expose `userId`, resolve it via `getCurrentUser(getDb(), result.token)` or the session helper — confirm the `LoginResult` shape in `modules/auth/src/services/login.ts` before wiring; use whichever field carries the authenticated user id.)
 
 - [ ] **Step 10: Run tests + typecheck**
@@ -2045,17 +2140,20 @@ git commit -m "feat(profile): onboarding wizard, verify + sign-in routing, compl
 ### Task 9: Account edit (#96) — reuse the profile fields on "Mein Konto"
 
 **Files:**
+
 - Create: `apps/web/app/account/EditProfileForm.tsx` (single-page, non-stepped)
 - Create: `apps/web/app/account/profile-actions.ts` (`saveProfileFieldsAction`)
 - Modify: `apps/web/app/account/page.tsx` (render the extended edit form when the flag is on)
 
 **Interfaces:**
+
 - Consumes: the `ProfileFields.tsx` building blocks (Task 8), `saveProfile`/`getProfile` (profile), `getCurrentMember`/`changePrimaryGroup` (members).
 - Produces: `saveProfileFieldsAction(prev, formData)` — same write path as the wizard submit (group via members, fields via `saveProfile`), but returns a stay-on-page success notice instead of redirecting. Prefills from the existing `getProfile` row + `me.member.primaryGroupId`.
 
 - [ ] **Step 1: Write the account save action**
 
 `apps/web/app/account/profile-actions.ts` — identical orchestration to `submitWizardAction` (Task 8 Step 3) but returns `{ notice: "Profil gespeichert." }` on success and `revalidatePath("/account")`. Repeat the full body (do not "see Task 8"):
+
 ```ts
 "use server";
 
@@ -2146,6 +2244,7 @@ git commit -m "feat(profile): edit extended profile on Mein Konto (#96)"
 ### Task 10: Board notification on `profile.completed`
 
 **Files:**
+
 - Create: `modules/members/src/services/board-recipients.ts`
 - Modify: `modules/members/src/index.ts` (export `listBoardRecipientsForGroup`)
 - Modify: `modules/notifications/src/types.ts` (add `member_application_received` to the template union + any needed `TemplateData` fields)
@@ -2156,6 +2255,7 @@ git commit -m "feat(profile): edit extended profile on Mein Konto (#96)"
 - Test: `modules/notifications/src/subscribers.profile.test.ts`
 
 **Interfaces:**
+
 - Consumes: `ProfileCompleted` (from `@bdas/profile`), `sendTransactional` (internal), `memberRoleGrants`/`members` (members schema).
 - Produces:
   - `listBoardRecipientsForGroup(db, groupId: string | null): Promise<string[]>` — member ids of active `local_board` + `local_board_lead` grants scoped to `groupId`; when none (or `groupId` null), falls back to active `federal_board` member ids.
@@ -2166,6 +2266,7 @@ git commit -m "feat(profile): edit extended profile on Mein Konto (#96)"
 `modules/members/src/board-recipients.test.ts` — uses the members test-db harness; seed: a group-scoped `local_board` grant and a `federal_board` grant; assert `listBoardRecipientsForGroup(db, groupId)` returns the local board member id, and with an unknown group returns the federal board member id (fallback).
 
 `modules/members/src/services/board-recipients.ts`:
+
 ```ts
 import { and, eq, isNull, or } from "drizzle-orm";
 import type { PostgresJsDatabase } from "drizzle-orm/postgres-js";
@@ -2210,6 +2311,7 @@ export async function listBoardRecipientsForGroup(
 ```
 
 Add to `modules/members/src/index.ts`:
+
 ```ts
 export { listBoardRecipientsForGroup } from "./services/board-recipients";
 ```
@@ -2221,6 +2323,7 @@ Run: `pnpm --filter @bdas/members test -- board-recipients` → PASS.
 In `modules/notifications/src/types.ts`, add `"member_application_received"` to the `TransactionalTemplate` union, and add optional `applicantName?: string` and `groupName?: string` to `TemplateData` (if not already present — `groupName` likely exists for organizer templates; reuse it).
 
 In `modules/notifications/src/templates.ts`, add a `case "member_application_received":` returning a German "neue Bewerbung zur Prüfung" body, e.g.:
+
 ```ts
     case "member_application_received":
       return body(
@@ -2235,10 +2338,12 @@ In `modules/notifications/src/templates.ts`, add a `case "member_application_rec
 - [ ] **Step 3: Subscribe to `profile.completed`**
 
 In `modules/notifications/src/subscribers.ts`, import the event type and the resolver, and add a subscription inside `registerNotificationSubscribers` (wrapped in `safe`, like the others):
+
 ```ts
 import type { ProfileCompleted } from "@bdas/profile";
 import { getMemberByUserId, listBoardRecipientsForGroup } from "@bdas/members";
 ```
+
 ```ts
     getEventBus().subscribe<ProfileCompleted>(
       "profile.completed",
@@ -2253,6 +2358,7 @@ import { getMemberByUserId, listBoardRecipientsForGroup } from "@bdas/members";
       }),
     ),
 ```
+
 Add `"@bdas/profile": "workspace:*"` and `"@bdas/members": "workspace:*"` (if not present) to `modules/notifications/package.json` dependencies.
 
 - [ ] **Step 4: Write the subscriber test**
@@ -2276,11 +2382,13 @@ git commit -m "feat(notifications): notify the local board on profile.completed"
 ### Task 11: Board pending list shows the application; datenexport includes profile
 
 **Files:**
+
 - Modify: `apps/web/app/admin/pending-members/page.tsx` (show profile fields + referrer + signed photo per applicant)
 - Create: `apps/web/app/admin/pending-members/ApplicantPhoto.tsx` (optional, if a client preview of the signed URL is needed)
 - Modify: `apps/web/app/account/datenexport/route.ts` (include the profile row)
 
 **Interfaces:**
+
 - Consumes: `getProfile` (profile), `getProfileMediaStorage` + `signedDownloadUrl`, `canViewProfile`.
 - Produces: the pending-members page renders each applicant's studiengang / abschlussart / uni / geburtsdatum / gefunden_durch / **empfehler_name**, and — when a photo exists — an `<img>` from a short-lived signed download URL minted server-side. Datenexport payload gains a `profileData` field.
 
@@ -2291,10 +2399,12 @@ In `apps/web/app/admin/pending-members/page.tsx`, after computing `pending`, whe
 - [ ] **Step 2: Extend the data export**
 
 In `apps/web/app/account/datenexport/route.ts`, when `isFlagOn("profile")` add the caller's profile row to the payload (subject-access completeness, spec §10):
+
 ```ts
 import { isFlagOn } from "@bdas/feature-flags";
 import { getProfile } from "@bdas/profile";
 ```
+
 ```ts
   const profileData = isFlagOn("profile") ? await getProfile(db, me.user.id) : null;
   // ...
@@ -2325,11 +2435,13 @@ git commit -m "feat(profile): board sees applications; datenexport includes prof
 ### Task 12: End-to-end coverage + module README + rollout checklist
 
 **Files:**
+
 - Create: `e2e/profile-onboarding.e2e.ts` (Playwright — testDir is `./e2e`, testMatch `**/*.e2e.ts`)
 - Modify: `modules/profile/README.md` (already created — confirm it documents the surface + events)
 - Create: `docs/decisions/00XX-profile-module.md` (ADR — new module + private bucket decision; number it next in sequence)
 
 **Interfaces:**
+
 - Consumes: the whole feature.
 - Produces: an e2e spec exercising register → verify → wizard → submit → board pending list shows the applicant with referrer name; edit in Mein Konto persists; profile-incomplete sign-in routes to the wizard; wizard/API 404 for anonymous when the flag is off.
 
@@ -2344,11 +2456,13 @@ git commit -m "feat(profile): board sees applications; datenexport includes prof
 - [ ] **Step 3: Run the full module + web suites**
 
 Run:
+
 ```bash
 pnpm --filter @bdas/profile test
 pnpm --filter @bdas/web test
 pnpm -w typecheck
 ```
+
 Expected: PASS. (Run the e2e suite per the repo's e2e command with `BDAS_FLAG_PROFILE=true`.)
 
 - [ ] **Step 4: Commit**

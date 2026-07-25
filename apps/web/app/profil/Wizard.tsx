@@ -28,7 +28,11 @@ const EMPTY: WizardValues = {
   photoStorageKey: null,
 };
 
-export function Wizard({ groups }: { groups: ReadonlyArray<{ id: string; name: string; city: string }> }) {
+export function Wizard({
+  groups,
+}: {
+  groups: ReadonlyArray<{ id: string; name: string; city: string }>;
+}) {
   const router = useRouter();
   const [values, setValues] = useState<WizardValues>(EMPTY);
   const [step, setStep] = useState(0);
@@ -116,10 +120,14 @@ function ReviewSummary({
   const group = groups.find((g) => g.id === values.primaryGroupId)?.name ?? "—";
   return (
     <dl className="grid grid-cols-2 gap-2 text-sm text-bdas-ink-body">
-      <dt>Studiengang</dt><dd>{values.studiengang}</dd>
-      <dt>Hochschule</dt><dd>{resolveUni(values)}</dd>
-      <dt>Gruppe</dt><dd>{group}</dd>
-      <dt>Geburtsdatum</dt><dd>{values.geburtsdatum}</dd>
+      <dt>Studiengang</dt>
+      <dd>{values.studiengang}</dd>
+      <dt>Hochschule</dt>
+      <dd>{resolveUni(values)}</dd>
+      <dt>Gruppe</dt>
+      <dd>{group}</dd>
+      <dt>Geburtsdatum</dt>
+      <dd>{values.geburtsdatum}</dd>
     </dl>
   );
 }

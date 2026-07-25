@@ -43,17 +43,17 @@ same fields are editable later under "Mein Konto".
 
 ## 2. Decisions (locked during brainstorming)
 
-| Topic | Decision |
-|---|---|
-| Scope | One spec covering fields + completion flow + referral signal + later editing + wizard UX |
-| Onboarding auth | **Keep password.** Registration = email + first name + last name + password + consent. Fix the name-drop bug. |
-| Module boundary | **New `modules/profile`**, own table keyed by `user_id`, own flag, migration, events. `members` unchanged. |
-| Referral | **Signal only.** Free-text referrer name stored + shown to the board; no automated in-app vouch. Board still makes the sole `pending → active` decision. |
-| UX | **Multi-step wizard** in the BDAS visual language. |
-| Studiengang | Free text. |
-| Uni | Curated list of German universities + a **"Sonstige" → free text** fallback. |
-| Photo | Optional; **private `profile-media` bucket**, shown via short-lived signed download URLs (owner + board). |
-| Board notification | **Yes.** `profile.completed` → notifications subscriber informs the responsible local board (federal fallback). |
+| Topic              | Decision                                                                                                                                                 |
+| ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Scope              | One spec covering fields + completion flow + referral signal + later editing + wizard UX                                                                 |
+| Onboarding auth    | **Keep password.** Registration = email + first name + last name + password + consent. Fix the name-drop bug.                                            |
+| Module boundary    | **New `modules/profile`**, own table keyed by `user_id`, own flag, migration, events. `members` unchanged.                                               |
+| Referral           | **Signal only.** Free-text referrer name stored + shown to the board; no automated in-app vouch. Board still makes the sole `pending → active` decision. |
+| UX                 | **Multi-step wizard** in the BDAS visual language.                                                                                                       |
+| Studiengang        | Free text.                                                                                                                                               |
+| Uni                | Curated list of German universities + a **"Sonstige" → free text** fallback.                                                                             |
+| Photo              | Optional; **private `profile-media` bucket**, shown via short-lived signed download URLs (owner + board).                                                |
+| Board notification | **Yes.** `profile.completed` → notifications subscriber informs the responsible local board (federal fallback).                                          |
 
 ---
 
@@ -100,19 +100,19 @@ Owned solely by this module; linked by `user_id` (like `members.user_id`, no
 cross-module FK). RLS enabled with no policies — only the service-role
 connection reads/writes.
 
-| Column | Type | Notes |
-|---|---|---|
-| `user_id` | text PK | matches `auth_users.id` |
-| `studiengang` | text NOT NULL | free text |
-| `abschlussart` | text NOT NULL | enum key (below) |
-| `uni` | text NOT NULL | the resolved university name (list value, or the free-text value when "Sonstige") |
-| `geburtsdatum` | date NOT NULL | valid past date |
-| `gefunden_durch` | text NOT NULL | enum key (below) |
-| `empfehler_name` | text NULL | set only when `gefunden_durch = 'empfehlung'` |
-| `photo_storage_key` | text NULL | key in the private `profile-media` bucket |
-| `completed_at` | timestamptz NULL | stamped on first successful submit |
-| `updated_at` | timestamptz NOT NULL | |
-| `updated_by` | text NOT NULL | acting `user_id` |
+| Column              | Type                 | Notes                                                                             |
+| ------------------- | -------------------- | --------------------------------------------------------------------------------- |
+| `user_id`           | text PK              | matches `auth_users.id`                                                           |
+| `studiengang`       | text NOT NULL        | free text                                                                         |
+| `abschlussart`      | text NOT NULL        | enum key (below)                                                                  |
+| `uni`               | text NOT NULL        | the resolved university name (list value, or the free-text value when "Sonstige") |
+| `geburtsdatum`      | date NOT NULL        | valid past date                                                                   |
+| `gefunden_durch`    | text NOT NULL        | enum key (below)                                                                  |
+| `empfehler_name`    | text NULL            | set only when `gefunden_durch = 'empfehlung'`                                     |
+| `photo_storage_key` | text NULL            | key in the private `profile-media` bucket                                         |
+| `completed_at`      | timestamptz NULL     | stamped on first successful submit                                                |
+| `updated_at`        | timestamptz NOT NULL |                                                                                   |
+| `updated_by`        | text NOT NULL        | acting `user_id`                                                                  |
 
 ### 4.2 Enums (stored as stable keys; German labels in the UI)
 

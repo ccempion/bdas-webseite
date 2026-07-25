@@ -98,7 +98,10 @@ export async function saveProfile(db: Db, input: SaveProfileInput): Promise<Memb
         empfehlerName: values.empfehlerName,
         photoStorageKey: values.photoStorageKey,
         // Immutable-once completion: a concurrent re-submit cannot re-stamp it.
-        completedAt: sql`COALESCE(${memberProfiles.completedAt}, ${now})`,
+        // The timestamp goes in as an ISO string with an explicit cast: inside a
+        // raw `sql` template there is no column type to infer from, and the
+        // driver rejects a bare Date as a bind parameter.
+        completedAt: sql`COALESCE(${memberProfiles.completedAt}, ${now.toISOString()}::timestamptz)`,
         updatedAt: values.updatedAt,
         updatedBy: values.updatedBy,
       },
@@ -108,7 +111,8 @@ export async function saveProfile(db: Db, input: SaveProfileInput): Promise<Memb
 
   // First completion iff this write is the one that set completed_at (insert
   // path: completedAt === updatedAt; update path keeps the earlier completedAt).
-  const firstComplete = row.completedAt != null && row.completedAt.getTime() === row.updatedAt.getTime();
+  const firstComplete =
+    row.completedAt != null && row.completedAt.getTime() === row.updatedAt.getTime();
 
   if (firstComplete) {
     const event: ProfileCompleted = {

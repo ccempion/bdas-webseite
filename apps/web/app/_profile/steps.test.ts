@@ -30,9 +30,9 @@ describe("validateStep", () => {
   });
 
   it("blocks uni_gruppe when Sonstige is chosen but free text is empty", () => {
-    expect(
-      validateStep("uni_gruppe", { ...base, uni: "Sonstige", uniOther: "" }),
-    ).toHaveProperty("uni");
+    expect(validateStep("uni_gruppe", { ...base, uni: "Sonstige", uniOther: "" })).toHaveProperty(
+      "uni",
+    );
   });
 
   it("blocks gefunden=empfehlung without a referrer name", () => {

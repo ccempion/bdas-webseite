@@ -39,7 +39,12 @@ describeIfDb("profile service", () => {
   });
 
   it("create → get roundtrip", async () => {
-    await saveProfile(t.db, { userId: OWNER.userId, fields: FIELDS, actor: OWNER, groupId: "grp_1" });
+    await saveProfile(t.db, {
+      userId: OWNER.userId,
+      fields: FIELDS,
+      actor: OWNER,
+      groupId: "grp_1",
+    });
     const p = await getProfile(t.db, OWNER.userId);
     expect(p?.studiengang).toBe("Informatik");
     expect(p?.completedAt).toBeInstanceOf(Date);

@@ -25,7 +25,8 @@ export async function submitWizardAction(
   if (!me?.member) return { error: "Anmeldung erforderlich." };
 
   const groupId = String(formData.get("primaryGroupId") ?? "").trim();
-  if (groupId === "") return { error: "Bitte wähle deine BDAS-Gruppe.", fields: { primaryGroupId: "Pflichtfeld." } };
+  if (groupId === "")
+    return { error: "Bitte wähle deine BDAS-Gruppe.", fields: { primaryGroupId: "Pflichtfeld." } };
 
   const fields = {
     studiengang: String(formData.get("studiengang") ?? "").trim(),

@@ -34,7 +34,11 @@ export function StudiumFields({
 } & WithIdPrefix) {
   return (
     <>
-      <Field label="Studiengang" htmlFor={`${idPrefix}studiengang`} {...(errors["studiengang"] ? { error: errors["studiengang"] } : {})}>
+      <Field
+        label="Studiengang"
+        htmlFor={`${idPrefix}studiengang`}
+        {...(errors["studiengang"] ? { error: errors["studiengang"] } : {})}
+      >
         <Input
           id={`${idPrefix}studiengang`}
           value={values.studiengang}
@@ -42,7 +46,11 @@ export function StudiumFields({
           required
         />
       </Field>
-      <Field label="Abschlussart" htmlFor={`${idPrefix}abschlussart`} {...(errors["abschlussart"] ? { error: errors["abschlussart"] } : {})}>
+      <Field
+        label="Abschlussart"
+        htmlFor={`${idPrefix}abschlussart`}
+        {...(errors["abschlussart"] ? { error: errors["abschlussart"] } : {})}
+      >
         <select
           id={`${idPrefix}abschlussart`}
           className={SELECT_CLASS}
@@ -75,7 +83,11 @@ export function UniGruppeFields({
 } & WithIdPrefix) {
   return (
     <>
-      <Field label="Hochschule" htmlFor={`${idPrefix}uni`} {...(errors["uni"] ? { error: errors["uni"] } : {})}>
+      <Field
+        label="Hochschule"
+        htmlFor={`${idPrefix}uni`}
+        {...(errors["uni"] ? { error: errors["uni"] } : {})}
+      >
         <select
           id={`${idPrefix}uni`}
           className={SELECT_CLASS}
@@ -100,7 +112,11 @@ export function UniGruppeFields({
           />
         ) : null}
       </Field>
-      <Field label="BDAS-Gruppe" htmlFor={`${idPrefix}primaryGroupId`} {...(errors["primaryGroupId"] ? { error: errors["primaryGroupId"] } : {})}>
+      <Field
+        label="BDAS-Gruppe"
+        htmlFor={`${idPrefix}primaryGroupId`}
+        {...(errors["primaryGroupId"] ? { error: errors["primaryGroupId"] } : {})}
+      >
         <select
           id={`${idPrefix}primaryGroupId`}
           className={SELECT_CLASS}
@@ -130,7 +146,11 @@ export function GeburtsdatumField({
   errors: Record<string, string>;
 } & WithIdPrefix) {
   return (
-    <Field label="Geburtsdatum" htmlFor={`${idPrefix}geburtsdatum`} {...(errors["geburtsdatum"] ? { error: errors["geburtsdatum"] } : {})}>
+    <Field
+      label="Geburtsdatum"
+      htmlFor={`${idPrefix}geburtsdatum`}
+      {...(errors["geburtsdatum"] ? { error: errors["geburtsdatum"] } : {})}
+    >
       <Input
         id={`${idPrefix}geburtsdatum`}
         type="date"
@@ -154,7 +174,11 @@ export function GefundenFields({
 } & WithIdPrefix) {
   return (
     <>
-      <Field label="Wie hast du BDAS gefunden?" htmlFor={`${idPrefix}gefundenDurch`} {...(errors["gefundenDurch"] ? { error: errors["gefundenDurch"] } : {})}>
+      <Field
+        label="Wie hast du BDAS gefunden?"
+        htmlFor={`${idPrefix}gefundenDurch`}
+        {...(errors["gefundenDurch"] ? { error: errors["gefundenDurch"] } : {})}
+      >
         <select
           id={`${idPrefix}gefundenDurch`}
           className={SELECT_CLASS}
@@ -170,7 +194,11 @@ export function GefundenFields({
         </select>
       </Field>
       {values.gefundenDurch === "empfehlung" ? (
-        <Field label="Von wem wurdest du empfohlen?" htmlFor={`${idPrefix}empfehlerName`} {...(errors["empfehlerName"] ? { error: errors["empfehlerName"] } : {})}>
+        <Field
+          label="Von wem wurdest du empfohlen?"
+          htmlFor={`${idPrefix}empfehlerName`}
+          {...(errors["empfehlerName"] ? { error: errors["empfehlerName"] } : {})}
+        >
           <Input
             id={`${idPrefix}empfehlerName`}
             value={values.empfehlerName}

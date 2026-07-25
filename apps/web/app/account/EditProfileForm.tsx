@@ -58,9 +58,7 @@ const EMPTY_STATE: EditProfileState = {};
 const ID_PREFIX = "konto-";
 
 export function EditProfileForm({ initial, primaryGroupId, groups }: EditProfileFormProps) {
-  const [values, setValues] = useState<WizardValues>(() =>
-    toWizardValues(initial, primaryGroupId),
-  );
+  const [values, setValues] = useState<WizardValues>(() => toWizardValues(initial, primaryGroupId));
   const [state, action] = useFormState(saveProfileFieldsAction, EMPTY_STATE);
 
   const set: <K extends keyof WizardValues>(k: K, v: WizardValues[K]) => void = (k, v) =>

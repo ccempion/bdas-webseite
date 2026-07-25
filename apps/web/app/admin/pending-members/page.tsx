@@ -5,7 +5,12 @@ import { Alert, Card } from "@bdas/design-system";
 import { isFlagOn } from "@bdas/feature-flags";
 import { listGroups } from "@bdas/groups";
 import { getCurrentMember, listPendingMembers } from "@bdas/members";
-import { ABSCHLUSSART_OPTIONS, GEFUNDEN_DURCH_OPTIONS, getProfile, type MemberProfile } from "@bdas/profile";
+import {
+  ABSCHLUSSART_OPTIONS,
+  GEFUNDEN_DURCH_OPTIONS,
+  getProfile,
+  type MemberProfile,
+} from "@bdas/profile";
 import { getProfileMediaStorage } from "@bdas/storage";
 
 import { requireAuthFlag } from "../../_auth/flag";
@@ -13,10 +18,7 @@ import { requireMembersFlag } from "../../_members/flag";
 import { readSessionCookie } from "../../../lib/auth-cookie";
 import { RowActions } from "./RowActions";
 
-function labelFor(
-  options: ReadonlyArray<{ value: string; label: string }>,
-  key: string,
-): string {
+function labelFor(options: ReadonlyArray<{ value: string; label: string }>, key: string): string {
   return options.find((o) => o.value === key)?.label ?? key;
 }
 
