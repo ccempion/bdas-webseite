@@ -1,9 +1,11 @@
 import { getDb } from "@bdas/db";
 import { isFlagOn } from "@bdas/feature-flags";
-import { getCurrentMember, isFederalBoard } from "@bdas/members";
+import { getGroupBySlug } from "@bdas/groups";
+import { canEditGroupPage, getCurrentMember, isFederalBoard } from "@bdas/members";
 import { getContentMediaStorage } from "@bdas/storage";
 
 import { readSessionCookie } from "../../../../lib/auth-cookie";
+import { groupPageSlug } from "../../../../lib/content-scope";
 
 export const dynamic = "force-dynamic";
 
@@ -17,9 +19,6 @@ export async function POST(req: Request) {
   if (!session) return Response.json({ error: "Anmeldung erforderlich." }, { status: 401 });
   const me = await getCurrentMember(getDb(), session);
   if (!me) return Response.json({ error: "Anmeldung erforderlich." }, { status: 401 });
-  if (!isFederalBoard(me.grants)) {
-    return Response.json({ error: "Keine Berechtigung." }, { status: 403 });
-  }
 
   const body = (await req.json().catch(() => null)) as {
     filename?: string;
@@ -27,6 +26,21 @@ export async function POST(req: Request) {
     sizeBytes?: number;
     slug?: string;
   } | null;
+
+  const gSlug = groupPageSlug(body?.slug ?? "");
+  if (gSlug !== null) {
+    if (!isFlagOn("groups")) return Response.json({ error: "Nicht verfügbar." }, { status: 404 });
+    const group = await getGroupBySlug(getDb(), gSlug);
+    if (!group || group.status === "archived") {
+      return Response.json({ error: "Gruppe nicht gefunden." }, { status: 404 });
+    }
+    if (!canEditGroupPage(me.grants, group.id)) {
+      return Response.json({ error: "Keine Berechtigung." }, { status: 403 });
+    }
+  } else if (!isFederalBoard(me.grants)) {
+    return Response.json({ error: "Keine Berechtigung." }, { status: 403 });
+  }
+
   if (!body?.mimeType || !ALLOWED.has(body.mimeType)) {
     return Response.json({ error: "Nur Bilddateien (JPG, PNG, WebP, AVIF)." }, { status: 422 });
   }

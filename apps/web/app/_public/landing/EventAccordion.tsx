@@ -4,8 +4,18 @@ import type { Route } from "next";
 import type { CalendarEvent } from "./calendar-events";
 
 const MONTHS_SHORT = [
-  "Jan", "Feb", "Mär", "Apr", "Mai", "Jun",
-  "Jul", "Aug", "Sep", "Okt", "Nov", "Dez",
+  "Jan",
+  "Feb",
+  "Mär",
+  "Apr",
+  "Mai",
+  "Jun",
+  "Jul",
+  "Aug",
+  "Sep",
+  "Okt",
+  "Nov",
+  "Dez",
 ];
 
 /** `start` is "YYYY-MM-DD HH:mm" Europe/Berlin wall-clock. */
@@ -31,7 +41,9 @@ export function EventAccordion({
         <span className="flex min-w-0 flex-1 items-center gap-3">
           <span className="flex w-12 shrink-0 flex-col items-center rounded-bdas-sm bg-bdas-surface-hover py-1.5">
             <span className="text-xl font-bold leading-none text-bdas-ink tabular-nums">{day}</span>
-            <span className="mt-0.5 text-xs uppercase tracking-wide text-bdas-ink-muted">{monthAbbr}</span>
+            <span className="mt-0.5 text-xs uppercase tracking-wide text-bdas-ink-muted">
+              {monthAbbr}
+            </span>
           </span>
           <span className="min-w-0 flex-1">
             <span className="block truncate">{event.title}</span>
@@ -42,7 +54,9 @@ export function EventAccordion({
           <span
             className={
               "shrink-0 rounded-bdas-pill border px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wide " +
-              (isFederal ? "border-bdas-red text-bdas-red" : "border-bdas-strong text-bdas-ink-muted")
+              (isFederal
+                ? "border-bdas-red text-bdas-red"
+                : "border-bdas-strong text-bdas-ink-muted")
             }
           >
             {groupLabel}

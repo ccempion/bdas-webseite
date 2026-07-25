@@ -10,8 +10,18 @@ import { buildMonthWeeks } from "./month-grid";
 
 const DOW = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
 const MONTHS_LONG = [
-  "Januar", "Februar", "März", "April", "Mai", "Juni",
-  "Juli", "August", "September", "Oktober", "November", "Dezember",
+  "Januar",
+  "Februar",
+  "März",
+  "April",
+  "Mai",
+  "Juni",
+  "Juli",
+  "August",
+  "September",
+  "Oktober",
+  "November",
+  "Dezember",
 ];
 
 function berlinTodayIso(): string {
@@ -40,20 +50,33 @@ export function MonthGrid({ events }: { events: CalendarEvent[] }) {
   return (
     <div className="rounded-bdas border border-bdas-soft bg-bdas-surface p-2 shadow-bdas-card">
       <div className="flex items-center justify-between px-2.5 pb-3 pt-2">
-        <button type="button" onClick={() => shift(-1)} aria-label="Vorheriger Monat" className={navBtn}>
+        <button
+          type="button"
+          onClick={() => shift(-1)}
+          aria-label="Vorheriger Monat"
+          className={navBtn}
+        >
           ‹
         </button>
         <h3 className="text-base font-bold text-bdas-ink">
           {MONTHS_LONG[cursor.month - 1]} {cursor.year}
         </h3>
-        <button type="button" onClick={() => shift(1)} aria-label="Nächster Monat" className={navBtn}>
+        <button
+          type="button"
+          onClick={() => shift(1)}
+          aria-label="Nächster Monat"
+          className={navBtn}
+        >
           ›
         </button>
       </div>
 
       <div className="grid grid-cols-7 gap-0.5">
         {DOW.map((d) => (
-          <div key={d} className="py-1.5 text-center text-xs font-bold uppercase tracking-wide text-bdas-ink-muted">
+          <div
+            key={d}
+            className="py-1.5 text-center text-xs font-bold uppercase tracking-wide text-bdas-ink-muted"
+          >
             {d}
           </div>
         ))}
@@ -105,7 +128,9 @@ export function MonthGrid({ events }: { events: CalendarEvent[] }) {
                 href={`/events/${ev.id}` as Route}
                 className={
                   "hidden truncate rounded-bdas-sm border-l-2 bg-bdas-surface-hover px-1.5 py-0.5 text-xs font-semibold sm:block " +
-                  (ev.groupId === null ? "border-bdas-red text-bdas-red" : "border-bdas-strong text-bdas-ink-body")
+                  (ev.groupId === null
+                    ? "border-bdas-red text-bdas-red"
+                    : "border-bdas-strong text-bdas-ink-body")
                 }
               >
                 {ev.title}

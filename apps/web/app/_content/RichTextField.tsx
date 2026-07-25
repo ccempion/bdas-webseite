@@ -1,14 +1,19 @@
 "use client";
 
-import Link from "@tiptap/extension-link";
-import { EditorContent, useEditor, type Content, type Extensions } from "@tiptap/react";
+import { EditorContent, useEditor, type Content } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 
 import { RICH_TEXT_STARTERKIT_CONFIG } from "./rich-text-config";
 
+// StarterKit v3 bundles Link and Underline; configure Link through it rather
+// than adding a second instance. Underline stays off — it was not available
+// under v2 and the migration does not change what authors can produce.
 const EXTENSIONS = [
-  StarterKit.configure(RICH_TEXT_STARTERKIT_CONFIG),
-  Link.configure({ openOnClick: false, autolink: false }),
+  StarterKit.configure({
+    ...RICH_TEXT_STARTERKIT_CONFIG,
+    underline: false,
+    link: { openOnClick: false, autolink: false },
+  }),
 ];
 
 const EMPTY_DOC = { type: "doc", content: [{ type: "paragraph" }] };
@@ -47,8 +52,7 @@ export function RichTextField({
   onChange: (doc: unknown) => void;
 }) {
   const editor = useEditor({
-    // Cast bridges the two @tiptap/core majors (app v2 / Puck v3); nominal-only.
-    extensions: EXTENSIONS as Extensions,
+    extensions: EXTENSIONS,
     content: (value as Content) ?? EMPTY_DOC,
     immediatelyRender: false,
     onUpdate: ({ editor }) => onChange(editor.getJSON()),

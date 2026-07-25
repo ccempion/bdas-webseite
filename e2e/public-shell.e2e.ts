@@ -137,21 +137,14 @@ test("facets: member sees members-only event, visitor does not", async ({ page }
     createdBy: memberId,
   });
 
-  // Logged-in active member sees it on the landing calendar. On the mobile
-  // viewport this suite runs (Pixel 7), Schedule-X's month grid only shows a
-  // dot indicator per day — the day cell must be opened to reveal titles.
+  // Logged-in active member sees it on the landing calendar. EventCalendar
+  // opens on the agenda view, which renders each event as an accordion whose
+  // summary carries the title — no day cell to expand.
   await page.goto("/");
-  const dayLabel = startsAt.toLocaleDateString("de-DE", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-    timeZone: "Europe/Berlin",
-  });
-  await page.getByRole("button", { name: dayLabel, exact: true }).click();
   await expect(page.getByText(title)).toBeVisible({ timeout: 10_000 });
 
   // A fresh anonymous context never receives the event at all (filtered
-  // server-side), so it's absent even without expanding any day cell.
+  // server-side).
   await page.context().clearCookies();
   await page.goto("/");
   await expect(page.getByText(title)).toHaveCount(0);

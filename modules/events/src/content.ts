@@ -5,9 +5,9 @@
  * never ships to visitors. Output is sanitized — stored docs are board-authored
  * but we defend in depth (and guest-era content later).
  */
+import type { JSONContent } from "@tiptap/core";
 import { generateHTML } from "@tiptap/html";
 import Image from "@tiptap/extension-image";
-import Link from "@tiptap/extension-link";
 import StarterKit from "@tiptap/starter-kit";
 import sanitizeHtml from "sanitize-html";
 
@@ -28,7 +28,12 @@ const ImageWithWidth = Image.extend({
   },
 });
 
-const EXTENSIONS = [StarterKit, ImageWithWidth, Link.configure({ openOnClick: false })];
+// StarterKit v3 bundles Link and Underline; Link is configured through it
+// rather than added twice. Underline stays off to match the editor.
+const EXTENSIONS = [
+  StarterKit.configure({ underline: false, link: { openOnClick: false } }),
+  ImageWithWidth,
+];
 
 const SANITIZE_OPTS: sanitizeHtml.IOptions = {
   allowedTags: [
@@ -65,14 +70,12 @@ function isEmptyDoc(doc: TiptapDoc | null | undefined): boolean {
 }
 
 export function renderEventContentHtml(doc: TiptapDoc | null | undefined): string {
-  if (isEmptyDoc(doc)) return "";
-  // generateHTML accepts the ProseMirror JSON shape. The EXTENSIONS cast bridges
-  // the two @tiptap/core majors the repo runs side by side (app editors v2, Puck
-  // v3) — a nominal-only mismatch depending on pnpm dedupe; runtime is unaffected.
-  const raw = generateHTML(
-    doc as Parameters<typeof generateHTML>[0],
-    EXTENSIONS as Parameters<typeof generateHTML>[1],
-  );
+  if (!doc || isEmptyDoc(doc)) return "";
+  // TiptapDoc is deliberately loose (`ReadonlyArray<unknown>`) so this module's
+  // public surface never leaks Tiptap's own types (rule 8). generateHTML takes a
+  // JSONContent; widen at this single boundary. Unlike the cast this replaces,
+  // it bridges a module-boundary type choice, not two @tiptap/core majors.
+  const raw = generateHTML(doc as JSONContent, EXTENSIONS);
   return sanitizeHtml(raw, SANITIZE_OPTS).trim();
 }
 

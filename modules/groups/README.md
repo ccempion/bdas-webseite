@@ -47,10 +47,11 @@ Required JSON fields per entry: `slug`, `name`, `city`. Everything else
 
 ## Routes (in `apps/web`)
 
-| Path              | Behavior                                         |
-| ----------------- | ------------------------------------------------ |
-| `/gruppen`        | Public list. 404 unless `BDAS_FLAG_GROUPS=true`. |
-| `/gruppen/[slug]` | Public profile. 404 unless flag on.              |
+| Path                         | Behavior                                                                                                                                                                                                                                                                           |
+| ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `/gruppen`                   | Public list. 404 unless `BDAS_FLAG_GROUPS=true`.                                                                                                                                                                                                                                   |
+| `/gruppen/[slug]`            | Public profile. 404 unless flag on. Renders the fixed header/contact card, then the group's Puck-authored content (`@bdas/content`, when the `content` flag is on), then a "Kommende Events" section (when `events` is on). Shows a "Seite bearbeiten" link to authorized viewers. |
+| `/gruppen/[slug]/bearbeiten` | Editor. 404 unless `groups` and `content` flags are on, the group exists/is not archived, and the viewer passes `canEditGroupPage` (lead, `page_editor`, or federal board) — 404, not 403, to avoid an existence leak (ADR 0026).                                                  |
 
 The list shows active groups by default. Dormant groups are hidden from
 the public list but reachable by direct URL (per spec §17 — alumni links

@@ -593,6 +593,51 @@ describeIfDb("members integration", () => {
     ).rejects.toMatchObject({ code: "FORBIDDEN" });
   });
 
+  it("a lead may grant/revoke page_editor scoped to its group (ADR 0026)", async () => {
+    await createGroup("grp_a", "aachen");
+    await createUser("usr_pe", "pe@example.de");
+    const m = await createProfile(t.db, {
+      userId: "usr_pe",
+      firstName: "P",
+      lastName: "x",
+      primaryGroupId: "grp_a",
+    });
+    await approveMember(t.db, m.id, BOARD);
+
+    // page_editor is group-scoped: a null scope is rejected.
+    await expect(grantRole(t.db, m.id, "page_editor", BOARD)).rejects.toMatchObject({
+      code: "VALIDATION",
+    });
+
+    await grantRole(t.db, m.id, "page_editor", leadOf("usr_lead", "grp_a"), "grp_a");
+    expect(await getGrants(t.db, m.id)).toContainEqual({ role: "page_editor", groupId: "grp_a" });
+
+    await revokeRole(t.db, m.id, "page_editor", leadOf("usr_lead", "grp_a"), "grp_a");
+    expect(await getGrants(t.db, m.id)).not.toContainEqual({
+      role: "page_editor",
+      groupId: "grp_a",
+    });
+  });
+
+  it("a plain local_board member may NOT grant page_editor; nor may a foreign lead", async () => {
+    await createGroup("grp_a", "aachen");
+    await createUser("usr_pe2", "pe2@example.de");
+    const m = await createProfile(t.db, {
+      userId: "usr_pe2",
+      firstName: "P",
+      lastName: "y",
+      primaryGroupId: "grp_a",
+    });
+    await approveMember(t.db, m.id, BOARD);
+
+    await expect(
+      grantRole(t.db, m.id, "page_editor", localBoardOf("usr_lb", "grp_a"), "grp_a"),
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    await expect(
+      grantRole(t.db, m.id, "page_editor", leadOf("usr_lead_b", "grp_b"), "grp_a"),
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+  });
+
   it("listRoleHolders includes event_organizer grants", async () => {
     await createGroup("grp_a", "aachen");
     await createUser("usr_org3", "org3@example.de");
@@ -608,6 +653,24 @@ describeIfDb("members integration", () => {
     const holders = await listRoleHolders(t.db);
     expect(holders).toContainEqual(
       expect.objectContaining({ memberId: m.id, role: "event_organizer", groupId: "grp_a" }),
+    );
+  });
+
+  it("listRoleHolders includes page_editor grants (ADR 0026)", async () => {
+    await createGroup("grp_a", "aachen");
+    await createUser("usr_pe1", "pe1@example.de");
+    const m = await createProfile(t.db, {
+      userId: "usr_pe1",
+      firstName: "Petra",
+      lastName: "Editorin",
+      primaryGroupId: "grp_a",
+    });
+    await approveMember(t.db, m.id, BOARD);
+    await grantRole(t.db, m.id, "page_editor", BOARD, "grp_a");
+
+    const holders = await listRoleHolders(t.db);
+    expect(holders).toContainEqual(
+      expect.objectContaining({ memberId: m.id, role: "page_editor", groupId: "grp_a" }),
     );
   });
 

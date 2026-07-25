@@ -2,8 +2,18 @@ import type { CalendarEvent } from "./calendar-events";
 import { EventAccordion } from "./EventAccordion";
 
 const MONTHS_LONG = [
-  "Januar", "Februar", "März", "April", "Mai", "Juni",
-  "Juli", "August", "September", "Oktober", "November", "Dezember",
+  "Januar",
+  "Februar",
+  "März",
+  "April",
+  "Mai",
+  "Juni",
+  "Juli",
+  "August",
+  "September",
+  "Oktober",
+  "November",
+  "Dezember",
 ];
 
 /** `start` is "YYYY-MM-DD ..."; returns e.g. "September 2026". */

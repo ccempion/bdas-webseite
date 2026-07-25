@@ -31,7 +31,7 @@ export function EventCalendar({
   const groupsWithEvents = groups.filter((g) => events.some((e) => e.groupId === g.id));
   const groupName = useMemo(() => new Map(groups.map((g) => [g.id, g.name])), [groups]);
   const groupLabelFor = (e: CalendarEvent) =>
-    e.groupId === null ? "Bundesweit" : groupName.get(e.groupId) ?? "Gruppe";
+    e.groupId === null ? "Bundesweit" : (groupName.get(e.groupId) ?? "Gruppe");
 
   return (
     <div className="flex flex-col gap-4">
@@ -63,7 +63,9 @@ export function EventCalendar({
               onClick={() => setView(v)}
               className={
                 "rounded-bdas-pill px-4 py-1 text-sm font-semibold transition-colors duration-bdas-quick ease-bdas " +
-                (view === v ? "bg-bdas-red text-white" : "text-bdas-ink-muted hover:text-bdas-ink-body")
+                (view === v
+                  ? "bg-bdas-red text-white"
+                  : "text-bdas-ink-muted hover:text-bdas-ink-body")
               }
             >
               {v === "list" ? "Liste" : "Monat"}

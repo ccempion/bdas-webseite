@@ -62,7 +62,14 @@ test("local board sets a location; the public map pin links to the group page", 
   // admin-managed fields AND the stored location.
   await page.goto(`/gruppe/${slug}/profile`);
   await page.getByRole("button", { name: "Speichern" }).click();
-  await expect(page.getByText("Gespeichert.")).toBeVisible();
+  // Match any outcome the form can report (GroupProfileForm renders either
+  // "Gespeichert." or the action's error), so a failed save shows up as the
+  // actual message rather than an opaque timeout on the success string.
+  const saveResult = page.getByText(
+    /^(Gespeichert\.|Fehler|Nicht angemeldet\.|Keine Berechtigung|Gruppe nicht gefunden\.|Archivierte)/,
+  );
+  await expect(saveResult).toBeVisible();
+  await expect(saveResult).toHaveText("Gespeichert.");
   expect(await groupContactEmail(slug)).toBe("karte@bdas.de");
 
   // /gruppen renders the map; the pin's popup links to the group page.

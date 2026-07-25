@@ -37,22 +37,25 @@ git checkout -b feat/landing-calendar
 The month grid's layout math, isolated as a pure, timezone-free function so it is unit-testable. Buckets events onto days by the date prefix of their `start` string.
 
 **Files:**
+
 - Create: `apps/web/app/_public/landing/month-grid.ts`
 - Test: `apps/web/app/_public/landing/month-grid.test.ts`
 
 **Interfaces:**
+
 - Consumes: `CalendarEvent` from `./calendar-events` (extended in Task 2; for this task only `.start` and `.id`/`.groupId` are read, all already present on the current type).
 - Produces:
+
   ```ts
   export type DayCell = {
-    readonly date: string;        // "YYYY-MM-DD"
-    readonly day: number;         // 1..31
+    readonly date: string; // "YYYY-MM-DD"
+    readonly day: number; // 1..31
     readonly inMonth: boolean;
     readonly events: readonly CalendarEvent[];
   };
   export function buildMonthWeeks(
     year: number,
-    month: number,                // 1..12
+    month: number, // 1..12
     events: readonly CalendarEvent[],
   ): DayCell[][];
   ```
@@ -188,10 +191,12 @@ git commit -m "feat(web): pure month-grid week builder for landing calendar"
 Add `summary` and a derived `location` to the wire type; drop nothing else. The Berlin wall-clock `fmt` logic is unchanged.
 
 **Files:**
+
 - Modify: `apps/web/app/_public/landing/calendar-events.ts`
 - Test: `apps/web/app/_public/landing/calendar-events.test.ts` (update existing)
 
 **Interfaces:**
+
 - Consumes: `EventWithCounts` from `@bdas/events-module` (fields used: `id`, `title`, `startsAt`, `endsAt`, `groupId`, `summary`, `locationName`, `locationAddress`, `location`).
 - Produces: extended `CalendarEvent` (adds `readonly summary: string | null; readonly location: string | null;`) and unchanged `toCalendarEvents(events): CalendarEvent[]`.
 
@@ -202,44 +207,44 @@ In `apps/web/app/_public/landing/calendar-events.test.ts`, replace the first tes
 Change the first test to:
 
 ```ts
-  it("formats start/end and carries summary + location", () => {
-    const [ev] = toCalendarEvents([base]);
-    expect(ev).toEqual({
-      id: "ev-1",
-      title: "Bundeskonferenz",
-      start: "2026-09-05 14:30",
-      end: "2026-09-05 18:00",
-      groupId: null,
-      summary: null,
-      location: null,
-    });
+it("formats start/end and carries summary + location", () => {
+  const [ev] = toCalendarEvents([base]);
+  expect(ev).toEqual({
+    id: "ev-1",
+    title: "Bundeskonferenz",
+    start: "2026-09-05 14:30",
+    end: "2026-09-05 18:00",
+    groupId: null,
+    summary: null,
+    location: null,
   });
+});
 ```
 
 Add after the existing tests, inside the `describe`:
 
 ```ts
-  it("passes summary through", () => {
-    const [ev] = toCalendarEvents([{ ...base, summary: "Kurzbeschreibung" }]);
-    expect(ev!.summary).toBe("Kurzbeschreibung");
-  });
+it("passes summary through", () => {
+  const [ev] = toCalendarEvents([{ ...base, summary: "Kurzbeschreibung" }]);
+  expect(ev!.summary).toBe("Kurzbeschreibung");
+});
 
-  it("derives location from name + address", () => {
-    const [ev] = toCalendarEvents([
-      { ...base, locationName: "Rathaus", locationAddress: "Marktplatz 1" },
-    ]);
-    expect(ev!.location).toBe("Rathaus, Marktplatz 1");
-  });
+it("derives location from name + address", () => {
+  const [ev] = toCalendarEvents([
+    { ...base, locationName: "Rathaus", locationAddress: "Marktplatz 1" },
+  ]);
+  expect(ev!.location).toBe("Rathaus, Marktplatz 1");
+});
 
-  it("uses location name alone when address is absent", () => {
-    const [ev] = toCalendarEvents([{ ...base, locationName: "Online" }]);
-    expect(ev!.location).toBe("Online");
-  });
+it("uses location name alone when address is absent", () => {
+  const [ev] = toCalendarEvents([{ ...base, locationName: "Online" }]);
+  expect(ev!.location).toBe("Online");
+});
 
-  it("falls back to the legacy location field", () => {
-    const [ev] = toCalendarEvents([{ ...base, location: "Berlin" }]);
-    expect(ev!.location).toBe("Berlin");
-  });
+it("falls back to the legacy location field", () => {
+  const [ev] = toCalendarEvents([{ ...base, location: "Berlin" }]);
+  expect(ev!.location).toBe("Berlin");
+});
 ```
 
 - [ ] **Step 2: Run test to verify it fails**
@@ -309,9 +314,11 @@ git commit -m "feat(web): carry summary + location on landing calendar wire type
 One event as a `<details>` card built on the shared `.bdas-accordion` idiom (which already supplies hover lift, `[open]` red border/halo, `+`→`×`, and the body fade). No unit test — the web app has no component-test tier; covered by the §23 E2E (Task 8) and visual check.
 
 **Files:**
+
 - Create: `apps/web/app/_public/landing/EventAccordion.tsx`
 
 **Interfaces:**
+
 - Consumes: `CalendarEvent` from `./calendar-events`.
 - Produces: `export function EventAccordion({ event, groupLabel }: { event: CalendarEvent; groupLabel: string }): JSX.Element`.
 
@@ -326,8 +333,18 @@ import type { Route } from "next";
 import type { CalendarEvent } from "./calendar-events";
 
 const MONTHS_SHORT = [
-  "Jan", "Feb", "Mär", "Apr", "Mai", "Jun",
-  "Jul", "Aug", "Sep", "Okt", "Nov", "Dez",
+  "Jan",
+  "Feb",
+  "Mär",
+  "Apr",
+  "Mai",
+  "Jun",
+  "Jul",
+  "Aug",
+  "Sep",
+  "Okt",
+  "Nov",
+  "Dez",
 ];
 
 /** `start` is "YYYY-MM-DD HH:mm" Europe/Berlin wall-clock. */
@@ -353,7 +370,9 @@ export function EventAccordion({
         <span className="flex min-w-0 flex-1 items-center gap-3">
           <span className="flex w-12 shrink-0 flex-col items-center rounded-bdas-sm bg-bdas-surface-hover py-1.5">
             <span className="text-xl font-bold leading-none text-bdas-ink tabular-nums">{day}</span>
-            <span className="mt-0.5 text-xs uppercase tracking-wide text-bdas-ink-muted">{monthAbbr}</span>
+            <span className="mt-0.5 text-xs uppercase tracking-wide text-bdas-ink-muted">
+              {monthAbbr}
+            </span>
           </span>
           <span className="min-w-0 flex-1">
             <span className="block truncate">{event.title}</span>
@@ -364,7 +383,9 @@ export function EventAccordion({
           <span
             className={
               "shrink-0 rounded-bdas-pill border px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wide " +
-              (isFederal ? "border-bdas-red text-bdas-red" : "border-bdas-strong text-bdas-ink-muted")
+              (isFederal
+                ? "border-bdas-red text-bdas-red"
+                : "border-bdas-strong text-bdas-ink-muted")
             }
           >
             {groupLabel}
@@ -404,9 +425,11 @@ git commit -m "feat(web): brand-native event accordion card"
 Groups the (already ascending-sorted) filtered events under month labels and renders an `EventAccordion` per event. Spacing between cards comes from `.bdas-accordion`'s own `margin-bottom` — do **not** add a `gap` container around them.
 
 **Files:**
+
 - Create: `apps/web/app/_public/landing/AgendaList.tsx`
 
 **Interfaces:**
+
 - Consumes: `CalendarEvent` from `./calendar-events`; `EventAccordion` from `./EventAccordion`.
 - Produces: `export function AgendaList({ events, groupLabelFor }: { events: CalendarEvent[]; groupLabelFor: (e: CalendarEvent) => string }): JSX.Element`.
 
@@ -419,8 +442,18 @@ import type { CalendarEvent } from "./calendar-events";
 import { EventAccordion } from "./EventAccordion";
 
 const MONTHS_LONG = [
-  "Januar", "Februar", "März", "April", "Mai", "Juni",
-  "Juli", "August", "September", "Oktober", "November", "Dezember",
+  "Januar",
+  "Februar",
+  "März",
+  "April",
+  "Mai",
+  "Juni",
+  "Juli",
+  "August",
+  "September",
+  "Oktober",
+  "November",
+  "Dezember",
 ];
 
 /** `start` is "YYYY-MM-DD ..."; returns e.g. "September 2026". */
@@ -484,9 +517,11 @@ git commit -m "feat(web): agenda list grouped by month for landing calendar"
 Monday-first month grid with prev/next navigation, a "today" marker (Europe/Berlin), and event pills that link to the event (collapsing to a dot on mobile). Consumes `buildMonthWeeks`.
 
 **Files:**
+
 - Create: `apps/web/app/_public/landing/MonthGrid.tsx`
 
 **Interfaces:**
+
 - Consumes: `buildMonthWeeks` from `./month-grid`; `CalendarEvent` from `./calendar-events`; `berlinParts` from `../../lib/datetime`.
 - Produces: `export function MonthGrid({ events }: { events: CalendarEvent[] }): JSX.Element`.
 
@@ -507,8 +542,18 @@ import { buildMonthWeeks } from "./month-grid";
 
 const DOW = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
 const MONTHS_LONG = [
-  "Januar", "Februar", "März", "April", "Mai", "Juni",
-  "Juli", "August", "September", "Oktober", "November", "Dezember",
+  "Januar",
+  "Februar",
+  "März",
+  "April",
+  "Mai",
+  "Juni",
+  "Juli",
+  "August",
+  "September",
+  "Oktober",
+  "November",
+  "Dezember",
 ];
 
 function berlinTodayIso(): string {
@@ -537,20 +582,33 @@ export function MonthGrid({ events }: { events: CalendarEvent[] }) {
   return (
     <div className="rounded-bdas border border-bdas-soft bg-bdas-surface p-2 shadow-bdas-card">
       <div className="flex items-center justify-between px-2.5 pb-3 pt-2">
-        <button type="button" onClick={() => shift(-1)} aria-label="Vorheriger Monat" className={navBtn}>
+        <button
+          type="button"
+          onClick={() => shift(-1)}
+          aria-label="Vorheriger Monat"
+          className={navBtn}
+        >
           ‹
         </button>
         <h3 className="text-base font-bold text-bdas-ink">
           {MONTHS_LONG[cursor.month - 1]} {cursor.year}
         </h3>
-        <button type="button" onClick={() => shift(1)} aria-label="Nächster Monat" className={navBtn}>
+        <button
+          type="button"
+          onClick={() => shift(1)}
+          aria-label="Nächster Monat"
+          className={navBtn}
+        >
           ›
         </button>
       </div>
 
       <div className="grid grid-cols-7 gap-0.5">
         {DOW.map((d) => (
-          <div key={d} className="py-1.5 text-center text-xs font-bold uppercase tracking-wide text-bdas-ink-muted">
+          <div
+            key={d}
+            className="py-1.5 text-center text-xs font-bold uppercase tracking-wide text-bdas-ink-muted"
+          >
             {d}
           </div>
         ))}
@@ -576,7 +634,9 @@ export function MonthGrid({ events }: { events: CalendarEvent[] }) {
               <span
                 className={
                   "mt-auto h-1.5 w-1.5 rounded-full sm:hidden " +
-                  (cell.events.some((e) => e.groupId === null) ? "bg-bdas-red" : "bg-bdas-ink-muted")
+                  (cell.events.some((e) => e.groupId === null)
+                    ? "bg-bdas-red"
+                    : "bg-bdas-ink-muted")
                 }
                 aria-hidden="true"
               />
@@ -589,7 +649,9 @@ export function MonthGrid({ events }: { events: CalendarEvent[] }) {
                 href={`/events/${ev.id}` as Route}
                 className={
                   "hidden truncate rounded-bdas-sm border-l-2 bg-bdas-surface-hover px-1.5 py-0.5 text-xs font-semibold sm:block " +
-                  (ev.groupId === null ? "border-bdas-red text-bdas-red" : "border-bdas-strong text-bdas-ink-body")
+                  (ev.groupId === null
+                    ? "border-bdas-red text-bdas-red"
+                    : "border-bdas-strong text-bdas-ink-body")
                 }
               >
                 {ev.title}
@@ -622,9 +684,11 @@ git commit -m "feat(web): brand-native month grid for landing calendar"
 Replace the Schedule-X island with the scope bar (group `FilterChip`s + Liste/Monat toggle) that delegates to `AgendaList` / `MonthGrid`. Removes all Schedule-X and Temporal code.
 
 **Files:**
+
 - Modify (full rewrite): `apps/web/app/_public/landing/EventCalendar.tsx`
 
 **Interfaces:**
+
 - Consumes: `FilterChip` from `@bdas/design-system`; `CalendarEvent` from `./calendar-events`; `AgendaList`, `MonthGrid`.
 - Produces: `export type GroupOption = { id: string; name: string };` and `export function EventCalendar({ events, groups }: { events: CalendarEvent[]; groups: GroupOption[] }): JSX.Element` (unchanged signature — `KalenderBlock` needs no change).
 
@@ -666,7 +730,7 @@ export function EventCalendar({
   const groupsWithEvents = groups.filter((g) => events.some((e) => e.groupId === g.id));
   const groupName = useMemo(() => new Map(groups.map((g) => [g.id, g.name])), [groups]);
   const groupLabelFor = (e: CalendarEvent) =>
-    e.groupId === null ? "Bundesweit" : groupName.get(e.groupId) ?? "Gruppe";
+    e.groupId === null ? "Bundesweit" : (groupName.get(e.groupId) ?? "Gruppe");
 
   return (
     <div className="flex flex-col gap-4">
@@ -741,6 +805,7 @@ git commit -m "feat(web): bespoke scope-bar calendar island (list + month)"
 Drop the now-unused dependencies and the leftover Schedule-X theme override in global CSS.
 
 **Files:**
+
 - Modify: `apps/web/package.json`
 - Modify: `apps/web/app/globals.css`
 
@@ -789,6 +854,7 @@ git commit -m "chore(web): drop schedule-x + temporal-polyfill from landing cale
 The `e2e/events.e2e.ts` acceptance job renders the landing calendar and checks event create/redirect flows. Event links still point to `/events/${id}`, so it should pass unchanged — confirm, and adjust only if a selector the E2E relied on was Schedule-X-specific.
 
 **Files:**
+
 - Read: `e2e/events.e2e.ts` (adjust selectors only if it asserted Schedule-X DOM)
 
 - [ ] **Step 1: Read the E2E to see what it asserts about the landing calendar**
@@ -812,6 +878,7 @@ git commit -m "test(e2e): retarget landing calendar selectors to bespoke calenda
 ## Self-Review
 
 **Spec coverage:**
+
 - Both views (list default + month toggle) → Tasks 4, 5, 6. ✅
 - No RSVP counts (payload + UI) → Task 2 drops them from the wire type; no component renders counts. ✅
 - Summary-only expanded body → Task 3 (`event.summary` + link). ✅

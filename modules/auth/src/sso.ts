@@ -22,7 +22,8 @@ export type Role =
   | "local_board_lead"
   | "federal_board"
   | "alumnus"
-  | "event_organizer";
+  | "event_organizer"
+  | "page_editor";
 
 export type SsoClaims = {
   readonly iss: "bdas";
