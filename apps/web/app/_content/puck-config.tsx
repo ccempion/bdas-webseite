@@ -151,8 +151,11 @@ export const puckConfig: Config<Blocks> = {
         },
       },
       defaultProps: { personen: [] },
+      // Two columns from the narrowest viewport up: each card is a full-width
+      // square photo, so a single column meant a phone showed one person at a
+      // time. The tighter gap below `sm` buys the two cards usable width.
       render: ({ personen }) => (
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-2 gap-4 sm:gap-6 lg:grid-cols-3">
           {personen.map((p, i) => (
             <Card key={i} className="overflow-hidden">
               {p.foto ? (
