@@ -10,6 +10,7 @@ import { getProfile } from "@bdas/profile";
 
 import { requireAuthFlag } from "../_auth/flag";
 import { requireMembersFlag } from "../_members/flag";
+import { SUBMITTED_PARAM, SUBMITTED_VALUE } from "../_profile/submitted";
 import { readSessionCookie } from "../../lib/auth-cookie";
 import { EditProfileForm } from "./EditProfileForm";
 import { ProfileForm } from "./ProfileForm";
@@ -24,7 +25,11 @@ const STATUS_LABEL: Record<string, string> = {
   alumnus: "Alumnus.",
 };
 
-export default async function AccountPage() {
+export default async function AccountPage({
+  searchParams,
+}: {
+  searchParams?: Record<string, string | string[] | undefined>;
+}) {
   requireAuthFlag();
   requireMembersFlag();
 
@@ -44,6 +49,9 @@ export default async function AccountPage() {
 
   const isBoard = isFederalBoard(me.grants);
   const status = me.member?.status;
+  // Arrived straight from the wizard — say so, rather than leaving the applicant
+  // to infer it from a status line that also shows on every later visit.
+  const justSubmitted = searchParams?.[SUBMITTED_PARAM] === SUBMITTED_VALUE;
 
   return (
     <main className="mx-auto flex max-w-3xl flex-col gap-6 px-4 py-12">
@@ -52,7 +60,11 @@ export default async function AccountPage() {
         <p className="text-bdas-ink-body">{me.user.email}</p>
       </header>
 
-      {status === "pending" ? (
+      {justSubmitted && status === "pending" ? (
+        <Alert variant="success" title="Bewerbung abgeschickt">
+          Deine Bewerbung ist eingegangen und liegt jetzt beim lokalen Vorstand zur Entscheidung.
+        </Alert>
+      ) : status === "pending" ? (
         <Alert variant="info" title="Profil eingereicht">
           {STATUS_LABEL["pending"]}
         </Alert>

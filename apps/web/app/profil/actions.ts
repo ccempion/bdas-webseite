@@ -1,15 +1,17 @@
 "use server";
 
+import { redirect } from "next/navigation";
+
 import { getDb } from "@bdas/db";
 import { isAppError } from "@bdas/errors";
 import { requireFlag } from "@bdas/feature-flags";
 import { changePrimaryGroup, getCurrentMember } from "@bdas/members";
 import { saveProfile } from "@bdas/profile";
 
+import { SUBMITTED_URL } from "../_profile/submitted";
 import { readSessionCookie } from "../../lib/auth-cookie";
 
 export type WizardActionState = {
-  readonly ok?: boolean;
   readonly error?: string;
   readonly fields?: Record<string, string>;
 };
@@ -49,7 +51,6 @@ export async function submitWizardAction(
       actor: { userId: me.user.id, grants: me.grants },
       groupId,
     });
-    return { ok: true };
   } catch (err) {
     if (isAppError(err)) {
       const f = "fields" in err && (err as { fields?: Record<string, string> }).fields;
@@ -57,4 +58,10 @@ export async function submitWizardAction(
     }
     throw err;
   }
+
+  // Redirect from the server, outside the catch (it signals by throwing).
+  // Navigating from a client effect keyed on an "ok" flag loses the race
+  // against a second submit: the flag flips once, so the effect fires once,
+  // and a preempted push is never retried — see the repeated-submit spec.
+  redirect(SUBMITTED_URL);
 }
