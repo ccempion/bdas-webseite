@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import { listPosts, renderPostContentHtml } from "@bdas/blog";
+import { CATEGORY_LABELS, listPosts, renderPostContentHtml } from "@bdas/blog";
 import { getDb } from "@bdas/db";
 import { Alert, Button, Card } from "@bdas/design-system";
 
@@ -58,7 +58,7 @@ export default async function BlogFeedPage() {
                         {author?.name ?? "BDAS-Mitglied"}
                       </span>
                       <span className="text-sm text-bdas-ink-muted">
-                        {formatDate(p.createdAt)}
+                        {formatDate(p.createdAt)} · {CATEGORY_LABELS[p.category]}
                         {p.visibility !== "public" ? ` · ${VISIBILITY_LABEL[p.visibility]}` : ""}
                       </span>
                     </div>

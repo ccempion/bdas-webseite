@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { getPostBySlug, renderPostContentHtml } from "@bdas/blog";
+import { CATEGORY_LABELS, getPostBySlug, renderPostContentHtml } from "@bdas/blog";
 import { getDb } from "@bdas/db";
 
 import { requireBlogFlag } from "../../_blog/flag";
@@ -36,7 +36,7 @@ export default async function PostPage({ params }: { params: { slug: string } })
     <main className="mx-auto flex max-w-3xl flex-col gap-6 px-4 py-12">
       <header className="flex flex-col gap-2">
         <p className="text-sm text-bdas-ink-muted">
-          {formatDate(post.createdAt)}
+          {formatDate(post.createdAt)} · {CATEGORY_LABELS[post.category]}
           {post.visibility !== "public" ? ` · ${VISIBILITY_LABEL[post.visibility]}` : ""}
         </p>
         <h1 className="text-3xl font-semibold text-bdas-ink">{post.title}</h1>

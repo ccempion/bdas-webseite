@@ -34,6 +34,7 @@ function fieldsFromForm(fd: FormData) {
     title: s(fd, "title"),
     content: jsonOpt(fd, "content"),
     visibility: s(fd, "visibility") || "public",
+    category: s(fd, "category") || "sonstiges",
   };
 }
 
