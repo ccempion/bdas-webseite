@@ -13,7 +13,7 @@ export const metadata = { title: "Registrieren" };
 
 export default async function RegistrierenPage() {
   requireAuthFlag();
-  if (await loadViewer()) redirect("/account");
+  if (await loadViewer()) redirect("/");
   const { privacy } = legalUrls();
 
   return (
