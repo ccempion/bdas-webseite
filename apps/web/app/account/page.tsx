@@ -10,6 +10,7 @@ import { getProfile } from "@bdas/profile";
 
 import { requireAuthFlag } from "../_auth/flag";
 import { requireMembersFlag } from "../_members/flag";
+import { signedProfilePhotoUrl } from "../_profile/photo-url";
 import { SUBMITTED_PARAM, SUBMITTED_VALUE } from "../_profile/submitted";
 import { readSessionCookie } from "../../lib/auth-cookie";
 import { EditProfileForm } from "./EditProfileForm";
@@ -41,6 +42,7 @@ export default async function AccountPage({
   const openChange = me.member ? await getOpenGroupChange(db, me.member.id) : null;
   const profileFlagOn = isFlagOn("profile");
   const profile = profileFlagOn ? await getProfile(db, me.user.id) : null;
+  const photoUrl = await signedProfilePhotoUrl(profile?.photoStorageKey);
 
   const groupName = (id: string | null): string | null =>
     id === null ? null : (groups.find((g) => g.id === id)?.name ?? null);
@@ -127,6 +129,7 @@ export default async function AccountPage({
                 empfehlerName: profile?.empfehlerName ?? null,
                 photoStorageKey: profile?.photoStorageKey ?? null,
               }}
+              photoUrl={photoUrl}
               primaryGroupId={me.member.primaryGroupId}
               groups={groups.map((g) => ({ id: g.id, name: g.name, city: g.city }))}
             />

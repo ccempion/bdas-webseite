@@ -28,6 +28,8 @@ export type EditProfileFormProps = {
   };
   primaryGroupId: string | null;
   groups: ReadonlyArray<{ id: string; name: string; city: string }>;
+  /** Short-lived signed URL for the stored photo, or null when there is none. */
+  photoUrl?: string | null;
 };
 
 function toWizardValues(
@@ -57,7 +59,12 @@ const EMPTY_STATE: EditProfileState = {};
  *  `primaryGroupId` select — namespace these ids so no two controls collide. */
 const ID_PREFIX = "konto-";
 
-export function EditProfileForm({ initial, primaryGroupId, groups }: EditProfileFormProps) {
+export function EditProfileForm({
+  initial,
+  primaryGroupId,
+  groups,
+  photoUrl,
+}: EditProfileFormProps) {
   const [values, setValues] = useState<WizardValues>(() => toWizardValues(initial, primaryGroupId));
   const [state, action] = useFormState(saveProfileFieldsAction, EMPTY_STATE);
 
@@ -81,7 +88,7 @@ export function EditProfileForm({ initial, primaryGroupId, groups }: EditProfile
       />
       <GeburtsdatumField values={values} set={set} errors={errors} idPrefix={ID_PREFIX} />
       <GefundenFields values={values} set={set} errors={errors} idPrefix={ID_PREFIX} />
-      <FotoStep values={values} set={set} />
+      <FotoStep values={values} set={set} photoUrl={photoUrl} />
 
       <input type="hidden" name="studiengang" value={values.studiengang} />
       <input type="hidden" name="abschlussart" value={values.abschlussart} />
