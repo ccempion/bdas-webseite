@@ -2,8 +2,9 @@
  * Post lifecycle: create, edit, delete.
  *
  * Authorization is NOT enforced here — callers gate at the app action layer
- * (any signed-in user may create; author or federal board may edit/delete via
- * `canModeratePost`). This keeps `blog` free of an `auth`/`members` dependency
+ * (an active member or alumnus may create, per ADR 0030; author or federal
+ * board may edit/delete via `canModeratePost`). This keeps `blog` free of an
+ * `auth`/`members` dependency
  * (CLAUDE.md §1 rule 2), the same convention as `events`/`projects`.
  */
 import { and, eq, gte, sql } from "drizzle-orm";

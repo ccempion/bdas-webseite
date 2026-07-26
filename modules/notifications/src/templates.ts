@@ -86,7 +86,7 @@ export function render(template: TransactionalTemplate, data: TemplateData): Ren
       return body(
         "BDAS — Beitrag gemeldet",
         firstName,
-        `der Beitrag „${postTitle ?? "ein Beitrag"}" wurde gemeldet${
+        `der Beitrag „${postTitle ?? "ein Beitrag"}“ wurde gemeldet${
           reportReason ? ` (Grund: ${reportReason})` : ""
         }. Bitte prüfe ihn im Blog-Bereich.`,
         postUrl ? { label: "Zum Beitrag:", url: postUrl } : undefined,

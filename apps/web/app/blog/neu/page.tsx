@@ -8,7 +8,7 @@ export const metadata = { title: "Neuer Beitrag" };
 
 export default async function NewPostPage() {
   requireBlogFlag();
-  await requirePostAuthor(); // any signed-in user; redirects to /anmelden otherwise
+  await requirePostAuthor(); // redirects to /anmelden if signed out, to /blog if signed in but ineligible
 
   return (
     <main className="mx-auto flex max-w-2xl flex-col gap-6 px-4 py-12">
