@@ -41,6 +41,8 @@ export const colors = {
       soft: "rgba(0, 0, 0, 0.05)",
       /** Dark gradient laid over hero imagery so white text stays readable. */
       heroScrim: "linear-gradient(rgba(0, 0, 0, 0.35), rgba(0, 0, 0, 0.55))",
+      /** Flat dark mask for de-emphasizing map area outside the focus region; same darkness as heroScrim's top stop. */
+      scrim: "rgba(0, 0, 0, 0.35)",
       /** Moving white highlight band swept across the brand loader (ADR 0026). */
       loaderShine:
         "linear-gradient(115deg, transparent 42%, rgba(255, 255, 255, 0.85) 50%, transparent 58%)",

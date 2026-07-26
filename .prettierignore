@@ -9,3 +9,5 @@ playwright-report
 .lighthouseci
 pnpm-lock.yaml
 docs/bdas-platform-spec.md
+# Vendored as-is from isellsoap/deutschlandGeoJSON — keep byte-identical to upstream.
+apps/web/app/_groups/germany.geo.json

@@ -2,9 +2,11 @@
 
 import "leaflet/dist/leaflet.css";
 
+import { colors } from "@bdas/design-system/tokens";
 import L from "leaflet";
 import { useEffect, useRef } from "react";
 
+import germanyGeoJson from "./germany.geo.json";
 import type { GroupPin } from "./pins";
 
 /** Escape group-controlled strings before they enter Leaflet popup HTML. */
@@ -17,11 +19,28 @@ function esc(s: string): string {
 const PIN_HTML =
   '<span class="block h-5 w-5 rounded-full border-2 border-bdas-surface bg-bdas-red shadow-bdas-card"></span>';
 
-// Germany's extent (47.27–55.06 N, 5.87–15.04 E) with a small margin, so
-// panning stops just outside the border instead of drifting into neighboring
-// countries or the open sea.
-const GERMANY_BOUNDS = L.latLngBounds([46.7, 4.9], [55.6, 15.7]);
 const MAX_ZOOM = 16;
+
+// Source: isellsoap/deutschlandGeoJSON (Unlicense / public domain),
+// 1_deutschland/4_niedrig.geo.json — one MultiPolygon feature covering
+// Germany's mainland plus its islands.
+const GERMANY_GEOMETRY = (
+  germanyGeoJson as unknown as GeoJSON.FeatureCollection<GeoJSON.MultiPolygon>
+).features[0]!.geometry;
+
+// A rectangle spanning the whole world with a hole punched out for each
+// Germany landmass dims everything outside the country when filled. Built
+// directly as Leaflet [lat, lng] rings (GeoJSON stores [lng, lat]) so no
+// separate conversion layer is needed.
+const WORLD_RING: L.LatLngTuple[] = [
+  [-85, -180],
+  [-85, 180],
+  [85, 180],
+  [85, -180],
+];
+const GERMANY_HOLES: L.LatLngTuple[][] = GERMANY_GEOMETRY.coordinates.map((polygon) =>
+  polygon[0]!.map(([lng, lat]) => [lat, lng] as L.LatLngTuple),
+);
 
 export default function GroupMap({ pins }: { pins: GroupPin[] }) {
   const el = useRef<HTMLDivElement>(null);
@@ -38,6 +57,22 @@ export default function GroupMap({ pins }: { pins: GroupPin[] }) {
       attribution:
         '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
       maxZoom: 19,
+    }).addTo(map);
+
+    // Dim everything outside Germany, then trace the border on top. Both are
+    // non-interactive so they never intercept drags/clicks, and both render
+    // in Leaflet's overlayPane — below the markerPane markers use, so pins
+    // stay clickable without any change to the marker/popup code below.
+    L.polygon([WORLD_RING, ...GERMANY_HOLES], {
+      interactive: false,
+      stroke: false,
+      fillColor: colors.surface.overlay.scrim,
+      fillOpacity: 1,
+    }).addTo(map);
+
+    const border = L.geoJSON(germanyGeoJson as GeoJSON.GeoJsonObject, {
+      interactive: false,
+      style: { color: colors.brand.red, weight: 1.5, opacity: 0.6, fill: false },
     }).addTo(map);
 
     const icon = L.divIcon({
@@ -57,14 +92,17 @@ export default function GroupMap({ pins }: { pins: GroupPin[] }) {
         );
     }
 
-    // minZoom is derived from the container's actual size so "zoomed all the
-    // way out" always means "all of Germany, filling the frame" — on the
-    // small mobile height and the larger desktop height alike.
-    const minZoom = Math.min(map.getBoundsZoom(GERMANY_BOUNDS), MAX_ZOOM);
+    // Bounds come from the actual border geometry (plus a small pad) rather
+    // than a hand-picked box, so they hug the silhouette. minZoom is derived
+    // from the container's actual size so "zoomed all the way out" always
+    // means "all of Germany, filling the frame" — on the small mobile height
+    // and the larger desktop height alike.
+    const germanyBounds = border.getBounds().pad(0.06);
+    const minZoom = Math.min(map.getBoundsZoom(germanyBounds), MAX_ZOOM);
     map.setMinZoom(minZoom);
     map.setMaxZoom(MAX_ZOOM);
-    map.setMaxBounds(GERMANY_BOUNDS);
-    map.fitBounds(GERMANY_BOUNDS);
+    map.setMaxBounds(germanyBounds);
+    map.fitBounds(germanyBounds);
 
     return () => {
       map.remove();
