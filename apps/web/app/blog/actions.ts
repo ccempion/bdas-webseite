@@ -8,7 +8,7 @@ import { getDb } from "@bdas/db";
 import { ForbiddenError, isAppError, NotFoundError } from "@bdas/errors";
 import { isFlagOn } from "@bdas/feature-flags";
 
-import { blogViewer, loadBlogMe } from "../_blog/access";
+import { blogViewer, canAuthor, loadBlogMe } from "../_blog/access";
 
 export type PostFormState = {
   readonly error?: string;
@@ -45,11 +45,14 @@ function appErr(err: unknown): PostFormState {
   throw err;
 }
 
-/** Create a post. Any signed-in (registered) user may author one. */
+/** Create a post. Any eligible (active member or alumnus) user may author one. */
 export async function createPostAction(_prev: PostFormState, fd: FormData): Promise<PostFormState> {
   if (!isFlagOn("blog")) return { error: "Nicht verfügbar." };
   const me = await loadBlogMe();
   if (!me) return { error: "Anmeldung erforderlich." };
+  if (!canAuthor(me)) {
+    return { error: "Nur aktive Mitglieder oder Alumni dürfen Beiträge veröffentlichen." };
+  }
 
   let slug: string;
   try {
