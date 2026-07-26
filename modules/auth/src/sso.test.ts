@@ -72,8 +72,12 @@ describe("app session JWT issue/verify", () => {
   it("rejects a signature-tampered token", async () => {
     const token = await issueToken(INPUT);
     const parts = token.split(".");
-    const last = parts[2]!;
-    parts[2] = (last[last.length - 1] === "A" ? "B" : "A") + last.slice(1);
+    const sig = parts[2]!;
+    // Replace the first character with one it definitely is not. Reading a
+    // different index than the one being overwritten made this a no-op for
+    // ~1.4% of signatures, which verified fine and failed the test at random.
+    parts[2] = (sig[0] === "A" ? "B" : "A") + sig.slice(1);
+    expect(parts[2]).not.toBe(sig);
     await expect(verifyToken(parts.join("."))).rejects.toThrow();
   });
 });

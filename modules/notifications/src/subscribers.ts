@@ -25,7 +25,7 @@ import type {
 } from "@bdas/events-module";
 import { getGroup } from "@bdas/groups";
 import { getMemberByUserId, listBoardRecipientsForGroup } from "@bdas/members";
-import type { RoleGranted, RoleRevoked } from "@bdas/members";
+import type { RoleGranted, RoleRevoked, StatusChanged } from "@bdas/members";
 import type { ProfileCompleted } from "@bdas/profile";
 import { getPostById, type PostReported } from "@bdas/blog";
 
@@ -255,6 +255,17 @@ export function registerNotificationSubscribers(db: Db, opts: { siteUrl?: string
         }
       }),
     ),
+    // The board decided on an application — tell the applicant, who otherwise
+    // waits without ever hearing back. Only decisions on a pending application
+    // qualify; later status moves (leaving, alumni) are not news to announce.
+    getEventBus().subscribe<StatusChanged>(
+      "members.status.changed",
+      safe<StatusChanged>(async (e) => {
+        if (e.from !== "pending") return;
+        if (e.to === "active") {
+          await sendTransactional(db, "member_application_approved", e.memberId, {});
+        } else if (e.to === "inactive") {
+          await sendTransactional(db, "member_application_declined", e.memberId, {});
     getEventBus().subscribe<PostReported>(
       "blog.post.reported",
       safe<PostReported>(async (e) => {
