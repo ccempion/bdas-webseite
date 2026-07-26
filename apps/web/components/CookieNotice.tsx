@@ -13,12 +13,13 @@
  * to a true consent banner.
  */
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 const STORAGE_KEY = "bdas-cookie-notice";
 
 export function CookieNotice({ privacyUrl }: { privacyUrl: string }) {
   const [visible, setVisible] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     try {
@@ -27,6 +28,28 @@ export function CookieNotice({ privacyUrl }: { privacyUrl: string }) {
       setVisible(true); // storage blocked → still inform
     }
   }, []);
+
+  /**
+   * Reserve the bar's height at the end of the document. Being `fixed`, it sits
+   * over the page and takes no space of its own — so the last strip of every
+   * page (on a phone that is the footer's own links) stayed permanently
+   * underneath it, with nothing below to scroll into view. Measured rather than
+   * hard-coded: the text wraps to a different height per viewport.
+   */
+  useEffect(() => {
+    const el = ref.current;
+    if (!visible || !el) return;
+    const apply = () => {
+      document.body.style.paddingBottom = `${el.offsetHeight}px`;
+    };
+    apply();
+    const observer = new ResizeObserver(apply);
+    observer.observe(el);
+    return () => {
+      observer.disconnect();
+      document.body.style.paddingBottom = "";
+    };
+  }, [visible]);
 
   if (!visible) return null;
 
@@ -41,6 +64,7 @@ export function CookieNotice({ privacyUrl }: { privacyUrl: string }) {
 
   return (
     <div
+      ref={ref}
       role="region"
       aria-label="Cookie-Hinweis"
       className="fixed inset-x-0 bottom-0 z-50 border-t border-bdas-soft bg-bdas-surface shadow-bdas-card"
