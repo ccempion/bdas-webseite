@@ -1,8 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useFormState } from "react-dom";
-import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { useFormState, useFormStatus } from "react-dom";
 
 import { Alert, Button, Card, Form } from "@bdas/design-system";
 
@@ -33,15 +32,11 @@ export function Wizard({
 }: {
   groups: ReadonlyArray<{ id: string; name: string; city: string }>;
 }) {
-  const router = useRouter();
   const [values, setValues] = useState<WizardValues>(EMPTY);
   const [step, setStep] = useState(0);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  // On success the action redirects server-side; only failures come back here.
   const [state, action] = useFormState<WizardActionState, FormData>(submitWizardAction, {});
-
-  useEffect(() => {
-    if (state.ok) router.push("/account");
-  }, [state.ok, router]);
 
   const set: <K extends keyof WizardValues>(k: K, v: WizardValues[K]) => void = (k, v) =>
     setValues((prev) => ({ ...prev, [k]: v }));
@@ -100,13 +95,28 @@ export function Wizard({
             <input type="hidden" name="gefundenDurch" value={values.gefundenDurch} />
             <input type="hidden" name="empfehlerName" value={values.empfehlerName} />
             <input type="hidden" name="photoStorageKey" value={values.photoStorageKey ?? ""} />
-            <Button type="submit">Absenden</Button>
+            <SubmitButton />
           </Form>
         ) : (
           <Button onClick={next}>Weiter</Button>
         )}
       </div>
     </Card>
+  );
+}
+
+/**
+ * The submit is the one action here that reaches the network, and on a cold
+ * serverless function it takes seconds. Without a pending state the button
+ * looks untouched for that whole time and people submit again — repeatedly,
+ * as production showed. Must be a child of the <form> for useFormStatus.
+ */
+function SubmitButton() {
+  const { pending } = useFormStatus();
+  return (
+    <Button type="submit" disabled={pending}>
+      {pending ? "Wird gesendet …" : "Absenden"}
+    </Button>
   );
 }
 
