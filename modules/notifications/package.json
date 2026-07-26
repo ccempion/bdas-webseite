@@ -11,6 +11,7 @@
     "test": "vitest run --dir src"
   },
   "dependencies": {
+    "@bdas/blog": "workspace:*",
     "@bdas/db": "workspace:*",
     "@bdas/errors": "workspace:*",
     "@bdas/events": "workspace:*",
