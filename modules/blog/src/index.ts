@@ -7,7 +7,7 @@
 
 // Services
 export { createPost, updatePost, deletePost, PostInput, rowToPost } from "./services/manage";
-export { listPosts } from "./services/list";
+export { listPosts, type ListPostsFilters } from "./services/list";
 export { getPostBySlug, getPostById } from "./services/get";
 
 // Rendering (server-side Tiptap → sanitized HTML)
