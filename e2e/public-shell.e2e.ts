@@ -139,6 +139,14 @@ test("the mobile menu closes after following a link", async ({ page }) => {
   // submenu.
   await page.getByRole("banner").getByText("Menü").click();
   await expect(page.getByRole("link", { name: "Kurzportrait" })).toBeHidden();
+
+  // Reported on real phones: "Über uns" came back looking expanded but with no
+  // entries under it. The group must be collapsed *and* still fully populated —
+  // an expanded empty box satisfies neither.
+  const gruppe = mobileNav.locator("details").filter({ hasText: "Über uns" });
+  await expect(gruppe).not.toHaveAttribute("open", "");
+  await expect(gruppe.locator("a")).toHaveCount(4);
+  await expect(gruppe).toHaveJSProperty("open", false);
 });
 
 /**
