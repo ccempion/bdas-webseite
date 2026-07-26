@@ -116,6 +116,32 @@ test("visitor walks the public nav", async ({ page }) => {
 });
 
 /**
+ * The header lives in the root layout, so a client-side navigation never
+ * remounts it and the mobile menu's `open` is plain DOM state that nothing
+ * resets. Following a link left the menu covering the page you just opened.
+ */
+test("the mobile menu closes after following a link", async ({ page }) => {
+  await page.goto("/");
+
+  const menu = page.locator('header details:has(summary[aria-label="Menü öffnen"])');
+  await page.getByRole("banner").getByText("Menü").click();
+  await expect(menu).toHaveAttribute("open", "");
+
+  const mobileNav = page.getByRole("navigation", { name: "Hauptnavigation mobil" });
+  await mobileNav.getByText("Über uns").click();
+  await page.getByRole("link", { name: "Kurzportrait" }).click();
+  await page.waitForURL("**/ueber-uns");
+
+  await expect(menu).not.toHaveAttribute("open", "");
+  await expect(mobileNav).toBeHidden();
+
+  // Re-opening starts from a clean slate rather than the previously expanded
+  // submenu.
+  await page.getByRole("banner").getByText("Menü").click();
+  await expect(page.getByRole("link", { name: "Kurzportrait" })).toBeHidden();
+});
+
+/**
  * Every other spec runs with the notice already dismissed (playwright.config),
  * because that is what a returning visitor has. These two opt back in to a
  * first visit — the only place the notice's own behaviour is exercised.
