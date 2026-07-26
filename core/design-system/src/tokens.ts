@@ -31,7 +31,9 @@ export const colors = {
     /** Light hover fill for dropdown links and quiet menu items. */
     hover: "#f5f5f5",
     overlay: {
-      /** Mobile submenu fill — barely-there grey. */
+      /** Barely-there grey wash for quiet inline chips. Deliberately not used
+       *  to fill the mobile submenu: a filled group reads as "already
+       *  selected", which is the pressed state's job alone. */
       faint: "rgba(0, 0, 0, 0.03)",
       /** Desktop nav-pill hover. */
       hover: "rgba(0, 0, 0, 0.04)",
