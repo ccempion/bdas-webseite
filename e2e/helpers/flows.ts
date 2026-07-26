@@ -39,7 +39,7 @@ export async function verify(page: Page, email: string): Promise<void> {
 
 /**
  * Sign in. With the `profile` flag on, a pending member whose extended profile
- * is unfinished is routed to the onboarding wizard instead of `/account`
+ * is unfinished is routed to the onboarding wizard instead of the home page
  * (anmelden/actions.ts) — accept either landing page. Pass `expect: "profil"`
  * to require the wizard.
  */
@@ -47,7 +47,7 @@ export async function login(
   page: Page,
   email: string,
   password: string = PASSWORD,
-  opts: { expect?: "account" | "profil" | "either" } = {},
+  opts: { expect?: "home" | "profil" | "either" } = {},
 ): Promise<void> {
   await resetRateLimits();
   await page.goto("/anmelden");
@@ -56,9 +56,11 @@ export async function login(
   await page.getByRole("button", { name: "Anmelden" }).click();
   const want = opts.expect ?? "either";
   await page.waitForURL((url) =>
-    want === "either"
-      ? url.pathname.startsWith("/account") || url.pathname.startsWith("/profil")
-      : url.pathname.startsWith(`/${want}`),
+    want === "profil"
+      ? url.pathname.startsWith("/profil")
+      : want === "home"
+        ? url.pathname === "/"
+        : url.pathname === "/" || url.pathname.startsWith("/profil"),
   );
 }
 
@@ -85,7 +87,7 @@ export async function logout(page: Page): Promise<void> {
   await page.waitForURL((url) => !url.pathname.startsWith("/account"));
 }
 
-/** Register → verify → login in one go. Returns nothing; leaves session on /account. */
+/** Register → verify → login in one go. Returns nothing; leaves session on the login landing page. */
 export async function registerVerifyLogin(
   page: Page,
   opts: { email: string; firstName?: string; lastName?: string; password?: string },

@@ -11,7 +11,7 @@ export const metadata = { title: "Anmelden" };
 
 export default async function AnmeldenPage() {
   requireAuthFlag();
-  if (await loadViewer()) redirect("/account");
+  if (await loadViewer()) redirect("/");
 
   return (
     <main className="mx-auto flex max-w-md flex-col gap-6 px-4 py-12">

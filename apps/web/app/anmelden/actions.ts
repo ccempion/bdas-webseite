@@ -50,7 +50,8 @@ export async function loginAction(
 
   // Guide pending members who verified but never finished onboarding straight
   // into the wizard; everyone else (incl. active members with missing profile
-  // data, who backfill via /account) lands on their account.
+  // data, who backfill via /account) lands on the public home page, which
+  // discloses more to a logged-in viewer.
   if (isFlagOn("profile")) {
     const db = getDb();
     const member = await getMemberByUserId(db, result.userId);
@@ -58,5 +59,5 @@ export async function loginAction(
       redirect("/profil");
     }
   }
-  redirect("/account");
+  redirect("/");
 }
