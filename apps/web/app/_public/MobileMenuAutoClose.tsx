@@ -1,50 +1,44 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { useCallback, useEffect, useRef, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 
 /**
- * Behavioural wrapper for the mobile "Menü" disclosure.
+ * Behavioural wrapper for the mobile "Menü" disclosure: the menu closes when
+ * the visitor leaves the page it is sitting on.
  *
  * The header renders in the root layout, so a client-side navigation never
- * remounts it — and a `<details>` element's `open` is plain DOM state that
- * React does not own and nothing resets. Following a link therefore left the
- * menu spread over the page it had just opened.
+ * remounts it — and a `<details>` element's `open` is DOM state React does not
+ * own. Following a link therefore left the menu spread over the page it had
+ * just opened.
  *
- * Closing on a link click rather than only on a route change matters: tapping
- * the entry for the page you are already on changes no route, and leaving the
- * menu open there would look exactly like a dead link.
+ * It closes by **remounting** rather than by assigning `open = false`. Writing
+ * to the DOM behind React's back leaves the browser's view of the menu and
+ * React's free to disagree, and a disclosure whose element still says "open"
+ * while its contents have been replaced renders as an expanded, empty box —
+ * which is what visitors reported on both Safari and Chrome. Rebuilding the
+ * subtree cannot reach that state: every disclosure comes back closed and fully
+ * populated because it is built from scratch.
+ *
+ * Remounting on a link click and not only on a route change matters: tapping
+ * the entry for the page you are already on changes no route, and a menu that
+ * stays open there reads as a dead link.
  *
  * Renders `display: contents` so it adds no box to the header's flex row.
  * The desktop bar has its own wrapper with different rules — see NavAutoClose.
  */
 export function MobileMenuAutoClose({ children }: { children: ReactNode }) {
-  const ref = useRef<HTMLDivElement>(null);
   const pathname = usePathname();
-
-  // Nested submenus close too, so re-opening starts collapsed instead of
-  // restoring whatever section was expanded when the visitor left.
-  const closeAll = useCallback(() => {
-    const root = ref.current;
-    if (!root) return;
-    for (const d of root.querySelectorAll("details")) d.open = false;
-  }, []);
-
-  useEffect(() => {
-    const root = ref.current;
-    if (!root) return;
-    const onClick = (e: MouseEvent) => {
-      if ((e.target as Element | null)?.closest("a")) closeAll();
-    };
-    root.addEventListener("click", onClick);
-    return () => root.removeEventListener("click", onClick);
-  }, [closeAll]);
-
-  // Covers the navigations no link click reports: back/forward, and redirects.
-  useEffect(() => closeAll(), [pathname, closeAll]);
+  const [closeCount, setCloseCount] = useState(0);
 
   return (
-    <div ref={ref} className="contents">
+    <div
+      key={`${pathname}:${closeCount}`}
+      className="contents"
+      onClick={(e) => {
+        if ((e.target as Element | null)?.closest("a")) setCloseCount((n) => n + 1);
+      }}
+    >
       {children}
     </div>
   );
