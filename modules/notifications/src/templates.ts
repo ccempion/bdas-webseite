@@ -82,6 +82,19 @@ export function render(template: TransactionalTemplate, data: TemplateData): Ren
           data.groupName ? ` für ${data.groupName}` : ""
         } vor. Bitte prüfe sie im Vorstandsbereich.`,
       );
+    case "member_application_approved":
+      return body(
+        "BDAS — Du bist aufgenommen",
+        firstName,
+        "dein lokaler Vorstand hat deine Bewerbung angenommen — willkommen im BDAS! Deine Mitgliedschaft ist ab sofort aktiv.",
+      );
+    case "member_application_declined":
+      // No reason is collected anywhere, so none is implied here.
+      return body(
+        "BDAS — Entscheidung über deine Bewerbung",
+        firstName,
+        "dein lokaler Vorstand hat deine Bewerbung geprüft und sie nicht angenommen. Wenn du dazu Fragen hast, wende dich gerne direkt an deine BDAS-Gruppe.",
+      );
   }
 }
 

@@ -11,7 +11,7 @@ import postgres from "postgres";
 import { afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 
 import { createTestDb, type TestDb } from "@bdas/db/test";
-import { resetEventBus } from "@bdas/events";
+import { getEventBus, resetEventBus } from "@bdas/events";
 
 import { createProfile, updateProfile } from "./services/profile";
 import { MEMBERS_TEST_MIGRATIONS } from "./test-db";
@@ -126,6 +126,31 @@ describeIfDb("members integration", () => {
     const approved = await approveMember(t.db, m.id, BOARD);
     expect(approved.status).toBe("active");
     expect(approved.joinedAt).not.toBeNull();
+  });
+
+  it("commits the status change before publishing, so a failing subscriber cannot undo it", async () => {
+    await createGroup("grp_a", "aachen");
+    await createUser("usr_carl", "carl@example.de");
+    const m = await createProfile(t.db, {
+      userId: "usr_carl",
+      firstName: "Carl",
+      lastName: "Beispiel",
+      primaryGroupId: "grp_a",
+    });
+
+    // Subscribers here stand in for notifications, which sends email from this
+    // event. Publishing inside the transaction would both hold it open across
+    // an HTTP call and let a subscriber failure roll back a decision the board
+    // already made.
+    getEventBus().subscribe("members.status.changed", async () => {
+      throw new Error("subscriber exploded");
+    });
+
+    await expect(approveMember(t.db, m.id, BOARD)).rejects.toThrow("subscriber exploded");
+
+    const [row] = await t.client<{ status: string }[]>`
+      SELECT status FROM members WHERE id = ${m.id}`;
+    expect(row?.status).toBe("active");
   });
 
   it("local_board may approve only members of its own group", async () => {

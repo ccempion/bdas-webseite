@@ -50,7 +50,7 @@ export async function transitionStatus(
   to: MemberStatus,
   actor: Actor,
 ): Promise<Member> {
-  return db.transaction(async (tx) => {
+  const { member, event } = await db.transaction(async (tx) => {
     const rows = await tx.select().from(members).where(eq(members.id, memberId)).limit(1);
     const row = rows[0];
     if (!row) throw new NotFoundError("Mitglied nicht gefunden.");
@@ -69,7 +69,7 @@ export async function transitionStatus(
       throw new ForbiddenError("Du darfst dieses Mitglied nicht verwalten.");
     }
 
-    if (from === to) return row2member(row);
+    if (from === to) return { member: row2member(row), event: null };
     if (!canTransition(from, to)) {
       throw new ConflictError(`Übergang ${from} → ${to} nicht erlaubt.`);
     }
@@ -93,10 +93,16 @@ export async function transitionStatus(
       actorUserId: actor.userId,
       at: new Date(),
     };
-    await getEventBus().publish(event);
 
-    return row2member(updated);
+    return { member: row2member(updated), event };
   });
+
+  // Publish only once the decision is durable. Subscribers send email, which
+  // must neither hold the transaction open across an HTTP call nor be able to
+  // roll back a decision the board already made.
+  if (event) await getEventBus().publish(event);
+
+  return member;
 }
 
 /** Convenience for the most common transition (pending → active). */
