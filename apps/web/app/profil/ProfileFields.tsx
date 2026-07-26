@@ -210,22 +210,11 @@ export function GefundenFields({
   );
 }
 
-export function FotoStep({
-  values,
-  set,
-  photoUrl,
-}: {
-  values: WizardValues;
-  set: Setter;
-  /** Signed URL for an already-stored photo. Absent during the signup wizard,
-   *  where nothing is persisted yet. */
-  photoUrl?: string | null | undefined;
-}) {
+export function FotoStep({ values, set }: { values: WizardValues; set: Setter }) {
   return (
     <PhotoField
       storageKey={values.photoStorageKey}
       onChange={(key) => set("photoStorageKey", key)}
-      photoUrl={photoUrl}
     />
   );
 }

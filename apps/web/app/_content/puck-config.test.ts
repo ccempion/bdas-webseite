@@ -45,6 +45,21 @@ describe("puckConfig", () => {
     ).toBe("Neue Person");
   });
 
+  it("PersonenRaster shows two people per row on the narrowest viewport", () => {
+    const render = puckConfig.components.PersonenRaster?.render;
+    if (!render) throw new Error("PersonenRaster render missing");
+    const person = (name: string) => ({ foto: "", name, rolle: "Rolle", uni: "", studiengang: "" });
+    const out = renderToStaticMarkup(
+      render({ personen: [person("Eine"), person("Zwei")] } as never),
+    );
+
+    const grid = out.match(/class="([^"]*grid[^"]*)"/)?.[1] ?? "";
+    // A card is a full-width square photo, so a single column filled a phone
+    // screen with one person. Two columns is the base, three from `lg`.
+    expect(grid).toContain("grid-cols-2");
+    expect(grid).not.toMatch(/\bsm:grid-cols-2\b/);
+  });
+
   it("PersonenRaster's rolle label is generic (not BSR-specific)", () => {
     const personen = puckConfig.components.PersonenRaster?.fields?.personen;
     if (personen?.type !== "array") throw new Error("personen must be an array field");

@@ -10,6 +10,7 @@ import { getProfile } from "@bdas/profile";
 
 import { requireAuthFlag } from "../_auth/flag";
 import { requireMembersFlag } from "../_members/flag";
+import { AccountAvatar } from "./AccountAvatar";
 import { signedProfilePhotoUrl } from "../_profile/photo-url";
 import { SUBMITTED_PARAM, SUBMITTED_VALUE } from "../_profile/submitted";
 import { readSessionCookie } from "../../lib/auth-cookie";
@@ -43,6 +44,8 @@ export default async function AccountPage({
   const profileFlagOn = isFlagOn("profile");
   const profile = profileFlagOn ? await getProfile(db, me.user.id) : null;
   const photoUrl = await signedProfilePhotoUrl(profile?.photoStorageKey);
+  const initials =
+    `${me.member?.firstName?.[0] ?? ""}${me.member?.lastName?.[0] ?? ""}`.toUpperCase() || "?";
 
   const groupName = (id: string | null): string | null =>
     id === null ? null : (groups.find((g) => g.id === id)?.name ?? null);
@@ -57,9 +60,14 @@ export default async function AccountPage({
 
   return (
     <main className="mx-auto flex max-w-3xl flex-col gap-6 px-4 py-12">
-      <header className="flex flex-col gap-1">
-        <h1 className="text-2xl font-semibold text-bdas-ink">Mein Konto</h1>
-        <p className="text-bdas-ink-body">{me.user.email}</p>
+      <header className="flex items-center gap-5">
+        {profileFlagOn && me.member ? (
+          <AccountAvatar photoUrl={photoUrl} initials={initials} />
+        ) : null}
+        <div className="flex flex-col gap-1">
+          <h1 className="text-2xl font-semibold text-bdas-ink">Mein Konto</h1>
+          <p className="text-bdas-ink-body">{me.user.email}</p>
+        </div>
       </header>
 
       {justSubmitted && status === "pending" ? (
@@ -129,7 +137,6 @@ export default async function AccountPage({
                 empfehlerName: profile?.empfehlerName ?? null,
                 photoStorageKey: profile?.photoStorageKey ?? null,
               }}
-              photoUrl={photoUrl}
               primaryGroupId={me.member.primaryGroupId}
               groups={groups.map((g) => ({ id: g.id, name: g.name, city: g.city }))}
             />

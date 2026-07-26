@@ -5,18 +5,16 @@ import { useEffect, useRef, useState } from "react";
 /** Uploads a profile photo via /api/profile/upload-url (private bucket, signed
  *  PUT) and stores the returned storage key.
  *
- *  Private objects have no public URL, so the preview comes from two sources:
- *  `photoUrl` — a short-lived signed URL the server resolved for the *stored*
- *  photo — and, once the member picks a new file, a local object URL so the
- *  replacement is visible immediately instead of after a round trip. */
+ *  Private objects have no public URL, so the preview is a local object URL of
+ *  the file just picked — enough to confirm the upload during the signup
+ *  wizard, where nothing is persisted yet. Stored photos are shown on /account
+ *  by AccountAvatar, which gets a server-signed URL. */
 export function PhotoField({
   storageKey,
   onChange,
-  photoUrl,
 }: {
   storageKey: string | null;
   onChange: (key: string) => void;
-  photoUrl?: string | null | undefined;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
@@ -29,7 +27,7 @@ export function PhotoField({
     return () => URL.revokeObjectURL(localPreview);
   }, [localPreview]);
 
-  const preview = localPreview ?? photoUrl ?? null;
+  const preview = localPreview;
 
   async function upload(file: File) {
     setBusy(true);
