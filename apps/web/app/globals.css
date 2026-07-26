@@ -92,6 +92,29 @@
 }
 
 @layer base {
+  /* The YouTube extension (editor live preview and server-rendered post HTML
+     both use it — @tiptap/extension-youtube's renderHTML) emits a fixed-size
+     <iframe width="640" height="360"> inside a `[data-youtube-video]` wrapper.
+     Scoped to `.prose` so it covers every surface that renders post content
+     through the Tailwind Typography class: the blog feed, the single-post
+     page, and PostEditor's live preview — one rule, no per-surface fix. */
+  .prose [data-youtube-video] {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    overflow: hidden;
+    border-radius: theme("borderRadius.bdas");
+  }
+
+  .prose [data-youtube-video] iframe {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+  }
+}
+
+@layer base {
   /* Org-chart connectors. Every rule keys off `li > ul`, so the outermost list
      gets no incoming line and the roots sit unconnected as a forest. */
   .bdas-organigramm ul {
