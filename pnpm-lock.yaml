@@ -156,6 +156,9 @@ importers:
       '@tiptap/starter-kit':
         specifier: 3.27.4
         version: 3.27.4
+      happy-dom:
+        specifier: ^20.8.9
+        version: 20.10.6
       leaflet:
         specifier: ^1.9.4
         version: 1.9.4
