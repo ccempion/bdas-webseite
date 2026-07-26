@@ -206,6 +206,31 @@ describeIfDb("blog integration", () => {
     expect(federalFeed.map((p) => p.id)).toEqual([board.id, mem.id, pub.id]);
   });
 
+  it("listPosts filters by category", async () => {
+    const a = await createPost(
+      t.db,
+      { title: "Ankündigung", content: doc("a"), category: "verbandsintern" },
+      "usr_cat",
+    );
+    await createPost(t.db, { title: "Bericht", content: doc("b"), category: "gruppenleben" }, "usr_cat");
+
+    const filtered = await listPosts(t.db, federal, { category: "verbandsintern" });
+    expect(filtered.map((p) => p.id)).toEqual([a.id]);
+  });
+
+  it("listPosts filters by since (time range)", async () => {
+    const old = await createPost(t.db, { title: "Alt", content: doc("a") }, "usr_time");
+    const recent = await createPost(t.db, { title: "Neu", content: doc("b") }, "usr_time");
+
+    // Backdate the first post 40 days so a 30-day cutoff excludes it.
+    const fortyDaysAgo = new Date(Date.now() - 40 * 24 * 60 * 60 * 1000);
+    await t.client`UPDATE posts SET created_at = ${fortyDaysAgo.toISOString()} WHERE id = ${old.id}`;
+
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const filtered = await listPosts(t.db, federal, { since: thirtyDaysAgo });
+    expect(filtered.map((p) => p.id)).toEqual([recent.id]);
+  });
+
   it("author sees their own restricted post in the feed and by slug", async () => {
     const board = await createPost(
       t.db,
