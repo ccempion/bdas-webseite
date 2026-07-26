@@ -19,6 +19,7 @@ import { plainTextToDoc } from "./content";
 import { getPostById, getPostBySlug } from "./services/get";
 import { listPosts } from "./services/list";
 import { createPost, deletePost, updatePost } from "./services/manage";
+import { dismissReport, listOpenReports, reportPost } from "./services/report";
 import { ANON, type Viewer } from "./visibility";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -280,5 +281,74 @@ describeIfDb("blog integration", () => {
       "usr_author",
     );
     expect(await getPostBySlug(t.db, board.slug, ANON)).toBeNull();
+  });
+
+  it("reportPost inserts a report and emits blog.post.reported", async () => {
+    const reported = capture("blog.post.reported");
+    const p = await createPost(t.db, { title: "Fragwürdig", content: doc("x") }, "usr_author");
+
+    await reportPost(t.db, p.id, "usr_reporter", "Wirkt wie Spam");
+
+    expect(reported).toMatchObject([
+      { type: "blog.post.reported", postId: p.id, reporterId: "usr_reporter", reason: "Wirkt wie Spam" },
+    ]);
+  });
+
+  it("reportPost rejects a self-report with VALIDATION", async () => {
+    const p = await createPost(t.db, { title: "Eigenbeitrag", content: doc("x") }, "usr_author");
+    await expect(reportPost(t.db, p.id, "usr_author", null)).rejects.toMatchObject({
+      code: "VALIDATION",
+    });
+  });
+
+  it("reportPost throws NotFoundError for a nonexistent post", async () => {
+    await expect(reportPost(t.db, "post_missing", "usr_reporter", null)).rejects.toMatchObject({
+      code: "NOT_FOUND",
+    });
+  });
+
+  it("reportPost throws NotFoundError for an already soft-deleted post", async () => {
+    const p = await createPost(t.db, { title: "Weg", content: doc("x") }, "usr_author");
+    await deletePost(t.db, p.id);
+    await expect(reportPost(t.db, p.id, "usr_reporter", null)).rejects.toMatchObject({
+      code: "NOT_FOUND",
+    });
+  });
+
+  it("reportPost rate-limits a reporter past 10 reports/24h", async () => {
+    const targets = await Promise.all(
+      Array.from({ length: 11 }, (_, i) =>
+        createPost(t.db, { title: `Ziel ${i}`, content: doc("x") }, "usr_author"),
+      ),
+    );
+    for (let i = 0; i < 10; i++) {
+      await reportPost(t.db, targets[i]!.id, "usr_flagger", null);
+    }
+    await expect(reportPost(t.db, targets[10]!.id, "usr_flagger", null)).rejects.toMatchObject({
+      code: "RATE_LIMITED",
+    });
+  });
+
+  it("listOpenReports returns only open reports newest first, excluding deleted posts", async () => {
+    const keep = await createPost(t.db, { title: "Bleibt", content: doc("x") }, "usr_author");
+    const gone = await createPost(t.db, { title: "Gelöscht", content: doc("x") }, "usr_author");
+
+    await reportPost(t.db, keep.id, "usr_r1", "Grund A");
+    await reportPost(t.db, gone.id, "usr_r2", "Grund B");
+    await deletePost(t.db, gone.id);
+
+    const open = await listOpenReports(t.db);
+    expect(open.map((r) => r.postId)).toEqual([keep.id]);
+    expect(open[0]?.postTitle).toBe("Bleibt");
+  });
+
+  it("dismissReport marks a report dismissed and it disappears from listOpenReports", async () => {
+    const p = await createPost(t.db, { title: "Geprüft", content: doc("x") }, "usr_author");
+    await reportPost(t.db, p.id, "usr_reporter", null);
+    const [report] = await listOpenReports(t.db);
+
+    await dismissReport(t.db, report!.id);
+
+    expect(await listOpenReports(t.db)).toEqual([]);
   });
 });
