@@ -8,7 +8,7 @@ import { getDb } from "@bdas/db";
 import { ForbiddenError, isAppError, NotFoundError } from "@bdas/errors";
 import { isFlagOn } from "@bdas/feature-flags";
 
-import { blogViewer, loadBlogMe } from "../_blog/access";
+import { blogViewer, canAuthor, loadBlogMe } from "../_blog/access";
 
 export type PostFormState = {
   readonly error?: string;
@@ -34,6 +34,7 @@ function fieldsFromForm(fd: FormData) {
     title: s(fd, "title"),
     content: jsonOpt(fd, "content"),
     visibility: s(fd, "visibility") || "public",
+    category: s(fd, "category") || "sonstiges",
   };
 }
 
@@ -50,6 +51,9 @@ export async function createPostAction(_prev: PostFormState, fd: FormData): Prom
   if (!isFlagOn("blog")) return { error: "Nicht verfügbar." };
   const me = await loadBlogMe();
   if (!me) return { error: "Anmeldung erforderlich." };
+  if (!canAuthor(me)) {
+    return { error: "Nur aktive Mitglieder oder Alumni dürfen Beiträge veröffentlichen." };
+  }
 
   let slug: string;
   try {
