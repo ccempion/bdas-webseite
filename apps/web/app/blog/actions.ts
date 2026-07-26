@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 
 import {
   canModeratePost,
+  canViewPost,
   createPost,
   deletePost,
   dismissReport,
@@ -55,7 +56,7 @@ function appErr(err: unknown): PostFormState {
   throw err;
 }
 
-/** Create a post. Any signed-in (registered) user may author one. */
+/** Create a post. Any eligible (active member or alumnus) user may author one. */
 export async function createPostAction(_prev: PostFormState, fd: FormData): Promise<PostFormState> {
   if (!isFlagOn("blog")) return { error: "Nicht verfügbar." };
   const me = await loadBlogMe();
@@ -132,6 +133,12 @@ export async function reportPostAction(
   if (!me) return { error: "Anmeldung erforderlich." };
 
   const postId = s(fd, "postId");
+
+  const post = await getPostById(getDb(), postId);
+  if (!post || !canViewPost(blogViewer(me), post)) {
+    return { error: "Beitrag nicht gefunden." };
+  }
+
   const reason = s(fd, "reason");
   try {
     await reportPost(getDb(), postId, me.user.id, reason || null);

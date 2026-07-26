@@ -7,7 +7,7 @@ import { Alert, Button, Card } from "@bdas/design-system";
 
 import { requireBlogFlag } from "../_blog/flag";
 import { InitialsAvatar } from "../_blog/InitialsAvatar";
-import { loadBlogViewer, resolveAuthors } from "../_blog/access";
+import { canAuthor, loadBlogViewer, resolveAuthors } from "../_blog/access";
 import { BlogFilterBar } from "../_blog/BlogFilterBar";
 import { parseCategory, parseZeitraum, resolveSince } from "../_blog/filters";
 import { formatDate } from "../../lib/format";
@@ -47,7 +47,7 @@ export default async function BlogFeedPage({
           <h1 className="text-3xl font-semibold text-bdas-ink">Blog</h1>
           <p className="text-bdas-ink-body">Beiträge aus dem BDAS.</p>
         </div>
-        {me ? (
+        {canAuthor(me) ? (
           <Link href="/blog/neu">
             <Button>Neuer Beitrag</Button>
           </Link>

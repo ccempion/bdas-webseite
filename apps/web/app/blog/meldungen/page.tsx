@@ -1,9 +1,9 @@
-import { redirect } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 
 import { listOpenReports } from "@bdas/blog";
 import { getDb } from "@bdas/db";
 import { Alert, Card } from "@bdas/design-system";
-import { requireFederalBoard } from "@bdas/members";
+import { isFederalBoard } from "@bdas/members";
 
 import { requireBlogFlag } from "../../_blog/flag";
 import { loadBlogMe } from "../../_blog/access";
@@ -18,7 +18,7 @@ export default async function ReportedPostsPage() {
 
   const me = await loadBlogMe();
   if (!me) redirect("/anmelden");
-  requireFederalBoard(me);
+  if (!isFederalBoard(me.grants)) notFound();
 
   const db = getDb();
   const reports = await listOpenReports(db);
