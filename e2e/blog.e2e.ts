@@ -14,10 +14,15 @@ import { expect, test, type Page } from "@playwright/test";
 import { uniqueEmail } from "./helpers/db";
 import { logout, registerVerifyLogin } from "./helpers/flows";
 
-/** Fill the post form (title + body + visibility) and publish; returns the slug. */
+/** Fill the post form (title + body + category + visibility) and publish; returns the slug. */
 async function writePost(
   page: Page,
-  opts: { title: string; body: string; visibility?: "public" | "members" | "board" },
+  opts: {
+    title: string;
+    body: string;
+    category?: "verbandsintern" | "gruppenleben" | "veranstaltungsrueckblick" | "politik_positionen" | "karriere_weiterbildung" | "sonstiges";
+    visibility?: "public" | "members" | "board";
+  },
 ): Promise<string> {
   await page.goto("/blog/neu");
   await page.getByLabel("Titel").fill(opts.title);
@@ -27,6 +32,9 @@ async function writePost(
   await editor.click();
   await editor.pressSequentially(opts.body);
 
+  if (opts.category && opts.category !== "sonstiges") {
+    await page.locator("#category").selectOption(opts.category);
+  }
   if (opts.visibility && opts.visibility !== "public") {
     await page.locator("#visibility").selectOption(opts.visibility);
   }
@@ -111,5 +119,40 @@ test.describe("blog", () => {
     await page.goto(`/blog/${slug}`);
     await expect(page.getByRole("heading", { level: 1, name: newTitle })).toBeVisible();
     await expect(page.getByRole("link", { name: "Bearbeiten" })).toHaveCount(0);
+  });
+
+  test("category filter narrows the feed", async ({ page }) => {
+    await registerVerifyLogin(page, { email: uniqueEmail("blog-category") });
+
+    const groupTitle = `Gruppenleben ${Date.now()}`;
+    await writePost(page, { title: groupTitle, body: "Bericht aus der Gruppe.", category: "gruppenleben" });
+
+    const careerTitle = `Karriere ${Date.now()}`;
+    await writePost(page, { title: careerTitle, body: "Ein Karrieretipp.", category: "karriere_weiterbildung" });
+
+    await page.goto("/blog?kategorie=gruppenleben");
+    await expect(page.getByRole("heading", { name: groupTitle })).toBeVisible();
+    await expect(page.getByRole("heading", { name: careerTitle })).toHaveCount(0);
+  });
+
+  test("a reported post appears in the federal board's queue; a non-board member is forbidden", async ({
+    page,
+  }) => {
+    await registerVerifyLogin(page, { email: uniqueEmail("blog-reported-author") });
+    const title = `Gemeldet ${Date.now()}`;
+    await writePost(page, { title, body: "Fragwürdiger Inhalt." });
+
+    await logout(page);
+    await registerVerifyLogin(page, { email: uniqueEmail("blog-reporter") });
+    await page.goto("/blog");
+    await page.getByRole("heading", { name: title }).click();
+    await page.getByText("Beitrag melden").click();
+    await page.getByPlaceholder("Grund (optional)").fill("Testmeldung");
+    await page.getByRole("button", { name: "Melden" }).click();
+    await expect(page.getByText("Danke, die Meldung ist eingegangen.")).toBeVisible();
+
+    // A non-board member is forbidden from the moderation queue.
+    await page.goto("/blog/meldungen");
+    await expect(page.getByRole("heading", { name: "Gemeldete Beiträge" })).toHaveCount(0);
   });
 });
