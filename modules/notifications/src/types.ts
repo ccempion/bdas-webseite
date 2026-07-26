@@ -13,7 +13,8 @@ export type TransactionalTemplate =
   | "event_organizer_message"
   | "event_organizer_granted"
   | "event_organizer_revoked"
-  | "member_application_received";
+  | "member_application_received"
+  | "blog_post_reported";
 
 /** Which aspects of an event changed, for the `event_changed` email. */
 export type EventChangeKind = "time" | "location";
@@ -36,6 +37,12 @@ export type TemplateData = {
   readonly groupName?: string | undefined;
   /** `member_application_received`: the applicant's full name. */
   readonly applicantName?: string | undefined;
+  /** `blog_post_reported`: the reported post's title. */
+  readonly postTitle?: string | undefined;
+  /** `blog_post_reported`: absolute URL to the reported post, if a site URL is configured. */
+  readonly postUrl?: string | undefined;
+  /** `blog_post_reported`: the reporter's optional free-text reason. */
+  readonly reportReason?: string | undefined;
 };
 
 /** Outcome of a send attempt, returned by sendTransactional. */

@@ -1,8 +1,15 @@
 /**
  * Blog module (spec 2026-07-22, ADR 0027). Drives the §23 user-facing flows:
- * any signed-in member authors a post, the feed + single page render it,
- * visibility is enforced server-side (a "Nur Mitglieder" post never reaches an
- * anonymous visitor), and only the author (or federal board) may moderate.
+ * an active member or alumnus authors a post (ADR 0030 — `canAuthor()`; a
+ * `pending` member is redirected away from `/blog/neu`), the feed + single
+ * page render it, visibility is enforced server-side (a "Nur Mitglieder" post
+ * never reaches an anonymous visitor), and only the author (or federal board)
+ * may moderate.
+ *
+ * `registerVerifyLogin` creates a member with `status: "pending"`, so any
+ * user who goes on to author a post is explicitly activated afterwards via
+ * `activateMemberByEmail` — otherwise `writePost`'s first action would find
+ * no form (redirected back to /blog by `requirePostAuthor()`).
  *
  * Requires BDAS_FLAG_BLOG=true in the e2e env (CI + playwright.config webServer).
  * Content is authored through the real Tiptap editor: we type into the
@@ -11,13 +18,20 @@
  */
 import { expect, test, type Page } from "@playwright/test";
 
-import { uniqueEmail } from "./helpers/db";
+import type { PostCategory } from "@bdas/blog";
+
+import { activateMemberByEmail, uniqueEmail } from "./helpers/db";
 import { logout, registerVerifyLogin } from "./helpers/flows";
 
-/** Fill the post form (title + body + visibility) and publish; returns the slug. */
+/** Fill the post form (title + body + category + visibility) and publish; returns the slug. */
 async function writePost(
   page: Page,
-  opts: { title: string; body: string; visibility?: "public" | "members" | "board" },
+  opts: {
+    title: string;
+    body: string;
+    category?: PostCategory;
+    visibility?: "public" | "members" | "board";
+  },
 ): Promise<string> {
   await page.goto("/blog/neu");
   await page.getByLabel("Titel").fill(opts.title);
@@ -27,6 +41,9 @@ async function writePost(
   await editor.click();
   await editor.pressSequentially(opts.body);
 
+  if (opts.category && opts.category !== "sonstiges") {
+    await page.locator("#category").selectOption(opts.category);
+  }
   if (opts.visibility && opts.visibility !== "public") {
     await page.locator("#visibility").selectOption(opts.visibility);
   }
@@ -41,7 +58,9 @@ test.describe("blog", () => {
   test("a member authors a public post and it renders on the feed and its page", async ({
     page,
   }) => {
-    await registerVerifyLogin(page, { email: uniqueEmail("blog-author") });
+    const email = uniqueEmail("blog-author");
+    await registerVerifyLogin(page, { email });
+    await activateMemberByEmail(email);
 
     const title = `Testbeitrag ${Date.now()}`;
     const body = "Dies ist der Textkörper des Beitrags.";
@@ -59,7 +78,9 @@ test.describe("blog", () => {
   test("a members-only post is hidden from anonymous visitors (feed + share link 404)", async ({
     page,
   }) => {
-    await registerVerifyLogin(page, { email: uniqueEmail("blog-secret") });
+    const email = uniqueEmail("blog-secret");
+    await registerVerifyLogin(page, { email });
+    await activateMemberByEmail(email);
 
     const publicTitle = `Öffentlich ${Date.now()}`;
     await writePost(page, { title: publicTitle, body: "Für alle sichtbar." });
@@ -91,6 +112,7 @@ test.describe("blog", () => {
   test("the author sees moderation controls; a different member does not", async ({ page }) => {
     const authorEmail = uniqueEmail("blog-owner");
     await registerVerifyLogin(page, { email: authorEmail });
+    await activateMemberByEmail(authorEmail);
 
     const title = `Mein Beitrag ${Date.now()}`;
     const slug = await writePost(page, { title, body: "Ursprünglicher Text." });
@@ -111,5 +133,44 @@ test.describe("blog", () => {
     await page.goto(`/blog/${slug}`);
     await expect(page.getByRole("heading", { level: 1, name: newTitle })).toBeVisible();
     await expect(page.getByRole("link", { name: "Bearbeiten" })).toHaveCount(0);
+  });
+
+  test("category filter narrows the feed", async ({ page }) => {
+    const email = uniqueEmail("blog-category");
+    await registerVerifyLogin(page, { email });
+    await activateMemberByEmail(email);
+
+    const groupTitle = `Gruppenleben ${Date.now()}`;
+    await writePost(page, { title: groupTitle, body: "Bericht aus der Gruppe.", category: "gruppenleben" });
+
+    const careerTitle = `Karriere ${Date.now()}`;
+    await writePost(page, { title: careerTitle, body: "Ein Karrieretipp.", category: "karriere_weiterbildung" });
+
+    await page.goto("/blog?kategorie=gruppenleben");
+    await expect(page.getByRole("heading", { name: groupTitle })).toBeVisible();
+    await expect(page.getByRole("heading", { name: careerTitle })).toHaveCount(0);
+  });
+
+  test("a reported post appears in the federal board's queue; a non-board member is forbidden", async ({
+    page,
+  }) => {
+    const authorEmail = uniqueEmail("blog-reported-author");
+    await registerVerifyLogin(page, { email: authorEmail });
+    await activateMemberByEmail(authorEmail);
+    const title = `Gemeldet ${Date.now()}`;
+    await writePost(page, { title, body: "Fragwürdiger Inhalt." });
+
+    await logout(page);
+    await registerVerifyLogin(page, { email: uniqueEmail("blog-reporter") });
+    await page.goto("/blog");
+    await page.getByRole("heading", { name: title }).click();
+    await page.getByText("Beitrag melden").click();
+    await page.getByPlaceholder("Grund (optional)").fill("Testmeldung");
+    await page.getByRole("button", { name: "Melden" }).click();
+    await expect(page.getByText("Danke, die Meldung ist eingegangen.")).toBeVisible();
+
+    // A non-board member is forbidden from the moderation queue.
+    await page.goto("/blog/meldungen");
+    await expect(page.getByRole("heading", { name: "Gemeldete Beiträge" })).toHaveCount(0);
   });
 });

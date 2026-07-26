@@ -1,7 +1,7 @@
 /**
  * Typed events emitted by the blog module (CLAUDE.md §3). Other modules react
- * via `core/events` without importing blog internals — e.g. notifications could
- * later announce a new public post.
+ * via `core/events` without importing blog internals — e.g. notifications
+ * announces a report to the federal board.
  */
 import type { PostVisibility } from "./types";
 
@@ -26,4 +26,12 @@ export type PostDeleted = {
   readonly at: Date;
 };
 
-export type BlogEvent = PostPublished | PostUpdated | PostDeleted;
+export type PostReported = {
+  readonly type: "blog.post.reported";
+  readonly postId: string;
+  readonly reporterId: string;
+  readonly reason: string | null;
+  readonly at: Date;
+};
+
+export type BlogEvent = PostPublished | PostUpdated | PostDeleted | PostReported;

@@ -3,12 +3,22 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
-import { canModeratePost, createPost, deletePost, getPostById, updatePost } from "@bdas/blog";
+import {
+  canModeratePost,
+  canViewPost,
+  createPost,
+  deletePost,
+  dismissReport,
+  getPostById,
+  reportPost,
+  updatePost,
+} from "@bdas/blog";
 import { getDb } from "@bdas/db";
 import { ForbiddenError, isAppError, NotFoundError } from "@bdas/errors";
 import { isFlagOn } from "@bdas/feature-flags";
+import { requireFederalBoard } from "@bdas/members";
 
-import { blogViewer, loadBlogMe } from "../_blog/access";
+import { blogViewer, canAuthor, loadBlogMe } from "../_blog/access";
 
 export type PostFormState = {
   readonly error?: string;
@@ -34,6 +44,7 @@ function fieldsFromForm(fd: FormData) {
     title: s(fd, "title"),
     content: jsonOpt(fd, "content"),
     visibility: s(fd, "visibility") || "public",
+    category: s(fd, "category") || "sonstiges",
   };
 }
 
@@ -45,11 +56,14 @@ function appErr(err: unknown): PostFormState {
   throw err;
 }
 
-/** Create a post. Any signed-in (registered) user may author one. */
+/** Create a post. Any eligible (active member or alumnus) user may author one. */
 export async function createPostAction(_prev: PostFormState, fd: FormData): Promise<PostFormState> {
   if (!isFlagOn("blog")) return { error: "Nicht verfügbar." };
   const me = await loadBlogMe();
   if (!me) return { error: "Anmeldung erforderlich." };
+  if (!canAuthor(me)) {
+    return { error: "Nur aktive Mitglieder oder Alumni dürfen Beiträge veröffentlichen." };
+  }
 
   let slug: string;
   try {
@@ -105,4 +119,50 @@ export async function deletePostAction(_prev: ActionState, fd: FormData): Promis
 
   revalidatePath("/blog");
   redirect("/blog");
+}
+
+export type ReportFormState = { readonly error?: string; readonly success?: boolean };
+
+/** Report a post for board review. Any signed-in viewer except the author. */
+export async function reportPostAction(
+  _prev: ReportFormState,
+  fd: FormData,
+): Promise<ReportFormState> {
+  if (!isFlagOn("blog")) return { error: "Nicht verfügbar." };
+  const me = await loadBlogMe();
+  if (!me) return { error: "Anmeldung erforderlich." };
+
+  const postId = s(fd, "postId");
+
+  const post = await getPostById(getDb(), postId);
+  if (!post || !canViewPost(blogViewer(me), post)) {
+    return { error: "Beitrag nicht gefunden." };
+  }
+
+  const reason = s(fd, "reason");
+  try {
+    await reportPost(getDb(), postId, me.user.id, reason || null);
+  } catch (err) {
+    return appErr(err);
+  }
+
+  return { success: true };
+}
+
+/** Dismiss an open report (reviewed, no action taken). Federal board only. */
+export async function dismissReportAction(_prev: ActionState, fd: FormData): Promise<ActionState> {
+  if (!isFlagOn("blog")) return { error: "Nicht verfügbar." };
+  const reportId = s(fd, "reportId");
+  try {
+    const me = await loadBlogMe();
+    if (!me) throw new ForbiddenError("Anmeldung erforderlich.");
+    requireFederalBoard(me);
+    await dismissReport(getDb(), reportId);
+  } catch (err) {
+    if (isAppError(err)) return { error: err.message };
+    throw err;
+  }
+
+  revalidatePath("/blog/meldungen");
+  return {};
 }

@@ -41,10 +41,17 @@ export async function loadBlogViewer(): Promise<{ me: CurrentMember | null; view
   return { me, viewer: blogViewer(me) };
 }
 
-/** Any signed-in (registered) user may author a post. Otherwise → login. */
+/** Eligible to author a post: an active member or an alumnus. Pending (not yet
+ *  confirmed by a Local Board) and inactive accounts cannot (ADR 0030). */
+export function canAuthor(me: CurrentMember | null): boolean {
+  return me !== null && (me.member?.status === "active" || me.member?.status === "alumnus");
+}
+
+/** Any eligible (active member or alumnus) user may author a post. Otherwise → login/blog. */
 export async function requirePostAuthor(): Promise<CurrentMember> {
   const me = await loadBlogMe();
   if (!me) redirect("/anmelden");
+  if (!canAuthor(me)) redirect("/blog");
   return me;
 }
 

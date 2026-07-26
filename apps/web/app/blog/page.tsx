@@ -1,12 +1,15 @@
 import Link from "next/link";
 
-import { listPosts, renderPostContentHtml } from "@bdas/blog";
+import type { ListPostsFilters } from "@bdas/blog";
+import { CATEGORY_LABELS, listPosts, renderPostContentHtml } from "@bdas/blog";
 import { getDb } from "@bdas/db";
 import { Alert, Button, Card } from "@bdas/design-system";
 
 import { requireBlogFlag } from "../_blog/flag";
 import { InitialsAvatar } from "../_blog/InitialsAvatar";
-import { loadBlogViewer, resolveAuthors } from "../_blog/access";
+import { canAuthor, loadBlogViewer, resolveAuthors } from "../_blog/access";
+import { BlogFilterBar } from "../_blog/BlogFilterBar";
+import { parseCategory, parseZeitraum, resolveSince } from "../_blog/filters";
 import { formatDate } from "../../lib/format";
 
 export const metadata = { title: "Blog" };
@@ -17,12 +20,24 @@ const VISIBILITY_LABEL: Record<string, string> = {
   board: "Nur Vorstände",
 };
 
-export default async function BlogFeedPage() {
+export default async function BlogFeedPage({
+  searchParams,
+}: {
+  searchParams: { kategorie?: string; zeitraum?: string };
+}) {
   requireBlogFlag();
+
+  const category = parseCategory(searchParams.kategorie);
+  const zeitraum = parseZeitraum(searchParams.zeitraum);
+  const since = resolveSince(zeitraum);
 
   const db = getDb();
   const { me, viewer } = await loadBlogViewer();
-  const posts = await listPosts(db, viewer);
+  const filters: ListPostsFilters = {
+    ...(category !== undefined && { category }),
+    ...(since !== undefined && { since }),
+  };
+  const posts = await listPosts(db, viewer, filters);
   const authors = await resolveAuthors(posts.map((p) => p.createdBy));
 
   return (
@@ -32,16 +47,18 @@ export default async function BlogFeedPage() {
           <h1 className="text-3xl font-semibold text-bdas-ink">Blog</h1>
           <p className="text-bdas-ink-body">Beiträge aus dem BDAS.</p>
         </div>
-        {me ? (
+        {canAuthor(me) ? (
           <Link href="/blog/neu">
             <Button>Neuer Beitrag</Button>
           </Link>
         ) : null}
       </header>
 
+      <BlogFilterBar category={category} zeitraum={zeitraum} />
+
       {posts.length === 0 ? (
-        <Alert variant="info" title="Noch keine Beiträge">
-          Hier erscheinen Beiträge, sobald welche veröffentlicht wurden.
+        <Alert variant="info" title="Keine Beiträge gefunden">
+          Für diese Auswahl gibt es aktuell keine Beiträge.
         </Alert>
       ) : (
         <ul className="flex flex-col gap-6">
@@ -58,7 +75,7 @@ export default async function BlogFeedPage() {
                         {author?.name ?? "BDAS-Mitglied"}
                       </span>
                       <span className="text-sm text-bdas-ink-muted">
-                        {formatDate(p.createdAt)}
+                        {formatDate(p.createdAt)} · {CATEGORY_LABELS[p.category]}
                         {p.visibility !== "public" ? ` · ${VISIBILITY_LABEL[p.visibility]}` : ""}
                       </span>
                     </div>

@@ -7,8 +7,9 @@
 
 // Services
 export { createPost, updatePost, deletePost, PostInput, rowToPost } from "./services/manage";
-export { listPosts } from "./services/list";
+export { listPosts, type ListPostsFilters } from "./services/list";
 export { getPostBySlug, getPostById } from "./services/get";
+export { reportPost, listOpenReports, dismissReport } from "./services/report";
 
 // Rendering (server-side Tiptap → sanitized HTML)
 export { renderPostContentHtml, plainTextToDoc } from "./content";
@@ -20,5 +21,6 @@ export { ANON, visibleLevelsFor, canViewPost, canModeratePost, type Viewer } fro
 export { slugifyTitle } from "./slug";
 
 // Types
-export type { Post, PostSummary, PostVisibility, TiptapDoc } from "./types";
-export type { BlogEvent, PostPublished, PostUpdated, PostDeleted } from "./events";
+export type { Post, PostSummary, PostVisibility, PostCategory, PostReportStatus, PostReport, TiptapDoc } from "./types";
+export { CATEGORY_LABELS } from "./types";
+export type { BlogEvent, PostPublished, PostUpdated, PostDeleted, PostReported } from "./events";

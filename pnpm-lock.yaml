@@ -514,6 +514,9 @@ importers:
 
   modules/notifications:
     dependencies:
+      '@bdas/blog':
+        specifier: workspace:*
+        version: link:../blog
       '@bdas/db':
         specifier: workspace:*
         version: link:../../core/db
