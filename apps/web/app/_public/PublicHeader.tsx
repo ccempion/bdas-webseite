@@ -13,8 +13,10 @@ import { navItems, type NavItem } from "./nav-items";
 
 const PILL =
   "inline-flex items-center rounded-bdas-pill px-3 py-1.5 text-bdas-pill text-bdas-ink transition-colors duration-bdas-quick ease-bdas hover:bg-bdas-overlay-hover";
+// `active:` alongside `hover:` so a touch device, which never hovers, still
+// answers the tap on the entry that was actually pressed.
 const DROPDOWN_LINK =
-  "block rounded-bdas-sm px-3 py-2 text-bdas-dropdown-link text-bdas-ink transition-colors duration-bdas-quick ease-bdas hover:bg-bdas-surface-hover";
+  "block rounded-bdas-sm px-3 py-2 text-bdas-dropdown-link text-bdas-ink transition-colors duration-bdas-quick ease-bdas hover:bg-bdas-surface-hover active:bg-bdas-surface-hover";
 
 function DesktopItem({ item }: { item: NavItem }) {
   if ("href" in item) {
@@ -175,7 +177,10 @@ export async function PublicHeader() {
                         >
                           {item.label}
                         </summary>
-                        <ul className="ml-3 flex flex-col gap-1 rounded-bdas bg-bdas-overlay-faint p-2">
+                        {/* Grouped by indent and a hairline rather than a fill:
+                            a filled panel reads as "all four are selected",
+                            which is the one thing the pressed state has to say. */}
+                        <ul className="ml-3 flex flex-col gap-1 border-l border-bdas-soft py-1 pl-2">
                           {item.children.map((c) => (
                             <li key={c.href}>
                               <Link href={c.href} className={DROPDOWN_LINK}>

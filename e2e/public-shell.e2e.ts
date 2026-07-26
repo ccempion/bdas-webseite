@@ -142,6 +142,47 @@ test("the mobile menu closes after following a link", async ({ page }) => {
 });
 
 /**
+ * The submenu used to sit on a filled panel, which read as "these four are
+ * already selected" — on a touch device, where nothing else ever shows a hover
+ * state, that is the only signal a visitor has to go on.
+ */
+test("the mobile submenu darkens the entry being pressed, not the whole group", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await page.getByRole("banner").getByText("Menü").click();
+  const mobileNav = page.getByRole("navigation", { name: "Hauptnavigation mobil" });
+  await mobileNav.getByText("Über uns").click();
+
+  const group = mobileNav.locator("details ul");
+  await expect(group).toBeVisible();
+  const groupFill = await group.evaluate((el) => getComputedStyle(el).backgroundColor);
+  expect(groupFill).toBe("rgba(0, 0, 0, 0)");
+
+  // The individual entry still has a pressed state to answer the tap.
+  const entry = mobileNav.getByRole("link", { name: "Kurzportrait" });
+  const rules = await entry.evaluate((el) => {
+    const found: string[] = [];
+    for (const sheet of Array.from(document.styleSheets)) {
+      let rules: CSSRuleList;
+      try {
+        rules = sheet.cssRules;
+      } catch {
+        continue; // cross-origin sheet
+      }
+      for (const rule of Array.from(rules)) {
+        if (!(rule instanceof CSSStyleRule)) continue;
+        if (!rule.selectorText.includes(":active")) continue;
+        const base = rule.selectorText.replace(/:active/g, "");
+        if (el.matches(base) && rule.style.backgroundColor) found.push(rule.selectorText);
+      }
+    }
+    return found;
+  });
+  expect(rules.length).toBeGreaterThan(0);
+});
+
+/**
  * Every other spec runs with the notice already dismissed (playwright.config),
  * because that is what a returning visitor has. These two opt back in to a
  * first visit — the only place the notice's own behaviour is exercised.
