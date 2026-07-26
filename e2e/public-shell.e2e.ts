@@ -115,6 +115,39 @@ test("visitor walks the public nav", async ({ page }) => {
   await expect(page.getByRole("link", { name: "Mitglied werden" }).first()).toBeVisible();
 });
 
+/**
+ * Every other spec runs with the notice already dismissed (playwright.config),
+ * because that is what a returning visitor has. These two opt back in to a
+ * first visit — the only place the notice's own behaviour is exercised.
+ */
+test.describe("cookie notice", () => {
+  test.use({ storageState: { cookies: [], origins: [] } });
+
+  test("informs on the first visit and stays dismissed afterwards", async ({ page }) => {
+    await page.goto("/");
+    const notice = page.getByRole("region", { name: "Cookie-Hinweis" });
+    await expect(notice).toBeVisible();
+
+    await notice.getByRole("button", { name: "Verstanden" }).click();
+    await expect(notice).toBeHidden();
+
+    await page.goto("/ueber-uns");
+    await expect(notice).toBeHidden();
+  });
+
+  test("leaves the foot of the page reachable while it is showing", async ({ page }) => {
+    await page.goto("/");
+    await expect(page.getByRole("region", { name: "Cookie-Hinweis" })).toBeVisible();
+
+    // The notice is `fixed bottom-0`. Without space reserved for it, the last
+    // strip of the document sits under it permanently — scrolling cannot free
+    // content that has nothing below it.
+    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+    await page.getByRole("contentinfo").getByRole("link", { name: "Impressum" }).click();
+    await page.waitForURL("**/impressum");
+  });
+});
+
 test("facets: member sees members-only event, visitor does not", async ({ page }) => {
   const slug = uniqueSlug("e2e-shell");
   await seedGroup({ slug, name: "E2E Shell Gruppe", city: "Teststadt", status: "active" });

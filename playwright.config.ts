@@ -30,6 +30,18 @@ export default defineConfig({
     baseURL,
     trace: "on-first-retry",
     screenshot: "only-on-failure",
+    // Start every spec as a visitor who has already read the cookie notice.
+    // The notice is `fixed bottom-0` and ~135px tall on this viewport, so an
+    // undismissed one silently covers whatever control happens to land in that
+    // strip — Playwright considers such an element visible and never scrolls
+    // it clear, so the click retries until the test times out. The specs that
+    // exercise the notice itself opt back out via `test.use`.
+    storageState: {
+      cookies: [],
+      origins: [
+        { origin: baseURL, localStorage: [{ name: "bdas-cookie-notice", value: "dismissed" }] },
+      ],
+    },
   },
   projects: [
     {
