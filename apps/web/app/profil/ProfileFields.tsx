@@ -195,7 +195,7 @@ export function GefundenFields({
       </Field>
       {values.gefundenDurch === "empfehlung" ? (
         <Field
-          label="Von wem wurdest du empfohlen?"
+          label="Wer hat es dir empfohlen?"
           htmlFor={`${idPrefix}empfehlerName`}
           {...(errors["empfehlerName"] ? { error: errors["empfehlerName"] } : {})}
         >
