@@ -12,7 +12,6 @@ import {
   UniGruppeFields,
   GeburtsdatumField,
   GefundenFields,
-  FotoStep,
 } from "../profil/ProfileFields";
 import { saveProfileFieldsAction, type EditProfileState } from "./profile-actions";
 
@@ -28,8 +27,6 @@ export type EditProfileFormProps = {
   };
   primaryGroupId: string | null;
   groups: ReadonlyArray<{ id: string; name: string; city: string }>;
-  /** Short-lived signed URL for the stored photo, or null when there is none. */
-  photoUrl?: string | null;
 };
 
 function toWizardValues(
@@ -59,12 +56,7 @@ const EMPTY_STATE: EditProfileState = {};
  *  `primaryGroupId` select — namespace these ids so no two controls collide. */
 const ID_PREFIX = "konto-";
 
-export function EditProfileForm({
-  initial,
-  primaryGroupId,
-  groups,
-  photoUrl,
-}: EditProfileFormProps) {
+export function EditProfileForm({ initial, primaryGroupId, groups }: EditProfileFormProps) {
   const [values, setValues] = useState<WizardValues>(() => toWizardValues(initial, primaryGroupId));
   const [state, action] = useFormState(saveProfileFieldsAction, EMPTY_STATE);
 
@@ -88,7 +80,6 @@ export function EditProfileForm({
       />
       <GeburtsdatumField values={values} set={set} errors={errors} idPrefix={ID_PREFIX} />
       <GefundenFields values={values} set={set} errors={errors} idPrefix={ID_PREFIX} />
-      <FotoStep values={values} set={set} photoUrl={photoUrl} />
 
       <input type="hidden" name="studiengang" value={values.studiengang} />
       <input type="hidden" name="abschlussart" value={values.abschlussart} />
@@ -97,7 +88,6 @@ export function EditProfileForm({
       <input type="hidden" name="geburtsdatum" value={values.geburtsdatum} />
       <input type="hidden" name="gefundenDurch" value={values.gefundenDurch} />
       <input type="hidden" name="empfehlerName" value={values.empfehlerName} />
-      <input type="hidden" name="photoStorageKey" value={values.photoStorageKey ?? ""} />
 
       <SubmitButton />
     </Form>
