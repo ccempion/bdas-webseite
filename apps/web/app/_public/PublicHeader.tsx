@@ -7,6 +7,7 @@ import { getGroup } from "@bdas/groups";
 
 import { BrandLink } from "../../components/BrandLink";
 import { loadCurrentMember } from "../_dashboard/session";
+import { MobileMenuAutoClose } from "./MobileMenuAutoClose";
 import { NavAutoClose } from "./NavAutoClose";
 import { navItems, type NavItem } from "./nav-items";
 
@@ -146,88 +147,90 @@ export async function PublicHeader() {
         </nav>
 
         {/* Mobile menu */}
-        <details className="ml-auto md:hidden">
-          <summary
-            aria-label="Menü öffnen"
-            className="cursor-pointer list-none rounded-bdas border border-bdas-strong px-3 py-1.5 text-bdas-ink [&::-webkit-details-marker]:hidden"
-          >
-            Menü
-          </summary>
-          <nav
-            aria-label="Hauptnavigation mobil"
-            className="absolute inset-x-0 top-full z-40 border-b border-bdas-soft bg-bdas-surface px-4 py-4 shadow-bdas-dropdown"
-          >
-            <ul className="flex flex-col gap-1">
-              {items.map((item) =>
-                "href" in item ? (
-                  <li key={item.label}>
-                    <Link href={item.href} className={DROPDOWN_LINK}>
-                      {item.label}
-                    </Link>
-                  </li>
-                ) : (
-                  <li key={item.label}>
-                    <details>
-                      <summary
-                        className={`${DROPDOWN_LINK} cursor-pointer list-none [&::-webkit-details-marker]:hidden`}
-                      >
+        <MobileMenuAutoClose>
+          <details className="ml-auto md:hidden">
+            <summary
+              aria-label="Menü öffnen"
+              className="cursor-pointer list-none rounded-bdas border border-bdas-strong px-3 py-1.5 text-bdas-ink [&::-webkit-details-marker]:hidden"
+            >
+              Menü
+            </summary>
+            <nav
+              aria-label="Hauptnavigation mobil"
+              className="absolute inset-x-0 top-full z-40 border-b border-bdas-soft bg-bdas-surface px-4 py-4 shadow-bdas-dropdown"
+            >
+              <ul className="flex flex-col gap-1">
+                {items.map((item) =>
+                  "href" in item ? (
+                    <li key={item.label}>
+                      <Link href={item.href} className={DROPDOWN_LINK}>
                         {item.label}
-                      </summary>
-                      <ul className="ml-3 flex flex-col gap-1 rounded-bdas bg-bdas-overlay-faint p-2">
-                        {item.children.map((c) => (
-                          <li key={c.href}>
-                            <Link href={c.href} className={DROPDOWN_LINK}>
-                              {c.label}
-                            </Link>
-                          </li>
-                        ))}
-                      </ul>
-                    </details>
-                  </li>
-                ),
-              )}
-              {me ? (
-                <>
-                  <li>
-                    <Link href="/account" className={DROPDOWN_LINK}>
-                      Mein Konto
-                    </Link>
-                  </li>
-                  {isBoard ? (
-                    <li>
-                      <Link href="/dashboard" className={DROPDOWN_LINK}>
-                        Board-Bereich
                       </Link>
                     </li>
-                  ) : null}
-                  <li>
-                    <form action="/abmelden" method="post">
-                      <button type="submit" className={`${DROPDOWN_LINK} w-full text-left`}>
-                        Abmelden
-                      </button>
-                    </form>
-                  </li>
-                </>
-              ) : (
-                <>
-                  <li>
-                    <Link
-                      href="/registrieren"
-                      className="mt-2 inline-flex items-center rounded-bdas-pill bg-bdas-red px-4 py-2 font-medium text-white"
-                    >
-                      Mitglied werden
-                    </Link>
-                  </li>
-                  <li>
-                    <Link href="/anmelden" className={DROPDOWN_LINK}>
-                      Anmelden
-                    </Link>
-                  </li>
-                </>
-              )}
-            </ul>
-          </nav>
-        </details>
+                  ) : (
+                    <li key={item.label}>
+                      <details>
+                        <summary
+                          className={`${DROPDOWN_LINK} cursor-pointer list-none [&::-webkit-details-marker]:hidden`}
+                        >
+                          {item.label}
+                        </summary>
+                        <ul className="ml-3 flex flex-col gap-1 rounded-bdas bg-bdas-overlay-faint p-2">
+                          {item.children.map((c) => (
+                            <li key={c.href}>
+                              <Link href={c.href} className={DROPDOWN_LINK}>
+                                {c.label}
+                              </Link>
+                            </li>
+                          ))}
+                        </ul>
+                      </details>
+                    </li>
+                  ),
+                )}
+                {me ? (
+                  <>
+                    <li>
+                      <Link href="/account" className={DROPDOWN_LINK}>
+                        Mein Konto
+                      </Link>
+                    </li>
+                    {isBoard ? (
+                      <li>
+                        <Link href="/dashboard" className={DROPDOWN_LINK}>
+                          Board-Bereich
+                        </Link>
+                      </li>
+                    ) : null}
+                    <li>
+                      <form action="/abmelden" method="post">
+                        <button type="submit" className={`${DROPDOWN_LINK} w-full text-left`}>
+                          Abmelden
+                        </button>
+                      </form>
+                    </li>
+                  </>
+                ) : (
+                  <>
+                    <li>
+                      <Link
+                        href="/registrieren"
+                        className="mt-2 inline-flex items-center rounded-bdas-pill bg-bdas-red px-4 py-2 font-medium text-white"
+                      >
+                        Mitglied werden
+                      </Link>
+                    </li>
+                    <li>
+                      <Link href="/anmelden" className={DROPDOWN_LINK}>
+                        Anmelden
+                      </Link>
+                    </li>
+                  </>
+                )}
+              </ul>
+            </nav>
+          </details>
+        </MobileMenuAutoClose>
       </div>
     </header>
   );

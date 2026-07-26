@@ -115,6 +115,32 @@ test("visitor walks the public nav", async ({ page }) => {
   await expect(page.getByRole("link", { name: "Mitglied werden" }).first()).toBeVisible();
 });
 
+/**
+ * The header lives in the root layout, so a client-side navigation never
+ * remounts it and the mobile menu's `open` is plain DOM state that nothing
+ * resets. Following a link left the menu covering the page you just opened.
+ */
+test("the mobile menu closes after following a link", async ({ page }) => {
+  await page.goto("/");
+
+  const menu = page.locator('header details:has(summary[aria-label="Menü öffnen"])');
+  await page.getByRole("banner").getByText("Menü").click();
+  await expect(menu).toHaveAttribute("open", "");
+
+  const mobileNav = page.getByRole("navigation", { name: "Hauptnavigation mobil" });
+  await mobileNav.getByText("Über uns").click();
+  await page.getByRole("link", { name: "Kurzportrait" }).click();
+  await page.waitForURL("**/ueber-uns");
+
+  await expect(menu).not.toHaveAttribute("open", "");
+  await expect(mobileNav).toBeHidden();
+
+  // Re-opening starts from a clean slate rather than the previously expanded
+  // submenu.
+  await page.getByRole("banner").getByText("Menü").click();
+  await expect(page.getByRole("link", { name: "Kurzportrait" })).toBeHidden();
+});
+
 test("facets: member sees members-only event, visitor does not", async ({ page }) => {
   const slug = uniqueSlug("e2e-shell");
   await seedGroup({ slug, name: "E2E Shell Gruppe", city: "Teststadt", status: "active" });
