@@ -17,6 +17,12 @@ function esc(s: string): string {
 const PIN_HTML =
   '<span class="block h-5 w-5 rounded-full border-2 border-bdas-surface bg-bdas-red shadow-bdas-card"></span>';
 
+// Germany's extent (47.27–55.06 N, 5.87–15.04 E) with a small margin, so
+// panning stops just outside the border instead of drifting into neighboring
+// countries or the open sea.
+const GERMANY_BOUNDS = L.latLngBounds([46.7, 4.9], [55.6, 15.7]);
+const MAX_ZOOM = 16;
+
 export default function GroupMap({ pins }: { pins: GroupPin[] }) {
   const el = useRef<HTMLDivElement>(null);
 
@@ -25,7 +31,7 @@ export default function GroupMap({ pins }: { pins: GroupPin[] }) {
 
     // scrollWheelZoom stays off until the visitor clicks the map, so the
     // landing page never traps page scrolling; +/- buttons and pinch work.
-    const map = L.map(el.current, { scrollWheelZoom: false });
+    const map = L.map(el.current, { scrollWheelZoom: false, maxBoundsViscosity: 1.0 });
     map.once("click", () => map.scrollWheelZoom.enable());
 
     L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
@@ -51,15 +57,14 @@ export default function GroupMap({ pins }: { pins: GroupPin[] }) {
         );
     }
 
-    const first = pins[0]!;
-    if (pins.length === 1) {
-      map.setView([first.lat, first.lng], 10);
-    } else {
-      map.fitBounds(L.latLngBounds(pins.map((p) => [p.lat, p.lng] as [number, number])), {
-        padding: [32, 32],
-        maxZoom: 12,
-      });
-    }
+    // minZoom is derived from the container's actual size so "zoomed all the
+    // way out" always means "all of Germany, filling the frame" — on the
+    // small mobile height and the larger desktop height alike.
+    const minZoom = Math.min(map.getBoundsZoom(GERMANY_BOUNDS), MAX_ZOOM);
+    map.setMinZoom(minZoom);
+    map.setMaxZoom(MAX_ZOOM);
+    map.setMaxBounds(GERMANY_BOUNDS);
+    map.fitBounds(GERMANY_BOUNDS);
 
     return () => {
       map.remove();
