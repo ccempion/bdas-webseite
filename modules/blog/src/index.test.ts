@@ -99,6 +99,57 @@ describeIfDb("blog integration", () => {
     ).rejects.toMatchObject({ code: "VALIDATION" });
   });
 
+  it("createPost persists an explicit category", async () => {
+    const p = await createPost(
+      t.db,
+      { title: "Bericht", content: doc("x"), category: "gruppenleben" },
+      "usr_m",
+    );
+    expect(p.category).toBe("gruppenleben");
+  });
+
+  it("createPost defaults category to 'sonstiges'", async () => {
+    const p = await createPost(t.db, { title: "Ohne Kategorie", content: doc("x") }, "usr_m");
+    expect(p.category).toBe("sonstiges");
+  });
+
+  it("createPost rejects an invalid category with VALIDATION", async () => {
+    await expect(
+      createPost(t.db, { title: "Bad", content: doc("x"), category: "unsinn" }, "usr_m"),
+    ).rejects.toMatchObject({ code: "VALIDATION" });
+  });
+
+  it("updatePost changes the category", async () => {
+    const p = await createPost(
+      t.db,
+      { title: "Start", content: doc("x"), category: "sonstiges" },
+      "usr_m",
+    );
+    const edited = await updatePost(t.db, p.id, {
+      title: "Start",
+      content: doc("x"),
+      category: "politik_positionen",
+    });
+    expect(edited.category).toBe("politik_positionen");
+  });
+
+  it("createPost throws RateLimitError past 3 posts/hour for the same author", async () => {
+    for (let i = 0; i < 3; i++) {
+      await createPost(t.db, { title: `Post ${i}`, content: doc("x") }, "usr_spammer");
+    }
+    await expect(
+      createPost(t.db, { title: "Post 4", content: doc("x") }, "usr_spammer"),
+    ).rejects.toMatchObject({ code: "RATE_LIMITED" });
+  });
+
+  it("createPost rate-limit is per-author — a different author is unaffected", async () => {
+    for (let i = 0; i < 3; i++) {
+      await createPost(t.db, { title: `Post ${i}`, content: doc("x") }, "usr_busy");
+    }
+    const p = await createPost(t.db, { title: "Fine", content: doc("x") }, "usr_other");
+    expect(p.title).toBe("Fine");
+  });
+
   it("updatePost edits title/content/visibility and emits", async () => {
     const updated = capture("blog.post.updated");
     const p = await createPost(t.db, { title: "Entwurf", content: doc("alt") }, "usr_m");
