@@ -18,12 +18,35 @@ export type TiptapDoc = { readonly type: "doc"; readonly content?: ReadonlyArray
  */
 export type PostVisibility = "public" | "members" | "board";
 
+/**
+ * A post's fixed topical category (spec 2026-07-26), chosen by the author at
+ * publish time. One category per post — not free-form tags.
+ */
+export type PostCategory =
+  | "verbandsintern"
+  | "gruppenleben"
+  | "veranstaltungsrueckblick"
+  | "politik_positionen"
+  | "karriere_weiterbildung"
+  | "sonstiges";
+
+/** German display labels, in the fixed order shown in selects/filter chips. */
+export const CATEGORY_LABELS: Record<PostCategory, string> = {
+  verbandsintern: "Verbandsintern",
+  gruppenleben: "Gruppenleben",
+  veranstaltungsrueckblick: "Veranstaltungsrückblick",
+  politik_positionen: "Politik & Positionen",
+  karriere_weiterbildung: "Karriere & Weiterbildung",
+  sonstiges: "Sonstiges",
+};
+
 export type Post = {
   readonly id: string;
   readonly slug: string;
   readonly title: string;
   readonly content: TiptapDoc;
   readonly visibility: PostVisibility;
+  readonly category: PostCategory;
   /** Auth user id of the author (no FK, matches events). */
   readonly createdBy: string;
   readonly createdAt: Date;
@@ -32,3 +55,18 @@ export type Post = {
 
 /** Feed row — same fields as `Post`; the feed renders the full body inline. */
 export type PostSummary = Post;
+
+/** A report's review state: open (awaiting board review) or dismissed. */
+export type PostReportStatus = "open" | "dismissed";
+
+/** One member's report against a post, hydrated with the post's title/slug for the moderation queue. */
+export type PostReport = {
+  readonly id: string;
+  readonly postId: string;
+  readonly postTitle: string;
+  readonly postSlug: string;
+  readonly reporterId: string;
+  readonly reason: string | null;
+  readonly status: PostReportStatus;
+  readonly createdAt: Date;
+};

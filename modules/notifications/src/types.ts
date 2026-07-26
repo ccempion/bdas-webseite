@@ -38,6 +38,12 @@ export type TemplateData = {
   readonly groupName?: string | undefined;
   /** `member_application_received`: the applicant's full name. */
   readonly applicantName?: string | undefined;
+  /** `blog_post_reported`: the reported post's title. */
+  readonly postTitle?: string | undefined;
+  /** `blog_post_reported`: absolute URL to the reported post, if a site URL is configured. */
+  readonly postUrl?: string | undefined;
+  /** `blog_post_reported`: the reporter's optional free-text reason. */
+  readonly reportReason?: string | undefined;
 };
 
 /** Outcome of a send attempt, returned by sendTransactional. */

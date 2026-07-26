@@ -27,6 +27,7 @@ import { getGroup } from "@bdas/groups";
 import { getMemberByUserId, listBoardRecipientsForGroup } from "@bdas/members";
 import type { RoleGranted, RoleRevoked, StatusChanged } from "@bdas/members";
 import type { ProfileCompleted } from "@bdas/profile";
+import { getPostById, type PostReported } from "@bdas/blog";
 
 import { sendTransactional, sendTransactionalToGuest } from "./services/send";
 
@@ -265,6 +266,20 @@ export function registerNotificationSubscribers(db: Db, opts: { siteUrl?: string
           await sendTransactional(db, "member_application_approved", e.memberId, {});
         } else if (e.to === "inactive") {
           await sendTransactional(db, "member_application_declined", e.memberId, {});
+    getEventBus().subscribe<PostReported>(
+      "blog.post.reported",
+      safe<PostReported>(async (e) => {
+        const post = await getPostById(db, e.postId);
+        const recipients = await listBoardRecipientsForGroup(db, null); // null → federal board
+        for (const memberId of recipients) {
+          await sendTransactional(db, "blog_post_reported", memberId, {
+            postTitle: post?.title ?? "ein Beitrag",
+            postUrl:
+              post && opts.siteUrl
+                ? `${opts.siteUrl.replace(/\/$/, "")}/blog/${post.slug}`
+                : undefined,
+            reportReason: e.reason ?? undefined,
+          });
         }
       }),
     ),

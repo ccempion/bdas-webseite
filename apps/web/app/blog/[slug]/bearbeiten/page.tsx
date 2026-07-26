@@ -29,6 +29,7 @@ export default async function EditPostPage({ params }: { params: { slug: string 
             title: post.title,
             content: post.content,
             visibility: post.visibility,
+            category: post.category,
           }}
         />
       </Card>

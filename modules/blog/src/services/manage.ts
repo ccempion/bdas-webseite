@@ -2,22 +2,23 @@
  * Post lifecycle: create, edit, delete.
  *
  * Authorization is NOT enforced here — callers gate at the app action layer
- * (any signed-in user may create; author or federal board may edit/delete via
- * `canModeratePost`). This keeps `blog` free of an `auth`/`members` dependency
+ * (an active member or alumnus may create, per ADR 0030; author or federal
+ * board may edit/delete via `canModeratePost`). This keeps `blog` free of an
+ * `auth`/`members` dependency
  * (CLAUDE.md §1 rule 2), the same convention as `events`/`projects`.
  */
-import { eq } from "drizzle-orm";
+import { and, eq, gte, sql } from "drizzle-orm";
 import type { PostgresJsDatabase } from "drizzle-orm/postgres-js";
 import { z } from "zod";
 
-import { NotFoundError, ValidationError } from "@bdas/errors";
+import { NotFoundError, RateLimitError, ValidationError } from "@bdas/errors";
 import { getEventBus } from "@bdas/events";
 import { createId } from "@bdas/id";
 
 import type { PostDeleted, PostPublished, PostUpdated } from "../events";
 import { posts } from "../schema";
 import { buildSlug } from "../slug";
-import type { Post, PostVisibility, TiptapDoc } from "../types";
+import type { Post, PostCategory, PostVisibility, TiptapDoc } from "../types";
 
 export type Db = PostgresJsDatabase<Record<string, never>>;
 
@@ -28,6 +29,15 @@ const TiptapDocSchema = z
   .passthrough()
   .refine((d) => "content" in d, { message: "Beitrag darf nicht leer sein" });
 
+const PostCategorySchema = z.enum([
+  "verbandsintern",
+  "gruppenleben",
+  "veranstaltungsrueckblick",
+  "politik_positionen",
+  "karriere_weiterbildung",
+  "sonstiges",
+]);
+
 export const PostInput = z.object({
   title: z
     .string()
@@ -36,6 +46,7 @@ export const PostInput = z.object({
     .max(160, "Titel darf höchstens 160 Zeichen haben"),
   content: TiptapDocSchema,
   visibility: z.enum(["public", "members", "board"]).default("public"),
+  category: PostCategorySchema.default("sonstiges"),
 });
 export type PostInput = z.infer<typeof PostInput>;
 
@@ -56,6 +67,7 @@ export function rowToPost(r: typeof posts.$inferSelect): Post {
     title: r.title,
     content: r.content as TiptapDoc,
     visibility: r.visibility as PostVisibility,
+    category: r.category as PostCategory,
     createdBy: r.createdBy,
     createdAt: r.createdAt,
     updatedAt: r.updatedAt,
@@ -68,9 +80,25 @@ async function loadOrThrow(db: Db, id: string): Promise<typeof posts.$inferSelec
   return rows[0];
 }
 
+const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000; // 1 hour
+const RATE_LIMIT_MAX_POSTS = 3;
+
+/** Abuse protection (spec 2026-07-26): counts the author's own recent posts. */
+async function assertNotRateLimited(db: Db, authorId: string): Promise<void> {
+  const cutoff = new Date(Date.now() - RATE_LIMIT_WINDOW_MS);
+  const [row] = await db
+    .select({ n: sql<number>`count(*)::int` })
+    .from(posts)
+    .where(and(eq(posts.createdBy, authorId), gte(posts.createdAt, cutoff)));
+  if ((row?.n ?? 0) >= RATE_LIMIT_MAX_POSTS) {
+    throw new RateLimitError("Zu viele Beiträge in kurzer Zeit. Bitte später erneut versuchen.");
+  }
+}
+
 /** Create a post authored by `authorId` (an auth user id). */
 export async function createPost(db: Db, input: unknown, authorId: string): Promise<Post> {
   const v = parseOrThrow(PostInput, input);
+  await assertNotRateLimited(db, authorId);
 
   const id = createId("post");
   const slug = buildSlug(v.title);
@@ -80,6 +108,7 @@ export async function createPost(db: Db, input: unknown, authorId: string): Prom
     title: v.title,
     content: v.content as TiptapDoc,
     visibility: v.visibility,
+    category: v.category,
     createdBy: authorId,
   });
 
@@ -96,7 +125,7 @@ export async function createPost(db: Db, input: unknown, authorId: string): Prom
   return rowToPost(await loadOrThrow(db, id));
 }
 
-/** Edit a post. Slug and author are immutable; title/content/visibility change. */
+/** Edit a post. Slug and author are immutable; title/content/visibility/category change. */
 export async function updatePost(db: Db, id: string, input: unknown): Promise<Post> {
   await loadOrThrow(db, id);
   const v = parseOrThrow(PostInput, input);
@@ -107,6 +136,7 @@ export async function updatePost(db: Db, id: string, input: unknown): Promise<Po
       title: v.title,
       content: v.content as TiptapDoc,
       visibility: v.visibility,
+      category: v.category,
       updatedAt: new Date(),
     })
     .where(eq(posts.id, id));
@@ -117,10 +147,10 @@ export async function updatePost(db: Db, id: string, input: unknown): Promise<Po
   return rowToPost(await loadOrThrow(db, id));
 }
 
-/** Delete a post. */
+/** Soft-delete a post: sets `deletedAt` rather than removing the row (spec 2026-07-26). */
 export async function deletePost(db: Db, id: string): Promise<void> {
   await loadOrThrow(db, id);
-  await db.delete(posts).where(eq(posts.id, id));
+  await db.update(posts).set({ deletedAt: new Date() }).where(eq(posts.id, id));
 
   const event: PostDeleted = { type: "blog.post.deleted", postId: id, at: new Date() };
   await getEventBus().publish(event);

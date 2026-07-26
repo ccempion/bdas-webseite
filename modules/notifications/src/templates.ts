@@ -8,7 +8,7 @@ export type RenderedEmail = {
 
 /** German transactional copy. One entry per TransactionalTemplate. */
 export function render(template: TransactionalTemplate, data: TemplateData): RenderedEmail {
-  const { firstName, eventTitle, eventUrl } = data;
+  const { firstName, eventTitle, eventUrl, postTitle, postUrl, reportReason } = data;
   // While the recipient is on the event, offer a link to manage/cancel it.
   const manage = eventUrl
     ? { label: "Du kannst dich jederzeit über die Veranstaltungsseite abmelden:", url: eventUrl }
@@ -94,6 +94,14 @@ export function render(template: TransactionalTemplate, data: TemplateData): Ren
         "BDAS — Entscheidung über deine Bewerbung",
         firstName,
         "dein lokaler Vorstand hat deine Bewerbung geprüft und sie nicht angenommen. Wenn du dazu Fragen hast, wende dich gerne direkt an deine BDAS-Gruppe.",
+    case "blog_post_reported":
+      return body(
+        "BDAS — Beitrag gemeldet",
+        firstName,
+        `der Beitrag „${postTitle ?? "ein Beitrag"}“ wurde gemeldet${
+          reportReason ? ` (Grund: ${reportReason})` : ""
+        }. Bitte prüfe ihn im Blog-Bereich.`,
+        postUrl ? { label: "Zum Beitrag:", url: postUrl } : undefined,
       );
   }
 }

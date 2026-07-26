@@ -16,6 +16,9 @@ type Extra = {
   readonly messageBody?: string | undefined;
   readonly groupName?: string | undefined;
   readonly applicantName?: string | undefined;
+  readonly postTitle?: string | undefined;
+  readonly postUrl?: string | undefined;
+  readonly reportReason?: string | undefined;
 };
 
 /** The resolved recipient: a member (memberId set) or a guest (memberId null). */
@@ -46,6 +49,9 @@ async function sendToRecipient(
     messageBody: extra.messageBody,
     groupName: extra.groupName,
     applicantName: extra.applicantName,
+    postTitle: extra.postTitle,
+    postUrl: extra.postUrl,
+    reportReason: extra.reportReason,
   };
   const email = render(template, data);
   const id = createId("ntfy");

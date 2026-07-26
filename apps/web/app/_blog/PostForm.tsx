@@ -2,7 +2,7 @@
 
 import { useFormState, useFormStatus } from "react-dom";
 
-import type { PostVisibility, TiptapDoc } from "@bdas/blog";
+import { CATEGORY_LABELS, type PostCategory, type PostVisibility, type TiptapDoc } from "@bdas/blog";
 import { Alert, Button, Field, Form, Input } from "@bdas/design-system";
 
 import { createPostAction, updatePostAction, type PostFormState } from "../blog/actions";
@@ -13,12 +13,13 @@ const SELECT_CLASS =
   "text-base text-bdas-ink focus:border-bdas-red focus:outline-none focus:ring-2 focus:ring-bdas-red/20";
 
 const initialState: PostFormState = {};
+const CATEGORY_KEYS = Object.keys(CATEGORY_LABELS) as PostCategory[];
 
 /**
  * One form for both "new post" and "edit post". Kept deliberately minimal —
- * title, a rich body, and a visibility choice — so publishing is quick. When
- * `post` is given it edits in place (hidden postId + updatePostAction); the
- * slug never changes.
+ * title, a rich body, a category, and a visibility choice — so publishing is
+ * quick. When `post` is given it edits in place (hidden postId +
+ * updatePostAction); the slug never changes.
  */
 export function PostForm({
   post,
@@ -28,6 +29,7 @@ export function PostForm({
     title: string;
     content: TiptapDoc;
     visibility: PostVisibility;
+    category: PostCategory;
   };
 }) {
   const editing = post !== undefined;
@@ -45,6 +47,21 @@ export function PostForm({
 
       <Field label="Beitrag" htmlFor="content" {...err("content")}>
         <PostEditor name="content" defaultDoc={post?.content ?? null} />
+      </Field>
+
+      <Field label="Kategorie" htmlFor="category" {...err("category")}>
+        <select
+          id="category"
+          name="category"
+          defaultValue={post?.category ?? "sonstiges"}
+          className={SELECT_CLASS}
+        >
+          {CATEGORY_KEYS.map((key) => (
+            <option key={key} value={key}>
+              {CATEGORY_LABELS[key]}
+            </option>
+          ))}
+        </select>
       </Field>
 
       <Field label="Sichtbarkeit" htmlFor="visibility" {...err("visibility")}>
