@@ -82,6 +82,12 @@ URLs, no client JS.
   same author (`RateLimitError`); `reportPost` rejects an 11th report within
   24h from the same reporter. Both count the module's own rows — no separate
   rate-limit table.
+- **Best-effort, not a hard guarantee** — both limiters do a `SELECT count(*)`
+  followed by a separate `INSERT`, with no transaction or lock tying them
+  together. A concurrent burst from the same author/reporter can each read a
+  stale count and all succeed, slipping past the limit. This is spam
+  friction, not a security boundary — don't rely on it to bound abuse under
+  concurrent load.
 - **Reporting** — `reportPost` records a `post_reports` row and emits
   `blog.post.reported`; `@bdas/notifications` subscribes and emails the
   federal board. `listOpenReports`/`dismissReport` back the moderation queue

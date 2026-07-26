@@ -316,9 +316,13 @@ describeIfDb("blog integration", () => {
   });
 
   it("reportPost rate-limits a reporter past 10 reports/24h", async () => {
+    // Distinct authors: createPost has its own 3-posts/hour-per-author rate
+    // limit, and 11 concurrent creates under the same author id can race
+    // against that unrelated limiter (non-atomic count-then-insert), which
+    // has nothing to do with what this test asserts.
     const targets = await Promise.all(
       Array.from({ length: 11 }, (_, i) =>
-        createPost(t.db, { title: `Ziel ${i}`, content: doc("x") }, "usr_author"),
+        createPost(t.db, { title: `Ziel ${i}`, content: doc("x") }, `usr_author_${i}`),
       ),
     );
     for (let i = 0; i < 10; i++) {
