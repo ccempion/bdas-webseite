@@ -48,6 +48,7 @@ export const tailwindPreset: TailwindPreset = {
         "bdas-card": shadows.cardResting,
         "bdas-card-low": shadows.cardLow,
         "bdas-lift-sm": shadows.cardLiftSm,
+        "bdas-lift-md": shadows.cardLiftMd,
         "bdas-lift-lg": shadows.cardLiftLg,
         "bdas-dropdown": shadows.dropdown,
         "bdas-red-glow": shadows.redGlow,

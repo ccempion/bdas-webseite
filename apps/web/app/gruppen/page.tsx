@@ -34,10 +34,12 @@ export default async function GruppenPage() {
         <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {groups.map((g) => (
             <li key={g.id}>
-              <Link href={`/gruppen/${g.slug}`} className="block focus:outline-none">
+              <Link href={`/gruppen/${g.slug}`} className="group block focus-visible:outline-none">
                 <Card className="p-5">
                   <p className="text-sm text-bdas-ink-muted">{g.city}</p>
-                  <h2 className="mt-1 text-lg font-semibold text-bdas-ink">{g.name}</h2>
+                  <h2 className="mt-1 text-lg font-semibold text-bdas-ink transition-colors duration-bdas-soft ease-bdas group-hover:text-bdas-red group-focus-visible:text-bdas-red">
+                    {g.name}
+                  </h2>
                 </Card>
               </Link>
             </li>

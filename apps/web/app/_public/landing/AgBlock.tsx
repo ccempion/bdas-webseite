@@ -19,7 +19,9 @@ export function AgBlock() {
         {AGS.map((ag) => (
           <li key={ag.slug}>
             <Card className="h-full p-4">
-              <h3 className="font-semibold text-bdas-ink">{ag.name}</h3>
+              <h3 className="font-semibold text-bdas-ink transition-colors duration-bdas-soft ease-bdas group-hover:text-bdas-red group-focus-visible:text-bdas-red">
+                {ag.name}
+              </h3>
               <p className="text-sm text-bdas-ink-body">{ag.teaser}</p>
             </Card>
           </li>

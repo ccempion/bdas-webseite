@@ -17,7 +17,9 @@ export function ConnectBlock({ loggedIn }: { loggedIn: boolean }) {
       <div className="grid gap-4 sm:grid-cols-3">
         {FEATURES.map((f) => (
           <Card key={f.title} className="p-4">
-            <h3 className="font-semibold text-bdas-ink">{f.title}</h3>
+            <h3 className="font-semibold text-bdas-ink transition-colors duration-bdas-soft ease-bdas group-hover:text-bdas-red group-focus-visible:text-bdas-red">
+              {f.title}
+            </h3>
             <p className="text-sm text-bdas-ink-body">{f.text}</p>
           </Card>
         ))}

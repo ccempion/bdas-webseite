@@ -11,12 +11,14 @@ function NewsCard({ item }: { item: NewsItem }) {
   const body = (
     <Card className="h-full p-5">
       <p className="text-sm text-bdas-ink-muted">{dateFmt.format(item.publishedAt)}</p>
-      <h3 className="mb-2 mt-1 font-semibold text-bdas-ink">{item.title}</h3>
+      <h3 className="mb-2 mt-1 font-semibold text-bdas-ink transition-colors duration-bdas-soft ease-bdas group-hover:text-bdas-red group-focus-visible:text-bdas-red">
+        {item.title}
+      </h3>
       <p className="text-sm text-bdas-ink-body">{item.teaser}</p>
     </Card>
   );
   return item.href ? (
-    <Link href={item.href} className="block focus:outline-none">
+    <Link href={item.href} className="group block focus-visible:outline-none">
       {body}
     </Link>
   ) : (

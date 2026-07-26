@@ -21,7 +21,8 @@ ad-hoc.
 | Inner-item radius (dropdown links)             | `radii.sm` (`6px`)                                        |
 | Circular controls (nav buttons, markers, dots) | `radii.full` (`9999px`)                                   |
 | Card shadow at rest                            | `shadows.cardResting`                                     |
-| Card shadow on hover (default)                 | `shadows.cardLiftSm`                                      |
+| Card shadow on hover (default)                 | `shadows.cardLiftMd`                                      |
+| Accordion shadow on hover                      | `shadows.cardLiftSm`                                      |
 | Hero card shadow on hover                      | `shadows.cardLiftLg`                                      |
 | Dropdown panel float                           | `shadows.dropdown`                                        |
 | Color/background transition                    | `motion.durationQuick` (`200ms`)                          |
@@ -37,10 +38,12 @@ the equivalent components across the app. Names refer to tokens in
 `src/tokens.ts`.
 
 - **Card** — white surface, `radii.md`, `border.soft`, `shadows.cardResting`. On
-  hover translateY(`lift.sm`) and shadow upgrade to `cardLiftSm`. Transition
-  `durationSoft`.
-- **Hero card** — same shape; resting shadow `cardLow`, hover lift `lift.md`,
-  hover shadow `cardLiftLg`.
+  hover _or keyboard focus-visible_ (via `group`/`group-focus-visible:` — see
+  `Card.tsx`), translateY(`lift.sm`) and shadow upgrade to `cardLiftMd`; a
+  consumer-owned title may opt into turning `brand.red` the same way.
+  Transition `durationSoft`.
+- **Hero card** — same shape; resting shadow `cardLow`, hover/focus-visible
+  lift `lift.md`, hover/focus-visible shadow `cardLiftLg`.
 - **Nav pill (desktop)** — `radii.pill`, padding `4px 12px`, transparent at rest;
   on hover background `surface.overlay.hover`.
 - **Dropdown panel** — white, `radii.md`, padding `8px`, `shadows.dropdown`,

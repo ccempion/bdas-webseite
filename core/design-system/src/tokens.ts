@@ -79,8 +79,10 @@ export const radii = {
 export const shadows = {
   /** Card at rest — almost invisible, just enough to lift off the page. */
   cardResting: "0 2px 8px rgba(0, 0, 0, 0.02)",
-  /** Card / accordion on hover — small lift companion. */
+  /** Accordion on hover — small lift companion. */
   cardLiftSm: "0 6px 16px rgba(0, 0, 0, 0.06)",
+  /** Card on hover (default) — clearly readable lift without hero drama. */
+  cardLiftMd: "0 10px 24px rgba(0, 0, 0, 0.1)",
   /** Hero card hover — pronounced float. */
   cardLiftLg: "0 20px 40px rgba(0, 0, 0, 0.12)",
   /** Hero card resting — slightly more present than cardResting. */
@@ -161,7 +163,7 @@ export const keyframes = {
  * surfaces; deviating creates visual drift.
  */
 export const recipes = {
-  card: "white surface, radius md, border soft, shadow cardResting; on hover translateY lift.sm and shadow cardLiftSm",
+  card: "white surface, radius md, border soft, shadow cardResting; on hover/focus-visible translateY lift.sm and shadow cardLiftMd; title (if any) turns brand.red",
   heroCard: "as card but resting shadow cardLow; on hover translateY lift.md and shadow cardLiftLg",
   navPill:
     "radius pill, padding 4px 12px, transparent at rest; on hover background surface.overlay.hover",
