@@ -115,7 +115,11 @@ export default function GroupMap({ pins }: { pins: GroupPin[] }) {
       ref={el}
       role="region"
       aria-label="Karte der Hochschulgruppen"
-      className="h-72 w-full overflow-hidden rounded-bdas border border-bdas-soft shadow-bdas-card sm:h-[420px]"
+      // isolate contains Leaflet's internal panes/controls (z-index up to
+      // 1000) inside this element's own stacking context, so they can never
+      // paint above page chrome like the sticky header, regardless of the
+      // exact z-index Leaflet assigns them internally.
+      className="isolate h-72 w-full overflow-hidden rounded-bdas border border-bdas-soft shadow-bdas-card sm:h-[420px]"
     />
   );
 }

@@ -5,7 +5,7 @@
  * The local TailwindPreset type avoids depending on tailwindcss until
  * Sprint 1 installs it; apps will retype this against `Config['theme']`.
  */
-import { colors, keyframes, motion, radii, shadows, typography } from "./tokens";
+import { colors, keyframes, motion, radii, shadows, typography, zIndex } from "./tokens";
 
 type TailwindPreset = {
   theme?: {
@@ -25,6 +25,9 @@ export const tailwindPreset: TailwindPreset = {
           surface: colors.surface.base,
           "surface-hover": colors.surface.hover,
         },
+      },
+      zIndex: {
+        "bdas-header": zIndex.header,
       },
       borderRadius: {
         bdas: radii.md,

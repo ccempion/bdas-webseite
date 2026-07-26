@@ -74,7 +74,7 @@ export async function PublicHeader() {
   const displayName = me?.member?.firstName ?? "Konto";
 
   return (
-    <header className="sticky top-0 z-50 border-b border-bdas-soft bg-bdas-surface">
+    <header className="sticky top-0 z-bdas-header border-b border-bdas-soft bg-bdas-surface">
       <div className="mx-auto flex max-w-6xl items-center gap-4 px-4 py-3">
         <BrandLink />
 

@@ -56,6 +56,15 @@ export const colors = {
   },
 } as const;
 
+export const zIndex = {
+  /**
+   * The sticky site header. Must outrank any third-party widget's internal
+   * stacking (e.g. Leaflet's controls/panes top out at 1000) so the header
+   * never disappears under embedded content while scrolling.
+   */
+  header: "1100",
+} as const;
+
 export const radii = {
   /** Inner items inside a dropdown panel. */
   sm: "6px",
@@ -168,3 +177,4 @@ export type Radii = typeof radii;
 export type Shadows = typeof shadows;
 export type Motion = typeof motion;
 export type Typography = typeof typography;
+export type ZIndex = typeof zIndex;
