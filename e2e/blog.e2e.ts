@@ -141,10 +141,18 @@ test.describe("blog", () => {
     await activateMemberByEmail(email);
 
     const groupTitle = `Gruppenleben ${Date.now()}`;
-    await writePost(page, { title: groupTitle, body: "Bericht aus der Gruppe.", category: "gruppenleben" });
+    await writePost(page, {
+      title: groupTitle,
+      body: "Bericht aus der Gruppe.",
+      category: "gruppenleben",
+    });
 
     const careerTitle = `Karriere ${Date.now()}`;
-    await writePost(page, { title: careerTitle, body: "Ein Karrieretipp.", category: "karriere_weiterbildung" });
+    await writePost(page, {
+      title: careerTitle,
+      body: "Ein Karrieretipp.",
+      category: "karriere_weiterbildung",
+    });
 
     await page.goto("/blog?kategorie=gruppenleben");
     await expect(page.getByRole("heading", { name: groupTitle })).toBeVisible();

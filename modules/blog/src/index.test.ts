@@ -56,10 +56,7 @@ describeIfDb("blog integration", () => {
   beforeEach(async () => {
     t = await createTestDb();
     for (const file of ["0001_init.sql", "0002_categories_reports_softdelete.sql"]) {
-      const sql = await fs.readFile(
-        path.join(__dirname, "..", "migrations", file),
-        "utf8",
-      );
+      const sql = await fs.readFile(path.join(__dirname, "..", "migrations", file), "utf8");
       await t.client.unsafe(sql);
     }
     resetEventBus();
@@ -242,7 +239,11 @@ describeIfDb("blog integration", () => {
       { title: "Ankündigung", content: doc("a"), category: "verbandsintern" },
       "usr_cat",
     );
-    await createPost(t.db, { title: "Bericht", content: doc("b"), category: "gruppenleben" }, "usr_cat");
+    await createPost(
+      t.db,
+      { title: "Bericht", content: doc("b"), category: "gruppenleben" },
+      "usr_cat",
+    );
 
     const filtered = await listPosts(t.db, federal, { category: "verbandsintern" });
     expect(filtered.map((p) => p.id)).toEqual([a.id]);
@@ -290,7 +291,12 @@ describeIfDb("blog integration", () => {
     await reportPost(t.db, p.id, "usr_reporter", "Wirkt wie Spam");
 
     expect(reported).toMatchObject([
-      { type: "blog.post.reported", postId: p.id, reporterId: "usr_reporter", reason: "Wirkt wie Spam" },
+      {
+        type: "blog.post.reported",
+        postId: p.id,
+        reporterId: "usr_reporter",
+        reason: "Wirkt wie Spam",
+      },
     ]);
   });
 

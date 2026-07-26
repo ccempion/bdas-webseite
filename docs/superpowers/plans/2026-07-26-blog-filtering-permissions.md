@@ -26,12 +26,14 @@
 ### Task 1: Migration + schema + types (category, soft-delete, reports)
 
 **Files:**
+
 - Create: `modules/blog/migrations/0002_categories_reports_softdelete.sql`
 - Create: `modules/blog/src/schema.test.ts`
 - Modify: `modules/blog/src/schema.ts`
 - Modify: `modules/blog/src/types.ts`
 
 **Interfaces:**
+
 - Produces: `PostCategory` (union of 6 string literals), `CATEGORY_LABELS: Record<PostCategory, string>`, `PostReportStatus` (`"open" | "dismissed"`), `PostReport` type, `postReports` Drizzle table, `PostReportRow` type. `Post`/`PostSummary` gain a `category: PostCategory` field. `posts` Drizzle table gains `category` and `deletedAt` columns.
 
 - [ ] **Step 1: Write the migration**
@@ -338,11 +340,13 @@ git commit -m "feat(blog): add category, soft-delete, and post_reports schema"
 ### Task 2: Category on create/update + rate-limit on `createPost`
 
 **Files:**
+
 - Modify: `modules/blog/src/services/manage.ts`
 - Modify: `modules/blog/src/index.ts`
 - Modify: `modules/blog/src/index.test.ts`
 
 **Interfaces:**
+
 - Consumes: `PostCategory`, `CATEGORY_LABELS` (Task 1, `../types`); `posts` table with `category` column (Task 1).
 - Produces: `PostInput` now requires/defaults `category`; `createPost` throws `RateLimitError` past 3 posts/hour per author; `rowToPost` maps `category`.
 
@@ -351,56 +355,56 @@ git commit -m "feat(blog): add category, soft-delete, and post_reports schema"
 Modify `modules/blog/src/index.test.ts` — add these `it` blocks inside the existing `describeIfDb("blog integration", ...)` block, after the `"createPost rejects a too-short title with VALIDATION"` test:
 
 ```typescript
-  it("createPost persists an explicit category", async () => {
-    const p = await createPost(
-      t.db,
-      { title: "Bericht", content: doc("x"), category: "gruppenleben" },
-      "usr_m",
-    );
-    expect(p.category).toBe("gruppenleben");
-  });
+it("createPost persists an explicit category", async () => {
+  const p = await createPost(
+    t.db,
+    { title: "Bericht", content: doc("x"), category: "gruppenleben" },
+    "usr_m",
+  );
+  expect(p.category).toBe("gruppenleben");
+});
 
-  it("createPost defaults category to 'sonstiges'", async () => {
-    const p = await createPost(t.db, { title: "Ohne Kategorie", content: doc("x") }, "usr_m");
-    expect(p.category).toBe("sonstiges");
-  });
+it("createPost defaults category to 'sonstiges'", async () => {
+  const p = await createPost(t.db, { title: "Ohne Kategorie", content: doc("x") }, "usr_m");
+  expect(p.category).toBe("sonstiges");
+});
 
-  it("createPost rejects an invalid category with VALIDATION", async () => {
-    await expect(
-      createPost(t.db, { title: "Bad", content: doc("x"), category: "unsinn" }, "usr_m"),
-    ).rejects.toMatchObject({ code: "VALIDATION" });
-  });
+it("createPost rejects an invalid category with VALIDATION", async () => {
+  await expect(
+    createPost(t.db, { title: "Bad", content: doc("x"), category: "unsinn" }, "usr_m"),
+  ).rejects.toMatchObject({ code: "VALIDATION" });
+});
 
-  it("updatePost changes the category", async () => {
-    const p = await createPost(
-      t.db,
-      { title: "Start", content: doc("x"), category: "sonstiges" },
-      "usr_m",
-    );
-    const edited = await updatePost(t.db, p.id, {
-      title: "Start",
-      content: doc("x"),
-      category: "politik_positionen",
-    });
-    expect(edited.category).toBe("politik_positionen");
+it("updatePost changes the category", async () => {
+  const p = await createPost(
+    t.db,
+    { title: "Start", content: doc("x"), category: "sonstiges" },
+    "usr_m",
+  );
+  const edited = await updatePost(t.db, p.id, {
+    title: "Start",
+    content: doc("x"),
+    category: "politik_positionen",
   });
+  expect(edited.category).toBe("politik_positionen");
+});
 
-  it("createPost throws RateLimitError past 3 posts/hour for the same author", async () => {
-    for (let i = 0; i < 3; i++) {
-      await createPost(t.db, { title: `Post ${i}`, content: doc("x") }, "usr_spammer");
-    }
-    await expect(
-      createPost(t.db, { title: "Post 4", content: doc("x") }, "usr_spammer"),
-    ).rejects.toMatchObject({ code: "RATE_LIMITED" });
-  });
+it("createPost throws RateLimitError past 3 posts/hour for the same author", async () => {
+  for (let i = 0; i < 3; i++) {
+    await createPost(t.db, { title: `Post ${i}`, content: doc("x") }, "usr_spammer");
+  }
+  await expect(
+    createPost(t.db, { title: "Post 4", content: doc("x") }, "usr_spammer"),
+  ).rejects.toMatchObject({ code: "RATE_LIMITED" });
+});
 
-  it("createPost rate-limit is per-author — a different author is unaffected", async () => {
-    for (let i = 0; i < 3; i++) {
-      await createPost(t.db, { title: `Post ${i}`, content: doc("x") }, "usr_busy");
-    }
-    const p = await createPost(t.db, { title: "Fine", content: doc("x") }, "usr_other");
-    expect(p.title).toBe("Fine");
-  });
+it("createPost rate-limit is per-author — a different author is unaffected", async () => {
+  for (let i = 0; i < 3; i++) {
+    await createPost(t.db, { title: `Post ${i}`, content: doc("x") }, "usr_busy");
+  }
+  const p = await createPost(t.db, { title: "Fine", content: doc("x") }, "usr_other");
+  expect(p.title).toBe("Fine");
+});
 ```
 
 - [ ] **Step 2: Run tests to verify they fail**
@@ -603,10 +607,12 @@ git commit -m "feat(blog): category input, per-author create rate-limit, soft-de
 ### Task 3: Category + time filters on `listPosts`
 
 **Files:**
+
 - Modify: `modules/blog/src/services/list.ts`
 - Modify: `modules/blog/src/index.test.ts`
 
 **Interfaces:**
+
 - Consumes: `PostCategory` (Task 1).
 - Produces: `listPosts(db, viewer, filters?: { category?: PostCategory; since?: Date })`.
 
@@ -615,30 +621,34 @@ git commit -m "feat(blog): category input, per-author create rate-limit, soft-de
 Add to `modules/blog/src/index.test.ts`, inside `describeIfDb("blog integration", ...)`, after the existing `"listPosts filters by visibility and returns newest first"` test:
 
 ```typescript
-  it("listPosts filters by category", async () => {
-    const a = await createPost(
-      t.db,
-      { title: "Ankündigung", content: doc("a"), category: "verbandsintern" },
-      "usr_cat",
-    );
-    await createPost(t.db, { title: "Bericht", content: doc("b"), category: "gruppenleben" }, "usr_cat");
+it("listPosts filters by category", async () => {
+  const a = await createPost(
+    t.db,
+    { title: "Ankündigung", content: doc("a"), category: "verbandsintern" },
+    "usr_cat",
+  );
+  await createPost(
+    t.db,
+    { title: "Bericht", content: doc("b"), category: "gruppenleben" },
+    "usr_cat",
+  );
 
-    const filtered = await listPosts(t.db, federal, { category: "verbandsintern" });
-    expect(filtered.map((p) => p.id)).toEqual([a.id]);
-  });
+  const filtered = await listPosts(t.db, federal, { category: "verbandsintern" });
+  expect(filtered.map((p) => p.id)).toEqual([a.id]);
+});
 
-  it("listPosts filters by since (time range)", async () => {
-    const old = await createPost(t.db, { title: "Alt", content: doc("a") }, "usr_time");
-    const recent = await createPost(t.db, { title: "Neu", content: doc("b") }, "usr_time");
+it("listPosts filters by since (time range)", async () => {
+  const old = await createPost(t.db, { title: "Alt", content: doc("a") }, "usr_time");
+  const recent = await createPost(t.db, { title: "Neu", content: doc("b") }, "usr_time");
 
-    // Backdate the first post 40 days so a 30-day cutoff excludes it.
-    const fortyDaysAgo = new Date(Date.now() - 40 * 24 * 60 * 60 * 1000);
-    await t.client`UPDATE posts SET created_at = ${fortyDaysAgo.toISOString()} WHERE id = ${old.id}`;
+  // Backdate the first post 40 days so a 30-day cutoff excludes it.
+  const fortyDaysAgo = new Date(Date.now() - 40 * 24 * 60 * 60 * 1000);
+  await t.client`UPDATE posts SET created_at = ${fortyDaysAgo.toISOString()} WHERE id = ${old.id}`;
 
-    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-    const filtered = await listPosts(t.db, federal, { since: thirtyDaysAgo });
-    expect(filtered.map((p) => p.id)).toEqual([recent.id]);
-  });
+  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+  const filtered = await listPosts(t.db, federal, { since: thirtyDaysAgo });
+  expect(filtered.map((p) => p.id)).toEqual([recent.id]);
+});
 ```
 
 - [ ] **Step 2: Run tests to verify they fail**
@@ -720,10 +730,12 @@ git commit -m "feat(blog): category and time-range filters on listPosts"
 ### Task 4: Soft-delete on `get.ts` + end-to-end verification
 
 **Files:**
+
 - Modify: `modules/blog/src/services/get.ts`
 - Modify: `modules/blog/src/index.test.ts`
 
 **Interfaces:**
+
 - Consumes: `posts.deletedAt` (Task 1), `deletePost`'s soft-delete (Task 2), `listPosts`'s `deletedAt` filter (Task 3).
 - Produces: `getPostBySlug`/`getPostById` exclude soft-deleted rows.
 
@@ -732,34 +744,34 @@ git commit -m "feat(blog): category and time-range filters on listPosts"
 Add to `modules/blog/src/index.test.ts`, inside `describeIfDb("blog integration", ...)`, after the existing `"deletePost removes the row and emits"` test:
 
 ```typescript
-  it("deletePost soft-deletes: the row remains with deleted_at set", async () => {
-    const p = await createPost(t.db, { title: "Bleibt", content: doc("x") }, "usr_m");
-    await deletePost(t.db, p.id);
+it("deletePost soft-deletes: the row remains with deleted_at set", async () => {
+  const p = await createPost(t.db, { title: "Bleibt", content: doc("x") }, "usr_m");
+  await deletePost(t.db, p.id);
 
-    const rows = await t.client`SELECT deleted_at FROM posts WHERE id = ${p.id}`;
-    expect(rows[0]?.["deleted_at"]).not.toBeNull();
-  });
+  const rows = await t.client`SELECT deleted_at FROM posts WHERE id = ${p.id}`;
+  expect(rows[0]?.["deleted_at"]).not.toBeNull();
+});
 
-  it("getPostById returns null for a soft-deleted post", async () => {
-    const p = await createPost(t.db, { title: "Weg", content: doc("x") }, "usr_m");
-    await deletePost(t.db, p.id);
+it("getPostById returns null for a soft-deleted post", async () => {
+  const p = await createPost(t.db, { title: "Weg", content: doc("x") }, "usr_m");
+  await deletePost(t.db, p.id);
 
-    expect(await getPostById(t.db, p.id)).toBeNull();
-  });
+  expect(await getPostById(t.db, p.id)).toBeNull();
+});
 
-  it("a soft-deleted post is excluded from listPosts even for its author", async () => {
-    // `member`'s userId is "usr_m" — the same id used as the author below, so
-    // this genuinely exercises the author-sees-own path, not just federal's.
-    const p = await createPost(
-      t.db,
-      { title: "Gelöscht", content: doc("x"), visibility: "board" },
-      "usr_m",
-    );
-    await deletePost(t.db, p.id);
+it("a soft-deleted post is excluded from listPosts even for its author", async () => {
+  // `member`'s userId is "usr_m" — the same id used as the author below, so
+  // this genuinely exercises the author-sees-own path, not just federal's.
+  const p = await createPost(
+    t.db,
+    { title: "Gelöscht", content: doc("x"), visibility: "board" },
+    "usr_m",
+  );
+  await deletePost(t.db, p.id);
 
-    const feed = await listPosts(t.db, member);
-    expect(feed.map((x) => x.id)).not.toContain(p.id);
-  });
+  const feed = await listPosts(t.db, member);
+  expect(feed.map((x) => x.id)).not.toContain(p.id);
+});
 ```
 
 - [ ] **Step 2: Run tests to verify they fail**
@@ -832,12 +844,14 @@ git commit -m "feat(blog): exclude soft-deleted posts from getPostBySlug/getPost
 ### Task 5: Report service (`reportPost`, `listOpenReports`, `dismissReport`)
 
 **Files:**
+
 - Create: `modules/blog/src/services/report.ts`
 - Modify: `modules/blog/src/events.ts`
 - Modify: `modules/blog/src/index.ts`
 - Modify: `modules/blog/src/index.test.ts`
 
 **Interfaces:**
+
 - Consumes: `postReports` table (Task 1), `posts` table.
 - Produces: `reportPost(db, postId, reporterId, reason)`, `listOpenReports(db)`, `dismissReport(db, reportId)`, `PostReported` event, `PostReport`/`PostReportStatus` types (already declared in Task 1's `types.ts`).
 
@@ -896,74 +910,79 @@ import { dismissReport, listOpenReports, reportPost } from "./services/report";
 Then add these `it` blocks at the end of the `describeIfDb("blog integration", ...)` block (after the last existing test):
 
 ```typescript
-  it("reportPost inserts a report and emits blog.post.reported", async () => {
-    const reported = capture("blog.post.reported");
-    const p = await createPost(t.db, { title: "Fragwürdig", content: doc("x") }, "usr_author");
+it("reportPost inserts a report and emits blog.post.reported", async () => {
+  const reported = capture("blog.post.reported");
+  const p = await createPost(t.db, { title: "Fragwürdig", content: doc("x") }, "usr_author");
 
-    await reportPost(t.db, p.id, "usr_reporter", "Wirkt wie Spam");
+  await reportPost(t.db, p.id, "usr_reporter", "Wirkt wie Spam");
 
-    expect(reported).toMatchObject([
-      { type: "blog.post.reported", postId: p.id, reporterId: "usr_reporter", reason: "Wirkt wie Spam" },
-    ]);
+  expect(reported).toMatchObject([
+    {
+      type: "blog.post.reported",
+      postId: p.id,
+      reporterId: "usr_reporter",
+      reason: "Wirkt wie Spam",
+    },
+  ]);
+});
+
+it("reportPost rejects a self-report with VALIDATION", async () => {
+  const p = await createPost(t.db, { title: "Eigenbeitrag", content: doc("x") }, "usr_author");
+  await expect(reportPost(t.db, p.id, "usr_author", null)).rejects.toMatchObject({
+    code: "VALIDATION",
   });
+});
 
-  it("reportPost rejects a self-report with VALIDATION", async () => {
-    const p = await createPost(t.db, { title: "Eigenbeitrag", content: doc("x") }, "usr_author");
-    await expect(reportPost(t.db, p.id, "usr_author", null)).rejects.toMatchObject({
-      code: "VALIDATION",
-    });
+it("reportPost throws NotFoundError for a nonexistent post", async () => {
+  await expect(reportPost(t.db, "post_missing", "usr_reporter", null)).rejects.toMatchObject({
+    code: "NOT_FOUND",
   });
+});
 
-  it("reportPost throws NotFoundError for a nonexistent post", async () => {
-    await expect(reportPost(t.db, "post_missing", "usr_reporter", null)).rejects.toMatchObject({
-      code: "NOT_FOUND",
-    });
+it("reportPost throws NotFoundError for an already soft-deleted post", async () => {
+  const p = await createPost(t.db, { title: "Weg", content: doc("x") }, "usr_author");
+  await deletePost(t.db, p.id);
+  await expect(reportPost(t.db, p.id, "usr_reporter", null)).rejects.toMatchObject({
+    code: "NOT_FOUND",
   });
+});
 
-  it("reportPost throws NotFoundError for an already soft-deleted post", async () => {
-    const p = await createPost(t.db, { title: "Weg", content: doc("x") }, "usr_author");
-    await deletePost(t.db, p.id);
-    await expect(reportPost(t.db, p.id, "usr_reporter", null)).rejects.toMatchObject({
-      code: "NOT_FOUND",
-    });
+it("reportPost rate-limits a reporter past 10 reports/24h", async () => {
+  const targets = await Promise.all(
+    Array.from({ length: 11 }, (_, i) =>
+      createPost(t.db, { title: `Ziel ${i}`, content: doc("x") }, "usr_author"),
+    ),
+  );
+  for (let i = 0; i < 10; i++) {
+    await reportPost(t.db, targets[i]!.id, "usr_flagger", null);
+  }
+  await expect(reportPost(t.db, targets[10]!.id, "usr_flagger", null)).rejects.toMatchObject({
+    code: "RATE_LIMITED",
   });
+});
 
-  it("reportPost rate-limits a reporter past 10 reports/24h", async () => {
-    const targets = await Promise.all(
-      Array.from({ length: 11 }, (_, i) =>
-        createPost(t.db, { title: `Ziel ${i}`, content: doc("x") }, "usr_author"),
-      ),
-    );
-    for (let i = 0; i < 10; i++) {
-      await reportPost(t.db, targets[i]!.id, "usr_flagger", null);
-    }
-    await expect(reportPost(t.db, targets[10]!.id, "usr_flagger", null)).rejects.toMatchObject({
-      code: "RATE_LIMITED",
-    });
-  });
+it("listOpenReports returns only open reports newest first, excluding deleted posts", async () => {
+  const keep = await createPost(t.db, { title: "Bleibt", content: doc("x") }, "usr_author");
+  const gone = await createPost(t.db, { title: "Gelöscht", content: doc("x") }, "usr_author");
 
-  it("listOpenReports returns only open reports newest first, excluding deleted posts", async () => {
-    const keep = await createPost(t.db, { title: "Bleibt", content: doc("x") }, "usr_author");
-    const gone = await createPost(t.db, { title: "Gelöscht", content: doc("x") }, "usr_author");
+  await reportPost(t.db, keep.id, "usr_r1", "Grund A");
+  await reportPost(t.db, gone.id, "usr_r2", "Grund B");
+  await deletePost(t.db, gone.id);
 
-    await reportPost(t.db, keep.id, "usr_r1", "Grund A");
-    await reportPost(t.db, gone.id, "usr_r2", "Grund B");
-    await deletePost(t.db, gone.id);
+  const open = await listOpenReports(t.db);
+  expect(open.map((r) => r.postId)).toEqual([keep.id]);
+  expect(open[0]?.postTitle).toBe("Bleibt");
+});
 
-    const open = await listOpenReports(t.db);
-    expect(open.map((r) => r.postId)).toEqual([keep.id]);
-    expect(open[0]?.postTitle).toBe("Bleibt");
-  });
+it("dismissReport marks a report dismissed and it disappears from listOpenReports", async () => {
+  const p = await createPost(t.db, { title: "Geprüft", content: doc("x") }, "usr_author");
+  await reportPost(t.db, p.id, "usr_reporter", null);
+  const [report] = await listOpenReports(t.db);
 
-  it("dismissReport marks a report dismissed and it disappears from listOpenReports", async () => {
-    const p = await createPost(t.db, { title: "Geprüft", content: doc("x") }, "usr_author");
-    await reportPost(t.db, p.id, "usr_reporter", null);
-    const [report] = await listOpenReports(t.db);
+  await dismissReport(t.db, report!.id);
 
-    await dismissReport(t.db, report!.id);
-
-    expect(await listOpenReports(t.db)).toEqual([]);
-  });
+  expect(await listOpenReports(t.db)).toEqual([]);
+});
 ```
 
 - [ ] **Step 3: Run tests to verify they fail**
@@ -1114,7 +1133,15 @@ export { ANON, visibleLevelsFor, canViewPost, canModeratePost, type Viewer } fro
 export { slugifyTitle } from "./slug";
 
 // Types
-export type { Post, PostSummary, PostVisibility, PostCategory, PostReport, PostReportStatus, TiptapDoc } from "./types";
+export type {
+  Post,
+  PostSummary,
+  PostVisibility,
+  PostCategory,
+  PostReport,
+  PostReportStatus,
+  TiptapDoc,
+} from "./types";
 export { CATEGORY_LABELS } from "./types";
 export type { BlogEvent, PostPublished, PostUpdated, PostDeleted, PostReported } from "./events";
 ```
@@ -1136,12 +1163,14 @@ git commit -m "feat(blog): report service (reportPost/listOpenReports/dismissRep
 ### Task 6: Tighten author eligibility + ADR 0030
 
 **Files:**
+
 - Modify: `apps/web/app/_blog/access.ts`
 - Modify: `apps/web/app/blog/actions.ts`
 - Create: `apps/web/app/_blog/access.test.ts`
 - Create: `docs/decisions/0030-blog-authoring-rights.md`
 
 **Interfaces:**
+
 - Consumes: `CurrentMember` (`@bdas/members`).
 - Produces: `canAuthor(me: CurrentMember | null): boolean`, used by `requirePostAuthor()` and `createPostAction`.
 
@@ -1333,6 +1362,7 @@ git commit -m "feat(blog): restrict authoring to active members and alumni (ADR 
 ### Task 7: Category field in the post form + display on feed/single page
 
 **Files:**
+
 - Modify: `apps/web/app/_blog/PostForm.tsx`
 - Modify: `apps/web/app/blog/actions.ts`
 - Modify: `apps/web/app/blog/[slug]/bearbeiten/page.tsx`
@@ -1340,6 +1370,7 @@ git commit -m "feat(blog): restrict authoring to active members and alumni (ADR 
 - Modify: `apps/web/app/blog/[slug]/page.tsx`
 
 **Interfaces:**
+
 - Consumes: `PostCategory`, `CATEGORY_LABELS` (Task 5's `index.ts` export).
 - Produces: category selectable on create/edit; category label shown on feed cards and the single-post header.
 
@@ -1532,12 +1563,14 @@ git commit -m "feat(blog): category field in the post form, shown on feed and si
 ### Task 8: Category + time filter bar on the feed
 
 **Files:**
+
 - Create: `apps/web/app/_blog/filters.ts`
 - Create: `apps/web/app/_blog/filters.test.ts`
 - Create: `apps/web/app/_blog/BlogFilterBar.tsx`
 - Modify: `apps/web/app/blog/page.tsx`
 
 **Interfaces:**
+
 - Consumes: `PostCategory`, `CATEGORY_LABELS` (`@bdas/blog`); `listPosts`'s `filters` param (Task 3).
 - Produces: `resolveSince`, `buildBlogHref`, `parseCategory`, `parseZeitraum`, `CATEGORY_CHIPS`, `SINCE_OPTIONS`, `type SinceKey`; `<BlogFilterBar>`.
 
@@ -1911,11 +1944,13 @@ git commit -m "feat(blog): category and time-range filter bar on the feed"
 ### Task 9: Report control on the single-post page
 
 **Files:**
+
 - Create: `apps/web/app/_blog/ReportPostButton.tsx`
 - Modify: `apps/web/app/blog/actions.ts`
 - Modify: `apps/web/app/blog/[slug]/page.tsx`
 
 **Interfaces:**
+
 - Consumes: `reportPost` (`@bdas/blog`, Task 5).
 - Produces: `reportPostAction`, `ReportFormState`; `<ReportPostButton postId={...} />`.
 
@@ -1926,7 +1961,14 @@ Modify `apps/web/app/blog/actions.ts`:
 1. Extend the `@bdas/blog` import line:
 
 ```typescript
-import { canModeratePost, createPost, deletePost, getPostById, reportPost, updatePost } from "@bdas/blog";
+import {
+  canModeratePost,
+  createPost,
+  deletePost,
+  getPostById,
+  reportPost,
+  updatePost,
+} from "@bdas/blog";
 ```
 
 2. Add a new exported type and function, placed after the existing `deletePostAction` function (end of file):
@@ -2043,11 +2085,13 @@ git commit -m "feat(blog): member-facing report control on the single-post page"
 ### Task 10: Federal-board report moderation queue
 
 **Files:**
+
 - Create: `apps/web/app/blog/meldungen/page.tsx`
 - Create: `apps/web/app/_blog/DismissReportButton.tsx`
 - Modify: `apps/web/app/blog/actions.ts`
 
 **Interfaces:**
+
 - Consumes: `listOpenReports`, `dismissReport` (`@bdas/blog`, Task 5); `requireFederalBoard` (`@bdas/members`); `DeletePostButton` (existing).
 - Produces: `dismissReportAction`; `/blog/meldungen` page.
 
@@ -2217,6 +2261,7 @@ git commit -m "feat(blog): federal-board report moderation queue at /blog/meldun
 ### Task 11: Notify the federal board by email when a post is reported
 
 **Files:**
+
 - Modify: `modules/notifications/src/types.ts`
 - Modify: `modules/notifications/src/services/send.ts`
 - Modify: `modules/notifications/src/templates.ts`
@@ -2225,6 +2270,7 @@ git commit -m "feat(blog): federal-board report moderation queue at /blog/meldun
 - Create: `modules/notifications/src/subscribers.blog.test.ts`
 
 **Interfaces:**
+
 - Consumes: `PostReported` event, `getPostById` (`@bdas/blog`, Task 5); `listBoardRecipientsForGroup(db, null)` (`@bdas/members`, already resolves to the federal board).
 - Produces: `blog_post_reported` template; a new subscriber wired into `registerNotificationSubscribers`.
 
@@ -2293,19 +2339,19 @@ type Extra = {
 2. Pass them through in `sendToRecipient`'s `data` construction:
 
 ```typescript
-  const data: TemplateData = {
-    firstName: to.firstName,
-    eventTitle: extra.eventTitle ?? "",
-    eventUrl: extra.eventUrl,
-    changes: extra.changes,
-    subject: extra.subject,
-    messageBody: extra.messageBody,
-    groupName: extra.groupName,
-    applicantName: extra.applicantName,
-    postTitle: extra.postTitle,
-    postUrl: extra.postUrl,
-    reportReason: extra.reportReason,
-  };
+const data: TemplateData = {
+  firstName: to.firstName,
+  eventTitle: extra.eventTitle ?? "",
+  eventUrl: extra.eventUrl,
+  changes: extra.changes,
+  subject: extra.subject,
+  messageBody: extra.messageBody,
+  groupName: extra.groupName,
+  applicantName: extra.applicantName,
+  postTitle: extra.postTitle,
+  postUrl: extra.postUrl,
+  reportReason: extra.reportReason,
+};
 ```
 
 - [ ] **Step 4: Extend `templates.ts`**
@@ -2315,7 +2361,7 @@ Modify `modules/notifications/src/templates.ts`:
 1. Extend the top destructure in `render`:
 
 ```typescript
-  const { firstName, eventTitle, eventUrl, postTitle, postUrl, reportReason } = data;
+const { firstName, eventTitle, eventUrl, postTitle, postUrl, reportReason } = data;
 ```
 
 2. Add a new `case` in the `switch`, right after the existing `case "member_application_received":` block (before the closing `}` of the switch):
@@ -2511,9 +2557,11 @@ git commit -m "feat(notifications): email the federal board when a blog post is 
 ### Task 12: E2E test extensions
 
 **Files:**
+
 - Modify: `e2e/blog.e2e.ts`
 
 **Interfaces:**
+
 - Consumes: everything built in Tasks 1–11.
 
 - [ ] **Step 1: Add category-filter and moderation-queue coverage**
@@ -2529,7 +2577,13 @@ async function writePost(
   opts: {
     title: string;
     body: string;
-    category?: "verbandsintern" | "gruppenleben" | "veranstaltungsrueckblick" | "politik_positionen" | "karriere_weiterbildung" | "sonstiges";
+    category?:
+      | "verbandsintern"
+      | "gruppenleben"
+      | "veranstaltungsrueckblick"
+      | "politik_positionen"
+      | "karriere_weiterbildung"
+      | "sonstiges";
     visibility?: "public" | "members" | "board";
   },
 ): Promise<string> {
@@ -2558,40 +2612,48 @@ async function writePost(
 Add these tests at the end of `test.describe("blog", ...)`, before the closing `});`:
 
 ```typescript
-  test("category filter narrows the feed", async ({ page }) => {
-    await registerVerifyLogin(page, { email: uniqueEmail("blog-category") });
+test("category filter narrows the feed", async ({ page }) => {
+  await registerVerifyLogin(page, { email: uniqueEmail("blog-category") });
 
-    const groupTitle = `Gruppenleben ${Date.now()}`;
-    await writePost(page, { title: groupTitle, body: "Bericht aus der Gruppe.", category: "gruppenleben" });
-
-    const careerTitle = `Karriere ${Date.now()}`;
-    await writePost(page, { title: careerTitle, body: "Ein Karrieretipp.", category: "karriere_weiterbildung" });
-
-    await page.goto("/blog?kategorie=gruppenleben");
-    await expect(page.getByRole("heading", { name: groupTitle })).toBeVisible();
-    await expect(page.getByRole("heading", { name: careerTitle })).toHaveCount(0);
+  const groupTitle = `Gruppenleben ${Date.now()}`;
+  await writePost(page, {
+    title: groupTitle,
+    body: "Bericht aus der Gruppe.",
+    category: "gruppenleben",
   });
 
-  test("a reported post appears in the federal board's queue; a non-board member is forbidden", async ({
-    page,
-  }) => {
-    await registerVerifyLogin(page, { email: uniqueEmail("blog-reported-author") });
-    const title = `Gemeldet ${Date.now()}`;
-    await writePost(page, { title, body: "Fragwürdiger Inhalt." });
-
-    await logout(page);
-    await registerVerifyLogin(page, { email: uniqueEmail("blog-reporter") });
-    await page.goto("/blog");
-    await page.getByRole("heading", { name: title }).click();
-    await page.getByText("Beitrag melden").click();
-    await page.getByPlaceholder("Grund (optional)").fill("Testmeldung");
-    await page.getByRole("button", { name: "Melden" }).click();
-    await expect(page.getByText("Danke, die Meldung ist eingegangen.")).toBeVisible();
-
-    // A non-board member is forbidden from the moderation queue.
-    await page.goto("/blog/meldungen");
-    await expect(page.getByRole("heading", { name: "Gemeldete Beiträge" })).toHaveCount(0);
+  const careerTitle = `Karriere ${Date.now()}`;
+  await writePost(page, {
+    title: careerTitle,
+    body: "Ein Karrieretipp.",
+    category: "karriere_weiterbildung",
   });
+
+  await page.goto("/blog?kategorie=gruppenleben");
+  await expect(page.getByRole("heading", { name: groupTitle })).toBeVisible();
+  await expect(page.getByRole("heading", { name: careerTitle })).toHaveCount(0);
+});
+
+test("a reported post appears in the federal board's queue; a non-board member is forbidden", async ({
+  page,
+}) => {
+  await registerVerifyLogin(page, { email: uniqueEmail("blog-reported-author") });
+  const title = `Gemeldet ${Date.now()}`;
+  await writePost(page, { title, body: "Fragwürdiger Inhalt." });
+
+  await logout(page);
+  await registerVerifyLogin(page, { email: uniqueEmail("blog-reporter") });
+  await page.goto("/blog");
+  await page.getByRole("heading", { name: title }).click();
+  await page.getByText("Beitrag melden").click();
+  await page.getByPlaceholder("Grund (optional)").fill("Testmeldung");
+  await page.getByRole("button", { name: "Melden" }).click();
+  await expect(page.getByText("Danke, die Meldung ist eingegangen.")).toBeVisible();
+
+  // A non-board member is forbidden from the moderation queue.
+  await page.goto("/blog/meldungen");
+  await expect(page.getByRole("heading", { name: "Gemeldete Beiträge" })).toHaveCount(0);
+});
 ```
 
 - [ ] **Step 2: Run the e2e suite**
@@ -2611,6 +2673,7 @@ git commit -m "test(blog): e2e coverage for category filtering and the report fl
 ### Task 13: Update `modules/blog/README.md`
 
 **Files:**
+
 - Modify: `modules/blog/README.md`
 
 - [ ] **Step 1: Update the README**
@@ -2658,7 +2721,7 @@ fetch, and the app's page guards — so the rule is enforced **server-side**, ne
 in the UI alone.
 
 | Level     | German UI label | Who may see it                      |
-| --------- | --------------- | ------------------------------------ |
+| --------- | --------------- | ----------------------------------- |
 | `public`  | Öffentlich      | everyone, incl. signed-out visitors |
 | `members` | Nur Mitglieder  | signed-in active members            |
 | `board`   | Nur Vorstände   | **federal board only**              |
@@ -2669,14 +2732,14 @@ The author always sees their own post regardless of level.
 
 A post has exactly one fixed category, chosen at authoring time:
 
-| Key                        | German label              |
-| --------------------------- | -------------------------- |
-| `verbandsintern`            | Verbandsintern             |
-| `gruppenleben`               | Gruppenleben                |
-| `veranstaltungsrueckblick`  | Veranstaltungsrückblick    |
-| `politik_positionen`        | Politik & Positionen        |
-| `karriere_weiterbildung`    | Karriere & Weiterbildung    |
-| `sonstiges`                 | Sonstiges                   |
+| Key                        | German label             |
+| -------------------------- | ------------------------ |
+| `verbandsintern`           | Verbandsintern           |
+| `gruppenleben`             | Gruppenleben             |
+| `veranstaltungsrueckblick` | Veranstaltungsrückblick  |
+| `politik_positionen`       | Politik & Positionen     |
+| `karriere_weiterbildung`   | Karriere & Weiterbildung |
+| `sonstiges`                | Sonstiges                |
 
 The feed (`/blog`) can be filtered by category and by a relative time range
 (7 days / 30 days / this year) via URL search params (`?kategorie=&zeitraum=`),

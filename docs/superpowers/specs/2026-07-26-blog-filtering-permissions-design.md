@@ -12,7 +12,7 @@ Review of the shipped blog module raised three points: filterability, who may po
 
 **Clarified during brainstorming — not a bug, but confirmed direction:**
 
-- Authoring already is (and stays) "any signed-in member", not Bundesvorstand-only as the review note suggested — that note was a misunderstanding of the current code. The real question was whether that's *safe enough*, which this spec addresses via rate-limiting, reporting, and soft-delete.
+- Authoring already is (and stays) "any signed-in member", not Bundesvorstand-only as the review note suggested — that note was a misunderstanding of the current code. The real question was whether that's _safe enough_, which this spec addresses via rate-limiting, reporting, and soft-delete.
 - A genuine gap was found and is closed here: `requirePostAuthor()` currently checks only "is logged in", not member status — a `pending` (not yet confirmed by a Local Board) or `inactive` account could author a post today. This spec restricts authoring to member status `active` or `alumnus`.
 - The platform spec (`docs/bdas-platform-spec.md` §4) lists "make posts in blog" as a **Local Board** right, not a general Member right. The already-approved blog design deliberately diverged from that (any member, social-feed style). That divergence was never recorded as an ADR — this spec closes that documentation gap with ADR 0030.
 
@@ -44,18 +44,18 @@ Decisions:
 
 `posts` gains:
 
-| Column       | Type            | Notes                                                                                                                                                     |
-| ------------ | --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `category`   | `text`          | `NOT NULL DEFAULT 'sonstiges'`, `CHECK IN ('verbandsintern','gruppenleben','veranstaltungsrueckblick','politik_positionen','karriere_weiterbildung','sonstiges')`, indexed |
-| `deleted_at` | `timestamptz`   | `NULL`; partial index `WHERE deleted_at IS NULL`                                                                                                          |
+| Column       | Type          | Notes                                                                                                                                                                      |
+| ------------ | ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `category`   | `text`        | `NOT NULL DEFAULT 'sonstiges'`, `CHECK IN ('verbandsintern','gruppenleben','veranstaltungsrueckblick','politik_positionen','karriere_weiterbildung','sonstiges')`, indexed |
+| `deleted_at` | `timestamptz` | `NULL`; partial index `WHERE deleted_at IS NULL`                                                                                                                           |
 
 `deletePost` sets `deleted_at = now()` instead of issuing a hard `DELETE`. Every existing read path (`services/list.ts`, `services/get.ts`) adds `deletedAt IS NULL` to its query. The public `Post`/`PostSummary` types are unchanged — soft-deleted rows never reach `rowToPost`.
 
 New table `post_reports` (blog-owned, per rule 1):
 
-| Column        | Type          | Notes                                              |
-| ------------- | ------------- | --------------------------------------------------- |
-| `id`          | `text` PK     | `report_…`                                          |
+| Column        | Type          | Notes                                                |
+| ------------- | ------------- | ---------------------------------------------------- |
+| `id`          | `text` PK     | `report_…`                                           |
 | `post_id`     | `text`        | `REFERENCES posts(id) ON DELETE CASCADE`             |
 | `reporter_id` | `text`        | auth user id, no FK (matches `created_by` elsewhere) |
 | `reason`      | `text`        | nullable, ≤300 chars, free text                      |

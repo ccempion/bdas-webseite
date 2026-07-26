@@ -38,7 +38,7 @@ fetch, and the app's page guards — so the rule is enforced **server-side**, ne
 in the UI alone.
 
 | Level     | German UI label | Who may see it                      |
-| --------- | --------------- | ------------------------------------ |
+| --------- | --------------- | ----------------------------------- |
 | `public`  | Öffentlich      | everyone, incl. signed-out visitors |
 | `members` | Nur Mitglieder  | signed-in active members            |
 | `board`   | Nur Vorstände   | **federal board only**              |
@@ -49,14 +49,14 @@ The author always sees their own post regardless of level.
 
 A post has exactly one fixed category, chosen at authoring time:
 
-| Key                        | German label              |
-| --------------------------- | -------------------------- |
-| `verbandsintern`            | Verbandsintern             |
-| `gruppenleben`               | Gruppenleben                |
-| `veranstaltungsrueckblick`  | Veranstaltungsrückblick    |
-| `politik_positionen`        | Politik & Positionen        |
-| `karriere_weiterbildung`    | Karriere & Weiterbildung    |
-| `sonstiges`                 | Sonstiges                   |
+| Key                        | German label             |
+| -------------------------- | ------------------------ |
+| `verbandsintern`           | Verbandsintern           |
+| `gruppenleben`             | Gruppenleben             |
+| `veranstaltungsrueckblick` | Veranstaltungsrückblick  |
+| `politik_positionen`       | Politik & Positionen     |
+| `karriere_weiterbildung`   | Karriere & Weiterbildung |
+| `sonstiges`                | Sonstiges                |
 
 The feed (`/blog`) can be filtered by category and by a relative time range
 (7 days / 30 days / this year) via URL search params (`?kategorie=&zeitraum=`),

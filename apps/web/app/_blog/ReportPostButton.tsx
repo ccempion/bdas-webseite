@@ -25,7 +25,12 @@ export function ReportPostButton({ postId }: { postId: string }) {
       </summary>
       <form action={action} className="mt-3 flex flex-col gap-2">
         <input type="hidden" name="postId" value={postId} />
-        <textarea name="reason" maxLength={300} placeholder="Grund (optional)" className={TEXTAREA_CLASS} />
+        <textarea
+          name="reason"
+          maxLength={300}
+          placeholder="Grund (optional)"
+          className={TEXTAREA_CLASS}
+        />
         <SubmitButton />
         {state.error ? <span className="text-bdas-red">{state.error}</span> : null}
       </form>

@@ -2,7 +2,12 @@
 
 import { useFormState, useFormStatus } from "react-dom";
 
-import { CATEGORY_LABELS, type PostCategory, type PostVisibility, type TiptapDoc } from "@bdas/blog";
+import {
+  CATEGORY_LABELS,
+  type PostCategory,
+  type PostVisibility,
+  type TiptapDoc,
+} from "@bdas/blog";
 import { Alert, Button, Field, Form, Input } from "@bdas/design-system";
 
 import { createPostAction, updatePostAction, type PostFormState } from "../blog/actions";
