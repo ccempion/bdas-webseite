@@ -15,7 +15,8 @@ export type TransactionalTemplate =
   | "event_organizer_revoked"
   | "member_application_received"
   | "member_application_approved"
-  | "member_application_declined";
+  | "member_application_declined"
+  | "blog_post_reported";
 
 /** Which aspects of an event changed, for the `event_changed` email. */
 export type EventChangeKind = "time" | "location";

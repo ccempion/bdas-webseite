@@ -94,6 +94,7 @@ export function render(template: TransactionalTemplate, data: TemplateData): Ren
         "BDAS — Entscheidung über deine Bewerbung",
         firstName,
         "dein lokaler Vorstand hat deine Bewerbung geprüft und sie nicht angenommen. Wenn du dazu Fragen hast, wende dich gerne direkt an deine BDAS-Gruppe.",
+      );
     case "blog_post_reported":
       return body(
         "BDAS — Beitrag gemeldet",

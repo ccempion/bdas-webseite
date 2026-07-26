@@ -266,6 +266,9 @@ export function registerNotificationSubscribers(db: Db, opts: { siteUrl?: string
           await sendTransactional(db, "member_application_approved", e.memberId, {});
         } else if (e.to === "inactive") {
           await sendTransactional(db, "member_application_declined", e.memberId, {});
+        }
+      }),
+    ),
     getEventBus().subscribe<PostReported>(
       "blog.post.reported",
       safe<PostReported>(async (e) => {
