@@ -3,7 +3,9 @@
  *
  * The same visibility rule as the feed applies: if the viewer may not see the
  * post, we return `null` so the app renders a 404 — a "board only" post is
- * never revealed to an external visitor via its share link.
+ * never revealed to an external visitor via its share link. A soft-deleted
+ * post (spec 2026-07-26) is always treated as gone, for every caller
+ * including moderation — there is no restore surface.
  */
 import { and, eq, isNull } from "drizzle-orm";
 import type { PostgresJsDatabase } from "drizzle-orm/postgres-js";
@@ -28,7 +30,7 @@ export async function getPostBySlug(db: Db, slug: string, viewer: Viewer): Promi
   return canViewPost(viewer, post) ? post : null;
 }
 
-/** Unfiltered fetch by id — for edit screens after the caller has authorized. */
+/** Unfiltered (by visibility) fetch by id — for edit screens after the caller has authorized. */
 export async function getPostById(db: Db, id: string): Promise<Post | null> {
   const rows = await db
     .select()

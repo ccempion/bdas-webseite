@@ -16,7 +16,7 @@ import { getEventBus, resetEventBus } from "@bdas/events";
 
 import type { BlogEvent } from "./events";
 import { plainTextToDoc } from "./content";
-import { getPostBySlug } from "./services/get";
+import { getPostById, getPostBySlug } from "./services/get";
 import { listPosts } from "./services/list";
 import { createPost, deletePost, updatePost } from "./services/manage";
 import { ANON, type Viewer } from "./visibility";
@@ -174,6 +174,35 @@ describeIfDb("blog integration", () => {
 
     expect(await getPostBySlug(t.db, p.slug, federal)).toBeNull();
     expect(deleted).toMatchObject([{ type: "blog.post.deleted", postId: p.id }]);
+  });
+
+  it("deletePost soft-deletes: the row remains with deleted_at set", async () => {
+    const p = await createPost(t.db, { title: "Bleibt", content: doc("x") }, "usr_m");
+    await deletePost(t.db, p.id);
+
+    const rows = await t.client`SELECT deleted_at FROM posts WHERE id = ${p.id}`;
+    expect(rows[0]?.["deleted_at"]).not.toBeNull();
+  });
+
+  it("getPostById returns null for a soft-deleted post", async () => {
+    const p = await createPost(t.db, { title: "Weg", content: doc("x") }, "usr_m");
+    await deletePost(t.db, p.id);
+
+    expect(await getPostById(t.db, p.id)).toBeNull();
+  });
+
+  it("a soft-deleted post is excluded from listPosts even for its author", async () => {
+    // `member`'s userId is "usr_m" — the same id used as the author below, so
+    // this genuinely exercises the author-sees-own path, not just federal's.
+    const p = await createPost(
+      t.db,
+      { title: "Gelöscht", content: doc("x"), visibility: "board" },
+      "usr_m",
+    );
+    await deletePost(t.db, p.id);
+
+    const feed = await listPosts(t.db, member);
+    expect(feed.map((x) => x.id)).not.toContain(p.id);
   });
 
   it("listPosts filters by visibility and returns newest first", async () => {
