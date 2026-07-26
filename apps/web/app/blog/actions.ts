@@ -3,10 +3,19 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
-import { canModeratePost, createPost, deletePost, getPostById, reportPost, updatePost } from "@bdas/blog";
+import {
+  canModeratePost,
+  createPost,
+  deletePost,
+  dismissReport,
+  getPostById,
+  reportPost,
+  updatePost,
+} from "@bdas/blog";
 import { getDb } from "@bdas/db";
 import { ForbiddenError, isAppError, NotFoundError } from "@bdas/errors";
 import { isFlagOn } from "@bdas/feature-flags";
+import { requireFederalBoard } from "@bdas/members";
 
 import { blogViewer, canAuthor, loadBlogMe } from "../_blog/access";
 
@@ -131,4 +140,22 @@ export async function reportPostAction(
   }
 
   return { success: true };
+}
+
+/** Dismiss an open report (reviewed, no action taken). Federal board only. */
+export async function dismissReportAction(_prev: ActionState, fd: FormData): Promise<ActionState> {
+  if (!isFlagOn("blog")) return { error: "Nicht verfügbar." };
+  const reportId = s(fd, "reportId");
+  try {
+    const me = await loadBlogMe();
+    if (!me) throw new ForbiddenError("Anmeldung erforderlich.");
+    requireFederalBoard(me);
+    await dismissReport(getDb(), reportId);
+  } catch (err) {
+    if (isAppError(err)) return { error: err.message };
+    throw err;
+  }
+
+  revalidatePath("/blog/meldungen");
+  return {};
 }
