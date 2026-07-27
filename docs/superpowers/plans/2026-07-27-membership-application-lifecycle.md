@@ -1190,18 +1190,20 @@ Expected: unchanged behaviour.
 
 **This step changes real people's records and is not reversible. It needs explicit human go-ahead, and no subagent may perform it.**
 
-Apply `0008_application_reasons.sql` by hand, then record it:
+**Use the runner, not hand-written SQL.** `pnpm db:migrate` applies pending migrations in manifest order, each inside its own transaction, and writes the `_bdas_migrations` row itself — so there is no tracking insert to get wrong. An earlier draft of this plan had you do it by hand; that was worse advice.
 
-```sql
-INSERT INTO _bdas_migrations (id, module, filename)
-VALUES ('members/0008_application_reasons.sql', 'members', '0008_application_reasons.sql');
+```bash
+DATABASE_URL="<production session pooler URL>" pnpm db:migrate:dry   # shows what would run
+DATABASE_URL="<production session pooler URL>" pnpm db:migrate       # applies it
 ```
 
-The ledger's columns are `id` (`<module>/<filename>`, the primary key), `module`, `filename`, and `applied_at` (defaults to `now()`) — see `infra/migrations/src/index.ts:113`. Read an existing row first and match it.
+Use the **session pooler** (port 5432). The direct connection is IPv6-only and unreachable from most networks.
 
-`0008` is safe against the code that is running right now: it adds nullable columns, backfills, and its two constraints are both satisfied by a NULL reason category.
+The dry run must list `members/0008_application_reasons.sql` and **must not mention `0009`**. If `0009` appears, stop — it has been moved out of `modules/members/migrations/pending/` too early.
 
-**Do not apply `0009_reason_required.sql` here.** It enforces that every rejection carries a reason, which the currently-deployed code does not do — applying it now breaks every rejection in the live app. It goes on after Phase 2's deploy, in the checklist at the end of this plan.
+`0008` is safe against the code running right now: nullable columns, a backfill, and two constraints that a NULL reason category already satisfies.
+
+**`0009_reason_required.sql` is deliberately parked** in `modules/members/migrations/pending/`, where the runner cannot see it — it only reads `*.sql` directly inside a module's `migrations/` folder. The test harness still applies it by explicit path, so tests run against the final schema while production does not. It is scheduled by moving it up one level, which happens after Phase 2 deploys. See that folder's README.
 
 Before applying, confirm what the backfill will touch:
 
@@ -2533,4 +2535,4 @@ Before opening the final pull request:
 - [ ] A local board sees no pool anywhere; the federal board sees it at `/federal/pool` with no date of birth or photo
 - [ ] The applicant is never shown who decided
 - [ ] Migration `0008` is applied to production and recorded in `_bdas_migrations`
-- [ ] The Phase 2 code is deployed, **and only then** `0009_reason_required.sql` is applied and recorded. Applying it earlier breaks every rejection in the live app
+- [ ] The Phase 2 code is deployed, **and only then** `0009_reason_required.sql` is moved from `modules/members/migrations/pending/` up into `modules/members/migrations/` and applied via `pnpm db:migrate`. Applying it earlier breaks every rejection in the live app
