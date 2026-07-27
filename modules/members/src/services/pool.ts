@@ -19,8 +19,12 @@ import type { Actor, Db } from "./status";
 
 export type GrouplessMember = {
   readonly member: Member;
-  /** When they entered the pool. Signup for an applicant; today's proxy is the row's last change. */
-  readonly waitingSince: Date;
+  /**
+   * The member row's creation time — i.e. when the person registered.
+   * This is NOT the time since they became groupless: for a member who left
+   * a group, it predates that departure by however long they were a member.
+   */
+  readonly registeredAt: Date;
 };
 
 export async function listGrouplessMembers(db: Db, actor: Actor): Promise<GrouplessMember[]> {
@@ -36,6 +40,6 @@ export async function listGrouplessMembers(db: Db, actor: Actor): Promise<Groupl
 
   return rows.map((r) => ({
     member: row2member(r),
-    waitingSince: r.createdAt,
+    registeredAt: r.createdAt,
   }));
 }

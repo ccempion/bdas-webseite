@@ -29,6 +29,7 @@ describeIfDb("groupless pool", () => {
       ["usr_2", "2@example.de"],
       ["usr_3", "3@example.de"],
       ["usr_4", "4@example.de"],
+      ["usr_5", "5@example.de"],
     ]) {
       await createUser(t, id!, email!);
     }
@@ -52,6 +53,11 @@ describeIfDb("groupless pool", () => {
       INSERT INTO members (id, user_id, first_name, last_name, primary_group_id, status, joined_at)
       VALUES ('mem_4', 'usr_4', 'Dan', 'Deactivated', NULL, 'inactive', now())
     `;
+    // alumnus, groupless
+    await t.client`
+      INSERT INTO members (id, user_id, first_name, last_name, primary_group_id, status, joined_at)
+      VALUES ('mem_5', 'usr_5', 'Eva', 'Alumna', NULL, 'alumnus', now())
+    `;
   });
 
   afterEach(async () => {
@@ -71,6 +77,11 @@ describeIfDb("groupless pool", () => {
   it("excludes deactivated people — they are not looking", async () => {
     const pool = await listGrouplessMembers(t.db, FEDERAL);
     expect(pool.map((p) => p.member.id)).not.toContain("mem_4");
+  });
+
+  it("excludes alumni — they are not looking", async () => {
+    const pool = await listGrouplessMembers(t.db, FEDERAL);
+    expect(pool.map((p) => p.member.id)).not.toContain("mem_5");
   });
 
   it("is empty for a local board", async () => {
