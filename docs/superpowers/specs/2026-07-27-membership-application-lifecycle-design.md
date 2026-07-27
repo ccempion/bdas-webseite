@@ -112,11 +112,12 @@ applicant learns nothing.
 - `pending` — registered, never accepted anywhere. Always `primary_group_id IS NULL`.
 - `active` — an accepted member. May still be groupless, having left a group.
 - `inactive` — was a member, no longer. **No longer produced by rejection.**
-- `alumnus` — unchanged.
+- `alumnus` — unchanged, and unreachable; see the audit below.
 
-Rejection does not touch `status`. The `pending → inactive` transition stays in
-the table but now means only "deactivate an applicant account", reachable by the
-federal board through the existing `canManageGroup(grants, null)` path.
+Rejection does not touch `status`. The transition table is left exactly as it is,
+but with rejection no longer using `pending → inactive`, no reachable caller of
+`transitionStatus` remains. `inactive` and `alumnus` become states that only the
+future member-lifecycle work will produce. The service is kept for it.
 
 ### The pool
 
