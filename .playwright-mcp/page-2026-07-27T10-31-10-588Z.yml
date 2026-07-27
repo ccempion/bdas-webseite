@@ -1,0 +1,81 @@
+- generic [active] [ref=f15e1]:
+  - link "Zum Inhalt springen" [ref=f15e2] [cursor=pointer]:
+    - /url: "#inhalt"
+  - banner [ref=f15e3]:
+    - generic [ref=f15e4]:
+      - link "BDAS — zur Startseite" [ref=f15e5] [cursor=pointer]:
+        - /url: /
+        - generic [ref=f15e6]: BDAS
+      - navigation "Hauptnavigation" [ref=f15e7]:
+        - list [ref=f15e9]:
+          - listitem [ref=f15e10]:
+            - group [ref=f15e11]:
+              - generic "Über uns" [ref=f15e12] [cursor=pointer]:
+                - text: Über uns
+                - generic [ref=f15e13]: ▾
+          - listitem [ref=f15e14]:
+            - link "Unsere Arbeit" [ref=f15e15] [cursor=pointer]:
+              - /url: /unsere-arbeit
+          - listitem [ref=f15e16]:
+            - link "Events" [ref=f15e17] [cursor=pointer]:
+              - /url: /events
+          - listitem [ref=f15e18]:
+            - link "Blog" [ref=f15e19] [cursor=pointer]:
+              - /url: /blog
+          - listitem [ref=f15e20]:
+            - link "Dateien" [ref=f15e21] [cursor=pointer]:
+              - /url: /dateien
+          - listitem [ref=f15e22]:
+            - group [ref=f15e23]:
+              - generic "Fed" [ref=f15e24] [cursor=pointer]:
+                - text: Fed
+                - generic [ref=f15e25]: ▾
+  - main [ref=f15e27]:
+    - generic [ref=f15e28]:
+      - link "‹ Alle Ordner" [ref=f15e29] [cursor=pointer]:
+        - /url: /dateien
+      - heading "Alle Mitglieder" [level=1] [ref=f15e30]
+    - generic [ref=f15e31]: Dieser Ordner ist leer.
+  - contentinfo [ref=f15e33]:
+    - generic [ref=f15e34]:
+      - generic [ref=f15e35]:
+        - img "BDAS" [ref=f15e36]
+        - heading "Kontakt" [level=2] [ref=f15e37]
+        - paragraph [ref=f15e38]: Bund der Alevitischen Studierenden in Deutschland
+        - paragraph [ref=f15e39]:
+          - link "info@bdas.de" [ref=f15e40] [cursor=pointer]:
+            - /url: mailto:info@bdas.de
+      - navigation "Seiten" [ref=f15e41]:
+        - heading "Seiten" [level=2] [ref=f15e42]
+        - link "Über uns" [ref=f15e43] [cursor=pointer]:
+          - /url: /ueber-uns
+        - link "Unsere Arbeit" [ref=f15e44] [cursor=pointer]:
+          - /url: /unsere-arbeit
+        - link "Events" [ref=f15e45] [cursor=pointer]:
+          - /url: /events
+        - link "Gruppen" [ref=f15e46] [cursor=pointer]:
+          - /url: /gruppen
+      - navigation "Partner" [ref=f15e47]:
+        - heading "Verbund" [level=2] [ref=f15e48]
+        - link "BDAJ — Bund der Alevitischen Jugendlichen" [ref=f15e49] [cursor=pointer]:
+          - /url: https://bdaj.de
+        - link "AABF — Alevitische Gemeinde Deutschland" [ref=f15e50] [cursor=pointer]:
+          - /url: https://alevi.com
+      - navigation "Rechtliches und Social Media" [ref=f15e51]:
+        - heading "Rechtliches" [level=2] [ref=f15e52]
+        - link "Datenschutz" [ref=f15e53] [cursor=pointer]:
+          - /url: /datenschutz
+        - link "Impressum" [ref=f15e54] [cursor=pointer]:
+          - /url: /impressum
+        - link "Instagram" [ref=f15e55] [cursor=pointer]:
+          - /url: https://www.instagram.com/
+    - paragraph [ref=f15e57]: © 2026 Bund der Alevitischen Studierenden
+  - alert [ref=f15e58]
+  - region "Cookie-Hinweis" [ref=f15e59]:
+    - generic [ref=f15e60]:
+      - paragraph [ref=f15e61]:
+        - text: Diese Seite verwendet ausschließlich technisch notwendige Cookies, um dich angemeldet zu halten. Mehr dazu in der
+        - link "Datenschutzerklärung" [ref=f15e62] [cursor=pointer]:
+          - /url: /datenschutz
+        - text: .
+      - button "Verstanden" [ref=f15e63] [cursor=pointer]

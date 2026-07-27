@@ -1,0 +1,151 @@
+- generic [active] [ref=f9e1]:
+  - link "Zum Inhalt springen" [ref=f9e2] [cursor=pointer]:
+    - /url: "#inhalt"
+  - banner [ref=f9e3]:
+    - generic [ref=f9e4]:
+      - link "BDAS — zur Startseite" [ref=f9e5] [cursor=pointer]:
+        - /url: /
+        - generic [ref=f9e6]: BDAS
+      - navigation "Hauptnavigation" [ref=f9e7]:
+        - list [ref=f9e9]:
+          - listitem [ref=f9e10]:
+            - group [ref=f9e11]:
+              - generic "Über uns" [ref=f9e12] [cursor=pointer]:
+                - text: Über uns
+                - generic [ref=f9e13]: ▾
+          - listitem [ref=f9e14]:
+            - link "Unsere Arbeit" [ref=f9e15] [cursor=pointer]:
+              - /url: /unsere-arbeit
+          - listitem [ref=f9e16]:
+            - link "Events" [ref=f9e17] [cursor=pointer]:
+              - /url: /events
+          - listitem [ref=f9e18]:
+            - link "Blog" [ref=f9e19] [cursor=pointer]:
+              - /url: /blog
+          - listitem [ref=f9e20]:
+            - link "Dateien" [ref=f9e21] [cursor=pointer]:
+              - /url: /dateien
+          - listitem [ref=f9e22]:
+            - group [ref=f9e23]:
+              - generic "Bundes" [ref=f9e24] [cursor=pointer]:
+                - text: Bundes
+                - generic [ref=f9e25]: ▾
+  - generic [ref=f9e163]:
+    - banner [ref=f9e165]:
+      - generic [ref=f9e166]:
+        - generic [ref=f9e167]:
+          - button "Toggle left sidebar" [ref=f9e169] [cursor=pointer]
+          - button "Toggle right sidebar" [ref=f9e173] [cursor=pointer]
+        - heading [level=2] [ref=f9e177]:
+          - text: BDAS Editor
+          - code [ref=f9e178]: /ueber-uns
+        - generic [ref=f9e181]:
+          - generic [ref=f9e182]:
+            - button "undo" [disabled] [ref=f9e183]
+            - button "redo" [disabled] [ref=f9e187]
+          - generic [ref=f9e191] [cursor=pointer]: Publish
+    - navigation [ref=f9e197]:
+      - list [ref=f9e198]:
+        - listitem [ref=f9e199]:
+          - generic [ref=f9e200] [cursor=pointer]: Blocks
+        - listitem [ref=f9e207]:
+          - generic [ref=f9e208] [cursor=pointer]: Outline
+    - generic [ref=f9e222]:
+      - generic [ref=f9e224]:
+        - generic: Überschrift
+        - button "Überschrift" [ref=f9e226] [cursor=pointer]
+      - generic [ref=f9e236]:
+        - generic: Absatz
+        - button "Absatz" [ref=f9e238] [cursor=pointer]
+      - generic [ref=f9e248]:
+        - generic: Fließtext
+        - button "Fließtext" [ref=f9e250] [cursor=pointer]
+      - generic [ref=f9e260]:
+        - generic: Personen-Raster
+        - button "Personen-Raster" [ref=f9e262] [cursor=pointer]
+      - generic [ref=f9e272]:
+        - generic: Bild
+        - button "Bild" [ref=f9e274] [cursor=pointer]
+      - generic [ref=f9e284]:
+        - generic: Button
+        - button "Button" [ref=f9e286] [cursor=pointer]
+      - generic [ref=f9e296]:
+        - generic: Zitat / Hinweis
+        - button "Zitat / Hinweis" [ref=f9e298] [cursor=pointer]
+      - generic [ref=f9e308]:
+        - generic: Trenner
+        - button "Trenner" [ref=f9e310] [cursor=pointer]
+      - generic [ref=f9e320]:
+        - generic: Abstand
+        - button "Abstand" [ref=f9e322] [cursor=pointer]
+      - generic [ref=f9e332]:
+        - generic: Spalten
+        - button "Spalten" [ref=f9e334] [cursor=pointer]
+      - generic [ref=f9e344]:
+        - generic: Organigramm
+        - button "Organigramm" [ref=f9e346] [cursor=pointer]
+    - generic [ref=f9e356]:
+      - generic [ref=f9e360]:
+        - button "Switch to Small viewport" [ref=f9e362] [cursor=pointer]
+        - button "Switch to Medium viewport" [ref=f9e367] [cursor=pointer]
+        - button "Switch to Large viewport" [disabled] [ref=f9e372]
+        - button "Switch to Full-width viewport" [ref=f9e377] [cursor=pointer]
+        - button "Zoom viewport out" [ref=f9e386] [cursor=pointer]
+        - button "Zoom viewport in" [disabled] [ref=f9e392]
+        - combobox [ref=f9e399]:
+          - option
+          - option [selected]
+      - generic [ref=f9e400]:
+        - iframe [ref=f9e403]:
+          
+        - generic:
+          - generic "loading"
+    - generic [ref=f9e405]:
+      - heading "Page" [level=2] [ref=f9e409]
+      - generic [ref=f9e414]:
+        - generic [ref=f9e415]: title
+        - textbox "title" [ref=f9e419]
+  - contentinfo [ref=f9e137]:
+    - generic [ref=f9e138]:
+      - generic [ref=f9e139]:
+        - img "BDAS" [ref=f9e140]
+        - heading "Kontakt" [level=2] [ref=f9e141]
+        - paragraph [ref=f9e142]: Bund der Alevitischen Studierenden in Deutschland
+        - paragraph [ref=f9e143]:
+          - link "info@bdas.de" [ref=f9e144] [cursor=pointer]:
+            - /url: mailto:info@bdas.de
+      - navigation "Seiten" [ref=f9e145]:
+        - heading "Seiten" [level=2] [ref=f9e146]
+        - link "Über uns" [ref=f9e147] [cursor=pointer]:
+          - /url: /ueber-uns
+        - link "Unsere Arbeit" [ref=f9e148] [cursor=pointer]:
+          - /url: /unsere-arbeit
+        - link "Events" [ref=f9e149] [cursor=pointer]:
+          - /url: /events
+        - link "Gruppen" [ref=f9e150] [cursor=pointer]:
+          - /url: /gruppen
+      - navigation "Partner" [ref=f9e151]:
+        - heading "Verbund" [level=2] [ref=f9e152]
+        - link "BDAJ — Bund der Alevitischen Jugendlichen" [ref=f9e153] [cursor=pointer]:
+          - /url: https://bdaj.de
+        - link "AABF — Alevitische Gemeinde Deutschland" [ref=f9e154] [cursor=pointer]:
+          - /url: https://alevi.com
+      - navigation "Rechtliches und Social Media" [ref=f9e155]:
+        - heading "Rechtliches" [level=2] [ref=f9e156]
+        - link "Datenschutz" [ref=f9e157] [cursor=pointer]:
+          - /url: /datenschutz
+        - link "Impressum" [ref=f9e158] [cursor=pointer]:
+          - /url: /impressum
+        - link "Instagram" [ref=f9e159] [cursor=pointer]:
+          - /url: https://www.instagram.com/
+    - paragraph [ref=f9e161]: © 2026 Bund der Alevitischen Studierenden
+  - alert [ref=f9e421]
+  - region "Cookie-Hinweis" [ref=f9e422]:
+    - generic [ref=f9e423]:
+      - paragraph [ref=f9e424]:
+        - text: Diese Seite verwendet ausschließlich technisch notwendige Cookies, um dich angemeldet zu halten. Mehr dazu in der
+        - link "Datenschutzerklärung" [ref=f9e425] [cursor=pointer]:
+          - /url: /datenschutz
+        - text: .
+      - button "Verstanden" [ref=f9e426] [cursor=pointer]
+  - status [ref=f9e427]

@@ -1,0 +1,44 @@
+- generic [active] [ref=f8e1]:
+  - link "Zum Inhalt springen" [ref=f8e2] [cursor=pointer]:
+    - /url: "#inhalt"
+  - banner [ref=f8e3]:
+    - generic [ref=f8e4]:
+      - link "BDAS — zur Startseite" [ref=f8e5] [cursor=pointer]:
+        - /url: /
+        - generic [ref=f8e6]: BDAS
+      - navigation "Hauptnavigation" [ref=f8e7]:
+        - list [ref=f8e8]:
+          - listitem [ref=f8e9]:
+            - link "Gruppen" [ref=f8e10] [cursor=pointer]:
+              - /url: /gruppen
+          - listitem [ref=f8e11]:
+            - link "Veranstaltungen" [ref=f8e12] [cursor=pointer]:
+              - /url: /events
+          - listitem [ref=f8e13]:
+            - link "Mein Konto" [ref=f8e14] [cursor=pointer]:
+              - /url: /account
+          - listitem [ref=f8e15]:
+            - button "Abmelden" [ref=f8e17] [cursor=pointer]
+  - main [ref=f8e19]:
+    - paragraph [ref=f8e20]: Fehler 404
+    - heading "Seite nicht gefunden" [level=1] [ref=f8e21]
+    - paragraph [ref=f8e22]: Die aufgerufene Seite existiert nicht oder wurde verschoben.
+    - link "Zur Startseite →" [ref=f8e23] [cursor=pointer]:
+      - /url: /
+  - contentinfo [ref=f8e24]:
+    - generic [ref=f8e25]:
+      - paragraph [ref=f8e26]: © 2026 Bund der Alevitischen Studierenden
+      - navigation "Rechtliches" [ref=f8e27]:
+        - link "Datenschutz" [ref=f8e28] [cursor=pointer]:
+          - /url: /datenschutz
+        - link "Impressum" [ref=f8e29] [cursor=pointer]:
+          - /url: /impressum
+  - alert [ref=f8e30]
+  - region "Cookie-Hinweis" [ref=f8e31]:
+    - generic [ref=f8e32]:
+      - paragraph [ref=f8e33]:
+        - text: Diese Seite verwendet ausschließlich technisch notwendige Cookies, um dich angemeldet zu halten. Mehr dazu in der
+        - link "Datenschutzerklärung" [ref=f8e34] [cursor=pointer]:
+          - /url: /datenschutz
+        - text: .
+      - button "Verstanden" [ref=f8e35] [cursor=pointer]

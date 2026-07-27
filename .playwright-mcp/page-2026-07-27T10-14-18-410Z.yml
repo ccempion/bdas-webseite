@@ -1,0 +1,103 @@
+- generic [active] [ref=f12e1]:
+  - link "Zum Inhalt springen" [ref=f12e2] [cursor=pointer]:
+    - /url: "#inhalt"
+  - banner [ref=f12e3]:
+    - generic [ref=f12e4]:
+      - link "BDAS — zur Startseite" [ref=f12e5] [cursor=pointer]:
+        - /url: /
+        - generic [ref=f12e6]: BDAS
+      - navigation "Hauptnavigation" [ref=f12e7]:
+        - list [ref=f12e9]:
+          - listitem [ref=f12e10]:
+            - group [ref=f12e11]:
+              - generic "Über uns" [ref=f12e12] [cursor=pointer]:
+                - text: Über uns
+                - generic [ref=f12e13]: ▾
+          - listitem [ref=f12e14]:
+            - link "Unsere Arbeit" [ref=f12e15] [cursor=pointer]:
+              - /url: /unsere-arbeit
+          - listitem [ref=f12e16]:
+            - link "Events" [ref=f12e17] [cursor=pointer]:
+              - /url: /events
+          - listitem [ref=f12e18]:
+            - link "Blog" [ref=f12e19] [cursor=pointer]:
+              - /url: /blog
+          - listitem [ref=f12e82]:
+            - link "Dateien" [ref=f12e83] [cursor=pointer]:
+              - /url: /dateien
+          - listitem [ref=f12e84]:
+            - group [ref=f12e85]:
+              - generic "Fed" [ref=f12e86] [cursor=pointer]:
+                - text: Fed
+                - generic [ref=f12e87]: ▾
+  - main [ref=f12e88]:
+    - generic [ref=f12e89]:
+      - heading "Profil vervollständigen" [level=1] [ref=f12e90]
+      - paragraph [ref=f12e91]: Nur noch ein paar Angaben, dann geht deine Bewerbung an deinen lokalen Vorstand.
+    - generic [ref=f12e92]:
+      - list [ref=f12e93]:
+        - listitem [ref=f12e94]: Studium
+        - listitem [ref=f12e95]: Hochschule & Gruppe
+        - listitem [ref=f12e96]: Geburtsdatum
+        - listitem [ref=f12e97]: Gefunden durch
+        - listitem [ref=f12e98]: Profilbild
+        - listitem [ref=f12e99]: Überprüfen
+      - generic [ref=f12e100]:
+        - generic [ref=f12e101]: Studiengang
+        - textbox "Studiengang" [ref=f12e103]
+      - generic [ref=f12e104]:
+        - generic [ref=f12e105]: Abschlussart
+        - combobox "Abschlussart" [ref=f12e107]:
+          - option "— bitte wählen —" [selected]
+          - option "Bachelor"
+          - option "Master"
+          - option "Doktor / Promotion"
+          - option "Staatsexamen"
+          - option "Duales Studium"
+          - option "Diplom"
+      - generic [ref=f12e108]:
+        - button "Zurück" [disabled] [ref=f12e109]
+        - button "Weiter" [ref=f12e110] [cursor=pointer]
+  - contentinfo [ref=f12e51]:
+    - generic [ref=f12e52]:
+      - generic [ref=f12e53]:
+        - img "BDAS" [ref=f12e54]
+        - heading "Kontakt" [level=2] [ref=f12e55]
+        - paragraph [ref=f12e56]: Bund der Alevitischen Studierenden in Deutschland
+        - paragraph [ref=f12e57]:
+          - link "info@bdas.de" [ref=f12e58] [cursor=pointer]:
+            - /url: mailto:info@bdas.de
+      - navigation "Seiten" [ref=f12e59]:
+        - heading "Seiten" [level=2] [ref=f12e60]
+        - link "Über uns" [ref=f12e61] [cursor=pointer]:
+          - /url: /ueber-uns
+        - link "Unsere Arbeit" [ref=f12e62] [cursor=pointer]:
+          - /url: /unsere-arbeit
+        - link "Events" [ref=f12e63] [cursor=pointer]:
+          - /url: /events
+        - link "Gruppen" [ref=f12e64] [cursor=pointer]:
+          - /url: /gruppen
+      - navigation "Partner" [ref=f12e65]:
+        - heading "Verbund" [level=2] [ref=f12e66]
+        - link "BDAJ — Bund der Alevitischen Jugendlichen" [ref=f12e67] [cursor=pointer]:
+          - /url: https://bdaj.de
+        - link "AABF — Alevitische Gemeinde Deutschland" [ref=f12e68] [cursor=pointer]:
+          - /url: https://alevi.com
+      - navigation "Rechtliches und Social Media" [ref=f12e69]:
+        - heading "Rechtliches" [level=2] [ref=f12e70]
+        - link "Datenschutz" [ref=f12e71] [cursor=pointer]:
+          - /url: /datenschutz
+        - link "Impressum" [ref=f12e72] [cursor=pointer]:
+          - /url: /impressum
+        - link "Instagram" [ref=f12e73] [cursor=pointer]:
+          - /url: https://www.instagram.com/
+    - paragraph [ref=f12e75]: © 2026 Bund der Alevitischen Studierenden
+  - alert [ref=f12e76]: Profil vervollständigen · BDAS
+  - region "Cookie-Hinweis" [ref=f12e77]:
+    - generic [ref=f12e78]:
+      - paragraph [ref=f12e79]:
+        - text: Diese Seite verwendet ausschließlich technisch notwendige Cookies, um dich angemeldet zu halten. Mehr dazu in der
+        - link "Datenschutzerklärung" [ref=f12e80] [cursor=pointer]:
+          - /url: /datenschutz
+        - text: .
+      - button "Verstanden" [ref=f12e81] [cursor=pointer]

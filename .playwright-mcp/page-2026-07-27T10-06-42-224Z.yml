@@ -1,0 +1,49 @@
+- generic [active] [ref=f7e1]:
+  - link "Zum Inhalt springen" [ref=f7e2] [cursor=pointer]:
+    - /url: "#inhalt"
+  - banner [ref=f7e3]:
+    - generic [ref=f7e4]:
+      - link "BDAS — zur Startseite" [ref=f7e5] [cursor=pointer]:
+        - /url: /
+        - generic [ref=f7e6]: BDAS
+      - navigation "Hauptnavigation" [ref=f7e7]:
+        - list [ref=f7e8]:
+          - listitem [ref=f7e9]:
+            - link "Gruppen" [ref=f7e10] [cursor=pointer]:
+              - /url: /gruppen
+          - listitem [ref=f7e11]:
+            - link "Veranstaltungen" [ref=f7e12] [cursor=pointer]:
+              - /url: /events
+          - listitem [ref=f7e13]:
+            - link "Anmelden" [ref=f7e14] [cursor=pointer]:
+              - /url: /anmelden
+  - main [ref=f7e16]:
+    - generic [ref=f7e17]:
+      - heading "Anmelden" [level=1] [ref=f7e18]
+      - paragraph [ref=f7e19]: Mit deiner E-Mail-Adresse einloggen.
+    - generic [ref=f7e21]:
+      - generic [ref=f7e22]:
+        - generic [ref=f7e23]: E-Mail
+        - textbox "E-Mail" [ref=f7e25]
+      - generic [ref=f7e26]:
+        - generic [ref=f7e27]: Passwort
+        - generic [ref=f7e29]:
+          - textbox "Passwort" [ref=f7e30]
+          - button "Passwort anzeigen" [ref=f7e31] [cursor=pointer]
+      - generic [ref=f7e35]:
+        - link "Passwort vergessen?" [ref=f7e36] [cursor=pointer]:
+          - /url: /passwort-zuruecksetzen
+        - button "Anmelden" [ref=f7e37] [cursor=pointer]
+    - paragraph [ref=f7e38]:
+      - text: Noch kein Konto?
+      - link "Registrieren" [ref=f7e39] [cursor=pointer]:
+        - /url: /registrieren
+  - contentinfo [ref=f7e40]:
+    - generic [ref=f7e41]:
+      - paragraph [ref=f7e42]: © 2026 Bund der Alevitischen Studierenden
+      - navigation "Rechtliches" [ref=f7e43]:
+        - link "Datenschutz" [ref=f7e44] [cursor=pointer]:
+          - /url: /datenschutz
+        - link "Impressum" [ref=f7e45] [cursor=pointer]:
+          - /url: /impressum
+  - alert [ref=f7e46]

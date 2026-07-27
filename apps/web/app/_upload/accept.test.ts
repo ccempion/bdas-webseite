@@ -55,8 +55,12 @@ describe("rejectReason", () => {
 
   it("accepts any listed type for a non-image spec", () => {
     const docs = { mime: ["application/pdf"], maxBytes: 1000, maxLabel: "1 KB" };
-    expect(rejectReason(file({ name: "s.pdf", type: "application/pdf", size: 500 }), docs)).toBeNull();
-    expect(rejectReason(file({ type: "image/png" }), docs)).toBe("foto.png: Dateityp nicht erlaubt.");
+    expect(
+      rejectReason(file({ name: "s.pdf", type: "application/pdf", size: 500 }), docs),
+    ).toBeNull();
+    expect(rejectReason(file({ type: "image/png" }), docs)).toBe(
+      "foto.png: Dateityp nicht erlaubt.",
+    );
   });
 });
 

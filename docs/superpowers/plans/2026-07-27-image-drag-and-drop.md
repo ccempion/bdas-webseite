@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Every surface that accepts a picture also accepts it by drag-and-drop (and, in the rich-text editors, by paste), instead of forcing a trip through the OS file picker — and a *future* surface gets the same for two imports and one wrapper.
+**Goal:** Every surface that accepts a picture also accepts it by drag-and-drop (and, in the rich-text editors, by paste), instead of forcing a trip through the OS file picker — and a _future_ surface gets the same for two imports and one wrapper.
 
 **Architecture:** One shared layer under `apps/web/app/_upload/`, split by concern: `accept.ts` (what may be uploaded — the single source of truth, imported by both the client and the four API routes), `upload-image.ts` (the sign→PUT protocol, once, replacing five copies), `DropZone.tsx` (drag mechanics), `WindowDropGuard.tsx` (stray drops). The Tiptap editors do not get hand-written ProseMirror glue — they get Tiptap's own `FileHandler` extension.
 
@@ -14,7 +14,7 @@
 
 Both were verified against what is actually installed, not from memory.
 
-**1. Tiptap ships the drop/paste handler already — use it.** `@tiptap/extension-file-handler@3.27.4` is MIT, published at the *exact* version of the installed Tiptap (3.27.4), and has **zero runtime dependencies**; its peers (`@tiptap/core`, `@tiptap/pm`, `@tiptap/extension-text-style`, all `3.27.4`) are already satisfied. Its API is precisely the surface this plan needs:
+**1. Tiptap ships the drop/paste handler already — use it.** `@tiptap/extension-file-handler@3.27.4` is MIT, published at the _exact_ version of the installed Tiptap (3.27.4), and has **zero runtime dependencies**; its peers (`@tiptap/core`, `@tiptap/pm`, `@tiptap/extension-text-style`, all `3.27.4`) are already satisfied. Its API is precisely the surface this plan needs:
 
 ```ts
 FileHandler.configure({
@@ -27,11 +27,11 @@ FileHandler.configure({
 
 This deletes the entire hand-rolled `handleDrop`/`handlePaste`/`posAtCoords`/`view.dispatch(tr.insert(…))` layer, the `DragEvent`/`ClipboardEvent` casts, and the `@tiptap/pm/view` type import. `onDrop` hands over the insertion position already computed. **Task 8 is roughly a third of what it was.**
 
-Two notes on using it: pass `consumePasteEvent: true`, or pasting a screenshot copied from a web page inserts both the upload *and* the clipboard's HTML `<img>`. And **do not** pass `allowedMimeTypes` — it filters silently, so a dropped PDF would vanish with no explanation. Filter with `intakeFiles` instead so the editors report the same German messages as every other surface, and so the size cap is enforced too (`allowedMimeTypes` does not do size).
+Two notes on using it: pass `consumePasteEvent: true`, or pasting a screenshot copied from a web page inserts both the upload _and_ the clipboard's HTML `<img>`. And **do not** pass `allowedMimeTypes` — it filters silently, so a dropped PDF would vanish with no explanation. Filter with `intakeFiles` instead so the editors report the same German messages as every other surface, and so the size cap is enforced too (`allowedMimeTypes` does not do size).
 
-*Adding this package is not a stack substitution under CLAUDE.md §2 — same vendor, same pinned version, no new transitive dependencies, an extension within the existing Tiptap pin rather than a replacement for it. Flagging it anyway; say the word if you want an ADR.*
+_Adding this package is not a stack substitution under CLAUDE.md §2 — same vendor, same pinned version, no new transitive dependencies, an extension within the existing Tiptap pin rather than a replacement for it. Flagging it anyway; say the word if you want an ADR._
 
-**2. Puck cannot conflict with a file drop — the two use disjoint event systems.** Puck 0.22.2 drags blocks with `@dnd-kit` 0.4.0, which activates on `pointerdown`/`pointermove`. Across `@dnd-kit/dom` there are **zero** native `dragenter`, `dragleave` or `drop` listeners; the only native `dragstart` listener is registered with the comment *"Cancel activation if there is a competing Drag and Drop interaction"* — dnd-kit deliberately **yields** to HTML5 drag rather than competing with it. A file dragged in from the OS never fires `pointerdown` in the page at all.
+**2. Puck cannot conflict with a file drop — the two use disjoint event systems.** Puck 0.22.2 drags blocks with `@dnd-kit` 0.4.0, which activates on `pointerdown`/`pointermove`. Across `@dnd-kit/dom` there are **zero** native `dragenter`, `dragleave` or `drop` listeners; the only native `dragstart` listener is registered with the comment _"Cancel activation if there is a competing Drag and Drop interaction"_ — dnd-kit deliberately **yields** to HTML5 drag rather than competing with it. A file dragged in from the OS never fires `pointerdown` in the page at all.
 
 So the "Puck block moves instead of accepting the image" failure mode is ruled out by construction. Task 7 keeps a 2-minute empirical confirmation (cheap, and the evidence is static analysis, not a run), but its bail-out is now a remote contingency rather than an expected outcome.
 
@@ -54,15 +54,15 @@ So the "Puck block moves instead of accepting the image" failure mode is ruled o
 
 **New — `apps/web/app/_upload/`:**
 
-| File | Responsibility |
-|---|---|
-| `accept.ts` | What may be uploaded: MIME lists, size caps, German rejection messages, "does this drag carry files". Framework-free. **Imported by the four API routes too** — one source of truth. |
-| `accept.test.ts` | Unit tests. |
-| `upload-image.ts` | The sign→PUT protocol, once. Injectable `fetch`. |
-| `upload-image.test.ts` | Unit tests. |
-| `DropZone.tsx` | Drag mechanics: enter/leave counter, token-driven highlight, accept/reject split. |
-| `WindowDropGuard.tsx` | Swallows drops that miss a zone. |
-| `editor-file-handler.ts` | Builds a configured Tiptap `FileHandler` for an endpoint — a third editor is then one line. |
+| File                     | Responsibility                                                                                                                                                                       |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `accept.ts`              | What may be uploaded: MIME lists, size caps, German rejection messages, "does this drag carry files". Framework-free. **Imported by the four API routes too** — one source of truth. |
+| `accept.test.ts`         | Unit tests.                                                                                                                                                                          |
+| `upload-image.ts`        | The sign→PUT protocol, once. Injectable `fetch`.                                                                                                                                     |
+| `upload-image.test.ts`   | Unit tests.                                                                                                                                                                          |
+| `DropZone.tsx`           | Drag mechanics: enter/leave counter, token-driven highlight, accept/reject split.                                                                                                    |
+| `WindowDropGuard.tsx`    | Swallows drops that miss a zone.                                                                                                                                                     |
+| `editor-file-handler.ts` | Builds a configured Tiptap `FileHandler` for an endpoint — a third editor is then one line.                                                                                          |
 
 **Modified:** `apps/web/app/layout.tsx`, the four `app/api/**/upload-url/route.ts`, `profil/PhotoField.tsx`, `account/AccountAvatar.tsx`, `_content/FotoField.tsx`, `admin/events/_editor/EventFields.tsx`, `admin/events/_editor/RichTextEditor.tsx`, `_blog/PostEditor.tsx`, `_files/FileUploader.tsx`, `e2e/blog.e2e.ts`.
 
@@ -72,14 +72,14 @@ So the "Puck block moves instead of accepting the image" failure mode is ruled o
 
 Folding in the four amendments, plus the Tiptap finding, the shared layer now absorbs work rather than sitting beside it:
 
-| Duplicated today | After |
-|---|---|
+| Duplicated today                                                                                                                                | After                                                                                                                               |
+| ----------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
 | The sign→PUT→error dance, **5 near-identical copies** (`PhotoField`, `AccountAvatar`, `FotoField`, `EventFields`, and both editors' `addImage`) | One `uploadImage(endpoint, file, extra?)`. Each caller keeps only what differs: its payload shape and what it does with the result. |
-| MIME allowlist + size cap, **4 route files + would-have-been client constants** | One `accept.ts`, imported by client *and* routes. A cap can no longer drift out of sync with the client that mirrors it. |
-| `const file = files[0]; if (file) …`, **5 copies** | `onFile` prop on `DropZone`; `onFile`/`onFiles` are a mutually exclusive union, so passing both is a compile error. |
-| `allowAnyType` boolean escape hatch | Gone. `accept={{ mime, maxBytes, maxLabel }}` — one concept. `FileUploader` passes its own folder MIME set through the same prop. |
-| ~35 lines of ProseMirror drop/paste glue, **would have been 2 copies** | `imageFileHandler({ endpoint, onError })`, one line per editor. |
-| `accept="image/*"` on 3 surfaces, contradicting the server's 4-type allowlist | `IMAGE_ACCEPT` derived from the same list the routes enforce. |
+| MIME allowlist + size cap, **4 route files + would-have-been client constants**                                                                 | One `accept.ts`, imported by client _and_ routes. A cap can no longer drift out of sync with the client that mirrors it.            |
+| `const file = files[0]; if (file) …`, **5 copies**                                                                                              | `onFile` prop on `DropZone`; `onFile`/`onFiles` are a mutually exclusive union, so passing both is a compile error.                 |
+| `allowAnyType` boolean escape hatch                                                                                                             | Gone. `accept={{ mime, maxBytes, maxLabel }}` — one concept. `FileUploader` passes its own folder MIME set through the same prop.   |
+| ~35 lines of ProseMirror drop/paste glue, **would have been 2 copies**                                                                          | `imageFileHandler({ endpoint, onError })`, one line per editor.                                                                     |
+| `accept="image/*"` on 3 surfaces, contradicting the server's 4-type allowlist                                                                   | `IMAGE_ACCEPT` derived from the same list the routes enforce.                                                                       |
 
 Net: the plan deletes more lines from the five existing surfaces than it adds to them.
 
@@ -96,11 +96,13 @@ Net: the plan deletes more lines from the five existing surfaces than it adds to
 ## Task 1: One source of truth for what may be uploaded
 
 **Files:**
+
 - Create: `apps/web/app/_upload/accept.ts`
 - Test: `apps/web/app/_upload/accept.test.ts`
 - Modify: `apps/web/app/api/profile/upload-url/route.ts:10-11`, `apps/web/app/api/content/upload-url/route.ts:12-13`, `apps/web/app/api/blog/upload-url/route.ts:10-11`, `apps/web/app/api/events/[id]/upload-url/route.ts:12-13`
 
 **Interfaces:**
+
 - Consumes: nothing.
 - Produces: `type AcceptSpec = { mime: readonly string[]; maxBytes: number; maxLabel: string }`, `PROFILE_IMAGE: AcceptSpec`, `CONTENT_IMAGE: AcceptSpec`, `IMAGE_ACCEPT: string`, `type Candidate = { name: string; type: string; size: number }`, `dragHasFiles(types: readonly string[]): boolean`, `rejectReason(file: Candidate, spec: AcceptSpec): string | null`, `intakeFiles<T extends Candidate>(files, spec, opts?: { firstOnly?: boolean }): { accepted: readonly T[]; rejected: readonly string[] }`, `tooLargeMessage(spec: AcceptSpec): string`.
 
@@ -166,7 +168,9 @@ describe("rejectReason", () => {
 
   it("accepts any listed type for a non-image spec", () => {
     const docs = { mime: ["application/pdf"], maxBytes: 1000, maxLabel: "1 KB" };
-    expect(rejectReason(file({ name: "s.pdf", type: "application/pdf", size: 500 }), docs)).toBeNull();
+    expect(
+      rejectReason(file({ name: "s.pdf", type: "application/pdf", size: 500 }), docs),
+    ).toBeNull();
     expect(rejectReason(file({ type: "image/png" }), docs)).toBe(
       "foto.png: Dateityp nicht erlaubt.",
     );
@@ -330,15 +334,15 @@ import { PROFILE_IMAGE, tooLargeMessage } from "../../../_upload/accept";
 and rewrite the two guards (lines 26–31) to read from it:
 
 ```ts
-  if (!body?.mimeType || !PROFILE_IMAGE.mime.includes(body.mimeType)) {
-    return Response.json({ error: "Dateityp nicht erlaubt." }, { status: 422 });
-  }
-  if (!body.sizeBytes || body.sizeBytes <= 0 || body.sizeBytes > PROFILE_IMAGE.maxBytes) {
-    return Response.json({ error: tooLargeMessage(PROFILE_IMAGE) }, { status: 422 });
-  }
+if (!body?.mimeType || !PROFILE_IMAGE.mime.includes(body.mimeType)) {
+  return Response.json({ error: "Dateityp nicht erlaubt." }, { status: 422 });
+}
+if (!body.sizeBytes || body.sizeBytes <= 0 || body.sizeBytes > PROFILE_IMAGE.maxBytes) {
+  return Response.json({ error: tooLargeMessage(PROFILE_IMAGE) }, { status: 422 });
+}
 ```
 
-Preserve each route's existing "Dateityp nicht erlaubt." wording verbatim — read it from the file rather than assuming; only the *source of the numbers* changes, not the responses. Repeat for `content`, `blog` and `events/[id]`, all three using `CONTENT_IMAGE`. Verify the relative import depth per file.
+Preserve each route's existing "Dateityp nicht erlaubt." wording verbatim — read it from the file rather than assuming; only the _source of the numbers_ changes, not the responses. Repeat for `content`, `blog` and `events/[id]`, all three using `CONTENT_IMAGE`. Verify the relative import depth per file.
 
 - [ ] **Step 6: Confirm the route tests still pass**
 
@@ -361,10 +365,12 @@ git commit -m "refactor(web): read upload limits from one shared spec on client 
 Five surfaces currently repeat the same POST-for-a-signed-URL, PUT-the-bytes, map-the-error sequence. Only the request payload and the response shape differ, so those stay with the caller and everything else moves here.
 
 **Files:**
+
 - Create: `apps/web/app/_upload/upload-image.ts`
 - Test: `apps/web/app/_upload/upload-image.test.ts`
 
 **Interfaces:**
+
 - Consumes: nothing.
 - Produces: `uploadImage<R extends { uploadUrl: string }>(endpoint: string, file: File, extra?: Record<string, unknown>, fetchImpl?: typeof fetch): Promise<{ ok: R } | { error: string }>`.
 
@@ -527,9 +533,11 @@ git commit -m "feat(web): extract the signed-upload protocol into one helper"
 ## Task 3: DropZone
 
 **Files:**
+
 - Create: `apps/web/app/_upload/DropZone.tsx`
 
 **Interfaces:**
+
 - Consumes: `dragHasFiles`, `intakeFiles`, `type AcceptSpec` (Task 1).
 - Produces: `<DropZone accept={AcceptSpec} label={string} onReject={(messages: readonly string[]) => void} {...onFile | onFiles} disabled?={boolean} className?={string}>{children}</DropZone>`.
 
@@ -647,10 +655,12 @@ git commit -m "feat(web): add DropZone wrapper for upload controls"
 Without this, a file dropped anywhere that is not a drop target makes the browser navigate to `file:///…`, throwing away an unsaved event or blog draft. Independent of every surface, and the highest-value single step here.
 
 **Files:**
+
 - Create: `apps/web/app/_upload/WindowDropGuard.tsx`
 - Modify: `apps/web/app/layout.tsx`
 
 **Interfaces:**
+
 - Consumes: nothing. Produces: `<WindowDropGuard />` — renders `null`.
 
 - [ ] **Step 1: Write the component**
@@ -732,10 +742,12 @@ git commit -m "fix(web): stop stray file drops from navigating away from the pag
 Both call `/api/profile/upload-url` (5 MB) and both already have a `setError` channel. Each loses its bespoke `upload`/`handle` body to `uploadImage`.
 
 **Files:**
+
 - Modify: `apps/web/app/profil/PhotoField.tsx:32-96`
 - Modify: `apps/web/app/account/AccountAvatar.tsx:38-107`
 
 **Interfaces:**
+
 - Consumes: `DropZone`, `PROFILE_IMAGE`, `IMAGE_ACCEPT`, `uploadImage`.
 
 - [ ] **Step 1: Rewrite `PhotoField`'s upload and control**
@@ -751,27 +763,27 @@ import { uploadImage } from "../_upload/upload-image";
 Replace the whole `upload` function (lines 32–59) with:
 
 ```tsx
-  async function upload(file: File) {
-    setBusy(true);
-    setError(null);
-    try {
-      setLocalPreview(URL.createObjectURL(file));
-      const out = await uploadImage<{ uploadUrl: string; storageKey: string }>(
-        "/api/profile/upload-url",
-        file,
-      );
-      if ("error" in out) {
-        setError(out.error);
-        return;
-      }
-      onChange(out.ok.storageKey);
-    } finally {
-      setBusy(false);
+async function upload(file: File) {
+  setBusy(true);
+  setError(null);
+  try {
+    setLocalPreview(URL.createObjectURL(file));
+    const out = await uploadImage<{ uploadUrl: string; storageKey: string }>(
+      "/api/profile/upload-url",
+      file,
+    );
+    if ("error" in out) {
+      setError(out.error);
+      return;
     }
+    onChange(out.ok.storageKey);
+  } finally {
+    setBusy(false);
   }
+}
 ```
 
-Note the preview now moves *into* `upload`, so drop and click no longer each have to remember to set it.
+Note the preview now moves _into_ `upload`, so drop and click no longer each have to remember to set it.
 
 Replace the outer `<div className="flex flex-col gap-2">` of the returned JSX with:
 
@@ -800,25 +812,25 @@ and its closing `</div>` with `</DropZone>`. In the `<input>`, set `accept={IMAG
 Same three imports (paths `../_upload/…`). Replace the `handle` function body (lines 38–66) with the `uploadImage` form above, keeping its trailing `savePhotoAction` call:
 
 ```tsx
-  async function handle(file: File) {
-    setBusy(true);
-    setError(null);
-    try {
-      setLocalPreview(URL.createObjectURL(file));
-      const out = await uploadImage<{ uploadUrl: string; storageKey: string }>(
-        "/api/profile/upload-url",
-        file,
-      );
-      if ("error" in out) {
-        setError(out.error);
-        return;
-      }
-      const saved = await savePhotoAction(out.ok.storageKey);
-      if (saved.error) setError(saved.error);
-    } finally {
-      setBusy(false);
+async function handle(file: File) {
+  setBusy(true);
+  setError(null);
+  try {
+    setLocalPreview(URL.createObjectURL(file));
+    const out = await uploadImage<{ uploadUrl: string; storageKey: string }>(
+      "/api/profile/upload-url",
+      file,
+    );
+    if ("error" in out) {
+      setError(out.error);
+      return;
     }
+    const saved = await savePhotoAction(out.ok.storageKey);
+    if (saved.error) setError(saved.error);
+  } finally {
+    setBusy(false);
   }
+}
 ```
 
 Wrap the returned tree in the same `DropZone` (`onFile={(file) => void handle(file)}`, `label="Bild hier ablegen"`), and set the input's `accept={IMAGE_ACCEPT}` with the simplified `onChange`.
@@ -844,12 +856,14 @@ git commit -m "feat(web): accept dropped images for profile photo and account av
 
 ## Task 6: Event cover image
 
-`EventFields` renders a *visible* input with `accept="image/*"`, promising more than the route accepts. This task adds drop and closes that gap. Errors here go through `alert()` — keep that; do not introduce a second error idiom in this file.
+`EventFields` renders a _visible_ input with `accept="image/*"`, promising more than the route accepts. This task adds drop and closes that gap. Errors here go through `alert()` — keep that; do not introduce a second error idiom in this file.
 
 **Files:**
+
 - Modify: `apps/web/app/admin/events/_editor/EventFields.tsx:45-102`
 
 **Interfaces:**
+
 - Consumes: `DropZone`, `CONTENT_IMAGE`, `IMAGE_ACCEPT`, `uploadImage`.
 
 - [ ] **Step 1: Rewrite `uploadCover`**
@@ -865,23 +879,23 @@ import { uploadImage } from "../../../_upload/upload-image";
 Replace lines 45–68 with:
 
 ```tsx
-  async function uploadCover(file: File) {
-    setCoverBusy(true);
-    try {
-      const out = await uploadImage<{ uploadUrl: string; publicUrl: string; storageKey: string }>(
-        `/api/events/${d.eventId}/upload-url`,
-        file,
-      );
-      if ("error" in out) {
-        alert(out.error);
-        return;
-      }
-      setCoverKey(out.ok.storageKey);
-      setCoverUrl(out.ok.publicUrl);
-    } finally {
-      setCoverBusy(false);
+async function uploadCover(file: File) {
+  setCoverBusy(true);
+  try {
+    const out = await uploadImage<{ uploadUrl: string; publicUrl: string; storageKey: string }>(
+      `/api/events/${d.eventId}/upload-url`,
+      file,
+    );
+    if ("error" in out) {
+      alert(out.error);
+      return;
     }
+    setCoverKey(out.ok.storageKey);
+    setCoverUrl(out.ok.publicUrl);
+  } finally {
+    setCoverBusy(false);
   }
+}
 ```
 
 - [ ] **Step 2: Wrap the cover field**
@@ -889,37 +903,35 @@ Replace lines 45–68 with:
 Replace lines 84–102 with:
 
 ```tsx
-      {d.eventId !== "" && (
-        <Field label="Titelbild (optional)" htmlFor="cover">
-          <DropZone
-            accept={CONTENT_IMAGE}
-            onFile={(file) => void uploadCover(file)}
-            onReject={(messages) => alert(messages[0])}
-            label="Titelbild hier ablegen"
-            disabled={coverBusy}
-          >
-            {coverUrl ? (
-              <img
-                src={coverUrl}
-                alt=""
-                className="mb-2 max-h-48 w-full rounded-bdas object-cover"
-              />
-            ) : null}
-            <input
-              id="cover"
-              type="file"
-              accept={IMAGE_ACCEPT}
-              disabled={coverBusy}
-              onChange={(e) => {
-                const f = e.target.files?.[0];
-                if (f) void uploadCover(f);
-              }}
-            />
-            <input type="hidden" name="coverImageKey" value={coverKey} />
-            {coverBusy ? <p className="mt-1 text-sm text-bdas-ink-muted">Lädt hoch…</p> : null}
-          </DropZone>
-        </Field>
-      )}
+{
+  d.eventId !== "" && (
+    <Field label="Titelbild (optional)" htmlFor="cover">
+      <DropZone
+        accept={CONTENT_IMAGE}
+        onFile={(file) => void uploadCover(file)}
+        onReject={(messages) => alert(messages[0])}
+        label="Titelbild hier ablegen"
+        disabled={coverBusy}
+      >
+        {coverUrl ? (
+          <img src={coverUrl} alt="" className="mb-2 max-h-48 w-full rounded-bdas object-cover" />
+        ) : null}
+        <input
+          id="cover"
+          type="file"
+          accept={IMAGE_ACCEPT}
+          disabled={coverBusy}
+          onChange={(e) => {
+            const f = e.target.files?.[0];
+            if (f) void uploadCover(f);
+          }}
+        />
+        <input type="hidden" name="coverImageKey" value={coverKey} />
+        {coverBusy ? <p className="mt-1 text-sm text-bdas-ink-muted">Lädt hoch…</p> : null}
+      </DropZone>
+    </Field>
+  );
+}
 ```
 
 - [ ] **Step 3: Verify manually**
@@ -950,12 +962,14 @@ git commit -m "feat(web): accept a dropped event cover image and match the serve
 
 ## Task 7: Puck content image — scope item 3
 
-Static analysis says this is safe (see finding 2 above): Puck 0.22.2 drags via `@dnd-kit` 0.4.0, which activates on `pointerdown`/`pointermove` and registers no native `dragenter`/`dragover`/`drop` listeners at all; its one native `dragstart` listener exists to *yield* to a competing HTML5 drag. An OS file drag and a Puck block drag cannot collide. Step 1 confirms that empirically because it costs two minutes.
+Static analysis says this is safe (see finding 2 above): Puck 0.22.2 drags via `@dnd-kit` 0.4.0, which activates on `pointerdown`/`pointermove` and registers no native `dragenter`/`dragover`/`drop` listeners at all; its one native `dragstart` listener exists to _yield_ to a competing HTML5 drag. An OS file drag and a Puck block drag cannot collide. Step 1 confirms that empirically because it costs two minutes.
 
 **Files:**
+
 - Modify: `apps/web/app/_content/FotoField.tsx:22-79`
 
 **Interfaces:**
+
 - Consumes: `DropZone`, `CONTENT_IMAGE`, `IMAGE_ACCEPT`, `uploadImage`. Note this surface sends an extra `slug` in the signing payload — that is what `uploadImage`'s `extra` argument is for.
 
 - [ ] **Step 1: Confirm the drop reaches the field**
@@ -987,24 +1001,24 @@ import { uploadImage } from "../_upload/upload-image";
 Replace `upload` (lines 22–54) with:
 
 ```tsx
-  async function upload(file: File) {
-    setBusy(true);
-    setError(null);
-    try {
-      const out = await uploadImage<{ uploadUrl: string; publicUrl: string }>(
-        "/api/content/upload-url",
-        file,
-        { slug },
-      );
-      if ("error" in out) {
-        setError(out.error);
-        return;
-      }
-      onChange(out.ok.publicUrl);
-    } finally {
-      setBusy(false);
+async function upload(file: File) {
+  setBusy(true);
+  setError(null);
+  try {
+    const out = await uploadImage<{ uploadUrl: string; publicUrl: string }>(
+      "/api/content/upload-url",
+      file,
+      { slug },
+    );
+    if ("error" in out) {
+      setError(out.error);
+      return;
     }
+    onChange(out.ok.publicUrl);
+  } finally {
+    setBusy(false);
   }
+}
 ```
 
 Replace the outer `<div className="flex flex-col gap-2">` with:
@@ -1047,12 +1061,14 @@ git commit -m "feat(web): accept a dropped image in the Puck Foto field"
 Do **not** hand-write ProseMirror handlers. `@tiptap/extension-file-handler` provides `onDrop(editor, files, pos)` and `onPaste(editor, files)` directly. Paste is the bigger everyday win: screenshot → Ctrl+V.
 
 **Files:**
+
 - Create: `apps/web/app/_upload/editor-file-handler.ts`
 - Modify: `apps/web/package.json`
 - Modify: `apps/web/app/_blog/PostEditor.tsx:44-88`
 - Modify: `apps/web/app/admin/events/_editor/RichTextEditor.tsx` (the matching `extensions` array and `addImage`)
 
 **Interfaces:**
+
 - Consumes: `CONTENT_IMAGE`, `intakeFiles`, `IMAGE_ACCEPT` (Task 1), `uploadImage` (Task 2).
 - Produces: `imageFileHandler(opts: { endpoint: string; onError: (message: string) => void }): Extension` — a configured `FileHandler`, so a third editor is one line.
 
@@ -1153,19 +1169,19 @@ Add one entry to the `extensions` array (currently lines 44–48), after `Youtub
 `editorProps` is **unchanged** — `attributes` stays exactly as it is. Then collapse `addImage`'s body (lines 66–86) so the toolbar button takes the same path as the drop:
 
 ```tsx
-    input.onchange = async () => {
-      const file = input.files?.[0];
-      if (!file) return;
-      const out = await uploadImage<{ uploadUrl: string; publicUrl: string }>(
-        "/api/blog/upload-url",
-        file,
-      );
-      if ("error" in out) {
-        alert(out.error);
-        return;
-      }
-      editor.chain().focus().setImage({ src: out.ok.publicUrl }).run();
-    };
+input.onchange = async () => {
+  const file = input.files?.[0];
+  if (!file) return;
+  const out = await uploadImage<{ uploadUrl: string; publicUrl: string }>(
+    "/api/blog/upload-url",
+    file,
+  );
+  if ("error" in out) {
+    alert(out.error);
+    return;
+  }
+  editor.chain().focus().setImage({ src: out.ok.publicUrl }).run();
+};
 ```
 
 and set `input.accept = IMAGE_ACCEPT;` in place of `"image/*"` (line 65).
@@ -1177,11 +1193,12 @@ Identical, with two differences: the endpoint is `` `/api/events/${eventId}/uplo
 - [ ] **Step 5: Verify manually**
 
 Run: `pnpm --filter @bdas/web dev`. In the blog post editor:
+
 1. Drag a PNG into the middle of a paragraph → it lands at the pointer, not at the end.
 2. Copy a screenshot to the clipboard, click into the editor, Cmd/Ctrl+V → it uploads and appears **once** (a duplicate means `consumePasteEvent` is not set).
 3. Drag a PDF in → alert "…: nur JPEG, PNG, WebP oder AVIF.", nothing inserted.
 4. Drop two PNGs at once → both appear, in order.
-Repeat 1 and 2 in an event's description editor.
+   Repeat 1 and 2 in an event's description editor.
 
 - [ ] **Step 6: Test, typecheck, lint**
 
@@ -1203,9 +1220,11 @@ git commit -m "feat(web): drop and paste images into the blog and event editors"
 `FileUploader` already has drop, but its `onDragLeave` sets a boolean, so the highlight flickers whenever the pointer crosses a child. It keeps its own MIME set and 25 MB cap (documents, not images) — which is exactly what the `accept` prop takes, so no escape hatch is needed.
 
 **Files:**
+
 - Modify: `apps/web/app/_files/FileUploader.tsx:50-119`
 
 **Interfaces:**
+
 - Consumes: `DropZone`.
 
 - [ ] **Step 1: Replace the hand-rolled drop handlers**
@@ -1215,10 +1234,10 @@ Add `import { DropZone } from "../_upload/DropZone";`.
 Delete the `dragOver` state (line 51) and the four inline drag handlers. Build this surface's spec from its props — it is already given both halves:
 
 ```tsx
-  const spec = useMemo(
-    () => ({ mime: acceptMime, maxBytes, maxLabel: formatFileSize(maxBytes) }),
-    [acceptMime, maxBytes],
-  );
+const spec = useMemo(
+  () => ({ mime: acceptMime, maxBytes, maxLabel: formatFileSize(maxBytes) }),
+  [acceptMime, maxBytes],
+);
 ```
 
 The existing `allowedMime` memo (line 53) stays: `runUploads` still validates per file through `validateFile`, and reports failures in the item list.
@@ -1264,9 +1283,11 @@ git commit -m "fix(web): keep the file dropzone highlight steady across child el
 The one automated test that actually dispatches a drop, so the wiring cannot silently rot. Playwright cannot drag from the OS, so the drop is synthesised with a `DataTransfer` built in the page.
 
 **Files:**
+
 - Modify: `e2e/blog.e2e.ts`
 
 **Interfaces:**
+
 - Consumes: `registerVerifyLogin` (`e2e/helpers/flows.ts:91`), `uniqueEmail` and `activateMemberByEmail` (`e2e/helpers/db.ts`) — all three are already imported at the top of `e2e/blog.e2e.ts`. Do not add a helper.
 
 - [ ] **Step 1: Write the spec**
@@ -1343,12 +1364,17 @@ async function upload(file: File) {
   onChange(out.ok.publicUrl);
 }
 
-<DropZone accept={CONTENT_IMAGE} onFile={(f) => void upload(f)} onReject={(m) => setError(m[0]!)} label="…">
+<DropZone
+  accept={CONTENT_IMAGE}
+  onFile={(f) => void upload(f)}
+  onReject={(m) => setError(m[0]!)}
+  label="…"
+>
   {/* the existing preview + hidden input + button */}
-</DropZone>
+</DropZone>;
 ```
 
-Stray-drop protection is already global. A new *editor* is one line: `imageFileHandler({ endpoint, onError })` in its `extensions` array. A new route reuses a spec from `accept.ts`, or adds one there — never a local `MAX_BYTES`.
+Stray-drop protection is already global. A new _editor_ is one line: `imageFileHandler({ endpoint, onError })` in its `extensions` array. A new route reuses a spec from `accept.ts`, or adds one there — never a local `MAX_BYTES`.
 
 ---
 

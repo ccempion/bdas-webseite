@@ -1,0 +1,52 @@
+- generic [active] [ref=f4e1]:
+  - link "Zum Inhalt springen" [ref=f4e2] [cursor=pointer]:
+    - /url: "#inhalt"
+  - banner [ref=f4e3]:
+    - generic [ref=f4e4]:
+      - link "BDAS — zur Startseite" [ref=f4e5] [cursor=pointer]:
+        - /url: /
+        - generic [ref=f4e6]: BDAS
+      - navigation "Hauptnavigation" [ref=f4e7]:
+        - list [ref=f4e8]:
+          - listitem [ref=f4e9]:
+            - link "Gruppen" [ref=f4e10] [cursor=pointer]:
+              - /url: /gruppen
+          - listitem [ref=f4e11]:
+            - link "Veranstaltungen" [ref=f4e12] [cursor=pointer]:
+              - /url: /events
+          - listitem [ref=f4e13]:
+            - link "Mein Konto" [ref=f4e14] [cursor=pointer]:
+              - /url: /account
+          - listitem [ref=f4e15]:
+            - button "Abmelden" [ref=f4e17] [cursor=pointer]
+  - main [ref=f4e19]:
+    - generic [ref=f4e20]:
+      - heading "BDAS" [level=1] [ref=f4e21]
+      - paragraph [ref=f4e22]: Bund der Alevitischen Studierenden — die Hochschulgruppen-Plattform.
+    - generic [ref=f4e23]:
+      - heading "Hochschulgruppen" [level=2] [ref=f4e24]
+      - paragraph [ref=f4e25]: Finde deine Hochschulgruppe oder lerne die Standorte des BDAS kennen.
+      - link "Alle Gruppen ansehen →" [ref=f4e26] [cursor=pointer]:
+        - /url: /gruppen
+    - generic [ref=f4e27]:
+      - heading "Mitgliederbereich" [level=2] [ref=f4e28]
+      - paragraph [ref=f4e29]: Du bist angemeldet.
+      - link "Zu meinem Konto" [ref=f4e30] [cursor=pointer]:
+        - /url: /account
+  - contentinfo [ref=f4e31]:
+    - generic [ref=f4e32]:
+      - paragraph [ref=f4e33]: © 2026 Bund der Alevitischen Studierenden
+      - navigation "Rechtliches" [ref=f4e34]:
+        - link "Datenschutz" [ref=f4e35] [cursor=pointer]:
+          - /url: /datenschutz
+        - link "Impressum" [ref=f4e36] [cursor=pointer]:
+          - /url: /impressum
+  - alert [ref=f4e37]
+  - region "Cookie-Hinweis" [ref=f4e38]:
+    - generic [ref=f4e39]:
+      - paragraph [ref=f4e40]:
+        - text: Diese Seite verwendet ausschließlich technisch notwendige Cookies, um dich angemeldet zu halten. Mehr dazu in der
+        - link "Datenschutzerklärung" [ref=f4e41] [cursor=pointer]:
+          - /url: /datenschutz
+        - text: .
+      - button "Verstanden" [ref=f4e42] [cursor=pointer]
