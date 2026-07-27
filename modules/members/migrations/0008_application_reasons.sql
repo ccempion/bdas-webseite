@@ -17,12 +17,13 @@ UPDATE member_group_change_requests
  WHERE status = 'rejected'
    AND reason_category IS NULL;
 
--- 3. A reason exists exactly on rejections, is one of the three keys, and
---    `other` must say something.
-ALTER TABLE member_group_change_requests
-  ADD CONSTRAINT member_group_change_requests_reason_presence_check
-    CHECK ((status = 'rejected') = (reason_category IS NOT NULL));
-
+-- 3. A reason, when present, is one of the three keys, and `other` must say
+--    something. The stronger rule — a reason exists exactly on rejections —
+--    is deferred to 0009_reason_required.sql: the currently-deployed
+--    decideGroupChange() rejects without setting reason_category, and
+--    migrations here are applied by hand, decoupled from deploys. Landing
+--    that constraint now would break every rejection until the service-layer
+--    change ships, for as long as the gap between the two manual steps lasts.
 ALTER TABLE member_group_change_requests
   ADD CONSTRAINT member_group_change_requests_reason_category_check
     CHECK (reason_category IS NULL
@@ -67,6 +68,14 @@ SELECT 'mgc_rej_' || m.id, m.id, NULL, m.primary_group_id, 'rejected',
    AND m.joined_at IS NULL
    AND m.primary_group_id IS NOT NULL;
 
+-- Deliberately not guarded by `primary_group_id IS NOT NULL` like the INSERT
+-- above it: a rejected applicant whose group has since disappeared (only
+-- reachable via a manual deletion — the app only archives groups, never
+-- deletes them) still gets freed from `inactive`. No request row can be
+-- written for that case because `to_group_id` would have to be NULL, which
+-- `member_group_change_requests_moves_check` (`from_group_id IS DISTINCT
+-- FROM to_group_id`) forbids when `from_group_id` is also NULL. Freeing the
+-- person is the point; the audit trail is simply inexpressible here.
 UPDATE members
    SET status = 'pending', primary_group_id = NULL, updated_at = now()
  WHERE status = 'inactive'
