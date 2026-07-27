@@ -32,3 +32,5 @@ export { Alert, type AlertProps, type AlertVariant } from "./components/Alert";
 export { Form, Label, Field, type LabelProps, type FieldProps } from "./components/Form";
 export { Section, type SectionProps } from "./components/Section";
 export { FilterChip, type FilterChipProps } from "./components/FilterChip";
+export { Badge, type BadgeProps } from "./components/Badge";
+export { badgeText, badgeLabel } from "./components/badge-count";

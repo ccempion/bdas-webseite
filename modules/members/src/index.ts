@@ -16,6 +16,7 @@ export { grantRole, revokeRole } from "./services/roles";
 export { getMember, getMemberByUserId } from "./services/get";
 export { listBoardRecipientsForGroup } from "./services/board-recipients";
 export { listPendingMembers } from "./services/list-pending";
+export { countPendingApprovals, type ApprovalCounts } from "./services/approval-counts";
 export { getCurrentMember, requireFederalBoard, type CurrentMember } from "./services/me";
 
 export {
