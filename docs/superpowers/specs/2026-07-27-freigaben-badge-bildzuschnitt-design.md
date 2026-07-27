@@ -144,7 +144,13 @@ Ist niemand eingeloggt oder ist `total === 0`, ändert sich am Header nichts.
 Der heutige Block in `apps/web/app/account/page.tsx`
 
 ```tsx
-{isBoard ? <Alert variant="info" title="Bundesvorstand">…</Alert> : null}
+{
+  isBoard ? (
+    <Alert variant="info" title="Bundesvorstand">
+      …
+    </Alert>
+  ) : null;
+}
 ```
 
 entfällt. An seine Stelle tritt ein Alert, der zwei Bedingungen ändert:

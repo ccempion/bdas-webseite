@@ -13,7 +13,7 @@
 - CLAUDE.md §1 Rule 1: `members` besitzt `members`/`member_group_change_requests`, `blog` besitzt `post_reports`. Kein Modul liest die Tabellen eines anderen. Die App komponiert.
 - CLAUDE.md §1 Rule 8: Neue Services sind nur nutzbar, wenn sie aus `modules/<name>/src/index.ts` re-exportiert werden.
 - CLAUDE.md §7: Keine inline-Hexwerte, -Radien, -Schatten oder -Dauern. Nur Tailwind-Klassen aus `core/design-system/src/tailwind-preset.ts` (`bg-bdas-red`, `rounded-bdas-full`, `text-bdas-pill`, `duration-bdas-quick`, `ease-bdas`, …).
-- CLAUDE.md §6: Keine Kommentare, die beschreiben *was* der Code tut. Kommentare erklären *warum*.
+- CLAUDE.md §6: Keine Kommentare, die beschreiben _was_ der Code tut. Kommentare erklären _warum_.
 - Alle nutzersichtbaren Texte sind auf Deutsch.
 - Vitest läuft in diesem Repo mit `environment: "node"`. Es gibt **kein** React-Component-Testing. Pure Logik wird per Vitest getestet, gerendertes Verhalten per Playwright.
 - Integrationstests laufen gegen echtes Postgres (`postgres://bdas:bdas@localhost:5432/bdas`) und überspringen sich selbst, wenn die DB nicht erreichbar ist — siehe `dbReachable()` in `modules/members/src/index.test.ts`.
@@ -129,18 +129,18 @@ import { groupHasActiveLocalBoard, scopedGroupIds, type Actor, type Db } from ".
 In `modules/members/src/services/list-pending.ts` den Block
 
 ```ts
-  const scopedGroupIds = actor.grants
-    .filter(
-      (g): g is { role: "local_board" | "local_board_lead"; groupId: string } =>
-        (g.role === "local_board" || g.role === "local_board_lead") && g.groupId !== null,
-    )
-    .map((g) => g.groupId);
+const scopedGroupIds = actor.grants
+  .filter(
+    (g): g is { role: "local_board" | "local_board_lead"; groupId: string } =>
+      (g.role === "local_board" || g.role === "local_board_lead") && g.groupId !== null,
+  )
+  .map((g) => g.groupId);
 ```
 
 ersetzen durch:
 
 ```ts
-  const scoped = scopedGroupIds(actor);
+const scoped = scopedGroupIds(actor);
 ```
 
 Danach im selben File die beiden Verwendungen `scopedGroupIds.length` → `scoped.length` und `scopedGroupIds.includes(r.primaryGroupId)` → `scoped.includes(r.primaryGroupId)` anpassen, und den Import ergänzen:
@@ -180,6 +180,7 @@ git commit -m "refactor(members): hoist scopedGroupIds into status.ts"
 
 - Consumes: `scopedGroupIds(actor)`, `groupHasActiveLocalBoard(db, groupId)`, `type Actor`, `type Db` aus `./status` (Task A1); `isFederalBoard(grants)`, `canDecideJoinRequest(grants, groupId, hasLocalBoard)` aus `../roles`.
 - Produces:
+
   ```ts
   export type ApprovalCounts = {
     readonly pendingMembers: number;
@@ -385,10 +386,7 @@ Erwartet: PASS (4 Tests). Läuft kein Postgres, ist SKIPPED das erwartete Ergebn
 In `modules/members/src/index.ts` nach der Zeile `export { listPendingMembers } from "./services/list-pending";` einfügen:
 
 ```ts
-export {
-  countPendingApprovals,
-  type ApprovalCounts,
-} from "./services/approval-counts";
+export { countPendingApprovals, type ApprovalCounts } from "./services/approval-counts";
 ```
 
 - [ ] **Step 6: Typprüfung und Commit**
@@ -418,19 +416,19 @@ git commit -m "feat(members): count pending approvals for the header badge"
 In `modules/blog/src/index.test.ts` `countOpenReports` zum bestehenden Import aus `./services/report` hinzufügen (bzw. zum Import, über den `reportPost` und `dismissReport` bereits hereinkommen), und diesen Block ergänzen:
 
 ```ts
-  it("countOpenReports zählt offene Meldungen und ignoriert verworfene", async () => {
-    const p1 = await createPost(t.db, { title: "Erster Beitrag", content: doc("Text.") }, "usr_a");
-    const p2 = await createPost(t.db, { title: "Zweiter Beitrag", content: doc("Text.") }, "usr_a");
-    await reportPost(t.db, p1.id, "usr_reporter", "Wirkt wie Spam");
-    await reportPost(t.db, p2.id, "usr_reporter", null);
+it("countOpenReports zählt offene Meldungen und ignoriert verworfene", async () => {
+  const p1 = await createPost(t.db, { title: "Erster Beitrag", content: doc("Text.") }, "usr_a");
+  const p2 = await createPost(t.db, { title: "Zweiter Beitrag", content: doc("Text.") }, "usr_a");
+  await reportPost(t.db, p1.id, "usr_reporter", "Wirkt wie Spam");
+  await reportPost(t.db, p2.id, "usr_reporter", null);
 
-    expect(await countOpenReports(t.db)).toBe(2);
+  expect(await countOpenReports(t.db)).toBe(2);
 
-    const [open] = await listOpenReports(t.db);
-    await dismissReport(t.db, open!.id);
+  const [open] = await listOpenReports(t.db);
+  await dismissReport(t.db, open!.id);
 
-    expect(await countOpenReports(t.db)).toBe(1);
-  });
+  expect(await countOpenReports(t.db)).toBe(1);
+});
 ```
 
 `createPost(db, { title, content }, createdBy)` und der `doc(...)`-Helfer werden in derselben Datei bereits so verwendet; `reportPost` weist Selbstmeldungen ab, daher ist `usr_reporter` ein anderer Nutzer als der Autor `usr_a`.
@@ -503,8 +501,9 @@ git commit -m "feat(blog): count open reports"
 **Interfaces:**
 
 - Produces:
+
   ```ts
-  export function badgeText(count: number): string;         // "3" | "99+"
+  export function badgeText(count: number): string; // "3" | "99+"
   export function badgeLabel(count: number, label: string): string; // "3 offene Freigaben"
   export type BadgeProps = { count: number; label: string; className?: string };
   export function Badge(props: BadgeProps): JSX.Element | null;
@@ -642,6 +641,7 @@ git commit -m "feat(design-system): add Badge count marker"
 
 - Consumes: `countPendingApprovals` (Task A2), `countOpenReports` (Task A3), `loadCurrentMember` aus `apps/web/app/_dashboard/session.ts`, `canAdministerBoard` aus `@bdas/dashboard-shell`, `isFederalBoard` aus `@bdas/members`, `isFlagOn` aus `@bdas/feature-flags`.
 - Produces:
+
   ```ts
   export type ApprovalSummary = {
     readonly pendingMembers: number;
@@ -880,8 +880,8 @@ import { loadApprovalCounts } from "../_dashboard/approvals";
 In `PublicHeader()` direkt nach `const isBoard = me ? canAdministerBoard(me.grants) : false;` einfügen:
 
 ```tsx
-  const approvals = isBoard ? await loadApprovalCounts() : null;
-  const openCount = approvals?.total ?? 0;
+const approvals = isBoard ? await loadApprovalCounts() : null;
+const openCount = approvals?.total ?? 0;
 ```
 
 - [ ] **Step 2: Badge am Desktop-Namens-Pill**
@@ -904,18 +904,18 @@ Im Desktop-Zweig die `<summary>` mit `{displayName}` so ergänzen, dass der Badg
 Beide Vorkommen von
 
 ```tsx
-                          <Link href="/dashboard" className={DROPDOWN_LINK}>
-                            Board-Bereich
-                          </Link>
+<Link href="/dashboard" className={DROPDOWN_LINK}>
+  Board-Bereich
+</Link>
 ```
 
 ersetzen durch (Einrückung jeweils beibehalten):
 
 ```tsx
-                          <Link href="/dashboard" className={`${DROPDOWN_LINK} flex items-center justify-between gap-2`}>
-                            <span>Board-Bereich</span>
-                            <Badge count={openCount} label="offene Freigaben" />
-                          </Link>
+<Link href="/dashboard" className={`${DROPDOWN_LINK} flex items-center justify-between gap-2`}>
+  <span>Board-Bereich</span>
+  <Badge count={openCount} label="offene Freigaben" />
+</Link>
 ```
 
 - [ ] **Step 4: Badge am mobilen „Menü"-Button**
@@ -925,13 +925,13 @@ Mobil gibt es kein Namens-Pill; ohne diesen Platz wäre die Zahl auf dem Handy u
 Das `<details>` behält sein `className="ml-auto md:hidden"` **unverändert** — nur die `<summary>` bekommt `flex items-center gap-2` dazu, damit Text und Badge nebeneinander sitzen:
 
 ```tsx
-            <summary
-              aria-label="Menü öffnen"
-              className="flex cursor-pointer list-none items-center gap-2 rounded-bdas border border-bdas-strong px-3 py-1.5 text-bdas-ink [&::-webkit-details-marker]:hidden"
-            >
-              Menü
-              <Badge count={openCount} label="offene Freigaben" />
-            </summary>
+<summary
+  aria-label="Menü öffnen"
+  className="flex cursor-pointer list-none items-center gap-2 rounded-bdas border border-bdas-strong px-3 py-1.5 text-bdas-ink [&::-webkit-details-marker]:hidden"
+>
+  Menü
+  <Badge count={openCount} label="offene Freigaben" />
+</summary>
 ```
 
 Prüfe das Ergebnis im Browser, bevor du committest.
@@ -1026,20 +1026,22 @@ export async function ApprovalsAlert({ groupSlug }: { groupSlug: string | null }
 In `apps/web/app/account/page.tsx` diesen Block **löschen**:
 
 ```tsx
-      {isBoard ? (
-        <Alert variant="info" title="Bundesvorstand">
-          Du hast Bundesvorstands-Rechte.{" "}
-          <Link href="/admin/pending-members" className="text-bdas-red hover:underline">
-            Pending-Mitglieder verwalten →
-          </Link>
-        </Alert>
-      ) : null}
+{
+  isBoard ? (
+    <Alert variant="info" title="Bundesvorstand">
+      Du hast Bundesvorstands-Rechte.{" "}
+      <Link href="/admin/pending-members" className="text-bdas-red hover:underline">
+        Pending-Mitglieder verwalten →
+      </Link>
+    </Alert>
+  ) : null;
+}
 ```
 
 und an derselben Stelle einsetzen:
 
 ```tsx
-      <ApprovalsAlert groupSlug={currentGroupSlug} />
+<ApprovalsAlert groupSlug={currentGroupSlug} />
 ```
 
 - [ ] **Step 3: Den Slug bereitstellen und die tote Variable entfernen**
@@ -1047,8 +1049,7 @@ und an derselben Stelle einsetzen:
 `groups` ist in `page.tsx` bereits geladen. Nach `const currentGroupName = groupName(me.member?.primaryGroupId ?? null);` einfügen:
 
 ```tsx
-  const currentGroupSlug =
-    groups.find((g) => g.id === me.member?.primaryGroupId)?.slug ?? null;
+const currentGroupSlug = groups.find((g) => g.id === me.member?.primaryGroupId)?.slug ?? null;
 ```
 
 Den Import ergänzen:
@@ -1202,7 +1203,12 @@ Erwartet: `feat/profile-photo-crop`.
   ```ts
   export type Size = { readonly width: number; readonly height: number };
   export type CropState = { readonly zoom: number; readonly x: number; readonly y: number };
-  export type SourceRect = { readonly sx: number; readonly sy: number; readonly sw: number; readonly sh: number };
+  export type SourceRect = {
+    readonly sx: number;
+    readonly sy: number;
+    readonly sw: number;
+    readonly sh: number;
+  };
   export function minZoom(natural: Size, frame: number): number;
   export function clampOffset(state: CropState, natural: Size, frame: number): CropState;
   export function sourceRect(state: CropState, natural: Size, frame: number): SourceRect;
@@ -1265,11 +1271,7 @@ describe("sourceRect", () => {
   it("liefert bei minZoom und zentriertem Versatz den mittigen Quadrat-Ausschnitt", () => {
     const natural = { width: 1200, height: 600 };
     const zoom = minZoom(natural, FRAME);
-    const centered = clampOffset(
-      { zoom, x: -(1200 * zoom - FRAME) / 2, y: 0 },
-      natural,
-      FRAME,
-    );
+    const centered = clampOffset({ zoom, x: -(1200 * zoom - FRAME) / 2, y: 0 }, natural, FRAME);
 
     const rect = sourceRect(centered, natural, FRAME);
 
@@ -1369,6 +1371,7 @@ git commit -m "feat(web): add crop geometry for the avatar cropper"
 
 - Consumes: `clampOffset`, `minZoom`, `sourceRect`, `type CropState`, `type Size` aus `./crop` (Task B1).
 - Produces:
+
   ```ts
   export type CropDialogProps = {
     file: File;
@@ -1377,6 +1380,7 @@ git commit -m "feat(web): add crop geometry for the avatar cropper"
   };
   export function CropDialog(props: CropDialogProps): JSX.Element;
   ```
+
   Der Aufrufer rendert `<CropDialog>` genau dann, wenn eine Datei zur Bearbeitung ansteht. `onDone` bekommt eine `File` mit MIME-Typ `image/webp`.
 
 - [ ] **Step 1: Die Komponente schreiben**
@@ -1624,7 +1628,7 @@ import { CropDialog } from "../_profile/CropDialog";
 State ergänzen, neben den bestehenden `useState`-Zeilen:
 
 ```tsx
-  const [pending, setPending] = useState<File | null>(null);
+const [pending, setPending] = useState<File | null>(null);
 ```
 
 Die bestehende Funktion `handle` **unverändert lassen** und beide Aufrufer stattdessen auf `setPending` umstellen:
@@ -1636,22 +1640,24 @@ Die bestehende Funktion `handle` **unverändert lassen** und beide Aufrufer stat
 und im `<input onChange=...>`:
 
 ```tsx
-          if (file) setPending(file);
+if (file) setPending(file);
 ```
 
 Innerhalb des `<DropZone>`, direkt vor dem schließenden `</DropZone>`, den Dialog rendern:
 
 ```tsx
-      {pending ? (
-        <CropDialog
-          file={pending}
-          onCancel={() => setPending(null)}
-          onDone={(cropped) => {
-            setPending(null);
-            void handle(cropped);
-          }}
-        />
-      ) : null}
+{
+  pending ? (
+    <CropDialog
+      file={pending}
+      onCancel={() => setPending(null)}
+      onDone={(cropped) => {
+        setPending(null);
+        void handle(cropped);
+      }}
+    />
+  ) : null;
+}
 ```
 
 - [ ] **Step 2: `PhotoField.tsx` genauso umbauen**
@@ -1857,7 +1863,7 @@ In `apps/web/app/registrieren/erfolg/page.tsx` den Alert und den Absatz darunter
 In `e2e/auth.e2e.ts` den Test finden, der nach der Registrierung auf `/registrieren/erfolg` landet, und dort ergänzen:
 
 ```ts
-  await expect(page.getByText(/Spam-Ordner/)).toBeVisible();
+await expect(page.getByText(/Spam-Ordner/)).toBeVisible();
 ```
 
 Findest du keinen solchen Test, lege die Assertion stattdessen im Test in `e2e/resend-verification.e2e.ts` ab, der diese Seite besucht.
