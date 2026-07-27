@@ -8,6 +8,12 @@ import { useCallback, useState } from "react";
 
 import type { TiptapDoc } from "@bdas/blog";
 
+import { IMAGE_ACCEPT } from "../_upload/accept";
+import { imageFileHandler } from "../_upload/editor-file-handler";
+import { uploadImage } from "../_upload/upload-image";
+
+const BLOG_UPLOAD_URL = "/api/blog/upload-url";
+
 const BTN =
   "rounded-bdas-sm px-2 py-1 text-sm text-bdas-ink-body hover:bg-bdas-overlay-hover " +
   "transition-colors duration-bdas-quick ease-bdas data-[active=true]:bg-bdas-overlay-soft";
@@ -45,6 +51,7 @@ export function PostEditor({ name, defaultDoc }: { name: string; defaultDoc: Tip
       StarterKit.configure({ underline: false, link: { openOnClick: false } }),
       ImageWithWidth,
       Youtube.configure({ nocookie: true, width: 640, height: 360 }),
+      imageFileHandler({ endpoint: BLOG_UPLOAD_URL, onError: (m) => alert(m) }),
     ],
     content: (defaultDoc ?? "") as Content,
     immediatelyRender: false,
@@ -62,27 +69,19 @@ export function PostEditor({ name, defaultDoc }: { name: string; defaultDoc: Tip
     if (!editor) return;
     const input = document.createElement("input");
     input.type = "file";
-    input.accept = "image/*";
+    input.accept = IMAGE_ACCEPT;
     input.onchange = async () => {
       const file = input.files?.[0];
       if (!file) return;
-      const res = await fetch(`/api/blog/upload-url`, {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ filename: file.name, mimeType: file.type, sizeBytes: file.size }),
-      });
-      if (!res.ok) {
-        const { error } = await res.json().catch(() => ({ error: "Upload fehlgeschlagen." }));
-        alert(error ?? "Upload fehlgeschlagen.");
+      const out = await uploadImage<{ uploadUrl: string; publicUrl: string }>(
+        BLOG_UPLOAD_URL,
+        file,
+      );
+      if ("error" in out) {
+        alert(out.error);
         return;
       }
-      const { uploadUrl, publicUrl } = await res.json();
-      const put = await fetch(uploadUrl, { method: "PUT", body: file });
-      if (!put.ok) {
-        alert("Upload fehlgeschlagen.");
-        return;
-      }
-      editor.chain().focus().setImage({ src: publicUrl }).run();
+      editor.chain().focus().setImage({ src: out.ok.publicUrl }).run();
     };
     input.click();
   }, [editor]);
