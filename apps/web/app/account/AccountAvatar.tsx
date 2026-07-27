@@ -2,6 +2,9 @@
 
 import { useEffect, useRef, useState } from "react";
 
+import { DropZone } from "../_upload/DropZone";
+import { IMAGE_ACCEPT, PROFILE_IMAGE } from "../_upload/accept";
+import { uploadImage } from "../_upload/upload-image";
 import { savePhotoAction } from "./photo-actions";
 
 /** Large enough to read as the page's identity anchor, not a form field. */
@@ -39,26 +42,16 @@ export function AccountAvatar({
     setBusy(true);
     setError(null);
     try {
-      const res = await fetch("/api/profile/upload-url", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ filename: file.name, mimeType: file.type, sizeBytes: file.size }),
-      });
-      if (!res.ok) {
-        const body = (await res.json().catch(() => ({}))) as { error?: string };
-        setError(body.error ?? "Upload fehlgeschlagen.");
+      setLocalPreview(URL.createObjectURL(file));
+      const out = await uploadImage<{ uploadUrl: string; storageKey: string }>(
+        "/api/profile/upload-url",
+        file,
+      );
+      if ("error" in out) {
+        setError(out.error);
         return;
       }
-      const { uploadUrl, storageKey } = (await res.json()) as {
-        uploadUrl: string;
-        storageKey: string;
-      };
-      const put = await fetch(uploadUrl, { method: "PUT", body: file });
-      if (!put.ok) {
-        setError("Upload fehlgeschlagen.");
-        return;
-      }
-      const saved = await savePhotoAction(storageKey);
+      const saved = await savePhotoAction(out.ok.storageKey);
       if (saved.error) setError(saved.error);
     } finally {
       setBusy(false);
@@ -66,17 +59,22 @@ export function AccountAvatar({
   }
 
   return (
-    <div className="flex flex-col gap-2">
+    <DropZone
+      accept={PROFILE_IMAGE}
+      onFile={(file) => void handle(file)}
+      onReject={(messages) => setError(messages[0] ?? null)}
+      label="Bild hier ablegen"
+      disabled={busy}
+      className="flex flex-col gap-2"
+    >
       <input
         ref={inputRef}
         type="file"
-        accept="image/jpeg,image/png,image/webp,image/avif"
+        accept={IMAGE_ACCEPT}
         className="hidden"
         onChange={(e) => {
           const file = e.currentTarget.files?.[0];
-          if (!file) return;
-          setLocalPreview(URL.createObjectURL(file));
-          void handle(file);
+          if (file) void handle(file);
         }}
       />
       <button
@@ -103,6 +101,6 @@ export function AccountAvatar({
         {busy ? "Lädt hoch…" : preview ? "Bild ändern" : "Bild hochladen"}
       </p>
       {error ? <p className="max-w-xs text-sm text-bdas-red">{error}</p> : null}
-    </div>
+    </DropZone>
   );
 }
