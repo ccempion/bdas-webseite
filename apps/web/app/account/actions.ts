@@ -16,6 +16,10 @@ import {
 import { readSessionCookie } from "../../lib/auth-cookie";
 
 export type ProfileFormState = {
+  /** Set only on a successful write. `useFormState` cannot otherwise tell an
+   *  empty success apart from its own initial state, and the /account edit
+   *  toggle needs that distinction to collapse back to the summary. */
+  readonly ok?: true;
   readonly error?: string;
   readonly notice?: string;
   readonly fields?: Record<string, string>;
@@ -40,7 +44,7 @@ export async function saveProfileAction(
     if (!me.member) {
       await createProfile(db, { userId: me.user.id, firstName, lastName, primaryGroupId });
       revalidatePath("/account");
-      return {};
+      return { ok: true };
     }
 
     await updateProfile(db, me.member.id, { firstName, lastName });
@@ -55,8 +59,8 @@ export async function saveProfileAction(
     });
     revalidatePath("/account");
     return res.kind === "requested"
-      ? { notice: "Dein Wechselantrag wurde eingereicht und wartet auf die Zielgruppe." }
-      : {};
+      ? { ok: true, notice: "Dein Wechselantrag wurde eingereicht und wartet auf die Zielgruppe." }
+      : { ok: true };
   } catch (err) {
     if (isAppError(err)) {
       const fields = "fields" in err && (err as { fields?: Record<string, string> }).fields;

@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 
+import { ACCEPT_ATTR, acceptImageFile } from "../_profile/photo-upload";
+import { usePhotoDrop } from "../_profile/use-photo-drop";
 import { savePhotoAction } from "./photo-actions";
 
 /** Large enough to read as the page's identity anchor, not a form field. */
@@ -9,8 +11,8 @@ const SIZE = 112;
 
 /**
  * The profile photo at the top of /account. The circle *is* the control: click
- * it to pick a file, which uploads to the private bucket and saves straight
- * away — no separate submit.
+ * it to pick a file — or drop one on it — which uploads to the private bucket
+ * and saves straight away, no separate submit.
  *
  * Private objects have no public URL, so the rendered image is either the
  * server-signed `photoUrl` or, right after picking a file, a local object URL
@@ -34,6 +36,18 @@ export function AccountAvatar({
   }, [localPreview]);
 
   const preview = localPreview ?? photoUrl ?? null;
+
+  function pick(file: File) {
+    const rejected = acceptImageFile(file);
+    if (rejected) {
+      setError(rejected);
+      return;
+    }
+    setLocalPreview(URL.createObjectURL(file));
+    void handle(file);
+  }
+
+  const { dragging, dropHandlers } = usePhotoDrop({ onFile: pick, disabled: busy });
 
   async function handle(file: File) {
     setBusy(true);
@@ -66,17 +80,15 @@ export function AccountAvatar({
   }
 
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col items-center gap-2">
       <input
         ref={inputRef}
         type="file"
-        accept="image/jpeg,image/png,image/webp,image/avif"
+        accept={ACCEPT_ATTR}
         className="hidden"
         onChange={(e) => {
           const file = e.currentTarget.files?.[0];
-          if (!file) return;
-          setLocalPreview(URL.createObjectURL(file));
-          void handle(file);
+          if (file) pick(file);
         }}
       />
       <button
@@ -85,7 +97,10 @@ export function AccountAvatar({
         onClick={() => inputRef.current?.click()}
         aria-label={preview ? "Profilbild ändern" : "Profilbild hochladen"}
         style={{ width: SIZE, height: SIZE }}
-        className="shrink-0 overflow-hidden rounded-bdas-full border border-bdas-soft bg-bdas-overlay-soft transition-shadow duration-bdas-quick ease-bdas hover:shadow-bdas-card focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-bdas-red disabled:opacity-60"
+        {...dropHandlers}
+        className={`shrink-0 overflow-hidden rounded-bdas-full border bg-bdas-overlay-soft transition-shadow duration-bdas-quick ease-bdas hover:shadow-bdas-card focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-bdas-red disabled:opacity-60 ${
+          dragging ? "border-bdas-red ring-2 ring-bdas-red/20" : "border-bdas-soft"
+        }`}
       >
         {preview ? (
           <img src={preview} alt="" className="h-full w-full object-cover" />
@@ -99,10 +114,10 @@ export function AccountAvatar({
           </span>
         )}
       </button>
-      <p className="text-sm text-bdas-ink-muted">
-        {busy ? "Lädt hoch…" : preview ? "Bild ändern" : "Bild hochladen"}
+      <p style={{ width: SIZE }} className="text-center text-sm text-bdas-ink-muted">
+        {busy ? "Lädt hoch…" : dragging ? "Loslassen" : preview ? "Bild ändern" : "Bild hochladen"}
       </p>
-      {error ? <p className="max-w-xs text-sm text-bdas-red">{error}</p> : null}
+      {error ? <p className="max-w-xs text-center text-sm text-bdas-red">{error}</p> : null}
     </div>
   );
 }

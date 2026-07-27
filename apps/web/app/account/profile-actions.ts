@@ -11,6 +11,8 @@ import { saveProfile } from "@bdas/profile";
 import { readSessionCookie } from "../../lib/auth-cookie";
 
 export type EditProfileState = {
+  /** See ProfileFormState.ok — same reason, same consumer. */
+  readonly ok?: true;
   readonly notice?: string;
   readonly error?: string;
   readonly fields?: Record<string, string>;
@@ -51,7 +53,7 @@ export async function saveProfileFieldsAction(
       groupId: groupId || (me.member.primaryGroupId ?? null),
     });
     revalidatePath("/account");
-    return { notice: "Profil gespeichert." };
+    return { ok: true, notice: "Profil gespeichert." };
   } catch (err) {
     if (isAppError(err)) {
       const f = "fields" in err && (err as { fields?: Record<string, string> }).fields;
