@@ -1193,10 +1193,11 @@ Expected: unchanged behaviour.
 Apply `0008_application_reasons.sql` by hand, then record it:
 
 ```sql
-INSERT INTO _bdas_migrations (name) VALUES ('members/0008_application_reasons.sql');
+INSERT INTO _bdas_migrations (id, module, filename)
+VALUES ('members/0008_application_reasons.sql', 'members', '0008_application_reasons.sql');
 ```
 
-Read an existing row of `_bdas_migrations` first and match its format.
+The ledger's columns are `id` (`<module>/<filename>`, the primary key), `module`, `filename`, and `applied_at` (defaults to `now()`) — see `infra/migrations/src/index.ts:113`. Read an existing row first and match it.
 
 `0008` is safe against the code that is running right now: it adds nullable columns, backfills, and its two constraints are both satisfied by a NULL reason category.
 
