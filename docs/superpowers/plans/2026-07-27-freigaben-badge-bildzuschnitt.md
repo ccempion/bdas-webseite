@@ -920,19 +920,21 @@ ersetzen durch (Einrückung jeweils beibehalten):
 
 - [ ] **Step 4: Badge am mobilen „Menü"-Button**
 
-Mobil gibt es kein Namens-Pill; ohne diesen Platz wäre die Zahl auf dem Handy unsichtbar. Die `<summary>` des mobilen Menüs ändern zu:
+Mobil gibt es kein Namens-Pill; ohne diesen Platz wäre die Zahl auf dem Handy unsichtbar.
+
+Das `<details>` behält sein `className="ml-auto md:hidden"` **unverändert** — nur die `<summary>` bekommt `flex items-center gap-2` dazu, damit Text und Badge nebeneinander sitzen:
 
 ```tsx
             <summary
               aria-label="Menü öffnen"
-              className="ml-auto flex cursor-pointer list-none items-center gap-2 rounded-bdas border border-bdas-strong px-3 py-1.5 text-bdas-ink [&::-webkit-details-marker]:hidden md:hidden"
+              className="flex cursor-pointer list-none items-center gap-2 rounded-bdas border border-bdas-strong px-3 py-1.5 text-bdas-ink [&::-webkit-details-marker]:hidden"
             >
               Menü
               <Badge count={openCount} label="offene Freigaben" />
             </summary>
 ```
 
-Das `ml-auto md:hidden` wandert damit vom `<details>` auf die `<summary>`; setze am `<details>` weiterhin `className="ml-auto md:hidden"`, damit das Layout unverändert bleibt, und lass an der `<summary>` nur `flex items-center gap-2` zusätzlich stehen. Prüfe das Ergebnis im Browser, bevor du committest.
+Prüfe das Ergebnis im Browser, bevor du committest.
 
 - [ ] **Step 5: Typprüfung und Lint**
 
