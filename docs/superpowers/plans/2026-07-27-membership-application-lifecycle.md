@@ -16,7 +16,9 @@
 - **Module boundaries (CLAUDE.md §1).** `members` owns `members`, `member_role_grants`, `member_group_change_requests`. It must never read the `groups` table — group status checks belong in the app layer.
 - **Public surface.** Only symbols re-exported from `modules/members/src/index.ts` are importable elsewhere. No deep imports.
 - **Migrations.** Live in `modules/members/migrations/`, run in manifest order from `infra/migrations/src/manifest.ts`. Register every new file in `MEMBERS_TEST_MIGRATIONS` in `modules/members/src/test-db.ts` too, or the tests run against a stale schema.
-- **No database mocks.** Integration tests run against Docker Postgres via `setupMembersDb()`. Tests are skipped, not failed, when the database is unreachable (`dbReachable()`).
+- **No database mocks.** Integration tests run against Docker Postgres via `setupMembersDb()`. Tests are skipped, not failed, when the database is unreachable (`dbReachable()`). A skip is never a pass — if the suite skips, the environment is wrong, and reporting it as green hides everything.
+- **Every task ends with `pnpm -r typecheck` across the whole workspace**, not just the package it touched. Changing a type in `modules/members` can break a fixture in `apps/web` that no test in `modules/members` will ever compile. This is not hypothetical: adding the two reason fields to `GroupChangeRequest` broke `apps/web/app/(board)/_components/group-history.test.ts`, and it went unnoticed for three tasks because each ran only its own package's typecheck.
+- **When something is already broken, compare against the branch point** (`git merge-base main HEAD`), never against the previous task's commit. A neighbouring commit of ours is not a clean baseline, and "it was already failing before my task" is how a regression gets adopted as background noise.
 - **Design tokens.** No inline hex, radius, shadow or duration values. Consume `@bdas/design-system`.
 - **UI copy is German.** Reason category keys are stable English identifiers; only their labels are German.
 - **Rejection reason categories** are exactly `no_contact`, `not_a_student`, `other`. `other` requires a message.
