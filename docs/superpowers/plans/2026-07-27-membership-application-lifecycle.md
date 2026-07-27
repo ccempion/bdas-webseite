@@ -22,7 +22,12 @@
 - **Rejection reason categories** are exactly `no_contact`, `not_a_student`, `other`. `other` requires a message.
 - **Applications may target `active` and `dormant` groups only.** `new` and `archived` are excluded.
 - **Never show the applicant who decided.** `decided_by` is audit data.
-- **Deployment.** Vercel does not run migrations. `0008` must be applied to production by hand with a `_bdas_migrations` insert before Phase 2 deploys.
+- **Deployment is expand/contract, in three ordered steps.** Vercel does not run migrations; they are applied by hand and are decoupled from deploys, so no step may assume another has already happened.
+  1. Apply `0008` (columns + data backfill, no reason-required constraint). Safe against the currently-deployed code.
+  2. Deploy the code that always writes a reason on rejection.
+  3. Apply `0009` (the reason-required constraint). Only now can it be satisfied.
+
+  Each step needs its own `_bdas_migrations` insert. Applying `0009` before step 2 breaks every rejection in the live app with a constraint violation — that is why the constraint is a separate file.
 
 ---
 
@@ -64,12 +69,12 @@ UPDATE member_group_change_requests
  WHERE status = 'rejected'
    AND reason_category IS NULL;
 
--- 3. A reason exists exactly on rejections, is one of the three keys, and
---    `other` must say something.
-ALTER TABLE member_group_change_requests
-  ADD CONSTRAINT member_group_change_requests_reason_presence_check
-    CHECK ((status = 'rejected') = (reason_category IS NOT NULL));
-
+-- 3. The reason is one of the three keys, and `other` must say something.
+--
+--    The constraint that a rejection MUST carry a reason lives in 0009, not
+--    here: it would reject writes from the currently-deployed code, which does
+--    not set one yet. Both constraints below are satisfied by a NULL category,
+--    so they are safe against the old code and can land now.
 ALTER TABLE member_group_change_requests
   ADD CONSTRAINT member_group_change_requests_reason_category_check
     CHECK (reason_category IS NULL
@@ -333,6 +338,8 @@ pending members with the rejection kept on record."
 
 ## Task 2: Record a reason on rejection, and refuse deactivated members
 
+> **Execute Task 3 before this one.** This task's tests use a helper that files an application and expects a request back, which is the behaviour Task 3 introduces — run in the written order, every test here fails on the helper rather than on the code under test. Task 3 stands alone and needs nothing from this task.
+
 **Files:**
 - Modify: `modules/members/src/schema.ts:61-85` (two columns)
 - Modify: `modules/members/src/types.ts` (add `RejectionReason`, extend `GroupChangeRequest`)
@@ -572,7 +579,17 @@ In `modules/members/src/index.ts`, add `RejectionCategory` and `RejectionReason`
 export { REJECTION_CATEGORY_LABELS } from "./types";
 ```
 
-- [ ] **Step 8: Run the tests to verify they pass**
+- [ ] **Step 8: Register `0009` in the test harness**
+
+`0009_reason_required.sql` was written in Task 1 but deliberately left out of `MEMBERS_TEST_MIGRATIONS`, because until this task nothing set a reason and the constraint would have turned the suite red. This task supplies the reason, so the constraint can now be satisfied. Append to the list in `modules/members/src/test-db.ts`, after the `0008` entry, and remove the comment noting the deferral:
+
+```ts
+  ["..", "migrations", "0009_reason_required.sql"],
+```
+
+From here the harness matches the production end state, so a rejection written without a reason now fails in tests exactly as it would in production.
+
+- [ ] **Step 9: Run the tests to verify they pass**
 
 Run: `pnpm vitest run modules/members/src/group-change.test.ts`
 Expected: PASS, including the pre-existing blocks.
@@ -1160,15 +1177,30 @@ The board's approve/reject buttons still call `transitionStatus`; nothing user-f
 Run: `pnpm dev` and open `/gruppe/<slug>/members`
 Expected: unchanged behaviour.
 
-- [ ] **Step 4: Apply the migration to production**
+- [ ] **Step 4: Apply `0008` to production — and only `0008`**
 
-This must happen before Phase 2 deploys. Apply `0008_application_reasons.sql` against the production database by hand, then record it:
+**This step changes real people's records and is not reversible. It needs explicit human go-ahead, and no subagent may perform it.**
+
+Apply `0008_application_reasons.sql` by hand, then record it:
 
 ```sql
 INSERT INTO _bdas_migrations (name) VALUES ('members/0008_application_reasons.sql');
 ```
 
-Confirm the tracking row matches the format of existing rows before inserting — read one first.
+Read an existing row of `_bdas_migrations` first and match its format.
+
+`0008` is safe against the code that is running right now: it adds nullable columns, backfills, and its two constraints are both satisfied by a NULL reason category.
+
+**Do not apply `0009_reason_required.sql` here.** It enforces that every rejection carries a reason, which the currently-deployed code does not do — applying it now breaks every rejection in the live app. It goes on after Phase 2's deploy, in the checklist at the end of this plan.
+
+Before applying, confirm what the backfill will touch:
+
+```sql
+SELECT count(*) FROM members WHERE status = 'pending' AND primary_group_id IS NOT NULL;
+SELECT count(*) FROM members WHERE status = 'inactive' AND joined_at IS NULL;
+```
+
+The first count is live applications that will keep their queue position. The second is people currently stranded who will be returned to the pool. Expect both numbers to be small; if either is surprising, stop and investigate before running the migration.
 
 ---
 
@@ -2489,3 +2521,4 @@ Before opening the final pull request:
 - [ ] A local board sees no pool anywhere; the federal board sees it at `/federal/pool` with no date of birth or photo
 - [ ] The applicant is never shown who decided
 - [ ] Migration `0008` is applied to production and recorded in `_bdas_migrations`
+- [ ] The Phase 2 code is deployed, **and only then** `0009_reason_required.sql` is applied and recorded. Applying it earlier breaks every rejection in the live app

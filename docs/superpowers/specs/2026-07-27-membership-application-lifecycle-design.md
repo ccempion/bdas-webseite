@@ -425,17 +425,36 @@ walk.
 
 Step 3 changes live people's state and was explicitly approved.
 
-**Deployment:** Vercel does not run the migration runner on deploy. This
-migration must be applied to production by hand and recorded in
-`_bdas_migrations`, or every page reading the new columns breaks with "column
-does not exist".
+### The reason-required constraint ships separately
+
+"A rejection must carry a reason" is a constraint the *currently deployed* code
+cannot satisfy — `decideGroupChange` does not set one yet. Enforcing it in `0008`
+would make every rejection in the live app fail with a constraint violation from
+the moment the migration lands until the new code deploys, and since migrations
+here are applied by hand and decoupled from deploys, that window is however long
+sits between two manual steps.
+
+So `0008` carries the columns, the backfill, and only the constraints a NULL
+category already satisfies. A second migration,
+`0009_reason_required.sql`, carries the presence constraint alone.
+
+This was caught in review, after an earlier draft of this spec had `0008` doing
+both and instructed "migrate first, then deploy" — which is exactly backwards for
+a constraint the running code cannot meet.
+
+**Deployment is three ordered steps.** Vercel does not run the migration runner
+on deploy; each step is manual and needs its own `_bdas_migrations` row.
+
+1. Apply `0008`. Safe against the running code.
+2. Deploy the code that always writes a reason on rejection.
+3. Apply `0009`. Only now can it be satisfied.
 
 **No feature flag.** CLAUDE.md §3 requires a flag per new *module*; this changes
 an existing one, and the migration is a one-way data change that a flag could not
 undo — a half-flipped flag would leave applications in one model and decisions in
-another. Safety comes from ordering instead: apply the migration first and
-confirm it, then deploy the code that reads the new columns. PR 1 is additive and
-leaves the old path working, so the gap between the two steps is harmless.
+another. The expand/contract ordering above is what provides the safety instead,
+and it is the reason the constraint is a separate file rather than a comment
+telling the operator to hurry.
 
 ## Testing
 
