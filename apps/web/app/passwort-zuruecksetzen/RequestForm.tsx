@@ -15,7 +15,7 @@ export function RequestResetForm() {
     return (
       <Alert variant="success" title="E-Mail versendet">
         Falls die E-Mail-Adresse bei uns registriert ist, haben wir dir einen Link zum Zurücksetzen
-        geschickt. Der Link ist 1 Stunde gültig.
+        geschickt. Der Link ist 1 Stunde gültig. Schau auch in deinen Spam-Ordner.
       </Alert>
     );
   }
