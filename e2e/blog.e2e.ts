@@ -135,6 +135,100 @@ test.describe("blog", () => {
     await expect(page.getByRole("link", { name: "Bearbeiten" })).toHaveCount(0);
   });
 
+  /**
+   * Drag-and-drop into the editor. Playwright cannot drag from the OS, so the
+   * drop is synthesised with a DataTransfer built in the page — the same events
+   * a real drag produces, which is what Tiptap's FileHandler listens for.
+   *
+   * Object storage is not provisioned in every e2e environment, so this asserts
+   * the drop is *taken* (the signing route is called) rather than that an image
+   * lands in the document, which would additionally require a live bucket.
+   */
+  test("dropping an image into the post editor calls the signing route", async ({ page }) => {
+    const email = uniqueEmail("blog-drop");
+    await registerVerifyLogin(page, { email });
+    await activateMemberByEmail(email);
+
+    await page.goto("/blog/neu");
+    const editor = page.locator('.ProseMirror[contenteditable="true"]');
+    await editor.click();
+
+    const signing = page.waitForRequest(
+      (r) => r.url().includes("/api/blog/upload-url") && r.method() === "POST",
+    );
+
+    await page.evaluate(async () => {
+      const png = await fetch(
+        "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==",
+      ).then((r) => r.blob());
+      const transfer = new DataTransfer();
+      transfer.items.add(new File([png], "drop.png", { type: "image/png" }));
+      const target = document.querySelector('.ProseMirror[contenteditable="true"]');
+      if (!target) throw new Error("editor not found");
+      const rect = target.getBoundingClientRect();
+      target.dispatchEvent(
+        new DragEvent("drop", {
+          bubbles: true,
+          cancelable: true,
+          dataTransfer: transfer,
+          clientX: rect.left + 10,
+          clientY: rect.top + 10,
+        }),
+      );
+    });
+
+    const request = await signing;
+    expect(JSON.parse(request.postData() ?? "{}")).toMatchObject({
+      filename: "drop.png",
+      mimeType: "image/png",
+    });
+  });
+
+  /**
+   * The client-side allowlist must turn a non-image away without a round trip —
+   * the routes accept only JPEG/PNG/WebP/AVIF (see app/_upload/accept.ts).
+   */
+  test("dropping a PDF into the post editor never reaches the server", async ({ page }) => {
+    const email = uniqueEmail("blog-drop-bad");
+    await registerVerifyLogin(page, { email });
+    await activateMemberByEmail(email);
+
+    await page.goto("/blog/neu");
+    const editor = page.locator('.ProseMirror[contenteditable="true"]');
+    await editor.click();
+
+    const calls: string[] = [];
+    page.on("request", (r) => {
+      if (r.url().includes("/api/blog/upload-url")) calls.push(r.url());
+    });
+
+    const refusal = await page.evaluate(async () => {
+      const messages: string[] = [];
+      window.alert = (m) => messages.push(String(m));
+      const transfer = new DataTransfer();
+      transfer.items.add(new File([new Blob(["x"])], "satzung.pdf", { type: "application/pdf" }));
+      const target = document.querySelector('.ProseMirror[contenteditable="true"]');
+      if (!target) throw new Error("editor not found");
+      // Coordinates are required: FileHandler resolves the insertion point from
+      // them, and a drop at (0,0) lands outside the editor and is ignored.
+      const rect = target.getBoundingClientRect();
+      target.dispatchEvent(
+        new DragEvent("drop", {
+          bubbles: true,
+          cancelable: true,
+          dataTransfer: transfer,
+          clientX: rect.left + 10,
+          clientY: rect.top + 10,
+        }),
+      );
+      await new Promise((r) => setTimeout(r, 300));
+      return messages;
+    });
+
+    expect(refusal).toEqual(["satzung.pdf: nur JPEG, PNG, WebP oder AVIF."]);
+    expect(calls).toEqual([]);
+  });
+
   test("category filter narrows the feed", async ({ page }) => {
     const email = uniqueEmail("blog-category");
     await registerVerifyLogin(page, { email });
