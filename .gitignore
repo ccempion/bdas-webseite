@@ -27,3 +27,4 @@ playwright-report
 
 # Playwright MCP page snapshots — debugging debris, never a build input.
 .playwright-mcp/
+playwright.local.config.ts
