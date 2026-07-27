@@ -2013,6 +2013,8 @@ Delete the board-notification branch from the `profile.completed` subscriber —
 
 Delete the `members.status.changed` subscriber's `from === "pending"` branch. If that leaves the subscriber empty, remove it.
 
+**Then remove what that branch was the only consumer of.** Task 3 added a `StatusChanged` emission inside `decideGroupChange`'s approval path, with a comment saying it exists "so the acceptance notification still fires". Once the acceptance email moves onto `members.group_change.decided` here, that emission has no subscriber and the comment is false. Delete the emission and the comment together — leaving them is dead code that reads as if it still matters. Keep the status write and the `joined_at` stamp; only the event publication goes.
+
 Add:
 
 ```ts
