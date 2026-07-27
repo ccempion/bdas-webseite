@@ -18,6 +18,7 @@ export { listBoardRecipientsForGroup } from "./services/board-recipients";
 export { listPendingMembers } from "./services/list-pending";
 export { listGrouplessMembers, type GrouplessMember } from "./services/pool";
 export { getCurrentMember, requireFederalBoard, type CurrentMember } from "./services/me";
+export { registerMembersSubscribers } from "./subscribers";
 
 export {
   canTransition,

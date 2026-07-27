@@ -16,5 +16,9 @@ export async function register(): Promise<void> {
     // folder provisioning degrade gracefully instead of 500ing the instance
     // (ADR 0014).
     await bootFiles();
+    const { bootMembers } = await import("./lib/members-bootstrap");
+    // No flag, no retry loop: registering the subscription is synchronous and
+    // in-process, so there is nothing transient here to degrade gracefully from.
+    bootMembers();
   }
 }
