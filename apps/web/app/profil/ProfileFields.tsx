@@ -73,13 +73,21 @@ export function UniGruppeFields({
   values,
   set,
   errors,
-  groups,
+  groups = [],
   idPrefix = "",
+  showGruppe = true,
 }: {
   values: WizardValues;
   set: Setter;
   errors: Record<string, string>;
-  groups: Groups;
+  groups?: Groups;
+  /** `/account` renders the members form alongside these fields, and that form
+   *  owns the group: only its action implements the transfer semantics of ADR
+   *  0022 (request, or withdraw by re-picking the current group). Two selects
+   *  writing `primaryGroupId` on one page would be a coin flip, so the extended
+   *  form hides this one. The wizard is the sole place the group is picked
+   *  here. */
+  showGruppe?: boolean;
 } & WithIdPrefix) {
   return (
     <>
@@ -112,25 +120,27 @@ export function UniGruppeFields({
           />
         ) : null}
       </Field>
-      <Field
-        label="BDAS-Gruppe"
-        htmlFor={`${idPrefix}primaryGroupId`}
-        {...(errors["primaryGroupId"] ? { error: errors["primaryGroupId"] } : {})}
-      >
-        <select
-          id={`${idPrefix}primaryGroupId`}
-          className={SELECT_CLASS}
-          value={values.primaryGroupId}
-          onChange={(e) => set("primaryGroupId", e.currentTarget.value)}
+      {showGruppe ? (
+        <Field
+          label="BDAS-Gruppe"
+          htmlFor={`${idPrefix}primaryGroupId`}
+          {...(errors["primaryGroupId"] ? { error: errors["primaryGroupId"] } : {})}
         >
-          <option value="">— bitte wählen —</option>
-          {groups.map((g) => (
-            <option key={g.id} value={g.id}>
-              {g.name} ({g.city})
-            </option>
-          ))}
-        </select>
-      </Field>
+          <select
+            id={`${idPrefix}primaryGroupId`}
+            className={SELECT_CLASS}
+            value={values.primaryGroupId}
+            onChange={(e) => set("primaryGroupId", e.currentTarget.value)}
+          >
+            <option value="">— bitte wählen —</option>
+            {groups.map((g) => (
+              <option key={g.id} value={g.id}>
+                {g.name} ({g.city})
+              </option>
+            ))}
+          </select>
+        </Field>
+      ) : null}
     </>
   );
 }

@@ -1,10 +1,10 @@
 "use client";
 
-import { useFormState, useFormStatus } from "react-dom";
+import { useFormStatus } from "react-dom";
 
 import { Alert, Button, Field, Form, Input } from "@bdas/design-system";
 
-import { saveProfileAction, type ProfileFormState } from "./actions";
+import type { ProfileFormState } from "./actions";
 
 export type ProfileFormProps = {
   initial: {
@@ -15,21 +15,23 @@ export type ProfileFormProps = {
   groups: Array<{ id: string; slug: string; name: string; city: string }>;
   isNew: boolean;
   openChangeGroupName: string | null;
+  /** Owned by EditableProfile: a save that completes the profile unmounts this
+   *  form, so the action state has to outlive it. */
+  state: ProfileFormState;
+  action: (formData: FormData) => void;
 };
-
-const initial: ProfileFormState = {};
 
 export function ProfileForm({
   initial: data,
   groups,
   isNew,
   openChangeGroupName,
+  state,
+  action,
 }: ProfileFormProps) {
-  const [state, action] = useFormState(saveProfileAction, initial);
   return (
     <Form action={action}>
       {state.error ? <Alert variant="error">{state.error}</Alert> : null}
-      {state.notice ? <Alert variant="info">{state.notice}</Alert> : null}
       <Field
         label="Vorname"
         htmlFor="firstName"

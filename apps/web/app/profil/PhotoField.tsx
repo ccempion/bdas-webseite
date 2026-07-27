@@ -2,8 +2,12 @@
 
 import { useEffect, useRef, useState } from "react";
 
+import { ACCEPT_ATTR, acceptImageFile } from "../_profile/photo-upload";
+import { usePhotoDrop } from "../_profile/use-photo-drop";
+
 /** Uploads a profile photo via /api/profile/upload-url (private bucket, signed
- *  PUT) and stores the returned storage key.
+ *  PUT) and stores the returned storage key. The dashed area takes a click or a
+ *  dropped file.
  *
  *  Private objects have no public URL, so the preview is a local object URL of
  *  the file just picked — enough to confirm the upload during the signup
@@ -28,6 +32,18 @@ export function PhotoField({
   }, [localPreview]);
 
   const preview = localPreview;
+
+  function pick(file: File) {
+    const rejected = acceptImageFile(file);
+    if (rejected) {
+      setError(rejected);
+      return;
+    }
+    setLocalPreview(URL.createObjectURL(file));
+    void upload(file);
+  }
+
+  const { dragging, dropHandlers } = usePhotoDrop({ onFile: pick, disabled: busy });
 
   async function upload(file: File) {
     setBusy(true);
@@ -74,22 +90,31 @@ export function PhotoField({
       <input
         ref={inputRef}
         type="file"
-        accept="image/jpeg,image/png,image/webp,image/avif"
+        accept={ACCEPT_ATTR}
         className="hidden"
         onChange={(e) => {
           const file = e.currentTarget.files?.[0];
-          if (!file) return;
-          setLocalPreview(URL.createObjectURL(file));
-          void upload(file);
+          if (file) pick(file);
         }}
       />
       <button
         type="button"
         disabled={busy}
         onClick={() => inputRef.current?.click()}
-        className="rounded-bdas-sm border border-bdas-strong px-3 py-1.5 text-sm text-bdas-ink transition-colors duration-bdas-quick ease-bdas hover:bg-bdas-surface-hover disabled:opacity-50"
+        {...dropHandlers}
+        className={`rounded-bdas-sm border border-dashed px-3 py-6 text-sm transition-colors duration-bdas-quick ease-bdas hover:bg-bdas-surface-hover disabled:opacity-50 ${
+          dragging
+            ? "border-bdas-red bg-bdas-surface-hover text-bdas-red"
+            : "border-bdas-strong text-bdas-ink"
+        }`}
       >
-        {busy ? "Lädt hoch…" : storageKey ? "Foto ersetzen" : "Foto hochladen (optional)"}
+        {busy
+          ? "Lädt hoch…"
+          : dragging
+            ? "Loslassen zum Hochladen"
+            : storageKey
+              ? "Foto ersetzen — klicken oder hierher ziehen"
+              : "Foto hochladen (optional) — klicken oder hierher ziehen"}
       </button>
       {error ? <p className="text-sm text-bdas-red">{error}</p> : null}
     </div>

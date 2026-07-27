@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useFormState, useFormStatus } from "react-dom";
+import { useFormStatus } from "react-dom";
 
 import { Alert, Button, Form } from "@bdas/design-system";
 import { isKnownUniversity, SONSTIGE } from "@bdas/profile";
@@ -13,7 +13,7 @@ import {
   GeburtsdatumField,
   GefundenFields,
 } from "../profil/ProfileFields";
-import { saveProfileFieldsAction, type EditProfileState } from "./profile-actions";
+import type { EditProfileState } from "./profile-actions";
 
 export type EditProfileFormProps = {
   initial: {
@@ -25,14 +25,12 @@ export type EditProfileFormProps = {
     empfehlerName: string | null;
     photoStorageKey: string | null;
   };
-  primaryGroupId: string | null;
-  groups: ReadonlyArray<{ id: string; name: string; city: string }>;
+  /** Owned by EditableProfile — see ProfileFormProps.state. */
+  state: EditProfileState;
+  action: (formData: FormData) => void;
 };
 
-function toWizardValues(
-  initial: EditProfileFormProps["initial"],
-  primaryGroupId: string | null,
-): WizardValues {
+function toWizardValues(initial: EditProfileFormProps["initial"]): WizardValues {
   const stored = initial.uni;
   const [uni, uniOther] =
     stored === "" ? ["", ""] : isKnownUniversity(stored) ? [stored, ""] : [SONSTIGE, stored];
@@ -42,7 +40,9 @@ function toWizardValues(
     abschlussart: initial.abschlussart,
     uni,
     uniOther,
-    primaryGroupId: primaryGroupId ?? "",
+    // The group is owned by the members form on this page (see UniGruppeFields'
+    // showGruppe): not shown, not submitted, so the action keeps the stored one.
+    primaryGroupId: "",
     geburtsdatum: initial.geburtsdatum,
     gefundenDurch: initial.gefundenDurch,
     empfehlerName: initial.empfehlerName ?? "",
@@ -50,15 +50,12 @@ function toWizardValues(
   };
 }
 
-const EMPTY_STATE: EditProfileState = {};
-
 /** `/account` also renders the members profile form, which owns its own
  *  `primaryGroupId` select — namespace these ids so no two controls collide. */
 const ID_PREFIX = "konto-";
 
-export function EditProfileForm({ initial, primaryGroupId, groups }: EditProfileFormProps) {
-  const [values, setValues] = useState<WizardValues>(() => toWizardValues(initial, primaryGroupId));
-  const [state, action] = useFormState(saveProfileFieldsAction, EMPTY_STATE);
+export function EditProfileForm({ initial, state, action }: EditProfileFormProps) {
+  const [values, setValues] = useState<WizardValues>(() => toWizardValues(initial));
 
   const set: <K extends keyof WizardValues>(k: K, v: WizardValues[K]) => void = (k, v) =>
     setValues((prev) => ({ ...prev, [k]: v }));
@@ -68,15 +65,14 @@ export function EditProfileForm({ initial, primaryGroupId, groups }: EditProfile
   return (
     <Form action={action}>
       {state.error ? <Alert variant="error">{state.error}</Alert> : null}
-      {state.notice ? <Alert variant="info">{state.notice}</Alert> : null}
 
       <StudiumFields values={values} set={set} errors={errors} idPrefix={ID_PREFIX} />
       <UniGruppeFields
         values={values}
         set={set}
         errors={errors}
-        groups={groups}
         idPrefix={ID_PREFIX}
+        showGruppe={false}
       />
       <GeburtsdatumField values={values} set={set} errors={errors} idPrefix={ID_PREFIX} />
       <GefundenFields values={values} set={set} errors={errors} idPrefix={ID_PREFIX} />
@@ -84,7 +80,6 @@ export function EditProfileForm({ initial, primaryGroupId, groups }: EditProfile
       <input type="hidden" name="studiengang" value={values.studiengang} />
       <input type="hidden" name="abschlussart" value={values.abschlussart} />
       <input type="hidden" name="uni" value={resolveUni(values)} />
-      <input type="hidden" name="primaryGroupId" value={values.primaryGroupId} />
       <input type="hidden" name="geburtsdatum" value={values.geburtsdatum} />
       <input type="hidden" name="gefundenDurch" value={values.gefundenDurch} />
       <input type="hidden" name="empfehlerName" value={values.empfehlerName} />
