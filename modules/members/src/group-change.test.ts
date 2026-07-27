@@ -165,23 +165,22 @@ describeIfDb("changePrimaryGroup", () => {
     expect(events.some((e) => e.type === "members.group_change.requested")).toBe(true);
   });
 
-  it("moves a pending member straight through — nothing was approved yet", async () => {
+  it("files a request for a pending member — nothing moves until a board approves", async () => {
     await createUser(t, "usr_pending", "pending@example.de");
     const m = await createProfile(t.db, {
       userId: "usr_pending",
       firstName: "Noch",
       lastName: "Wartend",
-      primaryGroupId: "grp_a",
     });
 
     const res = await changePrimaryGroup(t.db, m.id, "grp_b", self("usr_pending"));
 
-    expect(res.kind).toBe("applied");
+    expect(res.kind).toBe("requested");
     const after = await getMember(t.db, m.id);
-    expect(after?.primaryGroupId).toBe("grp_b");
+    expect(after?.primaryGroupId).toBeNull();
     expect(after?.status).toBe("pending");
     const rows = await t.client`SELECT id FROM member_group_change_requests`;
-    expect(rows.length).toBe(0); // no request row for a pending member
+    expect(rows.length).toBe(1); // the application itself
   });
 
   it("applies an exit immediately, logs it, and revokes origin-group grants", async () => {
@@ -600,5 +599,66 @@ describeIfDb("listIncomingGroupChanges", () => {
     await decideGroupChange(t.db, open.id, "approved", board);
 
     expect(await listIncomingGroupChanges(t.db, "grp_b", board)).toEqual([]);
+  });
+});
+
+describeIfDb("applications from the pool", () => {
+  let t: TestDb;
+
+  beforeAll(() => {
+    process.env["SSO_JWT_SECRET"] = "x".repeat(48);
+  });
+
+  beforeEach(async () => {
+    t = await setupMembersDb();
+    resetEventBus();
+    await createGroup(t, "grp_a", "aachen");
+    await createGroup(t, "grp_b", "berlin");
+    await createUser(t, "usr_neu", "neu@example.de");
+    await t.client`
+      INSERT INTO members (id, user_id, first_name, last_name, primary_group_id, status)
+      VALUES ('mem_neu', 'usr_neu', 'Nina', 'Neu', NULL, 'pending')
+    `;
+  });
+
+  afterEach(async () => {
+    await t.cleanup();
+  });
+
+  it("files a request rather than writing the group", async () => {
+    const res = await changePrimaryGroup(t.db, "mem_neu", "grp_a", self("usr_neu"));
+    expect(res.kind).toBe("requested");
+    const member = await getMember(t.db, "mem_neu");
+    expect(member?.primaryGroupId).toBeNull();
+  });
+
+  it("emits members.group_change.requested", async () => {
+    const seen: MembersEvent[] = [];
+    getEventBus().subscribe<MembersEvent>("members.group_change.requested", async (e) => {
+      seen.push(e);
+    });
+    await changePrimaryGroup(t.db, "mem_neu", "grp_a", self("usr_neu"));
+    expect(seen).toHaveLength(1);
+  });
+
+  it("allows only one open application at a time", async () => {
+    await changePrimaryGroup(t.db, "mem_neu", "grp_a", self("usr_neu"));
+    await expect(changePrimaryGroup(t.db, "mem_neu", "grp_b", self("usr_neu"))).rejects.toThrow();
+  });
+
+  it("lets the applicant withdraw and apply elsewhere", async () => {
+    await changePrimaryGroup(t.db, "mem_neu", "grp_a", self("usr_neu"));
+    await withdrawGroupChange(t.db, "mem_neu", self("usr_neu"));
+    const res = await changePrimaryGroup(t.db, "mem_neu", "grp_b", self("usr_neu"));
+    expect(res.kind).toBe("requested");
+  });
+
+  it("sets the group and stamps joined_at on approval", async () => {
+    const res = await changePrimaryGroup(t.db, "mem_neu", "grp_a", self("usr_neu"));
+    if (res.kind !== "requested") throw new Error("expected a request");
+    await decideGroupChange(t.db, res.request.id, "approved", FEDERAL);
+    const member = await getMember(t.db, "mem_neu");
+    expect(member?.primaryGroupId).toBe("grp_a");
+    expect(member?.joinedAt).not.toBeNull();
   });
 });

@@ -2,11 +2,12 @@
  * Group transfers (ADR 0022). The ONLY self-service writer of
  * `members.primary_group_id`.
  *
- * An active member cannot move themselves: they file a request that the
+ * Nobody moves themselves: choosing a group — whether an active member's
+ * transfer or a pending member's first application — files a request that the
  * DESTINATION group's board decides (ADR 0021's rule, applied to transfers).
- * A pending member has nothing approved yet, so their choice is written
- * straight through. Leaving to no group applies immediately — nobody needs to
- * approve an exit — but is still logged.
+ * `primary_group_id` is written only once a board approves. Leaving to no
+ * group applies immediately — nobody needs to approve an exit — but is still
+ * logged.
  *
  * The module deliberately does not verify that a destination group exists; the
  * foreign key does that. Reading the `groups` table from here would violate
@@ -24,6 +25,7 @@ import type {
   GroupChangeRequested,
   GroupChangeWithdrawn,
   RoleRevoked,
+  StatusChanged,
 } from "../events";
 import { canDecideJoinRequest, canManageGroup, isFederalBoard } from "../roles";
 import {
@@ -155,18 +157,6 @@ export async function changePrimaryGroup(
       return { kind: "applied", member: row2member(row) };
     }
 
-    // Nothing has been approved for a pending member, so there is nothing to
-    // re-approve: their join request simply moves to the other group's queue.
-    if (status === "pending") {
-      const [updated] = await tx
-        .update(members)
-        .set({ primaryGroupId: toGroupId, updatedAt: new Date() })
-        .where(eq(members.id, memberId))
-        .returning();
-      if (!updated) throw new Error("changePrimaryGroup: update returned no row");
-      return { kind: "applied", member: row2member(updated) };
-    }
-
     // Leaving needs no approval, but is logged and drops origin-group powers.
     if (toGroupId === null) {
       await withdrawOpen(tx, memberId, actor.userId);
@@ -204,9 +194,14 @@ export async function changePrimaryGroup(
       return { kind: "applied", member: row2member(updated) };
     }
 
-    // Joining another group: the destination board decides. A second pick
-    // supersedes the first (the partial unique index allows one open row).
-    await withdrawOpen(tx, memberId, actor.userId);
+    // Joining another group: the destination board decides. An active
+    // member's second pick supersedes the first (the partial unique index
+    // allows one open row per member) — but a pending applicant must
+    // withdraw explicitly before applying elsewhere: at most one open
+    // application in the pool at a time, enforced here by that same index.
+    if (status === "active") {
+      await withdrawOpen(tx, memberId, actor.userId);
+    }
     const id = createId("mgc");
     const [request] = await tx
       .insert(memberGroupChangeRequests)
@@ -252,8 +247,12 @@ export async function withdrawGroupChange(
  * The origin group has no veto.
  *
  * Approval moves the member and revokes any grant they still hold in the group
- * they left. Rejection leaves them exactly where they were. Status is never
- * touched — an approved transfer does not send anyone back to `pending`.
+ * they left. Rejection leaves them exactly where they were. A transfer never
+ * touches status — an approved transfer does not send anyone back to
+ * `pending`. A first-time application (`from_group_id IS NULL`) is different:
+ * approval is the applicant's acceptance, so it also flips status to `active`
+ * and stamps `joined_at`, emitting `members.status.changed` the same way
+ * `approveMember` would, so the acceptance notification still fires.
  */
 export async function decideGroupChange(
   db: Db,
@@ -295,14 +294,44 @@ export async function decideGroupChange(
       .returning();
     if (!updated) throw new ConflictError("Über diesen Antrag wurde bereits entschieden.");
 
+    // Applicant vs. transfer is decided by the member's actual status, not by
+    // `from_group_id` alone — an active member who exited also has a null
+    // `from_group_id` on a rejoin request, and that is not an acceptance.
+    let isFirstAcceptance = false;
     if (decision === "approved") {
-      await tx
-        .update(members)
-        .set({ primaryGroupId: toGroupId, updatedAt: now })
-        .where(eq(members.id, req.memberId));
+      const memberRows = await tx
+        .select({ status: members.status, joinedAt: members.joinedAt })
+        .from(members)
+        .where(eq(members.id, req.memberId))
+        .limit(1);
+      const member = memberRows[0];
+      if (!member) throw new Error("decideGroupChange: member row missing");
+      isFirstAcceptance = member.status === "pending";
+
+      const set: Partial<typeof members.$inferInsert> & {
+        primaryGroupId: string;
+        updatedAt: Date;
+      } = { primaryGroupId: toGroupId, updatedAt: now };
+      if (isFirstAcceptance) {
+        set.status = "active";
+        if (member.joinedAt === null) set.joinedAt = now;
+      }
+      await tx.update(members).set(set).where(eq(members.id, req.memberId));
       if (req.fromGroupId !== null) {
         await revokeGroupScopedGrants(tx, req.memberId, req.fromGroupId, actor.userId);
       }
+    }
+
+    if (isFirstAcceptance) {
+      const statusEvent: StatusChanged = {
+        type: "members.status.changed",
+        memberId: req.memberId,
+        from: "pending",
+        to: "active",
+        actorUserId: actor.userId,
+        at: now,
+      };
+      await getEventBus().publish(statusEvent);
     }
 
     const event: GroupChangeDecided = {
