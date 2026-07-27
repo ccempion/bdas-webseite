@@ -739,7 +739,7 @@ invariant that it means a board agreed."
 **Interfaces:**
 - Consumes: `Actor` from `./services/status`, `isFederalBoard` from `../roles`.
 - Produces: `listGrouplessMembers(db: Db, actor: Actor): Promise<GrouplessMember[]>` where
-  `type GrouplessMember = { readonly member: Member; readonly waitingSince: Date }`.
+  `type GrouplessMember = { readonly member: Member; readonly registeredAt: Date }`.
   Returns `[]` for any non-federal actor rather than throwing.
 
 - [ ] **Step 1: Write the failing test**
@@ -859,8 +859,15 @@ import type { Actor, Db } from "./status";
 
 export type GrouplessMember = {
   readonly member: Member;
-  /** When they entered the pool. Signup for an applicant; today's proxy is the row's last change. */
-  readonly waitingSince: Date;
+  /**
+   * When the member row was created — i.e. when the person registered.
+   *
+   * This is **not** how long they have been without a group. For a member who
+   * left a group it predates that by however long they were a member, so it must
+   * never be labelled "waiting since". The federal pool renders it as
+   * "Im Verband seit".
+   */
+  readonly registeredAt: Date;
 };
 
 export async function listGrouplessMembers(db: Db, actor: Actor): Promise<GrouplessMember[]> {
@@ -876,7 +883,7 @@ export async function listGrouplessMembers(db: Db, actor: Actor): Promise<Groupl
 
   return rows.map((r) => ({
     member: row2member(r),
-    waitingSince: r.createdAt,
+    registeredAt: r.createdAt,
   }));
 }
 ```
@@ -1802,7 +1809,7 @@ export default async function PoolPage() {
               <tr className="border-b border-bdas-soft text-left text-bdas-ink-muted">
                 <th className="p-3 font-semibold">Name</th>
                 <th className="p-3 font-semibold">Universität</th>
-                <th className="p-3 font-semibold">Wartet seit</th>
+                <th className="p-3 font-semibold">Im Verband seit</th>
                 <th className="p-3 font-semibold">Art</th>
               </tr>
             </thead>
@@ -1814,13 +1821,13 @@ export default async function PoolPage() {
                   </td>
                 </tr>
               ) : (
-                rows.map(({ member, waitingSince, uni }) => (
+                rows.map(({ member, registeredAt, uni }) => (
                   <tr key={member.id} className="border-b border-bdas-soft">
                     <td className="p-3">
                       {member.firstName[0]}. {member.lastName}
                     </td>
                     <td className="p-3">{uni}</td>
-                    <td className="p-3">{days(waitingSince)} Tage</td>
+                    <td className="p-3">{days(registeredAt)} Tage</td>
                     <td className="p-3 text-bdas-ink-muted">
                       {member.status === "active" ? "Mitglied ohne Gruppe" : "Bewerber:in"}
                     </td>

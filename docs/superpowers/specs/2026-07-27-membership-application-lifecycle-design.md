@@ -57,7 +57,7 @@ built for exactly this shape.
 | Rejection reason | Required category plus optional free-text message. **Both shown to the applicant.** No field is presented as private. |
 | Re-applying to the same group | Allowed, with no cooldown. The board sees prior attempts and their outcomes. |
 | Board invitations from the pool | **Not built.** Applications are the only direction. |
-| Pool visibility | **Federal board only**, and limited to name, university, waiting time. |
+| Pool visibility | **Federal board only**, and limited to name, university, and how long they have been registered. |
 | Full profile visibility | Only to the board of a group the person has actually applied to. |
 | Leaving a group | Returns the person to the pool, where they may apply again. |
 
@@ -71,7 +71,14 @@ dozen local boards — leaves invitations with no one able to issue them. They a
 dropped rather than bent.
 
 The federal board's view of the pool is oversight: how many people are registered
-with no group, and how long they have waited.
+with no group, and since when they have been registered.
+
+That last value is registration time, **not** time spent without a group, and the
+column is labelled "Im Verband seit" rather than "Wartet seit" for exactly that
+reason. For someone who left a group after years of membership the two differ by
+the whole membership. The truer value is computable — an exit is recorded as an
+approved request with a null destination, carrying its decision date — but was
+deliberately not built: the honest label was preferred to the extra query.
 
 ## Data model
 
@@ -355,7 +362,7 @@ what makes `apps/web/app/admin/pending-members/` removable.
 
 New nav item in `FEDERAL_NAV`, route `/federal/pool`, with two sections.
 
-**Ohne Gruppe** — a read-only table of the pool: name, university, waiting time,
+**Ohne Gruppe** — a read-only table of the pool: name, university, registration date,
 and whether the person is an applicant or a member between groups. No date of
 birth, no photo, no actions. This is the table the brief asked for, "where all
 the groupless people are", scoped to the only role with a federation-wide remit.
