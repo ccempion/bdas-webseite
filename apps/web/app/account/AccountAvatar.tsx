@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 
+import { CropDialog } from "../_profile/CropDialog";
 import { DropZone } from "../_upload/DropZone";
 import { IMAGE_ACCEPT, PROFILE_IMAGE } from "../_upload/accept";
 import { uploadImage } from "../_upload/upload-image";
@@ -30,6 +31,7 @@ export function AccountAvatar({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [localPreview, setLocalPreview] = useState<string | null>(null);
+  const [pending, setPending] = useState<File | null>(null);
 
   useEffect(() => {
     if (!localPreview) return;
@@ -61,7 +63,7 @@ export function AccountAvatar({
   return (
     <DropZone
       accept={PROFILE_IMAGE}
-      onFile={(file) => void handle(file)}
+      onFile={(file) => setPending(file)}
       onReject={(messages) => setError(messages[0] ?? null)}
       label="Bild hier ablegen"
       disabled={busy}
@@ -74,7 +76,7 @@ export function AccountAvatar({
         className="hidden"
         onChange={(e) => {
           const file = e.currentTarget.files?.[0];
-          if (file) void handle(file);
+          if (file) setPending(file);
         }}
       />
       <button
@@ -103,6 +105,16 @@ export function AccountAvatar({
         {busy ? "Lädt hoch…" : preview ? "Bild ändern" : "Bild hochladen"}
       </p>
       {error ? <p className="max-w-xs text-center text-sm text-bdas-red">{error}</p> : null}
+      {pending ? (
+        <CropDialog
+          file={pending}
+          onCancel={() => setPending(null)}
+          onDone={(cropped) => {
+            setPending(null);
+            void handle(cropped);
+          }}
+        />
+      ) : null}
     </DropZone>
   );
 }
