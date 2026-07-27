@@ -2,12 +2,12 @@
 
 import { useEffect, useRef, useState } from "react";
 
-import { ACCEPT_ATTR, acceptImageFile } from "../_profile/photo-upload";
-import { usePhotoDrop } from "../_profile/use-photo-drop";
+import { DropZone } from "../_upload/DropZone";
+import { IMAGE_ACCEPT, PROFILE_IMAGE } from "../_upload/accept";
+import { uploadImage } from "../_upload/upload-image";
 
 /** Uploads a profile photo via /api/profile/upload-url (private bucket, signed
- *  PUT) and stores the returned storage key. The dashed area takes a click or a
- *  dropped file.
+ *  PUT) and stores the returned storage key.
  *
  *  Private objects have no public URL, so the preview is a local object URL of
  *  the file just picked — enough to confirm the upload during the signup
@@ -33,49 +33,34 @@ export function PhotoField({
 
   const preview = localPreview;
 
-  function pick(file: File) {
-    const rejected = acceptImageFile(file);
-    if (rejected) {
-      setError(rejected);
-      return;
-    }
-    setLocalPreview(URL.createObjectURL(file));
-    void upload(file);
-  }
-
-  const { dragging, dropHandlers } = usePhotoDrop({ onFile: pick, disabled: busy });
-
   async function upload(file: File) {
     setBusy(true);
     setError(null);
     try {
-      const res = await fetch("/api/profile/upload-url", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ filename: file.name, mimeType: file.type, sizeBytes: file.size }),
-      });
-      if (!res.ok) {
-        const body = (await res.json().catch(() => ({}))) as { error?: string };
-        setError(body.error ?? "Upload fehlgeschlagen.");
+      setLocalPreview(URL.createObjectURL(file));
+      const out = await uploadImage<{ uploadUrl: string; storageKey: string }>(
+        "/api/profile/upload-url",
+        file,
+      );
+      if ("error" in out) {
+        setError(out.error);
         return;
       }
-      const { uploadUrl, storageKey: key } = (await res.json()) as {
-        uploadUrl: string;
-        storageKey: string;
-      };
-      const put = await fetch(uploadUrl, { method: "PUT", body: file });
-      if (!put.ok) {
-        setError("Upload fehlgeschlagen.");
-        return;
-      }
-      onChange(key);
+      onChange(out.ok.storageKey);
     } finally {
       setBusy(false);
     }
   }
 
   return (
-    <div className="flex flex-col gap-2">
+    <DropZone
+      accept={PROFILE_IMAGE}
+      onFile={(file) => void upload(file)}
+      onReject={(messages) => setError(messages[0] ?? null)}
+      label="Foto hier ablegen"
+      disabled={busy}
+      className="flex flex-col gap-2"
+    >
       {preview ? (
         <img
           src={preview}
@@ -90,33 +75,22 @@ export function PhotoField({
       <input
         ref={inputRef}
         type="file"
-        accept={ACCEPT_ATTR}
+        accept={IMAGE_ACCEPT}
         className="hidden"
         onChange={(e) => {
           const file = e.currentTarget.files?.[0];
-          if (file) pick(file);
+          if (file) void upload(file);
         }}
       />
       <button
         type="button"
         disabled={busy}
         onClick={() => inputRef.current?.click()}
-        {...dropHandlers}
-        className={`rounded-bdas-sm border border-dashed px-3 py-6 text-sm transition-colors duration-bdas-quick ease-bdas hover:bg-bdas-surface-hover disabled:opacity-50 ${
-          dragging
-            ? "border-bdas-red bg-bdas-surface-hover text-bdas-red"
-            : "border-bdas-strong text-bdas-ink"
-        }`}
+        className="rounded-bdas-sm border border-bdas-strong px-3 py-1.5 text-sm text-bdas-ink transition-colors duration-bdas-quick ease-bdas hover:bg-bdas-surface-hover disabled:opacity-50"
       >
-        {busy
-          ? "Lädt hoch…"
-          : dragging
-            ? "Loslassen zum Hochladen"
-            : storageKey
-              ? "Foto ersetzen — klicken oder hierher ziehen"
-              : "Foto hochladen (optional) — klicken oder hierher ziehen"}
+        {busy ? "Lädt hoch…" : storageKey ? "Foto ersetzen" : "Foto hochladen (optional)"}
       </button>
       {error ? <p className="text-sm text-bdas-red">{error}</p> : null}
-    </div>
+    </DropZone>
   );
 }

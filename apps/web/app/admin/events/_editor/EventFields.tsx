@@ -6,6 +6,9 @@ import { Field, Input } from "@bdas/design-system";
 import type { EventContent } from "@bdas/events-module";
 
 import { LocationPicker } from "../../../_components/LocationPicker";
+import { DropZone } from "../../../_upload/DropZone";
+import { CONTENT_IMAGE, IMAGE_ACCEPT } from "../../../_upload/accept";
+import { uploadImage } from "../../../_upload/upload-image";
 import { RichTextEditor } from "./RichTextEditor";
 
 const SELECT_CLASS =
@@ -45,23 +48,16 @@ export function EventFields({ d }: { d: EventDefaults }) {
   async function uploadCover(file: File) {
     setCoverBusy(true);
     try {
-      const res = await fetch(`/api/events/${d.eventId}/upload-url`, {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ filename: file.name, mimeType: file.type, sizeBytes: file.size }),
-      });
-      if (!res.ok) {
-        alert((await res.json().catch(() => ({}))).error ?? "Upload fehlgeschlagen.");
+      const out = await uploadImage<{ uploadUrl: string; publicUrl: string; storageKey: string }>(
+        `/api/events/${d.eventId}/upload-url`,
+        file,
+      );
+      if ("error" in out) {
+        alert(out.error);
         return;
       }
-      const { uploadUrl, publicUrl, storageKey } = await res.json();
-      const put = await fetch(uploadUrl, { method: "PUT", body: file });
-      if (!put.ok) {
-        alert("Upload fehlgeschlagen.");
-        return;
-      }
-      setCoverKey(storageKey);
-      setCoverUrl(publicUrl);
+      setCoverKey(out.ok.storageKey);
+      setCoverUrl(out.ok.publicUrl);
     } finally {
       setCoverBusy(false);
     }
@@ -83,21 +79,33 @@ export function EventFields({ d }: { d: EventDefaults }) {
 
       {d.eventId !== "" && (
         <Field label="Titelbild (optional)" htmlFor="cover">
-          {coverUrl ? (
-            <img src={coverUrl} alt="" className="mb-2 max-h-48 w-full rounded-bdas object-cover" />
-          ) : null}
-          <input
-            id="cover"
-            type="file"
-            accept="image/*"
+          <DropZone
+            accept={CONTENT_IMAGE}
+            onFile={(file) => void uploadCover(file)}
+            onReject={(messages) => alert(messages[0])}
+            label="Titelbild hier ablegen"
             disabled={coverBusy}
-            onChange={(e) => {
-              const f = e.target.files?.[0];
-              if (f) void uploadCover(f);
-            }}
-          />
-          <input type="hidden" name="coverImageKey" value={coverKey} />
-          {coverBusy ? <p className="mt-1 text-sm text-bdas-ink-muted">Lädt hoch…</p> : null}
+          >
+            {coverUrl ? (
+              <img
+                src={coverUrl}
+                alt=""
+                className="mb-2 max-h-48 w-full rounded-bdas object-cover"
+              />
+            ) : null}
+            <input
+              id="cover"
+              type="file"
+              accept={IMAGE_ACCEPT}
+              disabled={coverBusy}
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (f) void uploadCover(f);
+              }}
+            />
+            <input type="hidden" name="coverImageKey" value={coverKey} />
+            {coverBusy ? <p className="mt-1 text-sm text-bdas-ink-muted">Lädt hoch…</p> : null}
+          </DropZone>
         </Field>
       )}
 

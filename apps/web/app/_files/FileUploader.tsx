@@ -3,6 +3,7 @@
 import { useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
+import { DropZone } from "../_upload/DropZone";
 import { confirmUploadAction, requestUploadAction } from "./file-actions";
 import { formatFileSize, mimeIcon } from "./folder-meta";
 import { runUploads, validateFile, type UploadInput, type UploadItem } from "./upload-manager";
@@ -48,14 +49,25 @@ export function FileUploader({
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
   const [items, setItems] = useState<readonly UploadItem[]>([]);
-  const [dragOver, setDragOver] = useState(false);
   const [busy, setBusy] = useState(false);
+  // Files the zone turned away before an upload was ever attempted. Without
+  // this they would vanish silently — `runUploads` only reports on files it is
+  // actually given.
+  const [rejected, setRejected] = useState<readonly string[]>([]);
   const allowedMime = useMemo(() => new Set(acceptMime), [acceptMime]);
   const accept = acceptMime.join(",");
+  // This surface takes documents, not images, so it supplies its own spec.
+  // `runUploads` still re-checks every file through `validateFile` and reports
+  // per-file failures in the list below.
+  const spec = useMemo(
+    () => ({ mime: acceptMime, maxBytes, maxLabel: formatFileSize(maxBytes) }),
+    [acceptMime, maxBytes],
+  );
 
-  async function upload(fileList: FileList | null): Promise<void> {
-    if (!fileList || fileList.length === 0 || busy) return;
-    const files: UploadInput[] = Array.from(fileList).map((f) => ({
+  async function upload(dropped: readonly File[]): Promise<void> {
+    if (dropped.length === 0 || busy) return;
+    setRejected([]);
+    const files: UploadInput[] = dropped.map((f) => ({
       id: crypto.randomUUID(),
       name: f.name,
       mimeType: f.type,
@@ -80,43 +92,47 @@ export function FileUploader({
 
   return (
     <div className="flex flex-col gap-3">
-      <div
-        onDragOver={(e) => {
-          e.preventDefault();
-          setDragOver(true);
-        }}
-        onDragLeave={() => setDragOver(false)}
-        onDrop={(e) => {
-          e.preventDefault();
-          setDragOver(false);
-          void upload(e.dataTransfer.files);
-        }}
-        onClick={() => inputRef.current?.click()}
-        role="button"
-        tabIndex={0}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === " ") inputRef.current?.click();
-        }}
-        className={`flex cursor-pointer flex-col items-center justify-center gap-1 rounded-bdas border border-dashed p-8 text-center transition-colors duration-bdas-quick ${
-          dragOver
-            ? "border-bdas-red bg-bdas-overlay-hover"
-            : "border-bdas-soft bg-bdas-surface hover:bg-bdas-overlay-hover"
-        }`}
+      <DropZone
+        accept={spec}
+        onFiles={(files) => void upload(files)}
+        onReject={setRejected}
+        label="Dateien hier ablegen"
+        disabled={busy}
       >
-        <p className="font-medium text-bdas-ink">Dateien hierher ziehen oder klicken</p>
-        <p className="text-sm text-bdas-ink-muted">Bis zu {formatFileSize(maxBytes)} pro Datei</p>
-        <input
-          ref={inputRef}
-          type="file"
-          multiple
-          accept={accept}
-          className="hidden"
-          onChange={(e) => {
-            void upload(e.target.files);
-            e.target.value = "";
+        <div
+          onClick={() => inputRef.current?.click()}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") inputRef.current?.click();
           }}
-        />
-      </div>
+          className="flex cursor-pointer flex-col items-center justify-center gap-1 rounded-bdas border border-dashed border-bdas-soft bg-bdas-surface p-8 text-center transition-colors duration-bdas-quick hover:bg-bdas-overlay-hover"
+        >
+          <p className="font-medium text-bdas-ink">Dateien hierher ziehen oder klicken</p>
+          <p className="text-sm text-bdas-ink-muted">Bis zu {formatFileSize(maxBytes)} pro Datei</p>
+          <input
+            ref={inputRef}
+            type="file"
+            multiple
+            accept={accept}
+            className="hidden"
+            onChange={(e) => {
+              void upload(Array.from(e.target.files ?? []));
+              e.target.value = "";
+            }}
+          />
+        </div>
+      </DropZone>
+
+      {rejected.length > 0 ? (
+        <ul className="flex flex-col gap-1">
+          {rejected.map((message) => (
+            <li key={message} className="text-sm text-bdas-red">
+              {message}
+            </li>
+          ))}
+        </ul>
+      ) : null}
 
       {items.length > 0 ? (
         <ul className="flex flex-col gap-2">

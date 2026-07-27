@@ -7,6 +7,10 @@ import { useCallback, useState } from "react";
 
 import type { TiptapDoc } from "@bdas/events-module";
 
+import { IMAGE_ACCEPT } from "../../../_upload/accept";
+import { imageFileHandler } from "../../../_upload/editor-file-handler";
+import { uploadImage } from "../../../_upload/upload-image";
+
 const BTN =
   "rounded-bdas-sm px-2 py-1 text-sm text-bdas-ink-body hover:bg-bdas-overlay-hover " +
   "transition-colors duration-bdas-quick ease-bdas data-[active=true]:bg-bdas-overlay-soft";
@@ -37,6 +41,7 @@ export function RichTextEditor({
   eventId: string;
 }) {
   const [json, setJson] = useState<string>(defaultDoc ? JSON.stringify(defaultDoc) : "");
+  const uploadUrl = `/api/events/${eventId}/upload-url`;
   const editor = useEditor({
     // StarterKit v3 bundles Link and Underline; Link is configured through it.
     // Underline stays off — it was unavailable under v2 and this migration does
@@ -44,6 +49,7 @@ export function RichTextEditor({
     extensions: [
       StarterKit.configure({ underline: false, link: { openOnClick: false } }),
       ImageWithWidth,
+      imageFileHandler({ endpoint: uploadUrl, onError: (m) => alert(m) }),
     ],
     content: (defaultDoc ?? "") as Content,
     immediatelyRender: false,
@@ -61,30 +67,19 @@ export function RichTextEditor({
     if (!editor) return;
     const input = document.createElement("input");
     input.type = "file";
-    input.accept = "image/*";
+    input.accept = IMAGE_ACCEPT;
     input.onchange = async () => {
       const file = input.files?.[0];
       if (!file) return;
-      const res = await fetch(`/api/events/${eventId}/upload-url`, {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ filename: file.name, mimeType: file.type, sizeBytes: file.size }),
-      });
-      if (!res.ok) {
-        const { error } = await res.json().catch(() => ({ error: "Upload fehlgeschlagen." }));
-        alert(error ?? "Upload fehlgeschlagen.");
+      const out = await uploadImage<{ uploadUrl: string; publicUrl: string }>(uploadUrl, file);
+      if ("error" in out) {
+        alert(out.error);
         return;
       }
-      const { uploadUrl, publicUrl } = await res.json();
-      const put = await fetch(uploadUrl, { method: "PUT", body: file });
-      if (!put.ok) {
-        alert("Upload fehlgeschlagen.");
-        return;
-      }
-      editor.chain().focus().setImage({ src: publicUrl }).run();
+      editor.chain().focus().setImage({ src: out.ok.publicUrl }).run();
     };
     input.click();
-  }, [editor, eventId]);
+  }, [editor, uploadUrl]);
 
   if (!editor) return null;
 

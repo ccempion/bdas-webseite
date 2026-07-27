@@ -24,3 +24,6 @@ playwright-report
 
 # Superpowers brainstorming (local mockups, not committed)
 .superpowers/
+
+# Playwright MCP page snapshots — debugging debris, never a build input.
+.playwright-mcp/
