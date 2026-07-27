@@ -167,11 +167,11 @@ the public website should not start advertising resting groups. The applicant's
 group list is a separate query over `active | dormant`, with dormant entries
 labelled **ruhend** so nobody applies to one unaware.
 
-`new` is excluded on the narrow reading of the decision, which named dormant
-specifically. It is worth revisiting: `new` is inert — no code anywhere branches
-on it — so it behaves exactly like `dormant` in every existing path, and a group
-being founded is arguably the one that most needs applicants. **Open question,
-not a settled decision.**
+`new` is excluded, decided deliberately. It is inert in the codebase — nothing
+branches on it, so it behaves exactly like `dormant` in every existing path — and
+rather than lean on that accident, the status is left out of this design
+entirely. A group being founded reaches applicants by being switched to `active`,
+which is also what ADR 0021's seeding path assumes.
 
 **The apply action must enforce this server-side.** `changePrimaryGroup`
 deliberately does not read the `groups` table — that would violate CLAUDE.md §1
@@ -498,5 +498,6 @@ repeat-application badge in PR 2 reuses.
 - A motivation letter or any application-specific free text from the applicant.
 - Structured analytics over rejection categories. The data will support it; no report is built.
 - **Alumni, entirely.** The status is unreachable and this design takes no position on it.
+- **Groups with status `new`.** Not applicable to, and given no meaning here. A founding group becomes reachable by being switched to `active`.
 - **Member lifecycle after joining** — deactivation, alumni, and any board UI for them. Never implemented; `transitionStatus` remains the service it would use.
 - **Retention and deletion of applicant data.** Someone never accepted stays in the pool indefinitely, with date of birth and photo. A deletion or anonymisation rule is needed under the General Data Protection Regulation (GDPR / DSGVO) but is explicitly deferred, not solved here.
