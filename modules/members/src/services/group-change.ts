@@ -290,12 +290,14 @@ export async function decideGroupChange(
     // Exits are written already-approved and never reach this path.
     if (toGroupId === null) throw new ConflictError("Austritte werden nicht freigegeben.");
 
-    // Read once, before authorization: guards against deciding a request
-    // whose member is no longer pending/active, and — on approval — tells an
-    // applicant's first acceptance apart from a transfer. Not read from
-    // `fromGroupId` alone: an active member who left their group and
-    // reapplies also has `fromGroupId === null` on the rejoin, and that is
-    // not an acceptance.
+    // Read once: guards against deciding a request whose member is no longer
+    // pending/active, and — on approval — tells an applicant's first
+    // acceptance apart from a transfer. Not read from `fromGroupId` alone: an
+    // active member who left their group and reapplies also has
+    // `fromGroupId === null` on the rejoin, and that is not an acceptance.
+    // Reading here (before authorization) is harmless; the throw on it is
+    // deferred below the authorization check so an actor with no standing
+    // over the destination group cannot learn a third party's member state.
     const memberRows = await tx
       .select({ status: members.status, joinedAt: members.joinedAt })
       .from(members)
@@ -304,13 +306,14 @@ export async function decideGroupChange(
     const member = memberRows[0];
     if (!member) throw new Error("decideGroupChange: member row missing");
     const memberStatus = member.status as MemberStatus;
-    if (memberStatus !== "pending" && memberStatus !== "active") {
-      throw new ConflictError("Dieses Mitglied ist nicht mehr aktiv.");
-    }
 
     const hasLocalBoard = await groupHasActiveLocalBoard(tx, toGroupId);
     if (!canDecideJoinRequest(actor.grants, toGroupId, hasLocalBoard)) {
       throw new ForbiddenError("Über den Wechsel entscheidet der Vorstand der Zielgruppe.");
+    }
+
+    if (memberStatus !== "pending" && memberStatus !== "active") {
+      throw new ConflictError("Dieses Mitglied ist nicht mehr aktiv.");
     }
 
     const now = new Date();

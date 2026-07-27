@@ -798,4 +798,19 @@ describeIfDb("rejection reasons", () => {
       decideGroupChange(t.db, id, "approved", boardOf("usr_board", "grp_b")),
     ).rejects.toThrow(/nicht mehr/);
   });
+
+  // Authorization must be checked before the member's state is disclosed: an
+  // actor with no standing over the destination group must be told "you may
+  // not decide this" (Forbidden), not "this member is deactivated"
+  // (Conflict) — the latter would leak a third party's status to someone who
+  // isn't entitled to decide anything about them. This pins the ORDER of the
+  // two checks; swapping them back would turn this red without touching
+  // either error message.
+  it("tells an unauthorized actor they may not decide, not that the member was deactivated", async () => {
+    const id = await apply();
+    await t.client`UPDATE members SET status = 'inactive' WHERE id = 'mem_cem'`;
+    await expect(
+      decideGroupChange(t.db, id, "approved", boardOf("usr_outsider", "grp_a")),
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+  });
 });
