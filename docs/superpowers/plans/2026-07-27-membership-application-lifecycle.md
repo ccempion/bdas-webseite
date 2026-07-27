@@ -543,7 +543,7 @@ Immediately inside the function, before `db.transaction`, add the reason validat
   }
 ```
 
-Inside the transaction, after the request row is loaded and before the authorization check, add the member-status guard:
+Inside the transaction, **after** `canDecideJoinRequest` has passed, add the member-status guard. The order matters: authorization must be the first check that can reject the caller, or an actor with no standing over the destination group learns that a particular person has been deactivated instead of simply being refused. Reading the row earlier is fine — it is the throw that must come after.
 
 ```ts
     const memberRows = await tx
