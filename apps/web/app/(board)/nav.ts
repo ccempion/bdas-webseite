@@ -8,6 +8,7 @@ export type NavItem = { readonly href: string; readonly label: string };
 export const FEDERAL_NAV: ReadonlyArray<NavItem> = [
   { href: "/federal/overview", label: "Übersicht" },
   { href: "/federal/members", label: "Mitglieder" },
+  { href: "/federal/pool", label: "Ohne Gruppe" },
   { href: "/federal/events", label: "Events" },
   { href: "/federal/groups", label: "Gruppen" },
   { href: "/federal/roles", label: "Rollen" },
