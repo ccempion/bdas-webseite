@@ -2,6 +2,9 @@
 
 import { useContext, useRef, useState } from "react";
 
+import { DropZone } from "../_upload/DropZone";
+import { CONTENT_IMAGE, IMAGE_ACCEPT } from "../_upload/accept";
+import { uploadImage } from "../_upload/upload-image";
 import { ContentSlugContext } from "./content-slug-context";
 
 /** Custom Puck field: uploads an image via /api/content/upload-url (signed
@@ -23,43 +26,35 @@ export function FotoField({
     setBusy(true);
     setError(null);
     try {
-      const res = await fetch("/api/content/upload-url", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          filename: file.name,
-          mimeType: file.type,
-          sizeBytes: file.size,
-          slug,
-        }),
-      });
-      if (!res.ok) {
-        const body = (await res.json().catch(() => ({}))) as { error?: string };
-        setError(body.error ?? "Upload fehlgeschlagen.");
+      const out = await uploadImage<{ uploadUrl: string; publicUrl: string }>(
+        "/api/content/upload-url",
+        file,
+        { slug },
+      );
+      if ("error" in out) {
+        setError(out.error);
         return;
       }
-      const { uploadUrl, publicUrl } = (await res.json()) as {
-        uploadUrl: string;
-        publicUrl: string;
-      };
-      const put = await fetch(uploadUrl, { method: "PUT", body: file });
-      if (!put.ok) {
-        setError("Upload fehlgeschlagen.");
-        return;
-      }
-      onChange(publicUrl);
+      onChange(out.ok.publicUrl);
     } finally {
       setBusy(false);
     }
   }
 
   return (
-    <div className="flex flex-col gap-2">
+    <DropZone
+      accept={CONTENT_IMAGE}
+      onFile={(file) => void upload(file)}
+      onReject={(messages) => setError(messages[0] ?? null)}
+      label="Foto hier ablegen"
+      disabled={busy}
+      className="flex flex-col gap-2"
+    >
       {value ? <img src={value} alt="" className="h-24 w-24 rounded-bdas-sm object-cover" /> : null}
       <input
         ref={inputRef}
         type="file"
-        accept="image/jpeg,image/png,image/webp,image/avif"
+        accept={IMAGE_ACCEPT}
         className="hidden"
         onChange={(e) => {
           const file = e.currentTarget.files?.[0];
@@ -75,6 +70,6 @@ export function FotoField({
         {busy ? "Lädt hoch…" : value ? "Foto ersetzen" : "Foto hochladen"}
       </button>
       {error ? <p className="text-sm text-bdas-ink-body">{error}</p> : null}
-    </div>
+    </DropZone>
   );
 }
