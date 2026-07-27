@@ -27,7 +27,7 @@ import type {
   RoleRevoked,
   StatusChanged,
 } from "../events";
-import { canDecideJoinRequest, canManageGroup, isFederalBoard } from "../roles";
+import { canDecideJoinRequest, canManageGroup, canTransition, isFederalBoard } from "../roles";
 import {
   memberGroupChangeRequests,
   members,
@@ -306,7 +306,14 @@ export async function decideGroupChange(
         .limit(1);
       const member = memberRows[0];
       if (!member) throw new Error("decideGroupChange: member row missing");
-      isFirstAcceptance = member.status === "pending";
+      const memberStatus = member.status as MemberStatus;
+      isFirstAcceptance = memberStatus === "pending";
+      // The transition table (roles.ts) is the single source of truth for
+      // which status moves are legal, even though today only pending→active
+      // reaches here — do not hardcode that assumption a second time.
+      if (isFirstAcceptance && !canTransition(memberStatus, "active")) {
+        throw new ConflictError(`Übergang ${memberStatus} → active nicht erlaubt.`);
+      }
 
       const set: Partial<typeof members.$inferInsert> & {
         primaryGroupId: string;

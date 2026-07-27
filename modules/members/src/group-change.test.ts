@@ -403,6 +403,37 @@ describeIfDb("decideGroupChange", () => {
       decideGroupChange(t.db, requestId, "rejected", boardOf("usr_b_board", "grp_b")),
     ).rejects.toMatchObject({ code: "CONFLICT" });
   });
+
+  // A member who left and reapplies also has a request with `fromGroupId ===
+  // null` — the same shape as a first-time application. `decideGroupChange`
+  // must tell the two apart by the member's actual (still `active`) status,
+  // not by that shape, or it would treat the rejoin as a first acceptance
+  // and stamp over their real `joined_at`.
+  it("approving a rejoin keeps the member's original joined_at", async () => {
+    await createUser(t, "usr_returner", "returner@example.de");
+    const m = await createProfile(t.db, {
+      userId: "usr_returner",
+      firstName: "Rea",
+      lastName: "Turner",
+      primaryGroupId: "grp_a",
+    });
+    await approveMember(t.db, m.id, FEDERAL);
+    const original = await getMember(t.db, m.id);
+    const originalJoinedAt = original?.joinedAt ?? null;
+    if (originalJoinedAt === null) throw new Error("expected joinedAt to be stamped on approval");
+
+    await changePrimaryGroup(t.db, m.id, null, self("usr_returner")); // leaves the group structure
+    const res = await changePrimaryGroup(t.db, m.id, "grp_b", self("usr_returner")); // rejoins elsewhere
+    if (res.kind !== "requested") throw new Error("expected a request");
+
+    await giveBoardSeat("usr_b_board", "grp_b");
+    await decideGroupChange(t.db, res.request.id, "approved", boardOf("usr_b_board", "grp_b"));
+
+    const after = await getMember(t.db, m.id);
+    expect(after?.primaryGroupId).toBe("grp_b");
+    expect(after?.status).toBe("active");
+    expect(after?.joinedAt?.getTime()).toBe(originalJoinedAt.getTime());
+  });
 });
 
 describeIfDb("group change read services", () => {
