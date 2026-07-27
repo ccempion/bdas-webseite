@@ -304,8 +304,8 @@ Order:
    index at `apps/web/app/gruppen/page.tsx`, whose public `active`-only filter stays
    as is; this surface runs its own `active | dormant` query, with dormant
    groups labelled **ruhend** so nobody applies to one unaware. The apply server
-   action re-validates that the destination is not `archived` before calling
-   `changePrimaryGroup` — the module cannot check this itself.
+   action re-validates that the destination is `active` or `dormant` before
+   calling `changePrimaryGroup` — the module cannot check this itself.
 
 `/profil` currently redirects anyone who is not `pending` back to `/account`.
 That stays correct: the wizard is for profile completion only.
