@@ -2,10 +2,12 @@ import Link from "next/link";
 
 import { canAdministerBoard } from "@bdas/dashboard-shell";
 import { getDb } from "@bdas/db";
+import { Badge } from "@bdas/design-system";
 import { isFlagOn } from "@bdas/feature-flags";
 import { getGroup } from "@bdas/groups";
 
 import { BrandLink } from "../../components/BrandLink";
+import { loadApprovalCounts } from "../_dashboard/approvals";
 import { loadCurrentMember } from "../_dashboard/session";
 import { MobileMenuAutoClose } from "./MobileMenuAutoClose";
 import { NavAutoClose } from "./NavAutoClose";
@@ -53,6 +55,8 @@ function DesktopItem({ item }: { item: NavItem }) {
 export async function PublicHeader() {
   const me = await loadCurrentMember();
   const isBoard = me ? canAdministerBoard(me.grants) : false;
+  const approvals = isBoard ? await loadApprovalCounts() : null;
+  const openCount = approvals?.total ?? 0;
 
   // "Meine Gruppe" links into the public group page; it needs the group's slug
   // and only makes sense while groups are enabled and the group is not archived
@@ -97,6 +101,7 @@ export async function PublicHeader() {
                       className={`${PILL} cursor-pointer list-none [&::-webkit-details-marker]:hidden`}
                     >
                       {displayName}
+                      <Badge count={openCount} label="offene Freigaben" className="ml-2" />
                       <span
                         aria-hidden
                         className="ml-1 text-bdas-ink-muted transition-transform duration-bdas-quick group-open:rotate-180"
@@ -112,8 +117,12 @@ export async function PublicHeader() {
                       </li>
                       {isBoard ? (
                         <li>
-                          <Link href="/dashboard" className={DROPDOWN_LINK}>
-                            Board-Bereich
+                          <Link
+                            href="/dashboard"
+                            className={`${DROPDOWN_LINK} flex items-center justify-between gap-2`}
+                          >
+                            <span>Board-Bereich</span>
+                            <Badge count={openCount} label="offene Freigaben" />
                           </Link>
                         </li>
                       ) : null}
@@ -153,9 +162,10 @@ export async function PublicHeader() {
           <details className="ml-auto md:hidden">
             <summary
               aria-label="Menü öffnen"
-              className="cursor-pointer list-none rounded-bdas border border-bdas-strong px-3 py-1.5 text-bdas-ink [&::-webkit-details-marker]:hidden"
+              className="flex cursor-pointer list-none items-center gap-2 rounded-bdas border border-bdas-strong px-3 py-1.5 text-bdas-ink [&::-webkit-details-marker]:hidden"
             >
               Menü
+              <Badge count={openCount} label="offene Freigaben" />
             </summary>
             <nav
               aria-label="Hauptnavigation mobil"
@@ -202,8 +212,12 @@ export async function PublicHeader() {
                     </li>
                     {isBoard ? (
                       <li>
-                        <Link href="/dashboard" className={DROPDOWN_LINK}>
-                          Board-Bereich
+                        <Link
+                          href="/dashboard"
+                          className={`${DROPDOWN_LINK} flex items-center justify-between gap-2`}
+                        >
+                          <span>Board-Bereich</span>
+                          <Badge count={openCount} label="offene Freigaben" />
                         </Link>
                       </li>
                     ) : null}
