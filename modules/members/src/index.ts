@@ -35,6 +35,7 @@ export {
   changePrimaryGroup,
   withdrawGroupChange,
   decideGroupChange,
+  getGroupChangeRequest,
   getOpenGroupChange,
   listOpenGroupChanges,
   listIncomingGroupChanges,

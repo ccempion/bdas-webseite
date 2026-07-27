@@ -25,7 +25,6 @@ import type {
   GroupChangeRequested,
   GroupChangeWithdrawn,
   RoleRevoked,
-  StatusChanged,
 } from "../events";
 import { canDecideJoinRequest, canManageGroup, canTransition, isFederalBoard } from "../roles";
 import {
@@ -255,8 +254,8 @@ export async function withdrawGroupChange(
  * touches status — an approved transfer does not send anyone back to
  * `pending`. A first-time application (`from_group_id IS NULL`) is different:
  * approval is the applicant's acceptance, so it also flips status to `active`
- * and stamps `joined_at`, emitting `members.status.changed` the same way
- * `approveMember` would, so the acceptance notification still fires.
+ * and stamps `joined_at`. The acceptance mail rides on
+ * `members.group_change.decided` — this path publishes no status event.
  */
 export async function decideGroupChange(
   db: Db,
@@ -362,18 +361,6 @@ export async function decideGroupChange(
       }
     }
 
-    if (isFirstAcceptance) {
-      const statusEvent: StatusChanged = {
-        type: "members.status.changed",
-        memberId: req.memberId,
-        from: "pending",
-        to: "active",
-        actorUserId: actor.userId,
-        at: now,
-      };
-      await getEventBus().publish(statusEvent);
-    }
-
     const event: GroupChangeDecided = {
       type: "members.group_change.decided",
       requestId,
@@ -388,6 +375,22 @@ export async function decideGroupChange(
 
     return row2request(updated);
   });
+}
+
+/**
+ * One request by id. Used by notifications to read the reason a board wrote,
+ * which the decided event deliberately does not carry.
+ */
+export async function getGroupChangeRequest(
+  db: Db,
+  requestId: string,
+): Promise<GroupChangeRequest | null> {
+  const rows = await db
+    .select()
+    .from(memberGroupChangeRequests)
+    .where(eq(memberGroupChangeRequests.id, requestId))
+    .limit(1);
+  return rows[0] ? row2request(rows[0]) : null;
 }
 
 /** The member's own open request (used by /account — the member is the caller). */

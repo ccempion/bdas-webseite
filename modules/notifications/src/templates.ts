@@ -89,11 +89,23 @@ export function render(template: TransactionalTemplate, data: TemplateData): Ren
         "dein lokaler Vorstand hat deine Bewerbung angenommen — willkommen im BDAS! Deine Mitgliedschaft ist ab sofort aktiv.",
       );
     case "member_application_declined":
-      // No reason is collected anywhere, so none is implied here.
       return body(
         "BDAS — Entscheidung über deine Bewerbung",
         firstName,
-        "dein lokaler Vorstand hat deine Bewerbung geprüft und sie nicht angenommen. Wenn du dazu Fragen hast, wende dich gerne direkt an deine BDAS-Gruppe.",
+        [
+          "dein lokaler Vorstand hat deine Bewerbung geprüft und sie nicht angenommen.",
+          data.reasonCategoryLabel ? `Grund: ${data.reasonCategoryLabel}.` : null,
+          data.reasonMessage ? `„${data.reasonMessage}“` : null,
+          "Du kannst dich jederzeit bei einer anderen BDAS-Gruppe bewerben.",
+        ]
+          .filter(Boolean)
+          .join(" "),
+      );
+    case "member_application_group_dissolved":
+      return body(
+        "BDAS — Deine Bewerbung konnte nicht entschieden werden",
+        firstName,
+        `die Gruppe${data.groupName ? ` ${data.groupName}` : ""} wurde aufgelöst, bevor über deine Bewerbung entschieden werden konnte. Das ist keine Absage — bitte bewirb dich gerne bei einer anderen BDAS-Gruppe.`,
       );
     case "blog_post_reported":
       return body(
