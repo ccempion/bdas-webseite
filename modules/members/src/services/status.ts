@@ -109,3 +109,17 @@ export async function transitionStatus(
 export async function approveMember(db: Db, memberId: string, actor: Actor): Promise<Member> {
   return transitionStatus(db, memberId, "active", actor);
 }
+
+/**
+ * Groups this actor is scoped to as a local board. `local_board_lead` manages
+ * its group too (ADR 0013), so both roles count. Federal grants carry no
+ * groupId and are handled by `isFederalBoard` at each call site.
+ */
+export function scopedGroupIds(actor: Actor): string[] {
+  return actor.grants
+    .filter(
+      (g): g is { role: "local_board" | "local_board_lead"; groupId: string } =>
+        (g.role === "local_board" || g.role === "local_board_lead") && g.groupId !== null,
+    )
+    .map((g) => g.groupId);
+}

@@ -42,7 +42,7 @@ import type {
 } from "../types";
 
 import { row2member } from "./get";
-import { groupHasActiveLocalBoard, type Actor, type Db } from "./status";
+import { groupHasActiveLocalBoard, scopedGroupIds, type Actor, type Db } from "./status";
 
 export function row2request(r: MemberGroupChangeRow): GroupChangeRequest {
   return {
@@ -337,16 +337,6 @@ export async function getOpenGroupChange(
     )
     .limit(1);
   return rows[0] ? row2request(rows[0]) : null;
-}
-
-/** The groups a local_board / local_board_lead actor is scoped to. */
-function scopedGroupIds(actor: Actor): string[] {
-  return actor.grants
-    .filter(
-      (g): g is { role: "local_board" | "local_board_lead"; groupId: string } =>
-        (g.role === "local_board" || g.role === "local_board_lead") && g.groupId !== null,
-    )
-    .map((g) => g.groupId);
 }
 
 /**
