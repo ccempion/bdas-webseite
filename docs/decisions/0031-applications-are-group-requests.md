@@ -71,22 +71,33 @@ applicants who are not members of the destination group.
 6. **No state may be unreachable from a way out.** Two consequences of this rule
    are load-bearing and are decided here rather than left to implementation:
 
-   - **Archiving a group closes its open applications.** Nothing currently
-     subscribes to `groups.group.archived`, so archiving does not revoke board
-     grants; `groupHasActiveLocalBoard` stays true and holds ADR 0021's federal
-     fallback shut, while `canSeeGroupScope` already locks the local board out of
-     an archived group. Without this rule an application to an archived group is
-     decidable by nobody. A subscriber closes them as `rejected` with the
-     system-only category `group_archived`.
-   - **Deactivation withdraws an open request.** Moving a member to `inactive` or
-     `alumnus` withdraws it, and `decideGroupChange` refuses a request whose
-     member is no longer `pending` or `active`, so no board can hand a group to a
-     deactivated person.
+   - **Archiving a group closes its open applications as `withdrawn`.** Nothing
+     currently subscribes to `groups.group.archived`, so archiving does not
+     revoke board grants; `groupHasActiveLocalBoard` stays true and holds
+     ADR 0021's federal fallback shut, while `canSeeGroupScope` already locks the
+     local board out of an archived group. Without this rule such an application
+     is decidable by nobody. They are closed as `withdrawn` rather than
+     `rejected`: no one judged the applicant, so nothing may tell them they were
+     turned down. `reason_category` stays null and a separate template explains
+     that the group was dissolved.
+   - **Deactivation withdraws an open request**, and `decideGroupChange` refuses
+     a request whose member is no longer `pending` or `active`, so no board can
+     hand a group to a deactivated person.
 
-   `inactive` and `alumnus` remain leavable only by board action. That is
-   deliberate — an account deactivated for cause must not re-admit itself — and
-   is not a lock, because the federal board can always reactivate a groupless
-   member through `canManageGroup(grants, null)`.
+   Applications may target `active` and `dormant` groups; only `archived` is
+   excluded. A dormant group keeps its board's scope, so it can still decide, and
+   an application is a plausible way for a resting group to revive.
+
+## Scope
+
+Applicants and active members only. `inactive` and `alumnus` are unreachable
+today — `transitionStatus` is called from two places, both with `"inactive"`, and
+both are the rejection path this ADR removes; nothing writes `"alumnus"` at all.
+Member lifecycle after joining was never built, and this decision neither builds
+nor breaks it. `transitionStatus` is kept as the service that lifecycle will use.
+
+Retention of applicant data is likewise out of scope and unresolved: a person
+never accepted stays in the pool indefinitely.
 
 ## Consequences
 

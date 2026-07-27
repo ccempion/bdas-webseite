@@ -96,18 +96,16 @@ German at the edge:
 
 | Key | Label |
 | --- | --- |
-| `group_full` | Gruppe ist bereits voll |
-| `incomplete` | Bewerbung unvollständig |
 | `no_contact` | Kein Kontakt zustande gekommen |
-| `not_a_fit` | Passt nicht zur Gruppe |
+| `not_a_student` | Kein Student mehr |
 | `other` | Sonstiges |
-| `group_archived` | Gruppe wurde aufgelöst |
+
+Three, deliberately. Capacity and "not a fit" were considered and dropped: a
+board that wants to say either can say it in the message, and a short list keeps
+the dropdown honest rather than inviting a box-ticking rejection.
 
 When the category is `other`, `reason_message` becomes required — otherwise the
 applicant learns nothing.
-
-`group_archived` is written only by the system, never offered in the board's
-dropdown: it is how an archived group's open applications are closed.
 
 ### `members` — no schema change, corrected semantics
 
@@ -155,22 +153,29 @@ The goal is that no person can reach a state they cannot leave. Every combinatio
 of `status` × group × open request was walked; the findings below are design
 requirements, not observations.
 
-### Groups have four statuses, and only `active` may be applied to
+### Which group statuses may be applied to
 
-`GroupStatus` is `active | dormant | new | archived`. The public index
-(`apps/web/app/gruppen/page.tsx`) and the `/account` group list both already
-filter to `active`, so the UI offers nothing else.
+`GroupStatus` is `active | dormant | new | archived`. **Archived is the only one
+excluded.** `active` and `dormant` are both applicable — a dormant group keeps
+its board's scope and switcher entry, so it can decide, and an application is a
+plausible way for a resting group to revive.
 
-**The apply action must re-check this server-side.** `changePrimaryGroup`
+This widens today's behaviour: the public index (`apps/web/app/gruppen/page.tsx`)
+and the `/account` group list currently filter to `active`, and both must be
+widened to `active | dormant` for the apply surface, with dormant groups marked
+as ruhend so nobody applies to one unaware.
+
+**The apply action must enforce this server-side.** `changePrimaryGroup`
 deliberately does not read the `groups` table — that would violate CLAUDE.md §1
-rule 1 — so the module structurally cannot validate the destination. This is the
-same shape as the events authorization defect: the app layer must authorize the
-**destination** state on write, or a crafted POST files an application against an
-archived or dormant group id.
+rule 1 — so the module structurally cannot validate the destination. The app
+layer must authorize the **destination** state on write, exactly as in the events
+authorization defect, or a crafted POST files an application against an archived
+group id.
 
 ### Deadlock: a group archived with applications open
 
-Confirmed against the code, and it is a hard lock:
+Applying to an archived group is impossible, but a group can be archived *while*
+applications are open — and that is a hard lock:
 
 - Nothing subscribes to `groups.group.archived`, so archiving does **not** revoke
   board grants. `groupHasActiveLocalBoard` therefore stays true, which keeps
@@ -182,12 +187,16 @@ to decide. Nobody can. The applicant's only escape is withdrawing, which they
 have no reason to know about.
 
 **Requirement:** a subscriber on `groups.group.archived` closes every open
-incoming request for that group as `rejected`, with `reason_category = 'group_archived'`,
-and notifies each applicant so they are told to apply elsewhere. Event-driven
-rather than a call from `groups` into `members`, per the module conventions.
+incoming request for that group as **`withdrawn`**, not `rejected`, and notifies
+each applicant that the group was dissolved and they may apply elsewhere. Nobody
+judged them, so nothing should say they were turned down. `withdrawn` already
+exists in the status set and its meaning widens from "the member withdrew it" to
+"it was closed without a decision"; no rejection category is involved, and
+`reason_category` stays null. Event-driven rather than a call from `groups` into
+`members`, per the module conventions.
 
-`dormant` is not affected: a local board retains scope over a dormant group and
-keeps it in its own switcher.
+`dormant` needs no handling: the local board keeps scope, and the federal
+open-applications section below covers a dormant group with no board.
 
 ### Discovery gap: federal cannot navigate to a non-active group's queue
 
@@ -205,30 +214,48 @@ once and costs one query.
 
 ### An applicant deactivated mid-application
 
-`transitionStatus(→ inactive | alumnus)` leaves any open request `pending`. A
+`transitionStatus(→ inactive)` would leave any open request `pending`, and a
 board could then approve it and hand a group to a deactivated person.
 
-**Requirement:** moving a member to `inactive` or `alumnus` withdraws their open
-request, and `decideGroupChange` refuses when the member is no longer `pending`
-or `active`. Both, because the second is the invariant and the first is the
-courtesy.
+**Not currently reachable** — as established below, `transitionStatus` has no
+caller left once rejection stops using it, so nobody can be deactivated. The
+scenario becomes live the moment member lifecycle is built.
 
-### Deliberate one-way doors
+**Requirement anyway:** `decideGroupChange` refuses a request whose member is no
+longer `pending` or `active`. One guard clause, checked in the transaction that
+already reads the member row, so it costs nothing — and it means the future
+lifecycle work cannot reintroduce this hole by forgetting about it. The
+corresponding withdraw-on-deactivation belongs to that future work, not here.
 
-Two states cannot be left by the person alone. Both are intentional, and neither
-is a true lock, because a role that can always act exists in each case:
+### `inactive` and `alumnus` are unreachable today
 
-- **`inactive`** — cannot apply and is excluded from the pool. Reactivation is
-  `inactive → active` under `canManageGroup`, which for a groupless person means
-  the federal board. This is the point of deactivation: an account removed for
-  cause must not re-admit itself.
-- **`alumnus`** — same restriction. An alumnus wanting to rejoin needs a board to
-  reactivate them first.
+Verified against the code, and it changes what is worth building:
 
-**Assumption, flag if wrong:** alumni are left board-gated rather than being
-allowed to apply directly. Rejoining is rare and reactivation is one click for a
-board, so the simpler rule wins. If alumni should self-serve, the change is to
-admit `alumnus` in `changePrimaryGroup` and include them in the pool.
+`transitionStatus` is called from exactly two places
+(`apps/web/app/(board)/_components/member-actions.ts:41` and
+`apps/web/app/admin/pending-members/actions.ts:47`), **both with `"inactive"`,
+and both are the rejection path**. Nothing anywhere writes `"alumnus"`. The
+approve/reject buttons in `MembersTable` render only for `pending` members, so
+there is no way to deactivate an active member either.
+
+So `active → inactive` and `active → alumnus` exist in the transition table with
+no caller, and both states are reachable only by editing the database directly.
+Readers honour them — `MembersTable` has an Alumni filter chip, blog access
+grants alumni read rights, `roles.ts:44` grants an `alumnus` role — but no writer
+produces them.
+
+**Consequence for this design:** rejection stops producing `inactive`, which
+removes the last reachable caller of `transitionStatus`. The service stays as the
+members module's public surface for member lifecycle, with no app caller until
+that lifecycle is built. It is not deleted, because reactivation will need it.
+
+**Member lifecycle beyond joining — deactivation, alumni status, and the board
+UI for both — is out of scope.** It was never implemented; this design neither
+builds nor breaks it, and takes no position on how alumni should behave. That
+question is deferred whole, to be answered when the lifecycle is actually built.
+
+This design concerns applicants and active members only. `changePrimaryGroup`
+keeps its existing `pending`/`active` gate unchanged.
 
 ### Cleared, requiring no change
 
@@ -266,9 +293,11 @@ Order:
    date, category label, and the board's message.
 3. Open application block, if one is pending: group, date filed, withdraw button.
 4. Group list with an apply action per group, sourced from the existing public
-   index at `apps/web/app/gruppen/page.tsx`, which already filters to `active`.
-   The apply server action re-validates that the destination group is `active`
-   before calling `changePrimaryGroup` — the module cannot check this itself.
+   index at `apps/web/app/gruppen/page.tsx`. That index filters to `active` today
+   and must be widened to `active | dormant` for this surface, with dormant
+   groups labelled **ruhend** so nobody applies to one unaware. The apply server
+   action re-validates that the destination is not `archived` before calling
+   `changePrimaryGroup` — the module cannot check this itself.
 
 `/profil` currently redirects anyone who is not `pending` back to `/account`.
 That stays correct: the wizard is for profile completion only.
@@ -288,8 +317,14 @@ without navigating away:
 - name, photo, university, course of study, degree type, date of birth
 - how they found BDAS, and who referred them
 - date applied
-- **prior attempts**: attempt number, date and category of each earlier
-  rejection by this group, from `getGroupChangeHistory`
+- **prior attempts**: attempt number, date and **category only** of each earlier
+  rejection by this group, from `getGroupChangeHistory`. The free-text message a
+  previous board wrote is deliberately not surfaced here — it was written for the
+  applicant, not as a dossier for the next board to read
+- the deciding board member is **not** shown to the applicant anywhere.
+  `decided_by` is recorded for audit, but a decision is the group's, not a named
+  individual's, and naming one invites the applicant to take it up with them
+  personally
 - a `Mitglied ohne Gruppe` badge when the applicant is an existing member
 - actions: `Aufnehmen`, and `Ablehnen …` opening the reason dialog
 
@@ -331,7 +366,7 @@ visible rather than silently ageing.
 | `members.group_change.requested` | `member_application_received` | destination board | **Moved** from `profile.completed` |
 | `members.group_change.decided` (approved) | `member_application_approved` | applicant | Moved from `members.status.changed` |
 | `members.group_change.decided` (rejected) | `member_application_declined` | applicant | Moved, and **must now carry category + message** |
-| `groups.group.archived` | `member_application_declined` | each open applicant | **New subscriber**: closes the group's open requests as `rejected` / `group_archived` |
+| `groups.group.archived` | `member_application_group_dissolved` (**new template**) | each open applicant | **New subscriber**: closes the group's open requests as `withdrawn`. Not a rejection, so not the decline template — it says the group was dissolved and invites them to apply elsewhere |
 
 The move is forced: `member_application_received` fires today on
 `profile.completed`, which routes by the group the wizard collected. Once the
@@ -387,6 +422,13 @@ migration must be applied to production by hand and recorded in
 `_bdas_migrations`, or every page reading the new columns breaks with "column
 does not exist".
 
+**No feature flag.** CLAUDE.md §3 requires a flag per new *module*; this changes
+an existing one, and the migration is a one-way data change that a flag could not
+undo — a half-flipped flag would leave applications in one model and decisions in
+another. Safety comes from ordering instead: apply the migration first and
+confirm it, then deploy the code that reads the new columns. PR 1 is additive and
+leaves the old path working, so the gap between the two steps is harmless.
+
 ## Testing
 
 Integration tests against Docker Postgres with per-test schema reset; no database
@@ -405,9 +447,10 @@ mocks.
 
 **Deadlock coverage** — one test per finding above, each asserting the person can still move:
 
-- Archiving a group closes its open applications as `group_archived` and the applicant can immediately apply elsewhere.
-- Moving an applicant to `inactive` or `alumnus` withdraws their open request, and `decideGroupChange` then refuses that request.
-- The apply action rejects a destination group that is `dormant`, `new`, or `archived`, including when the group id is supplied directly rather than chosen from the list.
+- Archiving a group closes its open applications as `withdrawn` with a null `reason_category`, and the applicant can immediately apply elsewhere.
+- The apply action accepts an `active` and a `dormant` destination and refuses an `archived` one, including when the group id is supplied directly rather than chosen from the list.
+- An application to a dormant group is decidable by that group's board.
+- `decideGroupChange` refuses a request whose member is no longer `pending` or `active`.
 - A member who leaves a group lands in the pool and can apply again in the same session.
 - A rejected applicant can re-apply to the group that rejected them, and the board sees the prior attempt.
 
@@ -423,7 +466,7 @@ calls it would break the build.
 
 1. **Module, additive.** The two columns, the migration, reason handling in
    `decideGroupChange`, the pool query, the `groups.group.archived` subscriber,
-   the withdraw-on-deactivation rule, the member-status guard in
+   the member-status guard in
    `decideGroupChange`, and tests. The old status-based join path stays in place
    and keeps working. Nothing user-visible.
 2. **Board.** The `Bewerbungen` page and reason dialog, the federal pool page
@@ -446,4 +489,6 @@ repeat-application badge in PR 2 reuses.
 - Cooldowns or bars on repeat applications.
 - A motivation letter or any application-specific free text from the applicant.
 - Structured analytics over rejection categories. The data will support it; no report is built.
-- Any change to `alumnus` handling.
+- **Alumni, entirely.** The status is unreachable and this design takes no position on it.
+- **Member lifecycle after joining** — deactivation, alumni, and any board UI for them. Never implemented; `transitionStatus` remains the service it would use.
+- **Retention and deletion of applicant data.** Someone never accepted stays in the pool indefinitely, with date of birth and photo. A deletion or anonymisation rule is needed under the General Data Protection Regulation (GDPR / DSGVO) but is explicitly deferred, not solved here.
