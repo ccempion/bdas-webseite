@@ -101,9 +101,13 @@ German at the edge:
 | `no_contact` | Kein Kontakt zustande gekommen |
 | `not_a_fit` | Passt nicht zur Gruppe |
 | `other` | Sonstiges |
+| `group_archived` | Gruppe wurde aufgelöst |
 
 When the category is `other`, `reason_message` becomes required — otherwise the
 applicant learns nothing.
+
+`group_archived` is written only by the system, never offered in the board's
+dropdown: it is how an archived group's open applications are closed.
 
 ### `members` — no schema change, corrected semantics
 
@@ -145,6 +149,102 @@ Per the events-authz lesson in `modules/events`, the app layer authorizes the
 **destination** state on writes. Here the destination is `to_group_id` on the
 request row, which is what the predicate already reads.
 
+## State machine audit — no dead ends
+
+The goal is that no person can reach a state they cannot leave. Every combination
+of `status` × group × open request was walked; the findings below are design
+requirements, not observations.
+
+### Groups have four statuses, and only `active` may be applied to
+
+`GroupStatus` is `active | dormant | new | archived`. The public index
+(`apps/web/app/gruppen/page.tsx`) and the `/account` group list both already
+filter to `active`, so the UI offers nothing else.
+
+**The apply action must re-check this server-side.** `changePrimaryGroup`
+deliberately does not read the `groups` table — that would violate CLAUDE.md §1
+rule 1 — so the module structurally cannot validate the destination. This is the
+same shape as the events authorization defect: the app layer must authorize the
+**destination** state on write, or a crafted POST files an application against an
+archived or dormant group id.
+
+### Deadlock: a group archived with applications open
+
+Confirmed against the code, and it is a hard lock:
+
+- Nothing subscribes to `groups.group.archived`, so archiving does **not** revoke
+  board grants. `groupHasActiveLocalBoard` therefore stays true, which keeps
+  ADR 0021's federal fallback **closed**.
+- `canSeeGroupScope` returns false for a local board on an archived group.
+
+So the local board cannot open the page, and the federal board is not authorized
+to decide. Nobody can. The applicant's only escape is withdrawing, which they
+have no reason to know about.
+
+**Requirement:** a subscriber on `groups.group.archived` closes every open
+incoming request for that group as `rejected`, with `reason_category = 'group_archived'`,
+and notifies each applicant so they are told to apply elsewhere. Event-driven
+rather than a call from `groups` into `members`, per the module conventions.
+
+`dormant` is not affected: a local board retains scope over a dormant group and
+keeps it in its own switcher.
+
+### Discovery gap: federal cannot navigate to a non-active group's queue
+
+`boardScopes` puts only `active` groups in the federal switcher, while
+`canSeeGroupScope` admits federal to any group. Federal can therefore reach such
+a queue only by typing the URL. It matters in one narrow case: an `active` group
+with no board goes `dormant` with an application open — the federal fallback is
+open, but the queue is undiscoverable.
+
+**Requirement:** the federal pool page carries a second section, **Offene
+Bewerbungen (alle Gruppen)**, listing every undecided request with its group and
+a link. `listOpenGroupChanges` already returns exactly this for the federal board,
+with a `canDecide` flag per row. This closes the hole for every group status at
+once and costs one query.
+
+### An applicant deactivated mid-application
+
+`transitionStatus(→ inactive | alumnus)` leaves any open request `pending`. A
+board could then approve it and hand a group to a deactivated person.
+
+**Requirement:** moving a member to `inactive` or `alumnus` withdraws their open
+request, and `decideGroupChange` refuses when the member is no longer `pending`
+or `active`. Both, because the second is the invariant and the first is the
+courtesy.
+
+### Deliberate one-way doors
+
+Two states cannot be left by the person alone. Both are intentional, and neither
+is a true lock, because a role that can always act exists in each case:
+
+- **`inactive`** — cannot apply and is excluded from the pool. Reactivation is
+  `inactive → active` under `canManageGroup`, which for a groupless person means
+  the federal board. This is the point of deactivation: an account removed for
+  cause must not re-admit itself.
+- **`alumnus`** — same restriction. An alumnus wanting to rejoin needs a board to
+  reactivate them first.
+
+**Assumption, flag if wrong:** alumni are left board-gated rather than being
+allowed to apply directly. Rejoining is rare and reactivation is one click for a
+board, so the simpler rule wins. If alumni should self-serve, the change is to
+admit `alumnus` in `changePrimaryGroup` and include them in the pool.
+
+### Cleared, requiring no change
+
+- **No member row yet.** `createProfile` accepts `primaryGroupId ?? null`, so
+  dropping the wizard's group picker cannot break member creation.
+- **Withdrawal.** `withdrawGroupChange` and its `/account` button already exist
+  and remain the escape from any pending application.
+- **Transfer rejection.** An existing member refused by another group stays in
+  their current one. They never become groupless by being rejected.
+- **Board resigns mid-application.** Revoked grants open the federal fallback,
+  which is exactly ADR 0021's design.
+- **Migration and the unique index.** Today a `pending` member never has a
+  request row, so step 2 inserts at most one per member and cannot violate
+  `member_group_change_requests_open_uq`. The migration still guards with
+  `NOT EXISTS` and the test asserts it.
+
 ## Surfaces
 
 ### 1. Applicant — one page, status first
@@ -166,7 +266,9 @@ Order:
    date, category label, and the board's message.
 3. Open application block, if one is pending: group, date filed, withdraw button.
 4. Group list with an apply action per group, sourced from the existing public
-   index at `apps/web/app/gruppen/page.tsx`.
+   index at `apps/web/app/gruppen/page.tsx`, which already filters to `active`.
+   The apply server action re-validates that the destination group is `active`
+   before calling `changePrimaryGroup` — the module cannot check this itself.
 
 `/profil` currently redirects anyone who is not `pending` back to `/account`.
 That stays correct: the wizard is for profile completion only.
@@ -208,12 +310,19 @@ what makes `apps/web/app/admin/pending-members/` removable.
 
 ### 3. Federal board — `Ohne Gruppe`
 
-New nav item in `FEDERAL_NAV`, route `/federal/pool`. A read-only table of the
-pool: name, university, waiting time, and whether the person is an applicant or a
-member between groups. No date of birth, no photo, no actions.
+New nav item in `FEDERAL_NAV`, route `/federal/pool`, with two sections.
 
-This is the table the brief asked for — "where all the groupless people are" —
-scoped to the only role with a federation-wide remit.
+**Ohne Gruppe** — a read-only table of the pool: name, university, waiting time,
+and whether the person is an applicant or a member between groups. No date of
+birth, no photo, no actions. This is the table the brief asked for, "where all
+the groupless people are", scoped to the only role with a federation-wide remit.
+
+**Offene Bewerbungen (alle Gruppen)** — every undecided request in the
+federation, with its destination group and a link to that group's queue, from
+`listOpenGroupChanges` and its per-row `canDecide`. This exists to close the
+discovery gap above: it is the only way the federal board can reach the queue of
+a group that has left `active`, and it makes a request that nobody has acted on
+visible rather than silently ageing.
 
 ## Notifications
 
@@ -222,6 +331,7 @@ scoped to the only role with a federation-wide remit.
 | `members.group_change.requested` | `member_application_received` | destination board | **Moved** from `profile.completed` |
 | `members.group_change.decided` (approved) | `member_application_approved` | applicant | Moved from `members.status.changed` |
 | `members.group_change.decided` (rejected) | `member_application_declined` | applicant | Moved, and **must now carry category + message** |
+| `groups.group.archived` | `member_application_declined` | each open applicant | **New subscriber**: closes the group's open requests as `rejected` / `group_archived` |
 
 The move is forced: `member_application_received` fires today on
 `profile.completed`, which routes by the group the wizard collected. Once the
@@ -293,6 +403,14 @@ mocks.
 - The pool query excludes `inactive` and `alumnus`.
 - `getGroupChangeHistory` returns prior rejections for the repeat-application badge.
 
+**Deadlock coverage** — one test per finding above, each asserting the person can still move:
+
+- Archiving a group closes its open applications as `group_archived` and the applicant can immediately apply elsewhere.
+- Moving an applicant to `inactive` or `alumnus` withdraws their open request, and `decideGroupChange` then refuses that request.
+- The apply action rejects a destination group that is `dormant`, `new`, or `archived`, including when the group id is supplied directly rather than chosen from the list.
+- A member who leaves a group lands in the pool and can apply again in the same session.
+- A rejected applicant can re-apply to the group that rejected them, and the board sees the prior attempt.
+
 **Migration** — a fixture with all four member shapes, asserting each lands correctly and no member ends up with a group nobody approved.
 
 **End-to-end** — the existing `e2e/` acceptance job covers §23 flows; extend it with apply → reject-with-reason → see the reason → apply elsewhere → accepted.
@@ -304,16 +422,19 @@ deletions come last, because removing `approveMember` while the board UI still
 calls it would break the build.
 
 1. **Module, additive.** The two columns, the migration, reason handling in
-   `decideGroupChange`, the pool query, and tests. The old status-based join path
-   stays in place and keeps working. Nothing user-visible.
-2. **Board.** The `Bewerbungen` page and reason dialog, the federal pool page,
-   both nav entries, and the notification rewiring. Ends by deleting the
-   approve/reject buttons, the `Ausstehend` chip, `member-actions.ts`, and
-   `admin/pending-members/`, all of which this PR has just replaced.
+   `decideGroupChange`, the pool query, the `groups.group.archived` subscriber,
+   the withdraw-on-deactivation rule, the member-status guard in
+   `decideGroupChange`, and tests. The old status-based join path stays in place
+   and keeps working. Nothing user-visible.
+2. **Board.** The `Bewerbungen` page and reason dialog, the federal pool page
+   with both of its sections, both nav entries, and the notification rewiring.
+   Ends by deleting the approve/reject buttons, the `Ausstehend` chip,
+   `member-actions.ts`, and `admin/pending-members/`, all of which this PR has
+   just replaced.
 3. **Applicant, and the last deletions.** Status blocks on `/account`, the apply
-   action on the group list, removal of the wizard's group picker, and — once
-   nothing calls them — the `pending` branches in `transitionStatus` and
-   `changePrimaryGroup`.
+   action with its `active`-group validation, removal of the wizard's group
+   picker, and — once nothing calls them — the `pending` branches in
+   `transitionStatus` and `changePrimaryGroup`.
 
 `MemberGroupPanel` and `group-history.ts` survive all three: they render an
 existing member's outbound transfer, and `buildGroupTimeline` is what the

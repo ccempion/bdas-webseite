@@ -68,6 +68,26 @@ applicants who are not members of the destination group.
    federal board, nobody who can see a candidate is entitled to make the offer.
    The direction is dropped rather than bent.
 
+6. **No state may be unreachable from a way out.** Two consequences of this rule
+   are load-bearing and are decided here rather than left to implementation:
+
+   - **Archiving a group closes its open applications.** Nothing currently
+     subscribes to `groups.group.archived`, so archiving does not revoke board
+     grants; `groupHasActiveLocalBoard` stays true and holds ADR 0021's federal
+     fallback shut, while `canSeeGroupScope` already locks the local board out of
+     an archived group. Without this rule an application to an archived group is
+     decidable by nobody. A subscriber closes them as `rejected` with the
+     system-only category `group_archived`.
+   - **Deactivation withdraws an open request.** Moving a member to `inactive` or
+     `alumnus` withdraws it, and `decideGroupChange` refuses a request whose
+     member is no longer `pending` or `active`, so no board can hand a group to a
+     deactivated person.
+
+   `inactive` and `alumnus` remain leavable only by board action. That is
+   deliberate — an account deactivated for cause must not re-admit itself — and
+   is not a lock, because the federal board can always reactivate a groupless
+   member through `canManageGroup(grants, null)`.
+
 ## Consequences
 
 - `transitionStatus` loses its `from === "pending"` branch, and
