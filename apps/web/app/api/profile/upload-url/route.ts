@@ -4,11 +4,9 @@ import { getCurrentMember } from "@bdas/members";
 import { getProfileMediaStorage } from "@bdas/storage";
 
 import { readSessionCookie } from "../../../../lib/auth-cookie";
+import { PROFILE_IMAGE, tooLargeMessage } from "../../../_upload/accept";
 
 export const dynamic = "force-dynamic";
-
-const MAX_BYTES = 5 * 1024 * 1024; // 5 MB cap for a profile photo
-const ALLOWED = new Set(["image/jpeg", "image/png", "image/webp", "image/avif"]);
 
 export async function POST(req: Request) {
   if (!isFlagOn("profile")) return Response.json({ error: "Nicht verfügbar." }, { status: 404 });
@@ -23,11 +21,11 @@ export async function POST(req: Request) {
     mimeType?: string;
     sizeBytes?: number;
   } | null;
-  if (!body?.mimeType || !ALLOWED.has(body.mimeType)) {
+  if (!body?.mimeType || !PROFILE_IMAGE.mime.includes(body.mimeType)) {
     return Response.json({ error: "Nur Bilddateien (JPG, PNG, WebP, AVIF)." }, { status: 422 });
   }
-  if (!body.sizeBytes || body.sizeBytes <= 0 || body.sizeBytes > MAX_BYTES) {
-    return Response.json({ error: "Datei zu groß (max. 5 MB)." }, { status: 422 });
+  if (!body.sizeBytes || body.sizeBytes <= 0 || body.sizeBytes > PROFILE_IMAGE.maxBytes) {
+    return Response.json({ error: tooLargeMessage(PROFILE_IMAGE) }, { status: 422 });
   }
 
   const ext = (body.filename?.split(".").pop() ?? "img").toLowerCase().replace(/[^a-z0-9]/g, "");

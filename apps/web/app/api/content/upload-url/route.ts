@@ -6,11 +6,9 @@ import { getContentMediaStorage } from "@bdas/storage";
 
 import { readSessionCookie } from "../../../../lib/auth-cookie";
 import { groupPageSlug } from "../../../../lib/content-scope";
+import { CONTENT_IMAGE, tooLargeMessage } from "../../../_upload/accept";
 
 export const dynamic = "force-dynamic";
-
-const MAX_BYTES = 10 * 1024 * 1024; // 10 MB cap for page imagery
-const ALLOWED = new Set(["image/jpeg", "image/png", "image/webp", "image/avif"]);
 
 export async function POST(req: Request) {
   if (!isFlagOn("content")) return Response.json({ error: "Nicht verfügbar." }, { status: 404 });
@@ -41,11 +39,11 @@ export async function POST(req: Request) {
     return Response.json({ error: "Keine Berechtigung." }, { status: 403 });
   }
 
-  if (!body?.mimeType || !ALLOWED.has(body.mimeType)) {
+  if (!body?.mimeType || !CONTENT_IMAGE.mime.includes(body.mimeType)) {
     return Response.json({ error: "Nur Bilddateien (JPG, PNG, WebP, AVIF)." }, { status: 422 });
   }
-  if (!body.sizeBytes || body.sizeBytes <= 0 || body.sizeBytes > MAX_BYTES) {
-    return Response.json({ error: "Datei zu groß (max. 10 MB)." }, { status: 422 });
+  if (!body.sizeBytes || body.sizeBytes <= 0 || body.sizeBytes > CONTENT_IMAGE.maxBytes) {
+    return Response.json({ error: tooLargeMessage(CONTENT_IMAGE) }, { status: 422 });
   }
 
   const ext = (body.filename?.split(".").pop() ?? "img").toLowerCase().replace(/[^a-z0-9]/g, "");
