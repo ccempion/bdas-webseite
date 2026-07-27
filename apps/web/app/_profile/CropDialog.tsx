@@ -177,7 +177,7 @@ export function CropDialog({ file, onCancel, onDone }: CropDialogProps) {
             step={0.01}
             value={state.zoom}
             onChange={(e) => move({ ...state, zoom: Number(e.currentTarget.value) })}
-            className="flex-1"
+            className="flex-1 accent-bdas-red"
           />
         </label>
 
