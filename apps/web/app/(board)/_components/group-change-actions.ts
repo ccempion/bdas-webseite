@@ -1,27 +1,9 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
-
 import { getDb } from "@bdas/db";
-import {
-  decideGroupChange,
-  getCurrentMember,
-  getGroupChangeHistory,
-  type GroupChangeRequest,
-} from "@bdas/members";
+import { decideGroupChange, getGroupChangeHistory, type GroupChangeRequest } from "@bdas/members";
 
-import { readSessionCookie } from "../../../lib/auth-cookie";
-
-async function actor() {
-  const me = await getCurrentMember(getDb(), readSessionCookie());
-  if (!me) throw new Error("Nicht angemeldet.");
-  return { userId: me.user.id, grants: me.grants };
-}
-
-/** Server Actions are public endpoints; only ever revalidate board routes. */
-function safeRevalidate(path: string): void {
-  if (path.startsWith("/federal/") || path.startsWith("/gruppe/")) revalidatePath(path);
-}
+import { actor, safeRevalidate } from "./board-actor";
 
 /** Approve or reject a transfer. Authority is enforced inside decideGroupChange. */
 export async function decideGroupChangeAction(
