@@ -1,18 +1,28 @@
 "use server";
 
 import { getDb } from "@bdas/db";
-import { decideGroupChange, getGroupChangeHistory, type GroupChangeRequest } from "@bdas/members";
+import {
+  decideGroupChange,
+  getGroupChangeHistory,
+  type GroupChangeRequest,
+  type RejectionReason,
+} from "@bdas/members";
 
 import { actor, safeRevalidate } from "./board-actor";
 
-/** Approve or reject a transfer. Authority is enforced inside decideGroupChange. */
+/**
+ * Approve or reject a transfer. Authority is enforced inside decideGroupChange,
+ * which also requires a reason on every rejection (ADR 0031) — a rejection
+ * without one is refused there, so the caller must open the reason dialog.
+ */
 export async function decideGroupChangeAction(
   requestId: string,
   decision: "approved" | "rejected",
   revalidate: string,
+  reason?: RejectionReason,
 ): Promise<{ ok: boolean; error?: string }> {
   try {
-    await decideGroupChange(getDb(), requestId, decision, await actor());
+    await decideGroupChange(getDb(), requestId, decision, await actor(), reason);
     safeRevalidate(revalidate);
     return { ok: true };
   } catch (e) {

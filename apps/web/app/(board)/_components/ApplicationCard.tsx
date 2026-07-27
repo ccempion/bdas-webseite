@@ -5,7 +5,7 @@ import { useState, useTransition } from "react";
 import { Button, Card } from "@bdas/design-system";
 import type { RejectionCategory } from "@bdas/members";
 
-import { acceptApplicationAction } from "./application-actions";
+import { acceptApplicationAction, rejectApplicationAction } from "./application-actions";
 import { RejectDialog } from "./RejectDialog";
 
 const fmt = (d: Date | null) => (d ? new Date(d).toLocaleDateString("de-DE") : "—");
@@ -119,9 +119,9 @@ export function ApplicationCard({
       {rejecting ? (
         <RejectDialog
           requestId={requestId}
-          slug={slug}
           name={name}
           categories={categories}
+          onSubmit={(reason) => rejectApplicationAction(requestId, slug, reason)}
           onClose={() => setRejecting(false)}
         />
       ) : null}

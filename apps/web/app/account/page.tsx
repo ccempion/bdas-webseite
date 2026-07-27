@@ -129,8 +129,8 @@ export default async function AccountPage({
       {isBoard ? (
         <Alert variant="info" title="Bundesvorstand">
           Du hast Bundesvorstands-Rechte.{" "}
-          <Link href="/admin/pending-members" className="text-bdas-red hover:underline">
-            Pending-Mitglieder verwalten →
+          <Link href="/federal/pool" className="text-bdas-red hover:underline">
+            Mitglieder ohne Gruppe ansehen →
           </Link>
         </Alert>
       ) : null}

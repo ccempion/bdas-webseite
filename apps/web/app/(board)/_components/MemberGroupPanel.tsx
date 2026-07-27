@@ -2,10 +2,11 @@
 
 import { useEffect, useState, useTransition } from "react";
 
-import type { GroupChangeRequest, Member, OpenGroupChange } from "@bdas/members";
+import type { GroupChangeRequest, Member, OpenGroupChange, RejectionCategory } from "@bdas/members";
 
 import { decideGroupChangeAction, groupHistoryAction } from "./group-change-actions";
 import { buildGroupTimeline, type TimelineEntry } from "./group-history";
+import { RejectDialog } from "./RejectDialog";
 
 const KIND_LABEL: Record<TimelineEntry["kind"], string> = {
   join: "Beitritt",
@@ -27,14 +28,19 @@ export function MemberGroupPanel({
   open,
   groupNames,
   revalidatePath,
+  rejectionCategories,
 }: {
   member: Member;
   open: OpenGroupChange | null;
   groupNames: Record<string, string>;
   revalidatePath: string;
+  /** Resolved server-side: the labels live in @bdas/members, which no client
+   *  component may import at runtime. */
+  rejectionCategories: ReadonlyArray<{ key: RejectionCategory; label: string }>;
 }) {
   const [history, setHistory] = useState<GroupChangeRequest[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [rejecting, setRejecting] = useState(false);
   const [pending, start] = useTransition();
 
   useEffect(() => {
@@ -81,15 +87,10 @@ export function MemberGroupPanel({
               <button
                 type="button"
                 disabled={pending}
-                onClick={() =>
-                  start(async () => {
-                    const res = await decideGroupChangeAction(open.id, "rejected", revalidatePath);
-                    setError(res.ok ? null : (res.error ?? "Fehler"));
-                  })
-                }
+                onClick={() => setRejecting(true)}
                 className="rounded-bdas-sm border border-bdas-soft px-2 py-1 text-xs"
               >
-                Ablehnen
+                Ablehnen …
               </button>
             </span>
           ) : (
@@ -97,6 +98,19 @@ export function MemberGroupPanel({
               Entscheidet der Vorstand von {name(open.toGroupId)}.
             </p>
           )}
+
+          {rejecting ? (
+            <RejectDialog
+              requestId={open.id}
+              name={`${member.firstName} ${member.lastName}`}
+              what="Antrag"
+              categories={rejectionCategories}
+              onSubmit={(reason) =>
+                decideGroupChangeAction(open.id, "rejected", revalidatePath, reason)
+              }
+              onClose={() => setRejecting(false)}
+            />
+          ) : null}
         </div>
       ) : null}
 

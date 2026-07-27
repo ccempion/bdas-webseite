@@ -3,21 +3,28 @@
 import { useState, useTransition } from "react";
 
 import { Button, Card } from "@bdas/design-system";
-import type { RejectionCategory } from "@bdas/members";
+import type { RejectionCategory, RejectionReason } from "@bdas/members";
 
-import { rejectApplicationAction } from "./application-actions";
-
+/**
+ * The reason a rejection needs (ADR 0031). Every rejection carries one, so this
+ * fronts both surfaces that can reject: the applications queue and the transfer
+ * panel. The caller supplies the action — the dialog only collects.
+ */
 export function RejectDialog({
   requestId,
-  slug,
   name,
+  what = "Bewerbung",
   categories,
+  onSubmit,
   onClose,
 }: {
+  /** Only for unique input ids; several cards may be on one page. */
   requestId: string;
-  slug: string;
   name: string;
+  /** Heading noun: an application is rejected, a transfer request is too. */
+  what?: "Bewerbung" | "Antrag";
   categories: ReadonlyArray<{ key: RejectionCategory; label: string }>;
+  onSubmit: (reason: RejectionReason) => Promise<{ ok: boolean; error?: string }>;
   onClose: () => void;
 }) {
   const [category, setCategory] = useState<RejectionCategory>("no_contact");
@@ -31,10 +38,7 @@ export function RejectDialog({
   const submit = () => {
     setError(null);
     start(async () => {
-      const res = await rejectApplicationAction(requestId, slug, {
-        category,
-        message: message.trim() || null,
-      });
+      const res = await onSubmit({ category, message: message.trim() || null });
       if (res.ok) onClose();
       else setError(res.error ?? "Fehler");
     });
@@ -42,7 +46,9 @@ export function RejectDialog({
 
   return (
     <Card flat className="mt-4 p-4">
-      <h3 className="mb-3 text-lg font-semibold text-bdas-ink">Bewerbung von {name} ablehnen</h3>
+      <h3 className="mb-3 text-lg font-semibold text-bdas-ink">
+        {what} von {name} ablehnen
+      </h3>
 
       <label
         className="mb-1 block text-sm font-medium text-bdas-ink-body"

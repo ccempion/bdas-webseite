@@ -17,7 +17,6 @@ import { createProfile, updateProfile } from "./services/profile";
 import { MEMBERS_TEST_MIGRATIONS } from "./test-db";
 import { approveMember, transitionStatus } from "./services/status";
 import { grantRole, revokeRole } from "./services/roles";
-import { listPendingMembers } from "./services/list-pending";
 import { getGrants } from "./services/get";
 import { listMembers } from "./services/list-members";
 import { countMembersByStatus, signupsOverTime } from "./services/stats";
@@ -327,32 +326,6 @@ describeIfDb("members integration", () => {
     // retains deactivation/alumni authority even though grp_a has a board.
     const alumnus = await transitionStatus(t.db, m.id, "alumnus", BOARD);
     expect(alumnus.status).toBe("alumnus");
-  });
-
-  it("listPendingMembers: federal sees all, local sees only its group", async () => {
-    await createGroup("grp_a", "aachen");
-    await createGroup("grp_b", "berlin");
-    for (const [u, g] of [
-      ["usr_pa", "grp_a"],
-      ["usr_pb", "grp_b"],
-    ] as const) {
-      await createUser(u, `${u}@example.de`);
-      await createProfile(t.db, { userId: u, firstName: u, lastName: "x", primaryGroupId: g });
-    }
-
-    const all = await listPendingMembers(t.db, BOARD);
-    expect(all.map((m) => m.firstName).sort()).toEqual(["usr_pa", "usr_pb"]);
-
-    const onlyA = await listPendingMembers(t.db, localBoardOf("usr_ba", "grp_a"));
-    expect(onlyA.map((m) => m.firstName)).toEqual(["usr_pa"]);
-
-    // A lead of grp_a sees its group's pending members too (ADR 0013).
-    const leadOnlyA = await listPendingMembers(t.db, leadOf("usr_la", "grp_a"));
-    expect(leadOnlyA.map((m) => m.firstName)).toEqual(["usr_pa"]);
-
-    await expect(listPendingMembers(t.db, PEASANT)).rejects.toMatchObject({
-      code: "FORBIDDEN",
-    });
   });
 
   it("rejects illegal status transitions", async () => {
