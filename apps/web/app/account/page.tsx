@@ -11,11 +11,12 @@ import { getProfile } from "@bdas/profile";
 import { requireAuthFlag } from "../_auth/flag";
 import { requireMembersFlag } from "../_members/flag";
 import { AccountAvatar } from "./AccountAvatar";
+import { isProfileComplete } from "../_profile/complete";
 import { signedProfilePhotoUrl } from "../_profile/photo-url";
 import { SUBMITTED_PARAM, SUBMITTED_VALUE } from "../_profile/submitted";
 import { readSessionCookie } from "../../lib/auth-cookie";
-import { EditProfileForm } from "./EditProfileForm";
-import { ProfileForm } from "./ProfileForm";
+import { EditableProfile } from "./EditableProfile";
+import { buildProfileSummary } from "./profile-summary";
 import { WithdrawChangeButton } from "./WithdrawChangeButton";
 
 export const metadata = { title: "Mein Konto" };
@@ -51,6 +52,30 @@ export default async function AccountPage({
     id === null ? null : (groups.find((g) => g.id === id)?.name ?? null);
   const currentGroupName = groupName(me.member?.primaryGroupId ?? null);
   const targetGroupName = groupName(openChange?.toGroupId ?? null);
+
+  // Everything filled in → the profile is a record to read, not a form to fill
+  // (§3 "profile complete?" gate). Editing then needs an explicit step.
+  const complete = profileFlagOn && me.member ? await isProfileComplete(db, me.user.id) : false;
+
+  const membersFormProps = {
+    initial: {
+      firstName: me.member?.firstName ?? "",
+      lastName: me.member?.lastName ?? "",
+      primaryGroupId: me.member?.primaryGroupId ?? null,
+    },
+    groups: groups.map((g) => ({ id: g.id, slug: g.slug, name: g.name, city: g.city })),
+    openChangeGroupName: targetGroupName,
+  };
+
+  const extendedInitial = {
+    studiengang: profile?.studiengang ?? "",
+    abschlussart: profile?.abschlussart ?? "",
+    uni: profile?.uni ?? "",
+    geburtsdatum: profile?.geburtsdatum ?? "",
+    gefundenDurch: profile?.gefundenDurch ?? "",
+    empfehlerName: profile?.empfehlerName ?? null,
+    photoStorageKey: profile?.photoStorageKey ?? null,
+  };
 
   const isBoard = isFederalBoard(me.grants);
   const status = me.member?.status;
@@ -112,36 +137,24 @@ export default async function AccountPage({
 
       <Card flat className="p-6">
         <h2 className="mb-4 text-lg font-semibold text-bdas-ink">
-          {me.member ? "Profil bearbeiten" : "Profil vervollständigen"}
+          {complete ? "Meine Daten" : me.member ? "Profil bearbeiten" : "Profil vervollständigen"}
         </h2>
-        <ProfileForm
-          initial={{
+        <EditableProfile
+          complete={complete}
+          rows={buildProfileSummary({
             firstName: me.member?.firstName ?? "",
             lastName: me.member?.lastName ?? "",
-            primaryGroupId: me.member?.primaryGroupId ?? null,
-          }}
-          groups={groups.map((g) => ({ id: g.id, slug: g.slug, name: g.name, city: g.city }))}
-          isNew={!me.member}
-          openChangeGroupName={targetGroupName}
+            groupName: currentGroupName,
+            studiengang: profile?.studiengang ?? "",
+            abschlussart: profile?.abschlussart ?? "",
+            uni: profile?.uni ?? "",
+            geburtsdatum: profile?.geburtsdatum ?? "",
+            gefundenDurch: profile?.gefundenDurch ?? "",
+            empfehlerName: profile?.empfehlerName ?? null,
+          })}
+          profileForm={{ ...membersFormProps, isNew: !me.member }}
+          extendedForm={profileFlagOn && me.member ? { initial: extendedInitial } : null}
         />
-        {profileFlagOn && me.member ? (
-          <div className="mt-8 border-t border-bdas-soft pt-6">
-            <h3 className="mb-4 text-lg font-semibold text-bdas-ink">Erweitertes Profil</h3>
-            <EditProfileForm
-              initial={{
-                studiengang: profile?.studiengang ?? "",
-                abschlussart: profile?.abschlussart ?? "",
-                uni: profile?.uni ?? "",
-                geburtsdatum: profile?.geburtsdatum ?? "",
-                gefundenDurch: profile?.gefundenDurch ?? "",
-                empfehlerName: profile?.empfehlerName ?? null,
-                photoStorageKey: profile?.photoStorageKey ?? null,
-              }}
-              primaryGroupId={me.member.primaryGroupId}
-              groups={groups.map((g) => ({ id: g.id, name: g.name, city: g.city }))}
-            />
-          </div>
-        ) : null}
       </Card>
 
       <div className="flex flex-wrap items-center gap-3">

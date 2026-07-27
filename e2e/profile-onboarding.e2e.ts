@@ -189,20 +189,24 @@ test("a member edits their extended profile on Mein Konto", async ({ page }) => 
   const studiengang = marker("Maschinenbau-");
   await page.goto("/account");
 
-  // The extended-profile form namespaces its ids ("konto-") so they can't
-  // collide with the members form's own primaryGroupId select on this page.
+  // Nothing saved through the wizard yet, so the profile is incomplete and the
+  // forms are open right away. The extended-profile form namespaces its ids
+  // ("konto-") so they can't collide with the members form on this page.
   const form = page.locator("form:has(#konto-studiengang)");
   await form.locator("#konto-studiengang").fill(studiengang);
   await form.locator("#konto-abschlussart").selectOption("master");
   await form.locator("#konto-uni").selectOption(UNI);
-  await form.locator("#konto-primaryGroupId").selectOption(groupId);
   await form.locator("#konto-geburtsdatum").fill("1999-01-02");
   await form.locator("#konto-gefundenDurch").selectOption("instagram");
   await submitAndSettle(page, form.getByRole("button", { name: "Speichern" }));
+
+  // That save stamped completed_at, so the card is now the read-only summary.
   await expect(page.getByText("Profil gespeichert.")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Daten ändern" })).toBeVisible();
 
   // Persisted, not just echoed back into the client form.
   await page.reload();
+  await page.getByRole("button", { name: "Daten ändern" }).click();
   await expect(page.locator("#konto-studiengang")).toHaveValue(studiengang);
   await expect(page.locator("#konto-abschlussart")).toHaveValue("master");
   await expect(page.locator("#konto-geburtsdatum")).toHaveValue("1999-01-02");
@@ -212,6 +216,7 @@ test("a member edits their extended profile on Mein Konto", async ({ page }) => 
   await page.locator("#konto-studiengang").fill(edited);
   await submitAndSettle(page, form.getByRole("button", { name: "Speichern" }));
   await page.reload();
+  await page.getByRole("button", { name: "Daten ändern" }).click();
   await expect(page.locator("#konto-studiengang")).toHaveValue(edited);
 });
 
