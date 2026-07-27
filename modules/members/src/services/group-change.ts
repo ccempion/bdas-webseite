@@ -16,7 +16,7 @@
 import { and, desc, eq, isNull, sql } from "drizzle-orm";
 
 import type { Role } from "@bdas/auth";
-import { ConflictError, ForbiddenError, NotFoundError } from "@bdas/errors";
+import { ConflictError, ForbiddenError, NotFoundError, ValidationError } from "@bdas/errors";
 import { getEventBus } from "@bdas/events";
 import { createId } from "@bdas/id";
 
@@ -41,6 +41,8 @@ import type {
   IncomingGroupChange,
   MemberStatus,
   OpenGroupChange,
+  RejectionCategory,
+  RejectionReason,
 } from "../types";
 
 import { row2member } from "./get";
@@ -56,6 +58,8 @@ export function row2request(r: MemberGroupChangeRow): GroupChangeRequest {
     requestedAt: r.requestedAt,
     decidedAt: r.decidedAt,
     decidedBy: r.decidedBy,
+    reasonCategory: r.reasonCategory as RejectionCategory | null,
+    reasonMessage: r.reasonMessage,
   };
 }
 
@@ -259,7 +263,17 @@ export async function decideGroupChange(
   requestId: string,
   decision: "approved" | "rejected",
   actor: Actor,
+  reason?: RejectionReason,
 ): Promise<GroupChangeRequest> {
+  if (decision === "rejected") {
+    if (!reason) {
+      throw new ValidationError("Bitte gib einen Grund für die Ablehnung an.");
+    }
+    if (reason.category === "other" && !reason.message?.trim()) {
+      throw new ValidationError('Bei „Sonstiges" ist eine Nachricht erforderlich.');
+    }
+  }
+
   return db.transaction(async (tx) => {
     const rows = await tx
       .select()
@@ -276,6 +290,24 @@ export async function decideGroupChange(
     // Exits are written already-approved and never reach this path.
     if (toGroupId === null) throw new ConflictError("Austritte werden nicht freigegeben.");
 
+    // Read once, before authorization: guards against deciding a request
+    // whose member is no longer pending/active, and — on approval — tells an
+    // applicant's first acceptance apart from a transfer. Not read from
+    // `fromGroupId` alone: an active member who left their group and
+    // reapplies also has `fromGroupId === null` on the rejoin, and that is
+    // not an acceptance.
+    const memberRows = await tx
+      .select({ status: members.status, joinedAt: members.joinedAt })
+      .from(members)
+      .where(eq(members.id, req.memberId))
+      .limit(1);
+    const member = memberRows[0];
+    if (!member) throw new Error("decideGroupChange: member row missing");
+    const memberStatus = member.status as MemberStatus;
+    if (memberStatus !== "pending" && memberStatus !== "active") {
+      throw new ConflictError("Dieses Mitglied ist nicht mehr aktiv.");
+    }
+
     const hasLocalBoard = await groupHasActiveLocalBoard(tx, toGroupId);
     if (!canDecideJoinRequest(actor.grants, toGroupId, hasLocalBoard)) {
       throw new ForbiddenError("Über den Wechsel entscheidet der Vorstand der Zielgruppe.");
@@ -284,7 +316,13 @@ export async function decideGroupChange(
     const now = new Date();
     const [updated] = await tx
       .update(memberGroupChangeRequests)
-      .set({ status: decision, decidedAt: now, decidedBy: actor.userId })
+      .set({
+        status: decision,
+        decidedAt: now,
+        decidedBy: actor.userId,
+        reasonCategory: decision === "rejected" ? (reason?.category ?? null) : null,
+        reasonMessage: decision === "rejected" ? (reason?.message?.trim() || null) : null,
+      })
       .where(
         and(
           eq(memberGroupChangeRequests.id, requestId),
@@ -299,14 +337,6 @@ export async function decideGroupChange(
     // `from_group_id` on a rejoin request, and that is not an acceptance.
     let isFirstAcceptance = false;
     if (decision === "approved") {
-      const memberRows = await tx
-        .select({ status: members.status, joinedAt: members.joinedAt })
-        .from(members)
-        .where(eq(members.id, req.memberId))
-        .limit(1);
-      const member = memberRows[0];
-      if (!member) throw new Error("decideGroupChange: member row missing");
-      const memberStatus = member.status as MemberStatus;
       isFirstAcceptance = memberStatus === "pending";
       // The transition table (roles.ts) is the single source of truth for
       // which status moves are legal, even though today only pending→active

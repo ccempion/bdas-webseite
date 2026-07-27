@@ -69,6 +69,8 @@ export const memberGroupChangeRequests = pgTable(
     requestedAt: timestamp("requested_at", { withTimezone: true }).notNull().defaultNow(),
     decidedAt: timestamp("decided_at", { withTimezone: true }),
     decidedBy: text("decided_by"),
+    reasonCategory: text("reason_category"),
+    reasonMessage: text("reason_message"),
   },
   (t) => ({
     openUq: uniqueIndex("member_group_change_requests_open_uq")

@@ -358,6 +358,7 @@ describeIfDb("decideGroupChange", () => {
       requestId,
       "rejected",
       boardOf("usr_b_board", "grp_b"),
+      { category: "no_contact", message: null },
     );
 
     expect(decided.status).toBe("rejected");
@@ -371,7 +372,10 @@ describeIfDb("decideGroupChange", () => {
     await giveBoardSeat("usr_b_board", "grp_b");
 
     await expect(
-      decideGroupChange(t.db, requestId, "rejected", boardOf("usr_a_board", "grp_a")),
+      decideGroupChange(t.db, requestId, "rejected", boardOf("usr_a_board", "grp_a"), {
+        category: "no_contact",
+        message: null,
+      }),
     ).rejects.toMatchObject({ code: "FORBIDDEN" });
   });
 
@@ -400,7 +404,10 @@ describeIfDb("decideGroupChange", () => {
 
     await decideGroupChange(t.db, requestId, "approved", boardOf("usr_b_board", "grp_b"));
     await expect(
-      decideGroupChange(t.db, requestId, "rejected", boardOf("usr_b_board", "grp_b")),
+      decideGroupChange(t.db, requestId, "rejected", boardOf("usr_b_board", "grp_b"), {
+        category: "no_contact",
+        message: null,
+      }),
     ).rejects.toMatchObject({ code: "CONFLICT" });
   });
 
@@ -691,5 +698,104 @@ describeIfDb("applications from the pool", () => {
     const member = await getMember(t.db, "mem_neu");
     expect(member?.primaryGroupId).toBe("grp_a");
     expect(member?.joinedAt).not.toBeNull();
+  });
+});
+
+describeIfDb("rejection reasons", () => {
+  let t: TestDb;
+
+  beforeAll(() => {
+    process.env["SSO_JWT_SECRET"] = "x".repeat(48);
+  });
+
+  beforeEach(async () => {
+    t = await setupMembersDb();
+    resetEventBus();
+    await createGroup(t, "grp_a", "aachen");
+    await createGroup(t, "grp_b", "berlin");
+    await createUser(t, "usr_cem", "cem@example.de");
+    await createUser(t, "usr_board", "board@example.de");
+    await t.client`
+      INSERT INTO members (id, user_id, first_name, last_name, primary_group_id, status)
+      VALUES ('mem_cem', 'usr_cem', 'Cem', 'Colak', NULL, 'pending')
+    `;
+    await t.client`
+      INSERT INTO members (id, user_id, first_name, last_name, primary_group_id, status, joined_at)
+      VALUES ('mem_board', 'usr_board', 'Bea', 'Board', 'grp_b', 'active', now())
+    `;
+    await grantRole(t.db, "mem_board", "local_board", FEDERAL, "grp_b");
+  });
+
+  afterEach(async () => {
+    await t.cleanup();
+  });
+
+  const apply = async () => {
+    const res = await changePrimaryGroup(t.db, "mem_cem", "grp_b", self("usr_cem"));
+    if (res.kind !== "requested") throw new Error("expected a request");
+    return res.request.id;
+  };
+
+  it("stores category and message on rejection", async () => {
+    const id = await apply();
+    const decided = await decideGroupChange(t.db, id, "rejected", boardOf("usr_board", "grp_b"), {
+      category: "no_contact",
+      message: "Wir haben dich dreimal nicht erreicht.",
+    });
+    expect(decided.status).toBe("rejected");
+    expect(decided.reasonCategory).toBe("no_contact");
+    expect(decided.reasonMessage).toBe("Wir haben dich dreimal nicht erreicht.");
+  });
+
+  it("leaves the member groupless and pending after a rejection", async () => {
+    const id = await apply();
+    await decideGroupChange(t.db, id, "rejected", boardOf("usr_board", "grp_b"), {
+      category: "no_contact",
+      message: null,
+    });
+    const member = await getMember(t.db, "mem_cem");
+    expect(member?.status).toBe("pending");
+    expect(member?.primaryGroupId).toBeNull();
+  });
+
+  it("lets a rejected applicant apply to the same group again", async () => {
+    const first = await apply();
+    await decideGroupChange(t.db, first, "rejected", boardOf("usr_board", "grp_b"), {
+      category: "no_contact",
+      message: null,
+    });
+    const again = await changePrimaryGroup(t.db, "mem_cem", "grp_b", self("usr_cem"));
+    expect(again.kind).toBe("requested");
+  });
+
+  it("refuses a rejection with no reason", async () => {
+    const id = await apply();
+    await expect(
+      decideGroupChange(t.db, id, "rejected", boardOf("usr_board", "grp_b")),
+    ).rejects.toThrow(/Grund/);
+  });
+
+  it("refuses category 'other' with no message", async () => {
+    const id = await apply();
+    await expect(
+      decideGroupChange(t.db, id, "rejected", boardOf("usr_board", "grp_b"), {
+        category: "other",
+        message: null,
+      }),
+    ).rejects.toThrow(/Nachricht/);
+  });
+
+  it("stores no reason on approval", async () => {
+    const id = await apply();
+    const decided = await decideGroupChange(t.db, id, "approved", boardOf("usr_board", "grp_b"));
+    expect(decided.reasonCategory).toBeNull();
+  });
+
+  it("refuses to decide a request whose member was deactivated", async () => {
+    const id = await apply();
+    await t.client`UPDATE members SET status = 'inactive' WHERE id = 'mem_cem'`;
+    await expect(
+      decideGroupChange(t.db, id, "approved", boardOf("usr_board", "grp_b")),
+    ).rejects.toThrow(/nicht mehr/);
   });
 });

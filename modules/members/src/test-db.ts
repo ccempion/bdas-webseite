@@ -24,10 +24,7 @@ export const MEMBERS_TEST_MIGRATIONS: ReadonlyArray<ReadonlyArray<string>> = [
   ["..", "migrations", "0006_group_change_requests.sql"],
   ["..", "migrations", "0007_page_editor.sql"],
   ["..", "migrations", "0008_application_reasons.sql"],
-  // 0009_reason_required.sql is deliberately NOT registered here yet. It
-  // lands only once decideGroupChange() always writes a reason on rejection;
-  // a later task adds 0009 alongside that service-layer change so the test
-  // harness mirrors the production apply order.
+  ["..", "migrations", "0009_reason_required.sql"],
 ];
 
 export async function dbReachable(): Promise<boolean> {

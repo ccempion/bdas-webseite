@@ -63,7 +63,10 @@ export type {
   GroupChangeResult,
   OpenGroupChange,
   IncomingGroupChange,
+  RejectionCategory,
+  RejectionReason,
 } from "./types";
+export { REJECTION_CATEGORY_LABELS } from "./types";
 export type {
   MembersEvent,
   ProfileCreated,
