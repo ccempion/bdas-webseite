@@ -1,7 +1,7 @@
 import { getDb } from "@bdas/db";
 import { isFlagOn } from "@bdas/feature-flags";
 import { getGroupChangeHistory, listIncomingGroupChanges } from "@bdas/members";
-import { getProfile } from "@bdas/profile";
+import { ABSCHLUSSART_OPTIONS, GEFUNDEN_DURCH_OPTIONS, getProfile } from "@bdas/profile";
 
 import { requireGroupScope } from "../../../../_dashboard/session";
 import { signedProfilePhotoUrl } from "../../../../_profile/photo-url";
@@ -10,6 +10,10 @@ import { categoryLabel, REJECTION_CATEGORIES } from "../../../_components/reject
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Bewerbungen" };
+
+/** Stored keys are enum values; the board reads the German label. */
+const label = (options: ReadonlyArray<{ value: string; label: string }>, key: string): string =>
+  options.find((o) => o.value === key)?.label ?? key;
 
 export default async function BewerbungenPage({ params }: { params: { slug: string } }) {
   const { me, groupId } = await requireGroupScope(params.slug);
@@ -60,9 +64,9 @@ export default async function BewerbungenPage({ params }: { params: { slug: stri
               ? {
                   uni: profile.uni,
                   studiengang: profile.studiengang,
-                  abschlussart: profile.abschlussart,
+                  abschlussart: label(ABSCHLUSSART_OPTIONS, profile.abschlussart),
                   geburtsdatum: profile.geburtsdatum,
-                  gefundenDurch: profile.gefundenDurch,
+                  gefundenDurch: label(GEFUNDEN_DURCH_OPTIONS, profile.gefundenDurch),
                   empfehlerName: profile.empfehlerName,
                 }
               : null

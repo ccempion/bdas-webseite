@@ -67,14 +67,16 @@ test("federal board can create, edit, and archive a group", async ({ page }) => 
 });
 
 test("a local board member can approve a pending member of their group", async ({ page }) => {
+  const groupSlug = uniqueSlug("e2e-approve");
   const groupId = await seedGroup({
-    slug: uniqueSlug("e2e-approve"),
+    slug: groupSlug,
     name: "E2E Approve Gruppe",
     city: "Freigabestadt",
     status: "active",
   });
 
-  // A pending member who chose this group.
+  // An applicant who picked this group. Since ADR 0031 that files a request
+  // rather than writing the column, so they stay groupless until the board acts.
   const pendingEmail = uniqueEmail("pending");
   const pendingLast = `P${Date.now().toString().slice(-6)}`;
   await registerVerifyLogin(page, { email: pendingEmail });
@@ -87,11 +89,11 @@ test("a local board member can approve a pending member of their group", async (
   await createProfile(page, { firstName: "Lokal", lastName: "Vorstand" });
   await grantLocalBoard(localEmail, groupId); // takes effect on next request (DB-read grants)
 
-  // Approve the pending member from the board screen.
-  await page.goto("/admin/pending-members");
-  const row = page.locator("li", { hasText: pendingLast });
-  await expect(row).toBeVisible();
-  await row.getByRole("button", { name: "Freigeben" }).click();
+  // Accept the applicant from the group's queue.
+  await page.goto(`/gruppe/${groupSlug}/bewerbungen`);
+  const card = page.locator("main > div", { hasText: pendingLast });
+  await expect(card).toBeVisible();
+  await card.getByRole("button", { name: "Aufnehmen" }).click();
 
   await expect(async () => {
     expect(await memberStatusByEmail(pendingEmail)).toBe("active");

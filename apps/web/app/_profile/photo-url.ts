@@ -4,8 +4,7 @@
  * Profile photos live in a private bucket (spec §7, personal data), so they are
  * readable only through a short-lived signed URL. A missing or unreadable
  * object must never break the page that renders it — the caller gets `null` and
- * falls back to "no image", which is exactly how the pending-members admin view
- * already treats it.
+ * falls back to "no image", which is how the board's Bewerbungen queue treats it.
  */
 import { getProfileMediaStorage } from "@bdas/storage";
 
