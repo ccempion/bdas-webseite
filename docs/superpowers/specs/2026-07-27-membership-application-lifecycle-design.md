@@ -156,15 +156,22 @@ requirements, not observations.
 
 ### Which group statuses may be applied to
 
-`GroupStatus` is `active | dormant | new | archived`. **Archived is the only one
-excluded.** `active` and `dormant` are both applicable — a dormant group keeps
-its board's scope and switcher entry, so it can decide, and an application is a
+`GroupStatus` is `active | dormant | new | archived`. **Applications may target
+`active` and `dormant`; `new` and `archived` may not.** A dormant group keeps its
+board's scope and switcher entry, so it can still decide, and an application is a
 plausible way for a resting group to revive.
 
-This widens today's behaviour: the public index (`apps/web/app/gruppen/page.tsx`)
-and the `/account` group list currently filter to `active`, and both must be
-widened to `active | dormant` for the apply surface, with dormant groups marked
-as ruhend so nobody applies to one unaware.
+This widens today's behaviour, but **only on the apply surface**. The public
+group index at `apps/web/app/gruppen/page.tsx` keeps its `active`-only filter —
+the public website should not start advertising resting groups. The applicant's
+group list is a separate query over `active | dormant`, with dormant entries
+labelled **ruhend** so nobody applies to one unaware.
+
+`new` is excluded on the narrow reading of the decision, which named dormant
+specifically. It is worth revisiting: `new` is inert — no code anywhere branches
+on it — so it behaves exactly like `dormant` in every existing path, and a group
+being founded is arguably the one that most needs applicants. **Open question,
+not a settled decision.**
 
 **The apply action must enforce this server-side.** `changePrimaryGroup`
 deliberately does not read the `groups` table — that would violate CLAUDE.md §1
@@ -294,8 +301,8 @@ Order:
    date, category label, and the board's message.
 3. Open application block, if one is pending: group, date filed, withdraw button.
 4. Group list with an apply action per group, sourced from the existing public
-   index at `apps/web/app/gruppen/page.tsx`. That index filters to `active` today
-   and must be widened to `active | dormant` for this surface, with dormant
+   index at `apps/web/app/gruppen/page.tsx`, whose public `active`-only filter stays
+   as is; this surface runs its own `active | dormant` query, with dormant
    groups labelled **ruhend** so nobody applies to one unaware. The apply server
    action re-validates that the destination is not `archived` before calling
    `changePrimaryGroup` — the module cannot check this itself.
@@ -449,7 +456,7 @@ mocks.
 **Deadlock coverage** — one test per finding above, each asserting the person can still move:
 
 - Archiving a group closes its open applications as `withdrawn` with a null `reason_category`, and the applicant can immediately apply elsewhere.
-- The apply action accepts an `active` and a `dormant` destination and refuses an `archived` one, including when the group id is supplied directly rather than chosen from the list.
+- The apply action accepts an `active` and a `dormant` destination and refuses a `new` or `archived` one, including when the group id is supplied directly rather than chosen from the list.
 - An application to a dormant group is decidable by that group's board.
 - `decideGroupChange` refuses a request whose member is no longer `pending` or `active`.
 - A member who leaves a group lands in the pool and can apply again in the same session.
