@@ -97,6 +97,16 @@ export async function listOpenReports(db: Db): Promise<PostReport[]> {
   return rows.map((r) => ({ ...r, status: r.status as PostReportStatus }));
 }
 
+/** How many reports await review. Same predicate as `listOpenReports`, without the join payload. */
+export async function countOpenReports(db: Db): Promise<number> {
+  const [row] = await db
+    .select({ n: sql<number>`count(*)::int` })
+    .from(postReports)
+    .innerJoin(posts, eq(postReports.postId, posts.id))
+    .where(and(eq(postReports.status, "open"), isNull(posts.deletedAt)));
+  return row?.n ?? 0;
+}
+
 /** Mark a report as dismissed (reviewed, no action taken). */
 export async function dismissReport(db: Db, reportId: string): Promise<void> {
   const result = await db

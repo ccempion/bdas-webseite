@@ -12,6 +12,8 @@ test("register → verify → login → logout → reset → re-login", async ({
   const email = uniqueEmail("auth");
 
   await register(page, { email });
+  await expect(page.getByText(/Spam-Ordner/)).toBeVisible();
+
   await verify(page, email);
 
   // With the `profile` flag on, sign-in routes a pending member with an

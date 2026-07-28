@@ -19,7 +19,7 @@ import { plainTextToDoc } from "./content";
 import { getPostById, getPostBySlug } from "./services/get";
 import { listPosts } from "./services/list";
 import { createPost, deletePost, updatePost } from "./services/manage";
-import { dismissReport, listOpenReports, reportPost } from "./services/report";
+import { countOpenReports, dismissReport, listOpenReports, reportPost } from "./services/report";
 import { ANON, type Viewer } from "./visibility";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -360,5 +360,19 @@ describeIfDb("blog integration", () => {
     await dismissReport(t.db, report!.id);
 
     expect(await listOpenReports(t.db)).toEqual([]);
+  });
+
+  it("countOpenReports zählt offene Meldungen und ignoriert verworfene", async () => {
+    const p1 = await createPost(t.db, { title: "Erster Beitrag", content: doc("Text.") }, "usr_a");
+    const p2 = await createPost(t.db, { title: "Zweiter Beitrag", content: doc("Text.") }, "usr_a");
+    await reportPost(t.db, p1.id, "usr_reporter", "Wirkt wie Spam");
+    await reportPost(t.db, p2.id, "usr_reporter", null);
+
+    expect(await countOpenReports(t.db)).toBe(2);
+
+    const [open] = await listOpenReports(t.db);
+    await dismissReport(t.db, open!.id);
+
+    expect(await countOpenReports(t.db)).toBe(1);
   });
 });

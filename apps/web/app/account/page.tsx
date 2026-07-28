@@ -5,12 +5,13 @@ import { getDb } from "@bdas/db";
 import { Alert, Button, Card } from "@bdas/design-system";
 import { isFlagOn } from "@bdas/feature-flags";
 import { listGroups } from "@bdas/groups";
-import { getCurrentMember, getOpenGroupChange, isFederalBoard } from "@bdas/members";
+import { getCurrentMember, getOpenGroupChange } from "@bdas/members";
 import { getProfile } from "@bdas/profile";
 
 import { requireAuthFlag } from "../_auth/flag";
 import { requireMembersFlag } from "../_members/flag";
 import { AccountAvatar } from "./AccountAvatar";
+import { ApprovalsAlert } from "./ApprovalsAlert";
 import { isProfileComplete } from "../_profile/complete";
 import { signedProfilePhotoUrl } from "../_profile/photo-url";
 import { SUBMITTED_PARAM, SUBMITTED_VALUE } from "../_profile/submitted";
@@ -51,6 +52,7 @@ export default async function AccountPage({
   const groupName = (id: string | null): string | null =>
     id === null ? null : (groups.find((g) => g.id === id)?.name ?? null);
   const currentGroupName = groupName(me.member?.primaryGroupId ?? null);
+  const currentGroupSlug = groups.find((g) => g.id === me.member?.primaryGroupId)?.slug ?? null;
   const targetGroupName = groupName(openChange?.toGroupId ?? null);
 
   // Everything filled in → the profile is a record to read, not a form to fill
@@ -77,7 +79,6 @@ export default async function AccountPage({
     photoStorageKey: profile?.photoStorageKey ?? null,
   };
 
-  const isBoard = isFederalBoard(me.grants);
   const status = me.member?.status;
   // Arrived straight from the wizard — say so, rather than leaving the applicant
   // to infer it from a status line that also shows on every later visit.
@@ -126,14 +127,7 @@ export default async function AccountPage({
         </Alert>
       ) : null}
 
-      {isBoard ? (
-        <Alert variant="info" title="Bundesvorstand">
-          Du hast Bundesvorstands-Rechte.{" "}
-          <Link href="/federal/pool" className="text-bdas-red hover:underline">
-            Mitglieder ohne Gruppe ansehen →
-          </Link>
-        </Alert>
-      ) : null}
+      <ApprovalsAlert groupSlug={currentGroupSlug} />
 
       <Card flat className="p-6">
         <h2 className="mb-4 text-lg font-semibold text-bdas-ink">

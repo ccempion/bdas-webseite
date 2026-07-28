@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 
+import { CropDialog } from "../_profile/CropDialog";
 import { DropZone } from "../_upload/DropZone";
 import { IMAGE_ACCEPT, PROFILE_IMAGE } from "../_upload/accept";
 import { uploadImage } from "../_upload/upload-image";
@@ -24,6 +25,7 @@ export function PhotoField({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [localPreview, setLocalPreview] = useState<string | null>(null);
+  const [pending, setPending] = useState<File | null>(null);
 
   // Revoke the object URL on unmount/replacement so the blob is not retained.
   useEffect(() => {
@@ -55,7 +57,7 @@ export function PhotoField({
   return (
     <DropZone
       accept={PROFILE_IMAGE}
-      onFile={(file) => void upload(file)}
+      onFile={(file) => setPending(file)}
       onReject={(messages) => setError(messages[0] ?? null)}
       label="Foto hier ablegen"
       disabled={busy}
@@ -79,7 +81,7 @@ export function PhotoField({
         className="hidden"
         onChange={(e) => {
           const file = e.currentTarget.files?.[0];
-          if (file) void upload(file);
+          if (file) setPending(file);
         }}
       />
       <button
@@ -91,6 +93,16 @@ export function PhotoField({
         {busy ? "Lädt hoch…" : storageKey ? "Foto ersetzen" : "Foto hochladen (optional)"}
       </button>
       {error ? <p className="text-sm text-bdas-red">{error}</p> : null}
+      {pending ? (
+        <CropDialog
+          file={pending}
+          onCancel={() => setPending(null)}
+          onDone={(cropped) => {
+            setPending(null);
+            void upload(cropped);
+          }}
+        />
+      ) : null}
     </DropZone>
   );
 }
