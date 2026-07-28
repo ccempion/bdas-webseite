@@ -24,9 +24,20 @@ import type {
   WaitlistPromoted,
 } from "@bdas/events-module";
 import { getGroup } from "@bdas/groups";
-import { getMemberByUserId, listBoardRecipientsForGroup } from "@bdas/members";
-import type { RoleGranted, RoleRevoked, StatusChanged } from "@bdas/members";
-import type { ProfileCompleted } from "@bdas/profile";
+import {
+  getGroupChangeRequest,
+  getMember,
+  listBoardRecipientsForGroup,
+  REJECTION_CATEGORY_LABELS,
+} from "@bdas/members";
+import type {
+  GroupChangeDecided,
+  GroupChangeRequested,
+  GroupChangeWithdrawn,
+  RejectionCategory,
+  RoleGranted,
+  RoleRevoked,
+} from "@bdas/members";
 import { getPostById, type PostReported } from "@bdas/blog";
 
 import { sendTransactional, sendTransactionalToGuest } from "./services/send";
@@ -48,6 +59,12 @@ let subs: Subscription[] = [];
  * after its write already succeeded — a notification problem must not do that.
  * Failures are logged, not propagated.
  */
+/** The members module owns the labels; the board's dropdown reads the same map. */
+const categoryLabel = (key: string | null): string | undefined =>
+  key !== null && key in REJECTION_CATEGORY_LABELS
+    ? REJECTION_CATEGORY_LABELS[key as RejectionCategory]
+    : undefined;
+
 function safe<E extends AnyEvent>(fn: EventHandler<E>): EventHandler<E> {
   return async (e: E) => {
     try {
@@ -240,33 +257,52 @@ export function registerNotificationSubscribers(db: Db, opts: { siteUrl?: string
         });
       }),
     ),
-    getEventBus().subscribe<ProfileCompleted>(
-      "profile.completed",
-      safe<ProfileCompleted>(async (e) => {
-        const applicant = await getMemberByUserId(db, e.userId);
-        // Only genuine applications (pending members) notify the board; an
-        // already-active member backfilling their profile does not.
-        if (applicant?.status !== "pending") return;
-        const recipients = await listBoardRecipientsForGroup(db, e.groupId);
+    // An application is a request row (ADR 0031), so all three mails hang off
+    // the request's lifecycle. `profile.completed` no longer routes any of
+    // them: the wizard stopped collecting a group, so it has nothing to route by.
+    getEventBus().subscribe<GroupChangeRequested>(
+      "members.group_change.requested",
+      safe<GroupChangeRequested>(async (e) => {
+        const applicant = await getMember(db, e.memberId);
+        const recipients = await listBoardRecipientsForGroup(db, e.toGroupId);
         for (const memberId of recipients) {
           await sendTransactional(db, "member_application_received", memberId, {
-            applicantName: `${applicant.firstName} ${applicant.lastName}`,
+            applicantName: applicant ? `${applicant.firstName} ${applicant.lastName}` : undefined,
           });
         }
       }),
     ),
-    // The board decided on an application — tell the applicant, who otherwise
-    // waits without ever hearing back. Only decisions on a pending application
-    // qualify; later status moves (leaving, alumni) are not news to announce.
-    getEventBus().subscribe<StatusChanged>(
-      "members.status.changed",
-      safe<StatusChanged>(async (e) => {
-        if (e.from !== "pending") return;
-        if (e.to === "active") {
+    // The board decided — tell the applicant, who otherwise waits without ever
+    // hearing back. A transfer between groups is not an application and needs
+    // no such mail.
+    getEventBus().subscribe<GroupChangeDecided>(
+      "members.group_change.decided",
+      safe<GroupChangeDecided>(async (e) => {
+        if (e.fromGroupId !== null) return;
+        if (e.decision === "approved") {
           await sendTransactional(db, "member_application_approved", e.memberId, {});
-        } else if (e.to === "inactive") {
-          await sendTransactional(db, "member_application_declined", e.memberId, {});
+        } else {
+          // The reason lives on the row, not on the event.
+          const request = await getGroupChangeRequest(db, e.requestId);
+          await sendTransactional(db, "member_application_declined", e.memberId, {
+            reasonCategoryLabel: categoryLabel(request?.reasonCategory ?? null),
+            reasonMessage: request?.reasonMessage ?? undefined,
+          });
         }
+      }),
+    ),
+    // Their group was archived out from under them. Nobody judged them, so the
+    // mail must not read as a rejection. A member withdrawing their own
+    // application gets nothing.
+    getEventBus().subscribe<GroupChangeWithdrawn>(
+      "members.group_change.withdrawn",
+      safe<GroupChangeWithdrawn>(async (e) => {
+        if (e.actorUserId !== "system") return;
+        const request = await getGroupChangeRequest(db, e.requestId);
+        const group = request?.toGroupId ? await getGroup(db, request.toGroupId) : null;
+        await sendTransactional(db, "member_application_group_dissolved", e.memberId, {
+          groupName: group?.name,
+        });
       }),
     ),
     getEventBus().subscribe<PostReported>(

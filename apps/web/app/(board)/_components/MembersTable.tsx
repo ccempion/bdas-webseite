@@ -1,12 +1,10 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useMemo, useState } from "react";
 
-import type { IncomingGroupChange, Member, MemberStatus, OpenGroupChange } from "@bdas/members";
+import type { Member, MemberStatus, OpenGroupChange, RejectionCategory } from "@bdas/members";
 
 import { MemberGroupPanel } from "./MemberGroupPanel";
-import { decideGroupChangeAction } from "./group-change-actions";
-import { approveMemberAction, rejectMemberAction } from "./member-actions";
 
 const STATUS_LABEL: Record<MemberStatus, string> = {
   pending: "Ausstehend",
@@ -14,10 +12,11 @@ const STATUS_LABEL: Record<MemberStatus, string> = {
   inactive: "Inaktiv",
   alumnus: "Alumni",
 };
+/** No `pending` filter: an applicant is no longer a member row awaiting a
+ *  verdict but a request on the group's Bewerbungen queue (ADR 0031). */
 const FILTERS: ReadonlyArray<{ key: "all" | MemberStatus; label: string }> = [
   { key: "all", label: "Alle" },
   { key: "active", label: "Aktiv" },
-  { key: "pending", label: "Ausstehend" },
   { key: "alumnus", label: "Alumni" },
 ];
 
@@ -25,22 +24,18 @@ export function MembersTable({
   members,
   groupNames,
   openChanges,
-  incoming = [],
   revalidatePath,
+  rejectionCategories,
 }: {
   members: Member[];
   groupNames: Record<string, string>;
   openChanges: OpenGroupChange[];
-  /** Applicants from other groups. Empty on the federal page, which lists everyone anyway. */
-  incoming?: IncomingGroupChange[];
   revalidatePath: string;
+  rejectionCategories: ReadonlyArray<{ key: RejectionCategory; label: string }>;
 }) {
   const [filter, setFilter] = useState<"all" | MemberStatus>("all");
   const [q, setQ] = useState("");
   const [selected, setSelected] = useState<Member | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [queueError, setQueueError] = useState<string | null>(null);
-  const [pending, start] = useTransition();
 
   const openByMember = useMemo(
     () =>
@@ -62,75 +57,9 @@ export function MembersTable({
     [members, filter, q],
   );
 
-  const decide = (requestId: string, decision: "approved" | "rejected") =>
-    start(async () => {
-      const res = await decideGroupChangeAction(requestId, decision, revalidatePath);
-      setQueueError(res.ok ? null : (res.error ?? "Fehler"));
-    });
-
   return (
     <div className="flex gap-4">
       <div className="flex min-w-0 flex-1 flex-col gap-4">
-        {/* Outside the queue block: a failed decision revalidates, which can empty
-            the queue entirely — the reason it failed has to outlive the rows. */}
-        {queueError && (
-          <p className="rounded-bdas border border-bdas-soft bg-bdas-surface p-3 text-sm text-bdas-red shadow-bdas-card">
-            {queueError}
-          </p>
-        )}
-        {incoming.length > 0 && (
-          <div className="overflow-hidden rounded-bdas border border-bdas-soft bg-bdas-surface shadow-bdas-card">
-            <h2 className="border-b border-bdas-soft p-3 text-sm font-semibold text-bdas-ink">
-              Eingehende Wechselanträge ({incoming.length})
-            </h2>
-            <ul>
-              {incoming.map((c) => (
-                <li
-                  key={c.id}
-                  className="flex flex-wrap items-center gap-3 border-b border-bdas-soft p-3 text-sm last:border-b-0 hover:bg-bdas-surface-hover"
-                >
-                  <button
-                    type="button"
-                    onClick={() => setSelected(c.member)}
-                    className="text-bdas-ink hover:text-bdas-red"
-                  >
-                    {c.member.firstName} {c.member.lastName} ›
-                  </button>
-                  <span className="rounded-bdas-pill bg-bdas-surface-hover px-2 py-0.5 text-xs font-semibold text-bdas-red">
-                    {c.fromGroupId ? (groupNames[c.fromGroupId] ?? "—") : "keine Gruppe"} → uns
-                  </span>
-                  <span className="text-bdas-ink-muted">
-                    seit {new Date(c.requestedAt).toLocaleDateString("de-DE")}
-                  </span>
-                  {c.canDecide ? (
-                    <span className="ml-auto flex gap-2">
-                      <button
-                        type="button"
-                        disabled={pending}
-                        onClick={() => decide(c.id, "approved")}
-                        className="rounded-bdas-sm bg-bdas-red px-2 py-1 text-xs font-semibold text-bdas-surface"
-                      >
-                        Freigeben
-                      </button>
-                      <button
-                        type="button"
-                        disabled={pending}
-                        onClick={() => decide(c.id, "rejected")}
-                        className="rounded-bdas-sm border border-bdas-soft px-2 py-1 text-xs"
-                      >
-                        Ablehnen
-                      </button>
-                    </span>
-                  ) : (
-                    <span className="ml-auto text-xs text-bdas-ink-muted">
-                      Entscheidet ein anderer Vorstand.
-                    </span>
-                  )}
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
         <div className="overflow-hidden rounded-bdas border border-bdas-soft bg-bdas-surface shadow-bdas-card">
           <div className="flex flex-wrap items-center gap-2 border-b border-bdas-soft p-3">
             {FILTERS.map((f) => (
@@ -154,11 +83,6 @@ export function MembersTable({
               className="ml-auto rounded-bdas-sm border border-bdas-soft px-3 py-1 text-bdas-ink-body"
             />
           </div>
-          {error && (
-            <p className="border-b border-bdas-soft bg-bdas-surface-hover p-3 text-sm text-bdas-red">
-              {error}
-            </p>
-          )}
           <table className="w-full text-sm">
             <thead>
               <tr className="text-bdas-ink-muted">
@@ -166,7 +90,6 @@ export function MembersTable({
                 <th className="p-3 text-left font-medium">Gruppe</th>
                 <th className="p-3 text-left font-medium">Status</th>
                 <th className="p-3 text-left font-medium">Beigetreten</th>
-                <th className="p-3 text-left font-medium">Schnellaktion</th>
               </tr>
             </thead>
             <tbody>
@@ -193,43 +116,11 @@ export function MembersTable({
                   <td className="p-3 text-bdas-ink-body">
                     {m.joinedAt ? new Date(m.joinedAt).toLocaleDateString("de-DE") : "—"}
                   </td>
-                  <td className="p-3">
-                    {m.status === "pending" && (
-                      <span className="flex gap-2">
-                        <button
-                          type="button"
-                          disabled={pending}
-                          onClick={() =>
-                            start(async () => {
-                              const res = await approveMemberAction(m.id, revalidatePath);
-                              setError(res.ok ? null : (res.error ?? "Fehler"));
-                            })
-                          }
-                          className="rounded-bdas-sm bg-bdas-red px-2 py-1 text-xs font-semibold text-bdas-surface"
-                        >
-                          Freigeben
-                        </button>
-                        <button
-                          type="button"
-                          disabled={pending}
-                          onClick={() =>
-                            start(async () => {
-                              const res = await rejectMemberAction(m.id, revalidatePath);
-                              setError(res.ok ? null : (res.error ?? "Fehler"));
-                            })
-                          }
-                          className="rounded-bdas-sm border border-bdas-soft px-2 py-1 text-xs"
-                        >
-                          Ablehnen
-                        </button>
-                      </span>
-                    )}
-                  </td>
                 </tr>
               ))}
               {rows.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="p-6 text-center text-bdas-ink-muted">
+                  <td colSpan={4} className="p-6 text-center text-bdas-ink-muted">
                     Keine Mitglieder.
                   </td>
                 </tr>
@@ -266,6 +157,7 @@ export function MembersTable({
             open={openByMember[selected.id] ?? null}
             groupNames={groupNames}
             revalidatePath={revalidatePath}
+            rejectionCategories={rejectionCategories}
           />
           <button
             type="button"

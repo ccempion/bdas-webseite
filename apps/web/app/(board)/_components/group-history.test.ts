@@ -25,6 +25,8 @@ const req = (over: Partial<GroupChangeRequest>): GroupChangeRequest => ({
   requestedAt: new Date("2026-01-01T00:00:00Z"),
   decidedAt: new Date("2026-01-02T00:00:00Z"),
   decidedBy: "usr_board",
+  reasonCategory: null,
+  reasonMessage: null,
   ...over,
 });
 

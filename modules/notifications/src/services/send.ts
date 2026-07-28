@@ -16,6 +16,8 @@ type Extra = {
   readonly messageBody?: string | undefined;
   readonly groupName?: string | undefined;
   readonly applicantName?: string | undefined;
+  readonly reasonCategoryLabel?: string | undefined;
+  readonly reasonMessage?: string | undefined;
   readonly postTitle?: string | undefined;
   readonly postUrl?: string | undefined;
   readonly reportReason?: string | undefined;
@@ -49,6 +51,8 @@ async function sendToRecipient(
     messageBody: extra.messageBody,
     groupName: extra.groupName,
     applicantName: extra.applicantName,
+    reasonCategoryLabel: extra.reasonCategoryLabel,
+    reasonMessage: extra.reasonMessage,
     postTitle: extra.postTitle,
     postUrl: extra.postUrl,
     reportReason: extra.reportReason,

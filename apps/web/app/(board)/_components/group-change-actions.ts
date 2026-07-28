@@ -1,36 +1,28 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
-
 import { getDb } from "@bdas/db";
 import {
   decideGroupChange,
-  getCurrentMember,
   getGroupChangeHistory,
   type GroupChangeRequest,
+  type RejectionReason,
 } from "@bdas/members";
 
-import { readSessionCookie } from "../../../lib/auth-cookie";
+import { actor, safeRevalidate } from "./board-actor";
 
-async function actor() {
-  const me = await getCurrentMember(getDb(), readSessionCookie());
-  if (!me) throw new Error("Nicht angemeldet.");
-  return { userId: me.user.id, grants: me.grants };
-}
-
-/** Server Actions are public endpoints; only ever revalidate board routes. */
-function safeRevalidate(path: string): void {
-  if (path.startsWith("/federal/") || path.startsWith("/gruppe/")) revalidatePath(path);
-}
-
-/** Approve or reject a transfer. Authority is enforced inside decideGroupChange. */
+/**
+ * Approve or reject a transfer. Authority is enforced inside decideGroupChange,
+ * which also requires a reason on every rejection (ADR 0031) — a rejection
+ * without one is refused there, so the caller must open the reason dialog.
+ */
 export async function decideGroupChangeAction(
   requestId: string,
   decision: "approved" | "rejected",
   revalidate: string,
+  reason?: RejectionReason,
 ): Promise<{ ok: boolean; error?: string }> {
   try {
-    await decideGroupChange(getDb(), requestId, decision, await actor());
+    await decideGroupChange(getDb(), requestId, decision, await actor(), reason);
     safeRevalidate(revalidate);
     return { ok: true };
   } catch (e) {

@@ -4,6 +4,7 @@ import { listMembers, listOpenGroupChanges } from "@bdas/members";
 
 import { requireFederalScope } from "../../../_dashboard/session";
 import { MembersTable } from "../../_components/MembersTable";
+import { REJECTION_CATEGORIES } from "../../_components/rejection-categories";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Mitglieder" };
@@ -25,6 +26,7 @@ export default async function FederalMembersPage() {
         groupNames={groupNames}
         openChanges={openChanges}
         revalidatePath="/federal/members"
+        rejectionCategories={REJECTION_CATEGORIES}
       />
     </section>
   );

@@ -28,6 +28,25 @@ export type Grant = {
 
 export type GroupChangeStatus = "pending" | "approved" | "rejected" | "withdrawn";
 
+/** The fixed reason keys a board may pick when rejecting. `other` needs a message. */
+export type RejectionCategory = "no_contact" | "not_a_student" | "other";
+
+export type RejectionReason = {
+  readonly category: RejectionCategory;
+  readonly message: string | null;
+};
+
+/**
+ * German labels for the reason keys. They live here, in the module that owns the
+ * column, because both the board's dropdown and the notifications module render
+ * them — and neither may import the other.
+ */
+export const REJECTION_CATEGORY_LABELS: Record<RejectionCategory, string> = {
+  no_contact: "Kein Kontakt zustande gekommen",
+  not_a_student: "Kein Student mehr",
+  other: "Sonstiges",
+};
+
 /**
  * One recorded group movement (ADR 0022). `fromGroupId` null ⇔ the member had no
  * group; `toGroupId` null ⇔ the member left the group structure (always
@@ -42,6 +61,8 @@ export type GroupChangeRequest = {
   readonly requestedAt: Date;
   readonly decidedAt: Date | null;
   readonly decidedBy: string | null;
+  readonly reasonCategory: RejectionCategory | null;
+  readonly reasonMessage: string | null;
 };
 
 /**

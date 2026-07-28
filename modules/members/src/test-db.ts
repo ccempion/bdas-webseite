@@ -23,6 +23,8 @@ export const MEMBERS_TEST_MIGRATIONS: ReadonlyArray<ReadonlyArray<string>> = [
   ["..", "migrations", "0005_event_organizer.sql"],
   ["..", "migrations", "0006_group_change_requests.sql"],
   ["..", "migrations", "0007_page_editor.sql"],
+  ["..", "migrations", "0008_application_reasons.sql"],
+  ["..", "migrations", "pending", "0009_reason_required.sql"],
 ];
 
 export async function dbReachable(): Promise<boolean> {
@@ -59,9 +61,14 @@ export async function createUser(t: TestDb, id: string, email: string): Promise<
   `;
 }
 
-export async function createGroup(t: TestDb, id: string, slug: string): Promise<void> {
+export async function createGroup(
+  t: TestDb,
+  id: string,
+  slug: string,
+  status: "active" | "dormant" | "new" | "archived" = "active",
+): Promise<void> {
   await t.client`
     INSERT INTO groups (id, slug, name, city, status)
-    VALUES (${id}, ${slug}, ${slug}, 'Teststadt', 'active')
+    VALUES (${id}, ${slug}, ${slug}, 'Teststadt', ${status})
   `;
 }

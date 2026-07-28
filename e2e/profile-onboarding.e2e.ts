@@ -31,8 +31,9 @@ function marker(prefix: string): string {
 }
 
 test("register → verify → wizard → the local board sees the application", async ({ page }) => {
+  const groupSlug = uniqueSlug("e2e-profil");
   const groupId = await seedGroup({
-    slug: uniqueSlug("e2e-profil"),
+    slug: groupSlug,
     name: "E2E Profil Gruppe",
     city: "Profilstadt",
     status: "active",
@@ -96,14 +97,14 @@ test("register → verify → wizard → the local board sees the application", 
   await createProfile(page, { firstName: "Lokal", lastName: "Vorstand" });
   await grantLocalBoard(boardEmail, groupId); // DB-read grants: live next request
 
-  await page.goto("/admin/pending-members");
-  const row = page.locator("li", { hasText: lastName });
-  await expect(row).toBeVisible();
-  await expect(row.getByText(studiengang)).toBeVisible();
-  await expect(row.getByText(UNI)).toBeVisible();
-  await expect(row.getByText("Bachelor")).toBeVisible();
-  // "Empfehlung (<name>)" — the referral is a board signal, nothing automatic.
-  await expect(row.getByText(empfehler)).toBeVisible();
+  await page.goto(`/gruppe/${groupSlug}/bewerbungen`);
+  const card = page.locator("main > div", { hasText: lastName });
+  await expect(card).toBeVisible();
+  await expect(card.getByText(studiengang)).toBeVisible();
+  await expect(card.getByText(UNI)).toBeVisible();
+  await expect(card.getByText("Bachelor")).toBeVisible();
+  // The referral is a board signal, nothing automatic.
+  await expect(card.getByText(empfehler)).toBeVisible();
 });
 
 /**

@@ -2,11 +2,12 @@
  * Group transfers (ADR 0022). The ONLY self-service writer of
  * `members.primary_group_id`.
  *
- * An active member cannot move themselves: they file a request that the
+ * Nobody moves themselves: choosing a group — whether an active member's
+ * transfer or a pending member's first application — files a request that the
  * DESTINATION group's board decides (ADR 0021's rule, applied to transfers).
- * A pending member has nothing approved yet, so their choice is written
- * straight through. Leaving to no group applies immediately — nobody needs to
- * approve an exit — but is still logged.
+ * `primary_group_id` is written only once a board approves. Leaving to no
+ * group applies immediately — nobody needs to approve an exit — but is still
+ * logged.
  *
  * The module deliberately does not verify that a destination group exists; the
  * foreign key does that. Reading the `groups` table from here would violate
@@ -15,7 +16,7 @@
 import { and, desc, eq, isNull, sql } from "drizzle-orm";
 
 import type { Role } from "@bdas/auth";
-import { ConflictError, ForbiddenError, NotFoundError } from "@bdas/errors";
+import { ConflictError, ForbiddenError, NotFoundError, ValidationError } from "@bdas/errors";
 import { getEventBus } from "@bdas/events";
 import { createId } from "@bdas/id";
 
@@ -25,7 +26,7 @@ import type {
   GroupChangeWithdrawn,
   RoleRevoked,
 } from "../events";
-import { canDecideJoinRequest, canManageGroup, isFederalBoard } from "../roles";
+import { canDecideJoinRequest, canManageGroup, canTransition, isFederalBoard } from "../roles";
 import {
   memberGroupChangeRequests,
   members,
@@ -39,6 +40,8 @@ import type {
   IncomingGroupChange,
   MemberStatus,
   OpenGroupChange,
+  RejectionCategory,
+  RejectionReason,
 } from "../types";
 
 import { row2member } from "./get";
@@ -54,6 +57,8 @@ export function row2request(r: MemberGroupChangeRow): GroupChangeRequest {
     requestedAt: r.requestedAt,
     decidedAt: r.decidedAt,
     decidedBy: r.decidedBy,
+    reasonCategory: r.reasonCategory as RejectionCategory | null,
+    reasonMessage: r.reasonMessage,
   };
 }
 
@@ -92,6 +97,34 @@ async function revokeGroupScopedGrants(
     };
     await getEventBus().publish(event);
   }
+}
+
+/**
+ * Did this error come from the one-open-request-per-member index?
+ *
+ * postgres-js puts the SQLSTATE in `code`; `23505` is unique_violation. The
+ * constraint name is checked too so an id collision — the only other unique
+ * constraint on this table — is not mistaken for a second application.
+ */
+function isOpenRequestConflict(err: unknown): boolean {
+  if (typeof err !== "object" || err === null) return false;
+  const e = err as { code?: string; constraint_name?: string };
+  return e.code === "23505" && e.constraint_name === "member_group_change_requests_open_uq";
+}
+
+/** The member's open request, if any. */
+async function findOpen(tx: Db, memberId: string): Promise<MemberGroupChangeRow | undefined> {
+  const rows = await tx
+    .select()
+    .from(memberGroupChangeRequests)
+    .where(
+      and(
+        eq(memberGroupChangeRequests.memberId, memberId),
+        eq(memberGroupChangeRequests.status, "pending"),
+      ),
+    )
+    .limit(1);
+  return rows[0];
 }
 
 /** Close the member's open request, if any. Returns it, or null when there was none. */
@@ -155,18 +188,6 @@ export async function changePrimaryGroup(
       return { kind: "applied", member: row2member(row) };
     }
 
-    // Nothing has been approved for a pending member, so there is nothing to
-    // re-approve: their join request simply moves to the other group's queue.
-    if (status === "pending") {
-      const [updated] = await tx
-        .update(members)
-        .set({ primaryGroupId: toGroupId, updatedAt: new Date() })
-        .where(eq(members.id, memberId))
-        .returning();
-      if (!updated) throw new Error("changePrimaryGroup: update returned no row");
-      return { kind: "applied", member: row2member(updated) };
-    }
-
     // Leaving needs no approval, but is logged and drops origin-group powers.
     if (toGroupId === null) {
       await withdrawOpen(tx, memberId, actor.userId);
@@ -204,14 +225,44 @@ export async function changePrimaryGroup(
       return { kind: "applied", member: row2member(updated) };
     }
 
-    // Joining another group: the destination board decides. A second pick
-    // supersedes the first (the partial unique index allows one open row).
-    await withdrawOpen(tx, memberId, actor.userId);
+    // Joining another group: the destination board decides. An active
+    // member's second pick supersedes the first (the partial unique index
+    // allows one open row per member) — but a pending applicant must
+    // withdraw explicitly before applying elsewhere: at most one open
+    // application in the pool at a time, enforced here by that same index.
+    if (status === "active") {
+      await withdrawOpen(tx, memberId, actor.userId);
+    } else {
+      const open = await findOpen(tx, memberId);
+      if (open) {
+        // Re-submitting the wizard unchanged is not an error — it is the same
+        // application, and re-filing it would cost the applicant their place in
+        // the queue. Only a different group is a conflict.
+        if (open.toGroupId === toGroupId) return { kind: "requested", request: row2request(open) };
+        throw new ConflictError(
+          "Du hast bereits eine offene Bewerbung. Zieh sie zurück, bevor du dich woanders bewirbst.",
+        );
+      }
+    }
     const id = createId("mgc");
-    const [request] = await tx
-      .insert(memberGroupChangeRequests)
-      .values({ id, memberId, fromGroupId: from, toGroupId })
-      .returning();
+    let request: MemberGroupChangeRow | undefined;
+    try {
+      [request] = await tx
+        .insert(memberGroupChangeRequests)
+        .values({ id, memberId, fromGroupId: from, toGroupId })
+        .returning();
+    } catch (err) {
+      // The applicant already has an open application: either they skipped the
+      // withdrawal above (pending), or two submits raced past it. Both must read
+      // as a conflict the caller can show, not as a driver error — the wizard
+      // rethrows anything that is not an AppError and 500s on it.
+      if (isOpenRequestConflict(err)) {
+        throw new ConflictError(
+          "Du hast bereits eine offene Bewerbung. Zieh sie zurück, bevor du dich woanders bewirbst.",
+        );
+      }
+      throw err;
+    }
     if (!request) throw new Error("changePrimaryGroup: insert returned no row");
 
     const event: GroupChangeRequested = {
@@ -252,15 +303,29 @@ export async function withdrawGroupChange(
  * The origin group has no veto.
  *
  * Approval moves the member and revokes any grant they still hold in the group
- * they left. Rejection leaves them exactly where they were. Status is never
- * touched — an approved transfer does not send anyone back to `pending`.
+ * they left. Rejection leaves them exactly where they were. A transfer never
+ * touches status — an approved transfer does not send anyone back to
+ * `pending`. A first-time application (`from_group_id IS NULL`) is different:
+ * approval is the applicant's acceptance, so it also flips status to `active`
+ * and stamps `joined_at`. The acceptance mail rides on
+ * `members.group_change.decided` — this path publishes no status event.
  */
 export async function decideGroupChange(
   db: Db,
   requestId: string,
   decision: "approved" | "rejected",
   actor: Actor,
+  reason?: RejectionReason,
 ): Promise<GroupChangeRequest> {
+  if (decision === "rejected") {
+    if (!reason) {
+      throw new ValidationError("Bitte gib einen Grund für die Ablehnung an.");
+    }
+    if (reason.category === "other" && !reason.message?.trim()) {
+      throw new ValidationError('Bei „Sonstiges" ist eine Nachricht erforderlich.');
+    }
+  }
+
   return db.transaction(async (tx) => {
     const rows = await tx
       .select()
@@ -277,15 +342,42 @@ export async function decideGroupChange(
     // Exits are written already-approved and never reach this path.
     if (toGroupId === null) throw new ConflictError("Austritte werden nicht freigegeben.");
 
+    // Read once: guards against deciding a request whose member is no longer
+    // pending/active, and — on approval — tells an applicant's first
+    // acceptance apart from a transfer. Not read from `fromGroupId` alone: an
+    // active member who left their group and reapplies also has
+    // `fromGroupId === null` on the rejoin, and that is not an acceptance.
+    // Reading here (before authorization) is harmless; the throw on it is
+    // deferred below the authorization check so an actor with no standing
+    // over the destination group cannot learn a third party's member state.
+    const memberRows = await tx
+      .select({ status: members.status, joinedAt: members.joinedAt })
+      .from(members)
+      .where(eq(members.id, req.memberId))
+      .limit(1);
+    const member = memberRows[0];
+    if (!member) throw new Error("decideGroupChange: member row missing");
+    const memberStatus = member.status as MemberStatus;
+
     const hasLocalBoard = await groupHasActiveLocalBoard(tx, toGroupId);
     if (!canDecideJoinRequest(actor.grants, toGroupId, hasLocalBoard)) {
       throw new ForbiddenError("Über den Wechsel entscheidet der Vorstand der Zielgruppe.");
     }
 
+    if (memberStatus !== "pending" && memberStatus !== "active") {
+      throw new ConflictError("Dieses Mitglied ist nicht mehr aktiv.");
+    }
+
     const now = new Date();
     const [updated] = await tx
       .update(memberGroupChangeRequests)
-      .set({ status: decision, decidedAt: now, decidedBy: actor.userId })
+      .set({
+        status: decision,
+        decidedAt: now,
+        decidedBy: actor.userId,
+        reasonCategory: decision === "rejected" ? (reason?.category ?? null) : null,
+        reasonMessage: decision === "rejected" ? reason?.message?.trim() || null : null,
+      })
       .where(
         and(
           eq(memberGroupChangeRequests.id, requestId),
@@ -295,11 +387,28 @@ export async function decideGroupChange(
       .returning();
     if (!updated) throw new ConflictError("Über diesen Antrag wurde bereits entschieden.");
 
+    // Applicant vs. transfer is decided by the member's actual status, not by
+    // `from_group_id` alone — an active member who exited also has a null
+    // `from_group_id` on a rejoin request, and that is not an acceptance.
+    let isFirstAcceptance = false;
     if (decision === "approved") {
-      await tx
-        .update(members)
-        .set({ primaryGroupId: toGroupId, updatedAt: now })
-        .where(eq(members.id, req.memberId));
+      isFirstAcceptance = memberStatus === "pending";
+      // The transition table (roles.ts) is the single source of truth for
+      // which status moves are legal, even though today only pending→active
+      // reaches here — do not hardcode that assumption a second time.
+      if (isFirstAcceptance && !canTransition(memberStatus, "active")) {
+        throw new ConflictError(`Übergang ${memberStatus} → active nicht erlaubt.`);
+      }
+
+      const set: Partial<typeof members.$inferInsert> & {
+        primaryGroupId: string;
+        updatedAt: Date;
+      } = { primaryGroupId: toGroupId, updatedAt: now };
+      if (isFirstAcceptance) {
+        set.status = "active";
+        if (member.joinedAt === null) set.joinedAt = now;
+      }
+      await tx.update(members).set(set).where(eq(members.id, req.memberId));
       if (req.fromGroupId !== null) {
         await revokeGroupScopedGrants(tx, req.memberId, req.fromGroupId, actor.userId);
       }
@@ -319,6 +428,22 @@ export async function decideGroupChange(
 
     return row2request(updated);
   });
+}
+
+/**
+ * One request by id. Used by notifications to read the reason a board wrote,
+ * which the decided event deliberately does not carry.
+ */
+export async function getGroupChangeRequest(
+  db: Db,
+  requestId: string,
+): Promise<GroupChangeRequest | null> {
+  const rows = await db
+    .select()
+    .from(memberGroupChangeRequests)
+    .where(eq(memberGroupChangeRequests.id, requestId))
+    .limit(1);
+  return rows[0] ? row2request(rows[0]) : null;
 }
 
 /** The member's own open request (used by /account — the member is the caller). */

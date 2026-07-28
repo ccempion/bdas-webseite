@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import type { Scope } from "@bdas/dashboard-shell";
 
-import { activeScope, isNavItemActive } from "./nav";
+import { activeScope, FEDERAL_NAV, groupNav, isNavItemActive } from "./nav";
 
 const FEDERAL: Scope = { kind: "federal" };
 const AACHEN: Scope = { kind: "group", groupId: "grp_ac", slug: "aachen", name: "HG Aachen" };
@@ -39,6 +39,19 @@ describe("activeScope", () => {
   });
 });
 
+describe("groupNav", () => {
+  it("includes the applications queue in the group scope", () => {
+    const items = groupNav("berlin");
+    expect(items.map((i) => i.href)).toContain("/gruppe/berlin/bewerbungen");
+  });
+});
+
+describe("FEDERAL_NAV", () => {
+  it("gives the federal scope the groupless pool", () => {
+    expect(FEDERAL_NAV.map((i) => i.href)).toContain("/federal/pool");
+  });
+});
+
 describe("isNavItemActive", () => {
   it("matches the exact item path", () => {
     expect(isNavItemActive("/federal/roles", "/federal/roles")).toBe(true);
@@ -56,5 +69,10 @@ describe("isNavItemActive", () => {
 
   it("does not treat a prefix-only string as nested", () => {
     expect(isNavItemActive("/federal/files-archive", "/federal/files")).toBe(false);
+  });
+
+  it("keeps Bewerbungen active on nested routes", () => {
+    expect(isNavItemActive("/gruppe/berlin/bewerbungen", "/gruppe/berlin/bewerbungen")).toBe(true);
+    expect(isNavItemActive("/gruppe/berlin/members", "/gruppe/berlin/bewerbungen")).toBe(false);
   });
 });

@@ -16,6 +16,7 @@ export type TransactionalTemplate =
   | "member_application_received"
   | "member_application_approved"
   | "member_application_declined"
+  | "member_application_group_dissolved"
   | "blog_post_reported";
 
 /** Which aspects of an event changed, for the `event_changed` email. */
@@ -39,6 +40,10 @@ export type TemplateData = {
   readonly groupName?: string | undefined;
   /** `member_application_received`: the applicant's full name. */
   readonly applicantName?: string | undefined;
+  /** `member_application_declined`: the German label of the category the board picked. */
+  readonly reasonCategoryLabel?: string | undefined;
+  /** `member_application_declined`: the board's free-text message to the applicant. */
+  readonly reasonMessage?: string | undefined;
   /** `blog_post_reported`: the reported post's title. */
   readonly postTitle?: string | undefined;
   /** `blog_post_reported`: absolute URL to the reported post, if a site URL is configured. */

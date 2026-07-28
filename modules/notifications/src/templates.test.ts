@@ -114,4 +114,35 @@ describe("render — event manage/cancel link", () => {
     });
     expect(out.html).not.toContain("href=");
   });
+
+  it("puts the rejection reason in the decline email", () => {
+    const out = render("member_application_declined", {
+      firstName: "Anna",
+      eventTitle: "",
+      reasonCategoryLabel: "Kein Kontakt zustande gekommen",
+      reasonMessage: "Wir haben dich dreimal nicht erreicht.",
+    });
+    expect(out.text).toContain("Kein Kontakt zustande gekommen");
+    expect(out.text).toContain("Wir haben dich dreimal nicht erreicht.");
+  });
+
+  it("omits the message line when the board wrote none", () => {
+    const out = render("member_application_declined", {
+      firstName: "Anna",
+      eventTitle: "",
+      reasonCategoryLabel: "Kein Student mehr",
+    });
+    expect(out.text).toContain("Kein Student mehr");
+    expect(out.text).not.toContain("undefined");
+  });
+
+  it("tells a dissolved group's applicants they were not rejected", () => {
+    const out = render("member_application_group_dissolved", {
+      firstName: "Anna",
+      eventTitle: "",
+      groupName: "BDAS Aachen",
+    });
+    expect(out.text).toContain("aufgelöst");
+    expect(out.text).not.toMatch(/abgelehnt|nicht angenommen/);
+  });
 });

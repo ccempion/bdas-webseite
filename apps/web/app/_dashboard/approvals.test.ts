@@ -35,7 +35,7 @@ describe("loadApprovalCounts", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     isFlagOn.mockReturnValue(true);
-    countPendingApprovals.mockResolvedValue({ pendingMembers: 0, incomingGroupChanges: 0 });
+    countPendingApprovals.mockResolvedValue({ applications: 0, groupTransfers: 0 });
     countOpenReports.mockResolvedValue(0);
   });
 
@@ -60,14 +60,14 @@ describe("loadApprovalCounts", () => {
 
   it("summiert alle drei Quellen für den Bundesvorstand", async () => {
     loadCurrentMember.mockResolvedValue(meWith(["federal_board"]));
-    countPendingApprovals.mockResolvedValue({ pendingMembers: 2, incomingGroupChanges: 1 });
+    countPendingApprovals.mockResolvedValue({ applications: 2, groupTransfers: 1 });
     countOpenReports.mockResolvedValue(3);
 
     const out = await loadApprovalCounts();
 
     expect(out).toEqual({
-      pendingMembers: 2,
-      incomingGroupChanges: 1,
+      applications: 2,
+      groupTransfers: 1,
       openReports: 3,
       total: 6,
     });
@@ -75,7 +75,7 @@ describe("loadApprovalCounts", () => {
 
   it("zählt Meldungen nicht für einen lokalen Vorstand", async () => {
     loadCurrentMember.mockResolvedValue(meWith(["local_board"]));
-    countPendingApprovals.mockResolvedValue({ pendingMembers: 1, incomingGroupChanges: 0 });
+    countPendingApprovals.mockResolvedValue({ applications: 1, groupTransfers: 0 });
     countOpenReports.mockResolvedValue(5);
 
     const out = await loadApprovalCounts();
@@ -99,12 +99,12 @@ describe("loadApprovalCounts", () => {
   it("zählt Mitglieder nicht bei ausgeschaltetem members-Flag", async () => {
     loadCurrentMember.mockResolvedValue(meWith(["federal_board"]));
     isFlagOn.mockImplementation((f: string) => f !== "members");
-    countPendingApprovals.mockResolvedValue({ pendingMembers: 4, incomingGroupChanges: 2 });
+    countPendingApprovals.mockResolvedValue({ applications: 4, groupTransfers: 2 });
 
     const out = await loadApprovalCounts();
 
-    expect(out.pendingMembers).toBe(0);
-    expect(out.incomingGroupChanges).toBe(0);
+    expect(out.applications).toBe(0);
+    expect(out.groupTransfers).toBe(0);
     expect(countPendingApprovals).not.toHaveBeenCalled();
   });
 });
