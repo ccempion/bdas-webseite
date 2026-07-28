@@ -48,7 +48,10 @@ export function registerMembersSubscribers(db: Db): void {
           await getEventBus().publish(event);
         }
       } catch (err) {
-        console.error(`[members] closing applications for archived group ${e.groupId} failed:`, err);
+        console.error(
+          `[members] closing applications for archived group ${e.groupId} failed:`,
+          err,
+        );
       }
     }),
   ];

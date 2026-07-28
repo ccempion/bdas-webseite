@@ -70,7 +70,6 @@ applicants who are not members of the destination group.
 
 6. **No state may be unreachable from a way out.** Two consequences of this rule
    are load-bearing and are decided here rather than left to implementation:
-
    - **Archiving a group closes its open applications as `withdrawn`.** Nothing
      currently subscribes to `groups.group.archived`, so archiving does not
      revoke board grants; `groupHasActiveLocalBoard` stays true and holds

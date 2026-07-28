@@ -16,11 +16,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { createTestDb, type TestDb } from "@bdas/db/test";
 import { getEventBus, resetEventBus } from "@bdas/events";
-import type {
-  GroupChangeDecided,
-  GroupChangeRequested,
-  GroupChangeWithdrawn,
-} from "@bdas/members";
+import type { GroupChangeDecided, GroupChangeRequested, GroupChangeWithdrawn } from "@bdas/members";
 
 import { setNotifier, type OutboundEmail } from "./notifier";
 import { setRecipientResolver } from "./resolver";

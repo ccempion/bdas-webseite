@@ -4,7 +4,11 @@ import { categoryLabel, REJECTION_CATEGORIES } from "./rejection-categories";
 
 describe("rejection categories", () => {
   it("offers exactly the three agreed categories", () => {
-    expect(REJECTION_CATEGORIES.map((c) => c.key)).toEqual(["no_contact", "not_a_student", "other"]);
+    expect(REJECTION_CATEGORIES.map((c) => c.key)).toEqual([
+      "no_contact",
+      "not_a_student",
+      "other",
+    ]);
   });
 
   it("renders German labels", () => {

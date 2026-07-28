@@ -33,9 +33,7 @@ export async function listGrouplessMembers(db: Db, actor: Actor): Promise<Groupl
   const rows = await db
     .select()
     .from(members)
-    .where(
-      and(isNull(members.primaryGroupId), inArray(members.status, ["pending", "active"])),
-    )
+    .where(and(isNull(members.primaryGroupId), inArray(members.status, ["pending", "active"])))
     .orderBy(asc(members.createdAt));
 
   return rows.map((r) => ({

@@ -38,12 +38,14 @@
 ## Task 1: Migration — reason columns and data backfill
 
 **Files:**
+
 - Create: `modules/members/migrations/0008_application_reasons.sql`
 - Modify: `modules/members/src/test-db.ts:16-26` (append to `MEMBERS_TEST_MIGRATIONS`)
 - Modify: `modules/members/src/test-db.ts:62-67` (`createGroup` gains a status parameter)
 - Test: `modules/members/src/application-migration.test.ts`
 
 **Interfaces:**
+
 - Consumes: nothing.
 - Produces: columns `reason_category TEXT` and `reason_message TEXT` on `member_group_change_requests`; a schema where no `pending` member has a `primary_group_id`.
 
@@ -343,6 +345,7 @@ pending members with the rejection kept on record."
 > **Execute Task 3 before this one.** This task's tests use a helper that files an application and expects a request back, which is the behaviour Task 3 introduces — run in the written order, every test here fails on the helper rather than on the code under test. Task 3 stands alone and needs nothing from this task.
 
 **Files:**
+
 - Modify: `modules/members/src/schema.ts:61-85` (two columns)
 - Modify: `modules/members/src/types.ts` (add `RejectionReason`, extend `GroupChangeRequest`)
 - Modify: `modules/members/src/services/group-change.ts:53-58` (`row2request`), `:257-320` (`decideGroupChange`)
@@ -350,6 +353,7 @@ pending members with the rejection kept on record."
 - Test: `modules/members/src/group-change.test.ts` (append a describe block)
 
 **Interfaces:**
+
 - Consumes: the columns from Task 1.
 - Produces:
   - `type RejectionReason = { readonly category: "no_contact" | "not_a_student" | "other"; readonly message: string | null }`
@@ -548,15 +552,15 @@ Immediately inside the function, before `db.transaction`, add the reason validat
 Inside the transaction, **after** `canDecideJoinRequest` has passed, add the member-status guard. The order matters: authorization must be the first check that can reject the caller, or an actor with no standing over the destination group learns that a particular person has been deactivated instead of simply being refused. Reading the row earlier is fine — it is the throw that must come after.
 
 ```ts
-    const memberRows = await tx
-      .select({ status: members.status })
-      .from(members)
-      .where(eq(members.id, req.memberId))
-      .limit(1);
-    const memberStatus = memberRows[0]?.status;
-    if (memberStatus !== "pending" && memberStatus !== "active") {
-      throw new ConflictError("Dieses Mitglied ist nicht mehr aktiv.");
-    }
+const memberRows = await tx
+  .select({ status: members.status })
+  .from(members)
+  .where(eq(members.id, req.memberId))
+  .limit(1);
+const memberStatus = memberRows[0]?.status;
+if (memberStatus !== "pending" && memberStatus !== "active") {
+  throw new ConflictError("Dieses Mitglied ist nicht mehr aktiv.");
+}
 ```
 
 Extend the `UPDATE` that writes the decision so it also writes the reason:
@@ -615,10 +619,12 @@ deactivated person."
 ## Task 3: An applicant files a request instead of writing their group
 
 **Files:**
+
 - Modify: `modules/members/src/services/group-change.ts:158-168` (delete the pending straight-through branch)
 - Test: `modules/members/src/group-change.test.ts` (append a describe block)
 
 **Interfaces:**
+
 - Consumes: `decideGroupChange` from Task 2.
 - Produces: `changePrimaryGroup` returns `{ kind: "requested" }` for a `pending` member choosing a group; `{ kind: "applied" }` remains only for leaving (`toGroupId === null`) and for re-picking the current group, which withdraws an open request.
 
@@ -699,17 +705,17 @@ Expected: FAIL on the first test — `kind` is `"applied"`, because the pending 
 In `modules/members/src/services/group-change.ts`, remove this block entirely (it sits after the "never mind" branch and before the exit branch):
 
 ```ts
-    // Nothing has been approved for a pending member, so there is nothing to
-    // re-approve: their join request simply moves to the other group's queue.
-    if (status === "pending") {
-      const [updated] = await tx
-        .update(members)
-        .set({ primaryGroupId: toGroupId, updatedAt: new Date() })
-        .where(eq(members.id, memberId))
-        .returning();
-      if (!updated) throw new Error("changePrimaryGroup: update returned no row");
-      return { kind: "applied", member: row2member(updated) };
-    }
+// Nothing has been approved for a pending member, so there is nothing to
+// re-approve: their join request simply moves to the other group's queue.
+if (status === "pending") {
+  const [updated] = await tx
+    .update(members)
+    .set({ primaryGroupId: toGroupId, updatedAt: new Date() })
+    .where(eq(members.id, memberId))
+    .returning();
+  if (!updated) throw new Error("changePrimaryGroup: update returned no row");
+  return { kind: "applied", member: row2member(updated) };
+}
 ```
 
 Update the function's doc comment: a pending member now files a request like anyone else, and only an exit applies immediately.
@@ -734,11 +740,13 @@ invariant that it means a board agreed."
 ## Task 4: The groupless pool query
 
 **Files:**
+
 - Create: `modules/members/src/services/pool.ts`
 - Modify: `modules/members/src/index.ts`
 - Test: `modules/members/src/pool.test.ts`
 
 **Interfaces:**
+
 - Consumes: `Actor` from `./services/status`, `isFederalBoard` from `../roles`.
 - Produces: `listGrouplessMembers(db: Db, actor: Actor): Promise<GrouplessMember[]>` where
   `type GrouplessMember = { readonly member: Member; readonly registeredAt: Date }`.
@@ -878,9 +886,7 @@ export async function listGrouplessMembers(db: Db, actor: Actor): Promise<Groupl
   const rows = await db
     .select()
     .from(members)
-    .where(
-      and(isNull(members.primaryGroupId), inArray(members.status, ["pending", "active"])),
-    )
+    .where(and(isNull(members.primaryGroupId), inArray(members.status, ["pending", "active"])))
     .orderBy(asc(members.createdAt));
 
   return rows.map((r) => ({
@@ -921,6 +927,7 @@ between groups; deactivated people are excluded."
 ## Task 5: Archiving a group closes its open applications
 
 **Files:**
+
 - Create: `modules/members/src/subscribers.ts`
 - Create: `apps/web/lib/members-bootstrap.ts`
 - Modify: `modules/members/src/index.ts`
@@ -928,6 +935,7 @@ between groups; deactivated people are excluded."
 - Test: `modules/members/src/subscribers.test.ts`
 
 **Interfaces:**
+
 - Consumes: `GroupArchived` from `@bdas/groups`, the event bus from `@bdas/events`.
 - Produces: `registerMembersSubscribers(db: Db): void` and `unregisterMembersSubscribers(): void` (test helper, not exported from `index.ts`). Closes matching requests as `withdrawn`, leaving `reason_category` null.
 
@@ -1103,7 +1111,10 @@ export function registerMembersSubscribers(db: Db): void {
           await getEventBus().publish(event);
         }
       } catch (err) {
-        console.error(`[members] closing applications for archived group ${e.groupId} failed:`, err);
+        console.error(
+          `[members] closing applications for archived group ${e.groupId} failed:`,
+          err,
+        );
       }
     }),
   ];
@@ -1221,6 +1232,7 @@ The first count is live applications that will keep their queue position. The se
 ## Task 7: The group application queue
 
 **Files:**
+
 - Create: `apps/web/app/(board)/gruppe/[slug]/bewerbungen/page.tsx`
 - Create: `apps/web/app/(board)/_components/ApplicationCard.tsx`
 - Create: `apps/web/app/(board)/_components/application-actions.ts`
@@ -1228,6 +1240,7 @@ The first count is live applications that will keep their queue position. The se
 - Test: `apps/web/app/(board)/nav.test.ts`
 
 **Interfaces:**
+
 - Consumes: `listIncomingGroupChanges(db, toGroupId, actor)` → `IncomingGroupChange[]`; `getGroupChangeHistory(db, memberId, actor)`; `getProfile(db, userId)` from `@bdas/profile`; `decideGroupChange(db, requestId, decision, actor, reason?)`.
 - Produces: server actions `acceptApplicationAction(requestId: string, slug: string)` and `rejectApplicationAction(requestId: string, slug: string, reason: RejectionReason)`, both returning `{ ok: boolean; error?: string }`.
 
@@ -1401,12 +1414,14 @@ git commit -m "feat(web): add the Bewerbungen nav item and decision actions"
 ## Task 8: The application card and the rejection dialog
 
 **Files:**
+
 - Create: `apps/web/app/(board)/_components/ApplicationCard.tsx`
 - Create: `apps/web/app/(board)/_components/RejectDialog.tsx`
 - Create: `apps/web/app/(board)/_components/rejection-categories.ts`
 - Test: `apps/web/app/(board)/_components/rejection-categories.test.ts`
 
 **Interfaces:**
+
 - Consumes: `acceptApplicationAction`, `rejectApplicationAction` from Task 7; `RejectionCategory` from `@bdas/members`.
 - Produces: `REJECTION_CATEGORIES: ReadonlyArray<{ key: RejectionCategory; label: string }>` and `categoryLabel(key: string | null): string`.
 
@@ -1529,7 +1544,10 @@ export function RejectDialog({
     <Card flat className="mt-4 p-4">
       <h3 className="mb-3 text-lg font-semibold text-bdas-ink">Bewerbung von {name} ablehnen</h3>
 
-      <label className="mb-1 block text-sm font-medium text-bdas-ink-body" htmlFor="reject-category">
+      <label
+        className="mb-1 block text-sm font-medium text-bdas-ink-body"
+        htmlFor="reject-category"
+      >
         Grund
       </label>
       <select
@@ -1733,11 +1751,13 @@ applicant."
 ## Task 9: The federal pool page
 
 **Files:**
+
 - Create: `apps/web/app/(board)/federal/pool/page.tsx`
 - Modify: `apps/web/app/(board)/nav.ts:8-15` (add to `FEDERAL_NAV`)
 - Modify: `apps/web/app/(board)/nav.test.ts`
 
 **Interfaces:**
+
 - Consumes: `listGrouplessMembers` (Task 4), `listOpenGroupChanges(db, actor)` → `OpenGroupChange[]`, `listGroups` from `@bdas/groups`, `getProfile` from `@bdas/profile`.
 - Produces: nothing consumed downstream.
 
@@ -1846,9 +1866,7 @@ export default async function PoolPage() {
 
       <section className="flex flex-col gap-3">
         <div>
-          <h2 className="text-xl font-semibold text-bdas-ink">
-            Offene Bewerbungen (alle Gruppen)
-          </h2>
+          <h2 className="text-xl font-semibold text-bdas-ink">Offene Bewerbungen (alle Gruppen)</h2>
           <p className="text-bdas-ink-body">
             Jede unentschiedene Bewerbung im Verband. Der einzige Weg zur Warteschlange einer
             Gruppe, die nicht mehr aktiv ist.
@@ -1878,9 +1896,7 @@ export default async function PoolPage() {
                   return (
                     <tr key={r.id} className="border-b border-bdas-soft">
                       <td className="p-3">{groupName(r.toGroupId)}</td>
-                      <td className="p-3">
-                        {new Date(r.requestedAt).toLocaleDateString("de-DE")}
-                      </td>
+                      <td className="p-3">{new Date(r.requestedAt).toLocaleDateString("de-DE")}</td>
                       <td className="p-3 text-bdas-ink-muted">
                         {r.canDecide ? "durch dich" : "durch den lokalen Vorstand"}
                       </td>
@@ -1931,12 +1947,14 @@ filters out."
 ## Task 10: Rewire the notifications
 
 **Files:**
+
 - Modify: `modules/notifications/src/subscribers.ts:243-270`
 - Modify: `modules/notifications/src/templates.ts:85-97`
 - Modify: `modules/notifications/src/types.ts:18`
 - Test: `modules/notifications/src/templates.test.ts`
 
 **Interfaces:**
+
 - Consumes: `GroupChangeRequested`, `GroupChangeDecided`, `GroupChangeWithdrawn` from `@bdas/members`.
 - Produces: template key `member_application_group_dissolved`; `member_application_declined` gains `reasonCategoryLabel` and `reasonMessage` template data.
 
@@ -2109,6 +2127,7 @@ dissolved group gets its own template that does not say 'rejected'."
 ## Task 11: Delete the replaced board surfaces
 
 **Files:**
+
 - Modify: `apps/web/app/(board)/_components/MembersTable.tsx:12-21`, `:100-125`, `:190-210`
 - Delete: `apps/web/app/(board)/_components/member-actions.ts` (approve/reject only — keep `actor()` if Task 7 reuses it, moving it to a shared module)
 - Delete: `apps/web/app/admin/pending-members/`
@@ -2162,12 +2181,14 @@ scope switcher, or the open-applications table on the pool page."
 ## Task 12: Status blocks and the apply action on /account
 
 **Files:**
+
 - Modify: `apps/web/app/account/page.tsx:23-110`
 - Create: `apps/web/app/account/GrouplessPanel.tsx`
 - Create: `apps/web/app/account/apply-actions.ts`
 - Test: `apps/web/app/account/apply-actions.test.ts`
 
 **Interfaces:**
+
 - Consumes: `getOpenGroupChange`, `getGroupChangeHistory`, `changePrimaryGroup`, `REJECTION_CATEGORY_LABELS` from `@bdas/members`; `listGroups` from `@bdas/groups`.
 - Produces: `applyToGroupAction(groupId: string)` returning `{ ok: boolean; error?: string }`, which refuses any group that is not `active` or `dormant`.
 
@@ -2295,7 +2316,12 @@ export function GrouplessPanel({
 }: {
   groups: ReadonlyArray<GroupOption>;
   openApplication: { groupName: string; requestedAt: string } | null;
-  lastRejection: { groupName: string; decidedAt: string; category: string; message: string | null } | null;
+  lastRejection: {
+    groupName: string;
+    decidedAt: string;
+    category: string;
+    message: string | null;
+  } | null;
 }) {
   const [error, setError] = useState<string | null>(null);
   const [pending, start] = useTransition();
@@ -2404,6 +2430,7 @@ someone waiting, and someone just rejected."
 ## Task 13: Remove the wizard's group picker and the dead module branches
 
 **Files:**
+
 - Modify: `apps/web/app/profil/Wizard.tsx`, `apps/web/app/profil/actions.ts:44-48`
 - Modify: `modules/members/src/services/status.ts:58-68`
 - Modify: `modules/members/src/services/group-change.ts` (doc comments)
@@ -2446,6 +2473,7 @@ the last caller of the status-based join path."
 ## Task 14: Extend the acceptance end-to-end test
 
 **Files:**
+
 - Modify: `e2e/` — add `e2e/applications.e2e.ts`
 
 - [ ] **Step 1: Read an existing spec for the harness idiom**
@@ -2481,9 +2509,7 @@ test("apply, get rejected with a reason, apply elsewhere, get accepted", async (
   await page.goto("/gruppe/aachen/bewerbungen");
   await expect(page.getByText("Anna Applicant")).toBeVisible();
   await page.getByRole("button", { name: "Ablehnen …" }).click();
-  await page
-    .getByLabel("Grund")
-    .selectOption({ label: "Kein Kontakt zustande gekommen" });
+  await page.getByLabel("Grund").selectOption({ label: "Kein Kontakt zustande gekommen" });
   await page
     .getByLabel(/Nachricht an die Bewerberin/)
     .fill("Wir haben dich dreimal nicht erreicht.");

@@ -86,8 +86,8 @@ export default async function PoolPage() {
         <div>
           <h2 className="text-xl font-semibold text-bdas-ink">Offene Bewerbungen (alle Gruppen)</h2>
           <p className="text-bdas-ink-body">
-            Jede unentschiedene Bewerbung im Verband. Der einzige Weg zur Warteschlange einer Gruppe,
-            die nicht mehr aktiv ist.
+            Jede unentschiedene Bewerbung im Verband. Der einzige Weg zur Warteschlange einer
+            Gruppe, die nicht mehr aktiv ist.
           </p>
         </div>
 

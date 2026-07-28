@@ -51,15 +51,15 @@ built for exactly this shape.
 
 ## Decisions
 
-| Question | Decision |
-| --- | --- |
-| Simultaneous applications | One open application at a time. To try elsewhere, withdraw first. |
-| Rejection reason | Required category plus optional free-text message. **Both shown to the applicant.** No field is presented as private. |
-| Re-applying to the same group | Allowed, with no cooldown. The board sees prior attempts and their outcomes. |
-| Board invitations from the pool | **Not built.** Applications are the only direction. |
-| Pool visibility | **Federal board only**, and limited to name, university, and how long they have been registered. |
-| Full profile visibility | Only to the board of a group the person has actually applied to. |
-| Leaving a group | Returns the person to the pool, where they may apply again. |
+| Question                        | Decision                                                                                                              |
+| ------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| Simultaneous applications       | One open application at a time. To try elsewhere, withdraw first.                                                     |
+| Rejection reason                | Required category plus optional free-text message. **Both shown to the applicant.** No field is presented as private. |
+| Re-applying to the same group   | Allowed, with no cooldown. The board sees prior attempts and their outcomes.                                          |
+| Board invitations from the pool | **Not built.** Applications are the only direction.                                                                   |
+| Pool visibility                 | **Federal board only**, and limited to name, university, and how long they have been registered.                      |
+| Full profile visibility         | Only to the board of a group the person has actually applied to.                                                      |
+| Leaving a group                 | Returns the person to the pool, where they may apply again.                                                           |
 
 ### Why no invitations
 
@@ -101,11 +101,11 @@ already enforces one open application at a time.
 `reason_category` is one of a fixed set, stored as a stable key and rendered in
 German at the edge:
 
-| Key | Label |
-| --- | --- |
-| `no_contact` | Kein Kontakt zustande gekommen |
-| `not_a_student` | Kein Student mehr |
-| `other` | Sonstiges |
+| Key             | Label                          |
+| --------------- | ------------------------------ |
+| `no_contact`    | Kein Kontakt zustande gekommen |
+| `not_a_student` | Kein Student mehr              |
+| `other`         | Sonstiges                      |
 
 Three, deliberately. Capacity and "not a fit" were considered and dropped: a
 board that wants to say either can say it in the message, and a short list keeps
@@ -189,7 +189,7 @@ group id.
 
 ### Deadlock: a group archived with applications open
 
-Applying to an archived group is impossible, but a group can be archived *while*
+Applying to an archived group is impossible, but a group can be archived _while_
 applications are open — and that is a hard lock:
 
 - Nothing subscribes to `groups.group.archived`, so archiving does **not** revoke
@@ -376,12 +376,12 @@ visible rather than silently ageing.
 
 ## Notifications
 
-| Trigger | Template | Recipient | Change |
-| --- | --- | --- | --- |
-| `members.group_change.requested` | `member_application_received` | destination board | **Moved** from `profile.completed` |
-| `members.group_change.decided` (approved) | `member_application_approved` | applicant | Moved from `members.status.changed` |
-| `members.group_change.decided` (rejected) | `member_application_declined` | applicant | Moved, and **must now carry category + message** |
-| `groups.group.archived` | `member_application_group_dissolved` (**new template**) | each open applicant | **New subscriber**: closes the group's open requests as `withdrawn`. Not a rejection, so not the decline template — it says the group was dissolved and invites them to apply elsewhere |
+| Trigger                                   | Template                                                | Recipient           | Change                                                                                                                                                                                  |
+| ----------------------------------------- | ------------------------------------------------------- | ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `members.group_change.requested`          | `member_application_received`                           | destination board   | **Moved** from `profile.completed`                                                                                                                                                      |
+| `members.group_change.decided` (approved) | `member_application_approved`                           | applicant           | Moved from `members.status.changed`                                                                                                                                                     |
+| `members.group_change.decided` (rejected) | `member_application_declined`                           | applicant           | Moved, and **must now carry category + message**                                                                                                                                        |
+| `groups.group.archived`                   | `member_application_group_dissolved` (**new template**) | each open applicant | **New subscriber**: closes the group's open requests as `withdrawn`. Not a rejection, so not the decline template — it says the group was dissolved and invites them to apply elsewhere |
 
 The move is forced: `member_application_received` fires today on
 `profile.completed`, which routes by the group the wizard collected. Once the
@@ -434,7 +434,7 @@ Step 3 changes live people's state and was explicitly approved.
 
 ### The reason-required constraint ships separately
 
-"A rejection must carry a reason" is a constraint the *currently deployed* code
+"A rejection must carry a reason" is a constraint the _currently deployed_ code
 cannot satisfy — `decideGroupChange` does not set one yet. Enforcing it in `0008`
 would make every rejection in the live app fail with a constraint violation from
 the moment the migration lands until the new code deploys, and since migrations
@@ -456,7 +456,7 @@ on deploy; each step is manual and needs its own `_bdas_migrations` row.
 2. Deploy the code that always writes a reason on rejection.
 3. Apply `0009`. Only now can it be satisfied.
 
-**No feature flag.** CLAUDE.md §3 requires a flag per new *module*; this changes
+**No feature flag.** CLAUDE.md §3 requires a flag per new _module_; this changes
 an existing one, and the migration is a one-way data change that a flag could not
 undo — a half-flipped flag would leave applications in one model and decisions in
 another. The expand/contract ordering above is what provides the safety instead,

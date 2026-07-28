@@ -376,7 +376,7 @@ export async function decideGroupChange(
         decidedAt: now,
         decidedBy: actor.userId,
         reasonCategory: decision === "rejected" ? (reason?.category ?? null) : null,
-        reasonMessage: decision === "rejected" ? (reason?.message?.trim() || null) : null,
+        reasonMessage: decision === "rejected" ? reason?.message?.trim() || null : null,
       })
       .where(
         and(
