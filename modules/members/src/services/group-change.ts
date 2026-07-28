@@ -99,6 +99,34 @@ async function revokeGroupScopedGrants(
   }
 }
 
+/**
+ * Did this error come from the one-open-request-per-member index?
+ *
+ * postgres-js puts the SQLSTATE in `code`; `23505` is unique_violation. The
+ * constraint name is checked too so an id collision — the only other unique
+ * constraint on this table — is not mistaken for a second application.
+ */
+function isOpenRequestConflict(err: unknown): boolean {
+  if (typeof err !== "object" || err === null) return false;
+  const e = err as { code?: string; constraint_name?: string };
+  return e.code === "23505" && e.constraint_name === "member_group_change_requests_open_uq";
+}
+
+/** The member's open request, if any. */
+async function findOpen(tx: Db, memberId: string): Promise<MemberGroupChangeRow | undefined> {
+  const rows = await tx
+    .select()
+    .from(memberGroupChangeRequests)
+    .where(
+      and(
+        eq(memberGroupChangeRequests.memberId, memberId),
+        eq(memberGroupChangeRequests.status, "pending"),
+      ),
+    )
+    .limit(1);
+  return rows[0];
+}
+
 /** Close the member's open request, if any. Returns it, or null when there was none. */
 async function withdrawOpen(
   tx: Db,
@@ -204,12 +232,37 @@ export async function changePrimaryGroup(
     // application in the pool at a time, enforced here by that same index.
     if (status === "active") {
       await withdrawOpen(tx, memberId, actor.userId);
+    } else {
+      const open = await findOpen(tx, memberId);
+      if (open) {
+        // Re-submitting the wizard unchanged is not an error — it is the same
+        // application, and re-filing it would cost the applicant their place in
+        // the queue. Only a different group is a conflict.
+        if (open.toGroupId === toGroupId) return { kind: "requested", request: row2request(open) };
+        throw new ConflictError(
+          "Du hast bereits eine offene Bewerbung. Zieh sie zurück, bevor du dich woanders bewirbst.",
+        );
+      }
     }
     const id = createId("mgc");
-    const [request] = await tx
-      .insert(memberGroupChangeRequests)
-      .values({ id, memberId, fromGroupId: from, toGroupId })
-      .returning();
+    let request: MemberGroupChangeRow | undefined;
+    try {
+      [request] = await tx
+        .insert(memberGroupChangeRequests)
+        .values({ id, memberId, fromGroupId: from, toGroupId })
+        .returning();
+    } catch (err) {
+      // The applicant already has an open application: either they skipped the
+      // withdrawal above (pending), or two submits raced past it. Both must read
+      // as a conflict the caller can show, not as a driver error — the wizard
+      // rethrows anything that is not an AppError and 500s on it.
+      if (isOpenRequestConflict(err)) {
+        throw new ConflictError(
+          "Du hast bereits eine offene Bewerbung. Zieh sie zurück, bevor du dich woanders bewirbst.",
+        );
+      }
+      throw err;
+    }
     if (!request) throw new Error("changePrimaryGroup: insert returned no row");
 
     const event: GroupChangeRequested = {

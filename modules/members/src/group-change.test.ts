@@ -679,9 +679,25 @@ describeIfDb("applications from the pool", () => {
     expect(seen).toHaveLength(1);
   });
 
-  it("allows only one open application at a time", async () => {
+  // Asserting the code, not just "it throws": a raw 23505 from the driver also
+  // throws, and the wizard rethrows anything that is not an AppError — which
+  // turned a second submit into a 500 instead of a message.
+  it("allows only one open application at a time, as a conflict the caller can show", async () => {
     await changePrimaryGroup(t.db, "mem_neu", "grp_a", self("usr_neu"));
-    await expect(changePrimaryGroup(t.db, "mem_neu", "grp_b", self("usr_neu"))).rejects.toThrow();
+    await expect(
+      changePrimaryGroup(t.db, "mem_neu", "grp_b", self("usr_neu")),
+    ).rejects.toMatchObject({ code: "CONFLICT" });
+  });
+
+  it("treats re-submitting the same group as the same application", async () => {
+    const first = await changePrimaryGroup(t.db, "mem_neu", "grp_a", self("usr_neu"));
+    const again = await changePrimaryGroup(t.db, "mem_neu", "grp_a", self("usr_neu"));
+    if (first.kind !== "requested" || again.kind !== "requested") {
+      throw new Error("expected requests");
+    }
+    // Same row, so the applicant keeps their place in the queue.
+    expect(again.request.id).toBe(first.request.id);
+    expect(again.request.requestedAt).toEqual(first.request.requestedAt);
   });
 
   it("lets the applicant withdraw and apply elsewhere", async () => {
