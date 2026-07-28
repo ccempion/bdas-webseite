@@ -2151,15 +2151,13 @@ scope switcher, or the open-applications table on the pool page."
 
 # Phase 3 — Applicant surface
 
-> **Open before Task 12 — found by e2e at the end of Phase 2, not covered by any
-> task below.** `isProfileComplete` (`apps/web/app/_profile/complete.ts:13`)
-> requires `member.primaryGroupId != null`. Under ADR 0031 an applicant is
-> groupless until a board accepts them, so their profile is never "complete":
-> after submitting, `/profil` no longer redirects to `/account`
-> (`apps/web/app/profil/page.tsx:22`) and puts them back in the wizard.
-> `e2e/profile-onboarding.e2e.ts:91` asserts the redirect and fails on it today.
-> Decide what "complete" means for a groupless applicant and fix the gate as
-> part of Task 12, which owns the /account status blocks.
+> **Closed in Phase 2, after the code review.** `isProfileComplete` required
+> `member.primaryGroupId != null`, which ADR 0031 takes away from applicants —
+> so their profile was never "complete", `/profil` never redirected, and they
+> were returned to the wizard they had just finished. The group conjunct is
+> gone: completeness now means "the profile row is stamped", and the callers
+> that care about the group ask about the group. Task 12 inherits a working
+> redirect rather than a bug.
 
 ## Task 12: Status blocks and the apply action on /account
 
