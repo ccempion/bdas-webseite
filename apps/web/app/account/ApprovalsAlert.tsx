@@ -19,8 +19,16 @@ export async function ApprovalsAlert({ groupSlug }: { groupSlug: string | null }
   if (counts.total === 0) return null;
 
   const federal = isFederalBoard(me.grants);
+  // Applications live in the destination group's queue. Federal has no queue of
+  // its own — the pool page lists every open application across the federation
+  // and links into each group's queue from there (ADR 0031).
+  const applicationsHref = groupSlug
+    ? `/gruppe/${groupSlug}/bewerbungen`
+    : federal
+      ? "/federal/pool"
+      : null;
   const membersHref = federal
-    ? "/admin/pending-members"
+    ? "/federal/members"
     : groupSlug
       ? `/gruppe/${groupSlug}/members`
       : null;
@@ -28,14 +36,14 @@ export async function ApprovalsAlert({ groupSlug }: { groupSlug: string | null }
   return (
     <Alert variant="info" title="Es wartet etwas auf dich">
       <span className="flex flex-col gap-1">
-        {counts.pendingMembers > 0 && membersHref ? (
-          <Link href={membersHref} className="text-bdas-red hover:underline">
-            {counts.pendingMembers} Mitglied(er) freigeben →
+        {counts.applications > 0 && applicationsHref ? (
+          <Link href={applicationsHref} className="text-bdas-red hover:underline">
+            {counts.applications} Bewerbung(en) entscheiden →
           </Link>
         ) : null}
-        {counts.incomingGroupChanges > 0 && membersHref ? (
+        {counts.groupTransfers > 0 && membersHref ? (
           <Link href={membersHref} className="text-bdas-red hover:underline">
-            {counts.incomingGroupChanges} Gruppenwechsel entscheiden →
+            {counts.groupTransfers} Gruppenwechsel entscheiden →
           </Link>
         ) : null}
         {counts.openReports > 0 ? (
