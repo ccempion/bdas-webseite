@@ -49,6 +49,10 @@ BEGIN
     RETURN NEW;
   END IF;
 
+  IF NEW.parent_id = NEW.id THEN
+    RAISE EXCEPTION 'Ein Ordner kann nicht sein eigener Elternordner sein.';
+  END IF;
+
   SELECT scope, group_id, depth INTO p_scope, p_group, p_depth
     FROM folders WHERE id = NEW.parent_id;
   IF NOT FOUND THEN

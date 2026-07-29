@@ -152,4 +152,29 @@ describeIfDb("0003_folder_nesting", () => {
       `,
     ).rejects.toThrow(/folders_root_scope_group_uq/);
   });
+
+  it("rejects an UPDATE that makes a folder its own parent", async () => {
+    await t.client`
+      INSERT INTO folders (id, slug, name, scope, group_id, parent_id, depth)
+      VALUES ('fld_c1', 'protokolle', 'Protokolle', 'local_board', 'grp_a', 'fld_root', 1)
+    `;
+    await expect(
+      t.client`UPDATE folders SET parent_id = 'fld_c1', depth = depth + 1 WHERE id = 'fld_c1'`,
+    ).rejects.toThrow(/eigener Elternordner/i);
+  });
+
+  it("allows an UPDATE that re-parents a folder to a valid same-scope sibling", async () => {
+    await t.client`
+      INSERT INTO folders (id, slug, name, scope, group_id, parent_id, depth)
+      VALUES ('fld_a', 'a', 'A', 'local_board', 'grp_a', 'fld_root', 1)
+    `;
+    await t.client`
+      INSERT INTO folders (id, slug, name, scope, group_id, parent_id, depth)
+      VALUES ('fld_b', 'b', 'B', 'local_board', 'grp_a', 'fld_root', 1)
+    `;
+    await t.client`UPDATE folders SET parent_id = 'fld_a', depth = 2 WHERE id = 'fld_b'`;
+    const rows = await t.client`SELECT parent_id, depth FROM folders WHERE id = 'fld_b'`;
+    expect(rows[0]?.["parent_id"]).toBe("fld_a");
+    expect(rows[0]?.["depth"]).toBe(2);
+  });
 });
