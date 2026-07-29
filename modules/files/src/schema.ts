@@ -1,4 +1,4 @@
-import { bigint, index, pgTable, text, timestamp, unique } from "drizzle-orm/pg-core";
+import { bigint, index, integer, pgTable, text, timestamp, unique } from "drizzle-orm/pg-core";
 
 // Drizzle table definitions for query building. Authoritative DDL — FKs, CHECKs,
 // the (scope, group_id) unique — lives in migrations/0001_init.sql.
@@ -11,11 +11,15 @@ export const folders = pgTable(
     name: text("name").notNull(),
     scope: text("scope").notNull(),
     groupId: text("group_id"),
+    parentId: text("parent_id"),
+    depth: integer("depth").notNull().default(0),
     description: text("description").notNull().default(""),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     createdBy: text("created_by"),
   },
   (t) => ({
+    // Authoritative DDL is in migrations; since 0003 this unique is partial
+    // (roots only). Kept here only so Drizzle can build queries.
     scopeGroupUq: unique("folders_scope_group_uq").on(t.scope, t.groupId),
   }),
 );

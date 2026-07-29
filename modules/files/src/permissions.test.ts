@@ -13,6 +13,8 @@ function folder(scope: Folder["scope"], groupId: string | null): Folder {
     name: "X",
     scope,
     groupId,
+    parentId: null,
+    depth: 0,
     description: "",
     createdAt: new Date(),
     createdBy: null,
