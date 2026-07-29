@@ -64,7 +64,7 @@ describeIfDb("notifications: the application mails", () => {
       ["..", "..", "members", "migrations", "0006_group_change_requests.sql"],
       ["..", "..", "members", "migrations", "0007_page_editor.sql"],
       ["..", "..", "members", "migrations", "0008_application_reasons.sql"],
-      ["..", "..", "members", "migrations", "pending", "0009_reason_required.sql"],
+      ["..", "..", "members", "migrations", "0009_reason_required.sql"],
       ["..", "migrations", "0001_init.sql"],
       ["..", "migrations", "0002_guest_recipient.sql"],
     ]) {
