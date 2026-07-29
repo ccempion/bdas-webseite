@@ -13,7 +13,7 @@ const TRANSLITERATIONS: ReadonlyArray<readonly [RegExp, string]> = [
 const MAX_SLUG_LENGTH = 60;
 
 export function slugifyFolderName(name: string): string {
-  let s = name.toLowerCase();
+  let s = name.normalize("NFC").toLowerCase();
   for (const [pattern, replacement] of TRANSLITERATIONS) {
     s = s.replace(pattern, replacement);
   }

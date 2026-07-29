@@ -12,6 +12,10 @@ describe("slugifyFolderName", () => {
     expect(slugifyFolderName("Straße")).toBe("strasse");
   });
 
+  it("handles NFD-normalized input with umlauts", () => {
+    expect(slugifyFolderName("Beschlüsse".normalize("NFD"))).toBe("beschluesse");
+  });
+
   it("collapses runs of separators and trims them", () => {
     expect(slugifyFolderName("  --Ordner///Name--  ")).toBe("ordner-name");
   });
