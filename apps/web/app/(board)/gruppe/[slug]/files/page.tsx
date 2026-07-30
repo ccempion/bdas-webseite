@@ -17,7 +17,9 @@ export default async function GroupFilesPage({ params }: { params: { slug: strin
     listFolders(db, me),
     getGroupBySlug(db, params.slug),
   ]);
-  const groupFolders = folders.filter((f) => f.groupId === groupId);
+  // listFolders returns the whole readable tree; the index shows roots only —
+  // subfolders are reached by entering their parent.
+  const groupFolders = folders.filter((f) => f.groupId === groupId && f.parentId === null);
   const counts = await folderFileCounts(
     db,
     groupFolders.map((f) => f.id),

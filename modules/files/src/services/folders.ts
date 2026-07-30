@@ -19,6 +19,8 @@ export function rowToFolder(r: FolderRow): Folder {
     name: r.name,
     scope: r.scope as Folder["scope"],
     groupId: r.groupId,
+    parentId: r.parentId,
+    depth: r.depth,
     description: r.description,
     createdAt: r.createdAt,
     createdBy: r.createdBy,
@@ -40,7 +42,15 @@ export async function ensureFolders(db: Db): Promise<void> {
   for (const s of SINGLETONS) {
     await db
       .insert(folders)
-      .values({ id: createId("fld"), slug: s.slug, name: s.name, scope: s.scope, groupId: null })
+      .values({
+        id: createId("fld"),
+        slug: s.slug,
+        name: s.name,
+        scope: s.scope,
+        groupId: null,
+        parentId: null,
+        depth: 0,
+      })
       .onConflictDoNothing();
   }
 
@@ -64,6 +74,8 @@ export async function provisionGroupFolders(
       name: `${groupName} – Mitglieder`,
       scope: "group_members",
       groupId,
+      parentId: null,
+      depth: 0,
     })
     .onConflictDoNothing();
   await db
@@ -74,6 +86,8 @@ export async function provisionGroupFolders(
       name: `${groupName} – Vorstand`,
       scope: "local_board",
       groupId,
+      parentId: null,
+      depth: 0,
     })
     .onConflictDoNothing();
 }

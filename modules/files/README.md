@@ -12,8 +12,16 @@ Role-scoped file repository (spec §11). Owns `folders`, `files`,
 | `local_board:[g]`   | 1 per group | g's local board + federal | g's local board |
 | `federal_board`     | 1           | federal board             | federal board   |
 
-Folders are system-provisioned (`ensureFolders` at boot + a
-`groups.group.created` subscriber); they are not user-creatable in v1.
+The four scopes above are **root** folders, system-provisioned by `ensureFolders`
+at boot and by the `groups.group.created` subscriber. Roots cannot be renamed or
+deleted.
+
+Inside a root, anyone with write permission on it (`canWrite` — the group's board
+or federal board) may create subfolders up to `MAX_FOLDER_DEPTH` (5) levels deep.
+A subfolder permanently **inherits** its parent's `scope` and `group_id`; there is
+no per-folder permission setting, and a database trigger
+(`folders_inherit_trg`) rejects any row that diverges. Deletion is refused while a
+folder still contains files or subfolders.
 
 ## Uploads are two-phase (the app never proxies bytes)
 
@@ -30,9 +38,10 @@ Phase 3 cron).
 
 ## Public surface
 
-`listFolders`, `listFiles`, `getDownloadUrl`, `requestUpload`, `confirmUpload`,
-`deleteFile`, `sweepStalePendingUploads`, `ensureFolders`,
-`registerFilesSubscribers`. Every method enforces permission internally.
+`listFolders`, `getFolder`, `createFolder`, `renameFolder`, `deleteFolder`,
+`listFiles`, `getDownloadUrl`, `requestUpload`, `confirmUpload`, `deleteFile`,
+`sweepStalePendingUploads`, `ensureFolders`, `registerFilesSubscribers`. Every
+method enforces permission internally.
 
 ## Dependencies
 

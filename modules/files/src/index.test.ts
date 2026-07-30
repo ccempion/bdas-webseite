@@ -62,6 +62,7 @@ async function applyMigrations(t: TestDb): Promise<void> {
     ["..", "..", "members", "migrations", "0001_init.sql"],
     ["..", "migrations", "0001_init.sql"],
     ["..", "migrations", "0002_rls_lockdown.sql"],
+    ["..", "migrations", "0003_folder_nesting.sql"],
   ]) {
     const sql = await fs.readFile(path.join(__dirname, ...file), "utf8");
     await t.client.unsafe(sql);

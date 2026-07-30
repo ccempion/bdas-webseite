@@ -12,6 +12,8 @@ export type Folder = {
   readonly name: string;
   readonly scope: FolderScope;
   readonly groupId: string | null;
+  readonly parentId: string | null;
+  readonly depth: number;
   readonly description: string;
   readonly createdAt: Date;
   readonly createdBy: string | null;

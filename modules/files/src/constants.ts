@@ -24,3 +24,11 @@ export const ALLOWED_MIME: ReadonlySet<string> = new Set([
   "text/csv",
   "application/zip",
 ]);
+
+/**
+ * Folder tree limits. Depth 0 is a system-provisioned root; a folder at
+ * MAX_FOLDER_DEPTH accepts no children. Enforced in the service AND by the
+ * trigger in 0003_folder_nesting.sql.
+ */
+export const MAX_FOLDER_DEPTH = 5;
+export const MAX_FOLDER_NAME_LENGTH = 80;
