@@ -27,22 +27,22 @@ primitives) are libraries rather than structure. They would replace a working UI
 and still require restyling to the design tokens. No permission behaviour comes
 with them.
 
-The bespoke part of this system — "Vorstand of *this* group, lead, federal
+The bespoke part of this system — "Vorstand of _this_ group, lead, federal
 board" — is BDAS-specific and no repository supplies it. The actual gap is
 narrow: `folders` has no `parent_id` and there is no `createFolder` service.
 
 ## Decisions
 
-| # | Decision | Rationale |
-|---|---|---|
-| D1 | Subfolders **always** inherit the parent's `scope` and `group_id`, permanently | No per-folder permission UI, nothing new to audit, a folder cannot leak by being nested wrong |
-| D2 | Create/rename/delete right = existing `canWrite(parent)` | No new role logic. `local_board` + `local_board_lead` in their own group, `federal_board` everywhere |
-| D3 | `event_organizer` gains **no** file rights | Would widen who can place documents before a whole group; needs its own ADR if ever wanted |
-| D4 | Delete refused while a folder holds files or subfolders | No cascade code, no orphaned storage objects, no single click destroying a year of protocols |
-| D5 | Root folders stay system-owned — not renamable, not deletable | `ensureFolders` remains authoritative for the four scopes |
-| D6 | Inline preview covers PDF, images, text/CSV | Matches what boards actually share; zero new dependencies |
-| D7 | Office formats get a metadata + download card, never a third-party viewer | MS/Google online viewers require a publicly reachable URL — unacceptable for members-only documents |
-| D8 | Preview logs a new `view` action, distinct from `download` | Keeps the download audit trail meaningful once clicking previews |
+| #   | Decision                                                                       | Rationale                                                                                            |
+| --- | ------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------- |
+| D1  | Subfolders **always** inherit the parent's `scope` and `group_id`, permanently | No per-folder permission UI, nothing new to audit, a folder cannot leak by being nested wrong        |
+| D2  | Create/rename/delete right = existing `canWrite(parent)`                       | No new role logic. `local_board` + `local_board_lead` in their own group, `federal_board` everywhere |
+| D3  | `event_organizer` gains **no** file rights                                     | Would widen who can place documents before a whole group; needs its own ADR if ever wanted           |
+| D4  | Delete refused while a folder holds files or subfolders                        | No cascade code, no orphaned storage objects, no single click destroying a year of protocols         |
+| D5  | Root folders stay system-owned — not renamable, not deletable                  | `ensureFolders` remains authoritative for the four scopes                                            |
+| D6  | Inline preview covers PDF, images, text/CSV                                    | Matches what boards actually share; zero new dependencies                                            |
+| D7  | Office formats get a metadata + download card, never a third-party viewer      | MS/Google online viewers require a publicly reachable URL — unacceptable for members-only documents  |
+| D8  | Preview logs a new `view` action, distinct from `download`                     | Keeps the download audit trail meaningful once clicking previews                                     |
 
 ## PR 1 — Folder nesting
 
@@ -74,11 +74,11 @@ impossible and no recursive integrity check is needed.
 
 ### Services (added to the public `index.ts`)
 
-| Service | Rule |
-|---|---|
-| `createFolder(db, {parentId, name, description}, by)` | `canWrite(parent, by)`; copies parent scope/group; rejects `depth > 5`; slugifies name, rejects sibling collision |
-| `renameFolder(db, folderId, {name, description}, by)` | `canWrite`; rejects when `parent_id IS NULL` |
-| `deleteFolder(db, folderId, by)` | `canWrite`; rejects when `parent_id IS NULL`; rejects when any file or child folder row exists (`Ordner ist nicht leer.`) |
+| Service                                               | Rule                                                                                                                      |
+| ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `createFolder(db, {parentId, name, description}, by)` | `canWrite(parent, by)`; copies parent scope/group; rejects `depth > 5`; slugifies name, rejects sibling collision         |
+| `renameFolder(db, folderId, {name, description}, by)` | `canWrite`; rejects when `parent_id IS NULL`                                                                              |
+| `deleteFolder(db, folderId, by)`                      | `canWrite`; rejects when `parent_id IS NULL`; rejects when any file or child folder row exists (`Ordner ist nicht leer.`) |
 
 `listFolders` continues to return the flat readable set; the tree is assembled
 from `parent_id` client-side. `listFiles`, `requestUpload` and `getDownloadUrl`

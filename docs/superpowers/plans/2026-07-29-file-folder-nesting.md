@@ -29,47 +29,49 @@
 
 **Created:**
 
-| File | Responsibility |
-|---|---|
-| `modules/files/migrations/0003_folder_nesting.sql` | `parent_id` + `depth` columns, the inheritance trigger, the four unique-index swaps |
-| `modules/files/src/slug.ts` | `slugifyFolderName` — German-aware name → slug. Pure, no imports |
-| `modules/files/src/slug.test.ts` | Unit tests for the above |
-| `modules/files/src/services/folder-writes.ts` | `createFolder`, `renameFolder`, `deleteFolder`. Kept out of `folders.ts` so the read path stays small |
-| `modules/files/src/folder-writes.test.ts` | Integration tests for the three write services |
-| `apps/web/app/_files/folder-actions.ts` | Server actions wrapping the three services |
-| `apps/web/app/_files/NewFolderButton.tsx` | Client component: inline create form |
-| `apps/web/app/_files/FolderAdminControls.tsx` | Client component: rename + delete for one subfolder |
-| `apps/web/app/_files/breadcrumbs.ts` | `buildBreadcrumbs` — pure path assembly from a flat folder list |
-| `apps/web/app/_files/breadcrumbs.test.ts` | Unit tests for the above |
-| `apps/web/app/_files/Breadcrumbs.tsx` | Server component rendering a breadcrumb trail |
+| File                                               | Responsibility                                                                                        |
+| -------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| `modules/files/migrations/0003_folder_nesting.sql` | `parent_id` + `depth` columns, the inheritance trigger, the four unique-index swaps                   |
+| `modules/files/src/slug.ts`                        | `slugifyFolderName` — German-aware name → slug. Pure, no imports                                      |
+| `modules/files/src/slug.test.ts`                   | Unit tests for the above                                                                              |
+| `modules/files/src/services/folder-writes.ts`      | `createFolder`, `renameFolder`, `deleteFolder`. Kept out of `folders.ts` so the read path stays small |
+| `modules/files/src/folder-writes.test.ts`          | Integration tests for the three write services                                                        |
+| `apps/web/app/_files/folder-actions.ts`            | Server actions wrapping the three services                                                            |
+| `apps/web/app/_files/NewFolderButton.tsx`          | Client component: inline create form                                                                  |
+| `apps/web/app/_files/FolderAdminControls.tsx`      | Client component: rename + delete for one subfolder                                                   |
+| `apps/web/app/_files/breadcrumbs.ts`               | `buildBreadcrumbs` — pure path assembly from a flat folder list                                       |
+| `apps/web/app/_files/breadcrumbs.test.ts`          | Unit tests for the above                                                                              |
+| `apps/web/app/_files/Breadcrumbs.tsx`              | Server component rendering a breadcrumb trail                                                         |
 
 **Modified:**
 
-| File | Change |
-|---|---|
-| `modules/files/src/schema.ts:6-21` | Add `parentId`, `depth` to the Drizzle `folders` table |
-| `modules/files/src/types.ts:9-18` | Add `parentId`, `depth` to the `Folder` type |
-| `modules/files/src/constants.ts` | Add `MAX_FOLDER_DEPTH` and `MAX_FOLDER_NAME_LENGTH` |
-| `modules/files/src/services/folders.ts:15-26` | `rowToFolder` maps the two new columns |
-| `modules/files/src/services/folders.ts:39-79` | `ensureFolders`/`provisionGroupFolders` write `parentId: null, depth: 0` explicitly |
-| `modules/files/src/index.ts` | Export the three new services and `getFolder` |
-| `modules/files/src/index.test.ts:57-69` | Apply `0003_folder_nesting.sql` in `applyMigrations` |
-| `modules/files/README.md` | Document nesting, the write services, and the depth cap |
-| `apps/web/app/_files/FolderIndex.tsx` | Accept and render an optional subfolder section |
-| `apps/web/app/dateien/[folderId]/page.tsx` | Breadcrumbs, subfolder list, create/rename/delete controls |
-| `apps/web/app/(board)/federal/files/[folderId]/page.tsx` | Same |
-| `apps/web/app/(board)/gruppe/[slug]/files/[folderId]/page.tsx` | Same |
+| File                                                           | Change                                                                              |
+| -------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| `modules/files/src/schema.ts:6-21`                             | Add `parentId`, `depth` to the Drizzle `folders` table                              |
+| `modules/files/src/types.ts:9-18`                              | Add `parentId`, `depth` to the `Folder` type                                        |
+| `modules/files/src/constants.ts`                               | Add `MAX_FOLDER_DEPTH` and `MAX_FOLDER_NAME_LENGTH`                                 |
+| `modules/files/src/services/folders.ts:15-26`                  | `rowToFolder` maps the two new columns                                              |
+| `modules/files/src/services/folders.ts:39-79`                  | `ensureFolders`/`provisionGroupFolders` write `parentId: null, depth: 0` explicitly |
+| `modules/files/src/index.ts`                                   | Export the three new services and `getFolder`                                       |
+| `modules/files/src/index.test.ts:57-69`                        | Apply `0003_folder_nesting.sql` in `applyMigrations`                                |
+| `modules/files/README.md`                                      | Document nesting, the write services, and the depth cap                             |
+| `apps/web/app/_files/FolderIndex.tsx`                          | Accept and render an optional subfolder section                                     |
+| `apps/web/app/dateien/[folderId]/page.tsx`                     | Breadcrumbs, subfolder list, create/rename/delete controls                          |
+| `apps/web/app/(board)/federal/files/[folderId]/page.tsx`       | Same                                                                                |
+| `apps/web/app/(board)/gruppe/[slug]/files/[folderId]/page.tsx` | Same                                                                                |
 
 ---
 
 ### Task 1: Migration — columns, trigger, unique-index swaps
 
 **Files:**
+
 - Create: `modules/files/migrations/0003_folder_nesting.sql`
 - Modify: `modules/files/src/index.test.ts:57-69`
 - Test: `modules/files/src/folder-nesting-schema.test.ts` (create)
 
 **Interfaces:**
+
 - Consumes: nothing.
 - Produces: a `folders` table with `parent_id text NULL REFERENCES folders(id)` and `depth int NOT NULL DEFAULT 0`; trigger `folders_inherit_trg`; indexes `folders_root_scope_group_uq`, `folders_root_slug_uq`, `folders_sibling_slug_uq`, `folders_parent_idx`.
 
@@ -364,9 +366,11 @@ git commit -m "feat(files): nest folders — parent_id, depth, inheritance trigg
 ### Task 2: Slug helper
 
 **Files:**
+
 - Create: `modules/files/src/slug.ts`, `modules/files/src/slug.test.ts`
 
 **Interfaces:**
+
 - Consumes: nothing.
 - Produces: `slugifyFolderName(name: string): string`.
 
@@ -464,9 +468,11 @@ git commit -m "feat(files): add German-aware folder slugifier"
 ### Task 3: Types, constants, and the read path
 
 **Files:**
+
 - Modify: `modules/files/src/types.ts:9-18`, `modules/files/src/schema.ts:6-21`, `modules/files/src/constants.ts`, `modules/files/src/services/folders.ts:15-79`
 
 **Interfaces:**
+
 - Consumes: Task 1's columns.
 - Produces: `Folder` gains `readonly parentId: string | null` and `readonly depth: number`. New constants `MAX_FOLDER_DEPTH = 5`, `MAX_FOLDER_NAME_LENGTH = 80`. `getFolder(db, folderId)` becomes exported from the module surface in Task 6.
 
@@ -593,9 +599,11 @@ git commit -m "feat(files): surface parentId and depth on Folder"
 ### Task 4: `createFolder`
 
 **Files:**
+
 - Create: `modules/files/src/services/folder-writes.ts`, `modules/files/src/folder-writes.test.ts`
 
 **Interfaces:**
+
 - Consumes: `slugifyFolderName` (Task 2), `MAX_FOLDER_DEPTH`/`MAX_FOLDER_NAME_LENGTH` (Task 3), `getFolder` and `rowToFolder` from `./folders`, `canWrite` from `../permissions`.
 - Produces:
   ```ts
@@ -722,11 +730,7 @@ describeIfDb("createFolder", () => {
   });
 
   it("creates a child that inherits scope, group, and depth+1", async () => {
-    const f = await createFolder(
-      t.db,
-      { parentId: boardRoot, name: "Protokolle" },
-      actor(BOARD_A),
-    );
+    const f = await createFolder(t.db, { parentId: boardRoot, name: "Protokolle" }, actor(BOARD_A));
     expect(f.scope).toBe("local_board");
     expect(f.groupId).toBe("grp_a");
     expect(f.parentId).toBe(boardRoot);
@@ -906,11 +910,14 @@ git commit -m "feat(files): createFolder with inherited scope and depth cap"
 ### Task 5: `renameFolder` and `deleteFolder`
 
 **Files:**
+
 - Modify: `modules/files/src/services/folder-writes.ts`, `modules/files/src/folder-writes.test.ts`
 
 **Interfaces:**
+
 - Consumes: everything from Task 4.
 - Produces:
+
   ```ts
   renameFolder(
     db: Db,
@@ -986,9 +993,9 @@ describeIfDb("renameFolder", () => {
 
   it("refuses a name already used by a sibling", async () => {
     await createFolder(t.db, { parentId: boardRoot, name: "Finanzen" }, actor(BOARD_A));
-    await expect(
-      renameFolder(t.db, child, { name: "Finanzen" }, actor(BOARD_A)),
-    ).rejects.toThrow("Ein Ordner mit diesem Namen existiert hier bereits.");
+    await expect(renameFolder(t.db, child, { name: "Finanzen" }, actor(BOARD_A))).rejects.toThrow(
+      "Ein Ordner mit diesem Namen existiert hier bereits.",
+    );
   });
 
   it("allows renaming a folder to its own current name", async () => {
@@ -1180,9 +1187,11 @@ git commit -m "feat(files): renameFolder and deleteFolder, empty-only"
 ### Task 6: Public surface
 
 **Files:**
+
 - Modify: `modules/files/src/index.ts`, `modules/files/src/index.export.test.ts` (create if absent — check first with `ls modules/files/src/index.export.test.ts`)
 
 **Interfaces:**
+
 - Produces: `createFolder`, `renameFolder`, `deleteFolder`, `getFolder`, `MAX_FOLDER_DEPTH`, `MAX_FOLDER_NAME_LENGTH` importable from `@bdas/files`.
 
 **Background:** `apps/web` may import **only** from `@bdas/files`. The folder detail pages need `getFolder` to resolve a single folder without scanning `listFolders`, so it graduates from private helper to public surface.
@@ -1228,7 +1237,12 @@ export { createFolder, renameFolder, deleteFolder } from "./services/folder-writ
 and extend the constants export (line 17):
 
 ```ts
-export { ALLOWED_MIME, MAX_FILE_BYTES, MAX_FOLDER_DEPTH, MAX_FOLDER_NAME_LENGTH } from "./constants";
+export {
+  ALLOWED_MIME,
+  MAX_FILE_BYTES,
+  MAX_FOLDER_DEPTH,
+  MAX_FOLDER_NAME_LENGTH,
+} from "./constants";
 ```
 
 - [ ] **Step 4: Run test to verify it passes**
@@ -1267,9 +1281,11 @@ git commit -m "feat(files): export folder write services and tree limits"
 ### Task 7: Breadcrumb assembly
 
 **Files:**
+
 - Create: `apps/web/app/_files/breadcrumbs.ts`, `apps/web/app/_files/breadcrumbs.test.ts`
 
 **Interfaces:**
+
 - Consumes: `Folder` from `@bdas/files`.
 - Produces: `buildBreadcrumbs(folders: readonly Folder[], folderId: string): Folder[]` — root-first path **including** the target folder; `[]` when the id is absent.
 
@@ -1381,9 +1397,11 @@ git commit -m "feat(web): assemble folder breadcrumbs from the readable set"
 ### Task 8: Server actions
 
 **Files:**
+
 - Create: `apps/web/app/_files/folder-actions.ts`
 
 **Interfaces:**
+
 - Consumes: `createFolder`, `renameFolder`, `deleteFolder` from `@bdas/files`.
 - Produces:
   ```ts
@@ -1489,9 +1507,11 @@ git commit -m "feat(web): server actions for folder create/rename/delete"
 ### Task 9: Client components — create, rename, delete
 
 **Files:**
+
 - Create: `apps/web/app/_files/NewFolderButton.tsx`, `apps/web/app/_files/FolderAdminControls.tsx`
 
 **Interfaces:**
+
 - Consumes: the three actions from Task 8.
 - Produces: `<NewFolderButton parentId={string} />`, `<FolderAdminControls folderId={string} name={string} description={string} />`.
 
@@ -1717,11 +1737,13 @@ git commit -m "feat(web): inline folder create, rename, and delete controls"
 ### Task 10: Wire the tree into the three folder pages
 
 **Files:**
+
 - Create: `apps/web/app/_files/Breadcrumbs.tsx`
 - Modify: `apps/web/app/dateien/[folderId]/page.tsx`, `apps/web/app/(board)/federal/files/[folderId]/page.tsx`, `apps/web/app/(board)/gruppe/[slug]/files/[folderId]/page.tsx`
 - Modify: `apps/web/app/_files/FolderIndex.tsx`
 
 **Interfaces:**
+
 - Consumes: `buildBreadcrumbs` (Task 7), `NewFolderButton`/`FolderAdminControls` (Task 9), `canWriteFolder` from `@bdas/files` (already exported, `index.ts:16`).
 - Produces: `<Breadcrumbs trail={Folder[]} hrefBase={string} />`.
 
@@ -1912,6 +1934,7 @@ BDAS_FLAG_FILES=true pnpm dev
 ```
 
 Log in as a member with a `local_board` grant, open `/dateien`, enter the group's Vorstand folder, and confirm:
+
 - "Neuer Ordner" appears; creating "Protokolle" adds it to the Unterordner list
 - entering it shows `Alle Ordner › … › Protokolle` and its own "Neuer Ordner"
 - "Umbenennen" changes the title; "Löschen" removes an empty folder
