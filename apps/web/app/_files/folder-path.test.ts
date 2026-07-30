@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import type { Folder } from "@bdas/files";
 
-import { buildBreadcrumbs } from "./breadcrumbs";
+import { buildBreadcrumbs } from "./folder-path";
 
 function f(id: string, parentId: string | null, depth: number, name = id): Folder {
   return {

@@ -14,16 +14,18 @@ export function FolderIndex({
   groupNames,
   counts,
   hrefBase,
+  emptyLabel = "Keine Ordner.",
 }: {
   folders: Folder[];
   groupNames: Record<string, string>;
   counts: Record<string, number>;
   hrefBase: string;
+  emptyLabel?: string;
 }) {
   if (folders.length === 0) {
     return (
       <div className="rounded-bdas border border-bdas-soft bg-bdas-surface p-6 text-center text-bdas-ink-muted shadow-bdas-card">
-        Keine Ordner.
+        {emptyLabel}
       </div>
     );
   }
