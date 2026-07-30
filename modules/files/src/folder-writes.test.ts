@@ -12,7 +12,8 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { createTestDb, type TestDb } from "@bdas/db/test";
 import type { CurrentMember, Grant } from "@bdas/members";
 
-import { createFolder } from "./services/folder-writes";
+import { files } from "./schema";
+import { createFolder, deleteFolder, renameFolder } from "./services/folder-writes";
 import { ensureFolders, listFolders } from "./services/folders";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -75,31 +76,39 @@ const BOARD_A: Grant[] = [{ role: "local_board", groupId: "grp_a" }];
 const BOARD_B: Grant[] = [{ role: "local_board", groupId: "grp_b" }];
 const PLAIN: Grant[] = [{ role: "member", groupId: null }];
 
+/**
+ * Migrate, seed two groups plus one board member, provision the system roots,
+ * and hand back group A's `local_board` root — the parent every suite writes to.
+ */
+async function seedBoardRoot(t: TestDb): Promise<string> {
+  await applyMigrations(t);
+  await t.client`
+    INSERT INTO groups (id, slug, name, city, status) VALUES
+      ('grp_a', 'a', 'Gruppe A', 'Stadt', 'active'),
+      ('grp_b', 'b', 'Gruppe B', 'Stadt', 'active')
+  `;
+  await t.client`
+    INSERT INTO auth_users (id, email_normalized, email_display, status)
+    VALUES ('usr_1', 'b@x.org', 'b@x.org', 'active')
+  `;
+  await t.client`
+    INSERT INTO members (id, user_id, first_name, last_name, primary_group_id, status)
+    VALUES ('mbr_board', 'usr_1', 'B', 'V', 'grp_a', 'active')
+  `;
+  await ensureFolders(t.db);
+  const rows = await t.client`
+    SELECT id FROM folders WHERE scope = 'local_board' AND group_id = 'grp_a'
+  `;
+  return String(rows[0]?.["id"]);
+}
+
 describeIfDb("createFolder", () => {
   let t: TestDb;
   let boardRoot: string;
 
   beforeEach(async () => {
     t = await createTestDb();
-    await applyMigrations(t);
-    await t.client`
-      INSERT INTO groups (id, slug, name, city, status) VALUES
-        ('grp_a', 'a', 'Gruppe A', 'Stadt', 'active'),
-        ('grp_b', 'b', 'Gruppe B', 'Stadt', 'active')
-    `;
-    await t.client`
-      INSERT INTO auth_users (id, email_normalized, email_display, status)
-      VALUES ('usr_1', 'b@x.org', 'b@x.org', 'active')
-    `;
-    await t.client`
-      INSERT INTO members (id, user_id, first_name, last_name, primary_group_id, status)
-      VALUES ('mbr_board', 'usr_1', 'B', 'V', 'grp_a', 'active')
-    `;
-    await ensureFolders(t.db);
-    const rows = await t.client`
-      SELECT id FROM folders WHERE scope = 'local_board' AND group_id = 'grp_a'
-    `;
-    boardRoot = String(rows[0]?.["id"]);
+    boardRoot = await seedBoardRoot(t);
   });
 
   afterEach(async () => {
@@ -166,5 +175,118 @@ describeIfDb("createFolder", () => {
     await expect(
       createFolder(t.db, { parentId: "fld_nope", name: "X" }, actor(BOARD_A)),
     ).rejects.toThrow("Ordner nicht gefunden.");
+  });
+});
+
+describeIfDb("renameFolder", () => {
+  let t: TestDb;
+  let boardRoot: string;
+  let child: string;
+
+  beforeEach(async () => {
+    t = await createTestDb();
+    boardRoot = await seedBoardRoot(t);
+    child = (await createFolder(t.db, { parentId: boardRoot, name: "Alt" }, actor(BOARD_A))).id;
+  });
+
+  afterEach(async () => {
+    await t.cleanup();
+  });
+
+  it("renames a subfolder and recomputes its slug", async () => {
+    const f = await renameFolder(t.db, child, { name: "Protokolle 2026" }, actor(BOARD_A));
+    expect(f.name).toBe("Protokolle 2026");
+    expect(f.slug).toBe("protokolle-2026");
+  });
+
+  it("updates the description", async () => {
+    const f = await renameFolder(
+      t.db,
+      child,
+      { name: "Alt", description: "Nur beschlossene Protokolle." },
+      actor(BOARD_A),
+    );
+    expect(f.description).toBe("Nur beschlossene Protokolle.");
+  });
+
+  it("refuses to rename a system root", async () => {
+    await expect(
+      renameFolder(t.db, boardRoot, { name: "Umbenannt" }, actor(BOARD_A)),
+    ).rejects.toThrow("Systemordner können nicht umbenannt werden.");
+  });
+
+  it("refuses a name already used by a sibling", async () => {
+    await createFolder(t.db, { parentId: boardRoot, name: "Finanzen" }, actor(BOARD_A));
+    await expect(renameFolder(t.db, child, { name: "Finanzen" }, actor(BOARD_A))).rejects.toThrow(
+      "Ein Ordner mit diesem Namen existiert hier bereits.",
+    );
+  });
+
+  it("allows renaming a folder to its own current name", async () => {
+    const f = await renameFolder(t.db, child, { name: "Alt" }, actor(BOARD_A));
+    expect(f.name).toBe("Alt");
+  });
+
+  it("refuses a member without write permission", async () => {
+    await expect(
+      renameFolder(t.db, child, { name: "Fremd" }, actor(BOARD_B, "mbr_board")),
+    ).rejects.toThrow("Kein Schreibzugriff auf diesen Ordner.");
+  });
+});
+
+describeIfDb("deleteFolder", () => {
+  let t: TestDb;
+  let boardRoot: string;
+  let child: string;
+
+  beforeEach(async () => {
+    t = await createTestDb();
+    boardRoot = await seedBoardRoot(t);
+    child = (await createFolder(t.db, { parentId: boardRoot, name: "Leer" }, actor(BOARD_A))).id;
+  });
+
+  afterEach(async () => {
+    await t.cleanup();
+  });
+
+  it("deletes an empty subfolder", async () => {
+    await deleteFolder(t.db, child, actor(BOARD_A));
+    const rows = await t.client`SELECT count(*)::int AS n FROM folders WHERE id = ${child}`;
+    expect(rows[0]?.["n"]).toBe(0);
+  });
+
+  it("refuses a folder that still holds a file", async () => {
+    await t.db.insert(files).values({
+      id: "fil_1",
+      folderId: child,
+      filename: "a.pdf",
+      storageKey: "k/a.pdf",
+      mimeType: "application/pdf",
+      sizeBytes: 10,
+      status: "ready",
+      uploadedBy: "mbr_board",
+    });
+    await expect(deleteFolder(t.db, child, actor(BOARD_A))).rejects.toThrow(
+      "Ordner ist nicht leer.",
+    );
+  });
+
+  it("refuses a folder that still holds a subfolder", async () => {
+    await createFolder(t.db, { parentId: child, name: "Enkel" }, actor(BOARD_A));
+    await expect(deleteFolder(t.db, child, actor(BOARD_A))).rejects.toThrow(
+      "Ordner ist nicht leer.",
+    );
+  });
+
+  it("refuses to delete a system root", async () => {
+    await expect(deleteFolder(t.db, boardRoot, actor(BOARD_A))).rejects.toThrow(
+      "Systemordner können nicht gelöscht werden.",
+    );
+  });
+
+  it("refuses a member without write permission", async () => {
+    await expect(deleteFolder(t.db, child, actor(BOARD_B, "mbr_board"))).rejects.toThrow(
+      "Kein Schreibzugriff auf diesen Ordner.",
+    );
   });
 });

@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, count, eq } from "drizzle-orm";
 
 import type { Db } from "@bdas/db";
 import { ConflictError, ForbiddenError, ValidationError } from "@bdas/errors";
@@ -7,7 +7,7 @@ import type { CurrentMember } from "@bdas/members";
 
 import { MAX_FOLDER_DEPTH, MAX_FOLDER_NAME_LENGTH } from "../constants";
 import { canWrite } from "../permissions";
-import { folders } from "../schema";
+import { files, folders } from "../schema";
 import { slugifyFolderName } from "../slug";
 import type { Folder } from "../types";
 import { getFolder, rowToFolder } from "./folders";
@@ -85,4 +85,77 @@ export async function createFolder(
   const row = rows[0];
   if (!row) throw new ConflictError("Ordner konnte nicht angelegt werden.");
   return rowToFolder(row);
+}
+
+/**
+ * Rename a subfolder and optionally reword its description. Roots are
+ * system-provisioned (D5) — ensureFolders rewrites their names at every boot,
+ * so allowing a rename here would produce a change that silently reverts.
+ */
+export async function renameFolder(
+  db: Db,
+  folderId: string,
+  input: { name: string; description?: string },
+  byMember: CurrentMember,
+): Promise<Folder> {
+  requireActingMember(byMember);
+  const folder = await getFolder(db, folderId);
+  if (folder.parentId === null) {
+    throw new ForbiddenError("Systemordner können nicht umbenannt werden.");
+  }
+  if (!canWrite(folder, byMember)) {
+    throw new ForbiddenError("Kein Schreibzugriff auf diesen Ordner.");
+  }
+
+  const { name, slug } = normalizeName(input.name);
+  await assertSlugFree(db, folder.parentId, slug, folder.id);
+
+  const rows = await db
+    .update(folders)
+    .set({
+      name,
+      slug,
+      ...(input.description === undefined ? {} : { description: input.description.trim() }),
+    })
+    .where(eq(folders.id, folder.id))
+    .returning();
+
+  const row = rows[0];
+  if (!row) throw new ConflictError("Ordner konnte nicht geändert werden.");
+  return rowToFolder(row);
+}
+
+/**
+ * Delete an empty subfolder. Refuses while anything is inside it (D4): no
+ * cascade means no click can destroy a year of protocols, and no storage
+ * object is ever orphaned by a folder deletion.
+ */
+export async function deleteFolder(
+  db: Db,
+  folderId: string,
+  byMember: CurrentMember,
+): Promise<void> {
+  requireActingMember(byMember);
+  const folder = await getFolder(db, folderId);
+  if (folder.parentId === null) {
+    throw new ForbiddenError("Systemordner können nicht gelöscht werden.");
+  }
+  if (!canWrite(folder, byMember)) {
+    throw new ForbiddenError("Kein Schreibzugriff auf diesen Ordner.");
+  }
+
+  const [fileCount] = await db
+    .select({ n: count() })
+    .from(files)
+    .where(eq(files.folderId, folder.id));
+  const [childCount] = await db
+    .select({ n: count() })
+    .from(folders)
+    .where(eq(folders.parentId, folder.id));
+
+  if ((fileCount?.n ?? 0) > 0 || (childCount?.n ?? 0) > 0) {
+    throw new ConflictError("Ordner ist nicht leer.");
+  }
+
+  await db.delete(folders).where(eq(folders.id, folder.id));
 }
