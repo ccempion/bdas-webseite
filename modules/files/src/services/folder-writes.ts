@@ -1,4 +1,5 @@
-import { and, count, eq } from "drizzle-orm";
+import { and, count, eq, notExists, sql } from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
 
 import type { Db } from "@bdas/db";
 import { ConflictError, ForbiddenError, ValidationError } from "@bdas/errors";
@@ -157,5 +158,32 @@ export async function deleteFolder(
     throw new ConflictError("Ordner ist nicht leer.");
   }
 
-  await db.delete(folders).where(eq(folders.id, folder.id));
+  // The counts above are only for the error message. They cannot be trusted for
+  // the delete itself: files.folder_id is ON DELETE CASCADE, so an upload that
+  // commits between the count and the DELETE would be destroyed silently and
+  // its storage object orphaned. Re-assert emptiness inside the DELETE so the
+  // check and the write are one atomic statement.
+  const child = alias(folders, "child");
+  const deleted = await db
+    .delete(folders)
+    .where(
+      and(
+        eq(folders.id, folder.id),
+        notExists(
+          db
+            .select({ one: sql`1` })
+            .from(files)
+            .where(eq(files.folderId, folder.id)),
+        ),
+        notExists(
+          db
+            .select({ one: sql`1` })
+            .from(child)
+            .where(eq(child.parentId, folder.id)),
+        ),
+      ),
+    )
+    .returning({ id: folders.id });
+
+  if (deleted.length === 0) throw new ConflictError("Ordner ist nicht leer.");
 }

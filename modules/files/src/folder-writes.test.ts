@@ -269,13 +269,19 @@ describeIfDb("deleteFolder", () => {
     await expect(deleteFolder(t.db, child, actor(BOARD_A))).rejects.toThrow(
       "Ordner ist nicht leer.",
     );
+    // files.folder_id is ON DELETE CASCADE, so a delete that slipped through
+    // would destroy the file silently and orphan its storage object.
+    const rows = await t.client`SELECT count(*)::int AS n FROM files WHERE id = 'fil_1'`;
+    expect(rows[0]?.["n"]).toBe(1);
   });
 
   it("refuses a folder that still holds a subfolder", async () => {
-    await createFolder(t.db, { parentId: child, name: "Enkel" }, actor(BOARD_A));
+    const grandchild = await createFolder(t.db, { parentId: child, name: "Enkel" }, actor(BOARD_A));
     await expect(deleteFolder(t.db, child, actor(BOARD_A))).rejects.toThrow(
       "Ordner ist nicht leer.",
     );
+    const rows = await t.client`SELECT count(*)::int AS n FROM folders WHERE id = ${grandchild.id}`;
+    expect(rows[0]?.["n"]).toBe(1);
   });
 
   it("refuses to delete a system root", async () => {
