@@ -28,7 +28,12 @@ test("ein Vorstand mit offener Freigabe sieht Zahl und Hinweis", async ({ page }
 
   await expect(page.getByRole("status", { name: /offene Freigaben/ }).first()).toBeVisible();
   await expect(page.getByText("Es wartet etwas auf dich")).toBeVisible();
-  await expect(page.getByRole("link", { name: /Mitglied\(er\) freigeben/ })).toBeVisible();
+  // ADR 0031 renamed the queue: approvals became applications, and the board
+  // here is itself still groupless (its own application is open), so this also
+  // pins that the link is derived from the grant rather than primaryGroupId.
+  const link = page.getByRole("link", { name: /Bewerbung\(en\) entscheiden/ });
+  await expect(link).toBeVisible();
+  await expect(link).toHaveAttribute("href", `/gruppe/${slug}/bewerbungen`);
 });
 
 test("ein einfaches Mitglied sieht weder Zahl noch Hinweis", async ({ page }) => {
