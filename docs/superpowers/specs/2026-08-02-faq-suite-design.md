@@ -53,8 +53,11 @@ keine ADR nötig (kein Stack-Substitut).
   Flag (Default OFF, mergebar), auf **Vercel-Preview-Deployments automatisch an**,
   damit der Branch unter seiner Preview-URL reviewbar ist, bevor das Flag in Prod
   gesetzt wird. Route und beide Footer-Links nutzen `faqEnabled()`.
-- `/FAQ` (Groß-Schreibweise aus dem Ticket) wird per Redirect in
-  `apps/web/next.config.mjs` auf das kanonische `/faq` umgeleitet.
+- Die Route ist ausschließlich klein: **`/faq`**. Ein Redirect `/FAQ → /faq` wurde
+  bewusst **nicht** eingebaut: Next matcht Redirect-`source` case-insensitiv, wodurch
+  `/faq` selbst die Regel `/FAQ` trifft und sich in eine Endlosschleife
+  (`ERR_TOO_MANY_REDIRECTS`) umleitet. `/FAQ` (groß) liefert daher 404 — konsistent
+  mit allen anderen klein geschriebenen Routen.
 
 ## 5. Navigation (der „Button") — im Footer
 
