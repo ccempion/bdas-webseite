@@ -48,6 +48,11 @@ export function PublicFooter({
               Gruppen
             </Link>
           )}
+          {isFlagOn("faq") && (
+            <Link href="/faq" className={LINK}>
+              FAQ &amp; Hilfe
+            </Link>
+          )}
         </nav>
         <nav aria-label="Partner" className="flex flex-col gap-2">
           <h2 className="font-semibold text-bdas-ink">Verbund</h2>

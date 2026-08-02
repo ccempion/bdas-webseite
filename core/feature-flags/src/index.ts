@@ -23,6 +23,7 @@ export const FLAGS = [
   "group_map",
   "content",
   "profile",
+  "faq",
 ] as const;
 
 export type FlagName = (typeof FLAGS)[number];

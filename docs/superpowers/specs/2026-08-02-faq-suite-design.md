@@ -52,13 +52,19 @@ keine ADR nötig (kein Stack-Substitut).
   OFF in Prod, damit die Route mergebar bleibt (gleiche Konvention wie
   `groups`/`events` im `SiteHeader`).
 
-## 5. Navigation (der „Button")
+## 5. Navigation (der „Button") — im Footer
 
-- Primär: neuer Pill-Link **„Hilfe / FAQ"** im `apps/web/components/SiteHeader.tsx`,
-  sichtbar sobald `me` gesetzt ist (angemeldet) und `isFlagOn("faq")`. Nutzt die
-  bestehende `PILL`-Klasse.
-- Der `SiteHeader` wird für angemeldete Nutzer plattformweit gezeigt → erfüllt
-  „klar ersichtlich für angemeldete Mitglieder".
+Entscheidung (mit dem Nutzer abgestimmt): der Link lebt im **Footer**, nicht im
+Header. Die Plattform hat bereits eine „Seiten"-Spalte im Footer (z. B.
+`/ueber-uns`, `/unsere-arbeit`) — dort fügt sich die FAQ natürlich ein.
+
+- `apps/web/app/_public/PublicFooter.tsx`: FAQ-Link in der `<nav aria-label="Seiten">`-
+  Spalte, gated mit `isFlagOn("faq")` (gleiche Konvention wie die `events`/`groups`-
+  Links dort).
+- `apps/web/components/SiteFooter.tsx`: FAQ-Link neben Datenschutz/Impressum, gated
+  mit `isFlagOn("faq")`, damit die App-Shell-Variante ihn ebenfalls zeigt.
+- Der Link ist für alle sichtbar; die `/faq`-Route erzwingt selbst die Anmeldung
+  (Gast → `/anmelden`). Kein Header-Pill.
 
 ## 6. Content-Modell
 
@@ -166,4 +172,5 @@ Neu: `apps/web/app/faq/page.tsx`, `apps/web/app/faq/FaqSection.tsx`,
 `apps/web/app/faq/FaqAccordion.tsx`, `apps/web/content/faq/*`,
 `apps/web/lib/faq/order.ts` (+ `order.test.ts`), E2E-Spec.
 Geändert: `core/feature-flags/src/index.ts` (+`"faq"`),
-`apps/web/components/SiteHeader.tsx` (Nav-Link).
+`apps/web/app/_public/PublicFooter.tsx` + `apps/web/components/SiteFooter.tsx`
+(FAQ-Link, flag-gated).

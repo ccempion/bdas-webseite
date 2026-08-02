@@ -1,6 +1,8 @@
 import Image from "next/image";
 import Link from "next/link";
 
+import { isFlagOn } from "@bdas/feature-flags";
+
 import logo from "../public/bdas-logo.png";
 
 /**
@@ -16,7 +18,12 @@ export function SiteFooter({ privacyUrl, imprintUrl }: { privacyUrl: string; imp
           <Image src={logo} alt="" className="h-7 w-auto" />© {year} Bund der Alevitischen
           Studierenden
         </p>
-        <nav aria-label="Rechtliches" className="flex items-center gap-4">
+        <nav aria-label="Seiten und Rechtliches" className="flex items-center gap-4">
+          {isFlagOn("faq") && (
+            <Link href="/faq" className="hover:text-bdas-red hover:underline">
+              FAQ
+            </Link>
+          )}
           <Link href={privacyUrl} className="hover:text-bdas-red hover:underline">
             Datenschutz
           </Link>

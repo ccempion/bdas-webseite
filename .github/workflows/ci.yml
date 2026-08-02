@@ -182,6 +182,7 @@ jobs:
       BDAS_FLAG_CONTENT: "true"
       BDAS_FLAG_BLOG: "true"
       BDAS_FLAG_PROFILE: "true"
+      BDAS_FLAG_FAQ: "true"
       DATABASE_URL: postgres://bdas:bdas@localhost:5432/bdas
       SSO_JWT_SECRET: e2e-test-secret-e2e-test-secret-0123456789
       BDAS_FEDERAL_BOARD_EMAILS: federal@e2e.bdas.test
