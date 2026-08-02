@@ -3,6 +3,7 @@ import Link from "next/link";
 
 import { isFlagOn } from "@bdas/feature-flags";
 
+import { faqEnabled } from "../../lib/faq/enabled";
 import logo from "../../public/bdas-logo.png";
 
 const LINK = "hover:text-bdas-red hover:underline";
@@ -48,7 +49,7 @@ export function PublicFooter({
               Gruppen
             </Link>
           )}
-          {isFlagOn("faq") && (
+          {faqEnabled() && (
             <Link href="/faq" className={LINK}>
               FAQ &amp; Hilfe
             </Link>

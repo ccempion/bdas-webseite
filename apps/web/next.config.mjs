@@ -54,6 +54,9 @@ const nextConfig = {
       },
       { source: "/kontakt", destination: "/", permanent: true },
       { source: "/mitmachen", destination: "/registrieren", permanent: true },
+      // The ticket names the page "/FAQ"; routes are lower-case, so alias the
+      // capitalised spelling onto the canonical /faq.
+      { source: "/FAQ", destination: "/faq", permanent: false },
     ];
   },
 };

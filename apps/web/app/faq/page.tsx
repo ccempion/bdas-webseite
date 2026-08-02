@@ -1,8 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 
-import { isFlagOn } from "@bdas/feature-flags";
-
 import { SECTIONS } from "../../content/faq";
+import { faqEnabled } from "../../lib/faq/enabled";
 import { highlightedVorstandSubgroups, orderSections } from "../../lib/faq/order";
 import { loadCurrentMember } from "../_dashboard/session";
 import { FaqSectionView } from "./FaqSection";
@@ -14,7 +13,7 @@ export const dynamic = "force-dynamic";
 export const metadata = { title: "FAQ & Hilfe" };
 
 export default async function FaqPage() {
-  if (!isFlagOn("faq")) notFound();
+  if (!faqEnabled()) notFound();
 
   const me = await loadCurrentMember();
   if (!me) redirect("/anmelden");

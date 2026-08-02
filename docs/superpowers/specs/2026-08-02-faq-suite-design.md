@@ -47,10 +47,14 @@ keine ADR nötig (kein Stack-Substitut).
   `apps/web/app/_dashboard/session.ts` (liefert `CurrentMember` inkl. `grants`).
   `null` → `redirect("/anmelden")`. Jedes angemeldete Mitglied darf rein; **kein**
   Board-Grant nötig.
-- Feature-Flag `faq` wird zu `core/feature-flags` `FLAGS` ergänzt. Die Route ruft
-  `requireFlag("faq")`; der Nav-Button rendert nur bei `isFlagOn("faq")`. Default
-  OFF in Prod, damit die Route mergebar bleibt (gleiche Konvention wie
-  `groups`/`events` im `SiteHeader`).
+- Feature-Flag `faq` wird zu `core/feature-flags` `FLAGS` ergänzt. Sichtbarkeit
+  läuft über den Helper `apps/web/lib/faq/enabled.ts` → `faqEnabled()` =
+  `isFlagOn("faq") || VERCEL_ENV === "preview"`. Heißt: in **Production** hinterm
+  Flag (Default OFF, mergebar), auf **Vercel-Preview-Deployments automatisch an**,
+  damit der Branch unter seiner Preview-URL reviewbar ist, bevor das Flag in Prod
+  gesetzt wird. Route und beide Footer-Links nutzen `faqEnabled()`.
+- `/FAQ` (Groß-Schreibweise aus dem Ticket) wird per Redirect in
+  `apps/web/next.config.mjs` auf das kanonische `/faq` umgeleitet.
 
 ## 5. Navigation (der „Button") — im Footer
 
