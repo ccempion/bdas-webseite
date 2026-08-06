@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
+import { PASSWORD_RULE_HINT } from "@bdas/auth";
 import { getDb } from "@bdas/db";
 import { Alert, Button, Card } from "@bdas/design-system";
 import { isFlagOn } from "@bdas/feature-flags";
@@ -12,6 +13,7 @@ import { requireAuthFlag } from "../_auth/flag";
 import { requireMembersFlag } from "../_members/flag";
 import { AccountAvatar } from "./AccountAvatar";
 import { ApprovalsAlert } from "./ApprovalsAlert";
+import { ChangePasswordCard } from "./ChangePasswordCard";
 import { isProfileComplete } from "../_profile/complete";
 import { signedProfilePhotoUrl } from "../_profile/photo-url";
 import { SUBMITTED_PARAM, SUBMITTED_VALUE } from "../_profile/submitted";
@@ -150,6 +152,8 @@ export default async function AccountPage({
           extendedForm={profileFlagOn && me.member ? { initial: extendedInitial } : null}
         />
       </Card>
+
+      <ChangePasswordCard passwordHint={PASSWORD_RULE_HINT} />
 
       <div className="flex flex-wrap items-center gap-3">
         <Link href="/account/datenexport">
