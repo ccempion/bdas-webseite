@@ -17,7 +17,13 @@ import { getEventBus, resetEventBus } from "@bdas/events";
 import type { EventsEvent } from "./events";
 import { getEvent, type Viewer } from "./services/get";
 import { listManagedEvents } from "./services/list";
-import { cancelEvent, createEvent, deleteEvent, publishEvent, updateEvent } from "./services/manage";
+import {
+  cancelEvent,
+  createEvent,
+  deleteEvent,
+  publishEvent,
+  updateEvent,
+} from "./services/manage";
 import {
   cancelGuestByToken,
   cancelRegistration,
