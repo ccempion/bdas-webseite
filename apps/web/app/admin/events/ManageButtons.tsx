@@ -35,8 +35,15 @@ export function ManageButtons({
             <SubmitButton variant="primary" label="Veröffentlichen" />
           </form>
         ) : null}
-        {status !== "cancelled" ? (
-          <form action={cancel}>
+        {status === "published" ? (
+          <form
+            action={cancel}
+            onSubmit={(e) => {
+              const msg =
+                "Diese Veranstaltung absagen? Alle Angemeldeten werden per E-Mail informiert. Das lässt sich nicht rückgängig machen.";
+              if (!window.confirm(msg)) e.preventDefault();
+            }}
+          >
             <input type="hidden" name="eventId" value={eventId} />
             <SubmitButton variant="ghost" label="Absagen" />
           </form>
