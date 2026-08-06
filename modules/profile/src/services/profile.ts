@@ -130,6 +130,41 @@ export async function saveProfile(db: Db, input: SaveProfileInput): Promise<Memb
   return row2profile(row);
 }
 
+/**
+ * Clear the profile photo. Owner-only. Returns false when there is no profile
+ * row to clear.
+ *
+ * Deliberately *not* folded into `saveProfile` as an explicit-null case: the
+ * account and wizard forms already submit `photoStorageKey: null` to mean "this
+ * form does not carry a photo", which the upsert reads as "keep the stored key"
+ * (see `values.photoStorageKey` above). Teaching that null to mean "delete"
+ * would make every profile edit wipe the photo. Removal needs a write that says
+ * so unambiguously, so it gets its own.
+ *
+ * The stored object is left in the bucket — same as replacing a photo, which
+ * has always orphaned the old one. `@bdas/storage` is not this module's to call.
+ */
+export async function clearProfilePhoto(
+  db: Db,
+  input: { readonly userId: string; readonly actor: ProfileActor },
+): Promise<boolean> {
+  if (input.actor.userId !== input.userId) {
+    throw new ForbiddenError("Du darfst nur dein eigenes Profil bearbeiten.");
+  }
+
+  const now = new Date();
+  const rows = await db
+    .update(memberProfiles)
+    .set({ photoStorageKey: null, updatedAt: now, updatedBy: input.actor.userId })
+    .where(eq(memberProfiles.userId, input.userId))
+    .returning();
+  if (rows.length === 0) return false;
+
+  const event: ProfileUpdated = { type: "profile.updated", userId: input.userId, at: now };
+  await getEventBus().publish(event);
+  return true;
+}
+
 function flatten(err: z.ZodError): Record<string, string> {
   const out: Record<string, string> = {};
   for (const i of err.issues) out[i.path.join(".") || "_"] = i.message;

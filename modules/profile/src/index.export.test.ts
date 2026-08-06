@@ -12,6 +12,7 @@ describe("@bdas/profile public surface", () => {
         "SaveProfileFields",
         "UNIVERSITIES",
         "canViewProfile",
+        "clearProfilePhoto",
         "getProfile",
         "isKnownUniversity",
         "saveProfile",
