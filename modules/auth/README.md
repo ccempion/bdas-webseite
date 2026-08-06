@@ -31,6 +31,8 @@ import {
   logout,
   requestPasswordReset,
   completePasswordReset,
+  changePassword,
+  ChangePasswordInput,
   // SSO cookie
   COOKIE_NAME,
   COOKIE_MAX_AGE_SECONDS,
@@ -59,6 +61,7 @@ The module publishes typed events through `core/events`:
 - `auth.user.logged_in`
 - `auth.user.logged_out`
 - `auth.password.reset`
+- `auth.password.changed`
 
 Subscribers should depend on `AuthEvent` (or its arms) and not on any auth
 service directly.
@@ -91,12 +94,13 @@ container in CI).
 
 ## Rate limits (Sprint 1 defaults)
 
-| Action                 | Key                     | Limit | Window |
-| ---------------------- | ----------------------- | ----- | ------ |
-| `register`             | `register:ip:<ip>`      | 5     | 1 hour |
-| `login` (per IP)       | `login:ip:<ip>`         | 10    | 15 min |
-| `login` (per email)    | `login:email:<email>`   | 5     | 15 min |
-| `requestPasswordReset` | `reset-request:ip:<ip>` | 5     | 1 hour |
+| Action                 | Key                             | Limit | Window |
+| ---------------------- | ------------------------------- | ----- | ------ |
+| `register`             | `register:ip:<ip>`              | 5     | 1 hour |
+| `login` (per IP)       | `login:ip:<ip>`                 | 10    | 15 min |
+| `login` (per email)    | `login:email:<email>`           | 5     | 15 min |
+| `requestPasswordReset` | `reset-request:ip:<ip>`         | 5     | 1 hour |
+| `changePassword`       | `password-change:user:<userId>` | 5     | 1 hour |
 
 Replace with Redis-backed sliding window if scale demands it.
 

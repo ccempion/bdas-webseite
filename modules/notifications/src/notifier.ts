@@ -3,7 +3,7 @@
  * app composes a concrete driver at boot (see notifier-resend.ts). For tests
  * and dev without RESEND_API_KEY, `consoleNotifier` writes to stdout.
  *
- * Unlike auth's Notifier (two fixed message kinds), this carries an
+ * Unlike auth's Notifier (three fixed message kinds), this carries an
  * already-rendered email — templates.ts produces subject/text/html.
  */
 

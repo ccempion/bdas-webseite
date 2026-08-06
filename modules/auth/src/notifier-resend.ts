@@ -36,6 +36,13 @@ function render(message: AuthMessage): { subject: string; html: string; text: st
       html: `<p>Hallo,</p><p>bitte bestätige deine E-Mail-Adresse über den folgenden Link:</p><p><a href="${message.verifyUrl}">${message.verifyUrl}</a></p><p>Der Link ist 24 Stunden gültig.</p>`,
     };
   }
+  if (message.kind === "changed") {
+    return {
+      subject: "BDAS — Passwort geändert",
+      text: `Hallo,\n\ndein BDAS-Passwort wurde soeben geändert. Alle anderen Geräte wurden abgemeldet.\n\nWarst du das nicht? Dann setze dein Passwort sofort über „Passwort vergessen“ auf der Anmeldeseite zurück und melde dich bei deinem lokalen Vorstand.\n`,
+      html: `<p>Hallo,</p><p>dein BDAS-Passwort wurde soeben geändert. Alle anderen Geräte wurden abgemeldet.</p><p>Warst du das nicht? Dann setze dein Passwort sofort über &bdquo;Passwort vergessen&ldquo; auf der Anmeldeseite zurück und melde dich bei deinem lokalen Vorstand.</p>`,
+    };
+  }
   return {
     subject: "BDAS — Passwort zurücksetzen",
     text: `Hallo,\n\nüber den folgenden Link kannst du ein neues Passwort vergeben:\n\n${message.resetUrl}\n\nDer Link ist 1 Stunde gültig. Wenn du keine Zurücksetzung angefordert hast, kannst du diese E-Mail ignorieren.\n`,

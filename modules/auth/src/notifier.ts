@@ -16,7 +16,15 @@ export type ResetPasswordMessage = {
   readonly resetUrl: string;
 };
 
-export type AuthMessage = VerifyEmailMessage | ResetPasswordMessage;
+/** Sent after a signed-in user changes their password. Carries no link:
+ *  by definition this mail also reaches someone whose account was taken
+ *  over, and a token in it would be a fresh attack surface. */
+export type PasswordChangedMessage = {
+  readonly kind: "changed";
+  readonly to: string;
+};
+
+export type AuthMessage = VerifyEmailMessage | ResetPasswordMessage | PasswordChangedMessage;
 
 export interface Notifier {
   send(message: AuthMessage): Promise<void>;
@@ -26,8 +34,10 @@ export const consoleNotifier: Notifier = {
   async send(message: AuthMessage): Promise<void> {
     if (message.kind === "verify") {
       console.log(`[auth] verify ${message.to} → ${message.verifyUrl}`);
-    } else {
+    } else if (message.kind === "reset") {
       console.log(`[auth] reset  ${message.to} → ${message.resetUrl}`);
+    } else {
+      console.log(`[auth] changed ${message.to}`);
     }
   },
 };

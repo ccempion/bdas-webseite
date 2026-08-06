@@ -37,9 +37,20 @@ export type PasswordReset = {
   readonly at: Date;
 };
 
+/**
+ * A signed-in user chose a new password. Deliberately distinct from
+ * PasswordReset — "I changed it" and "I had lost it" are different signals.
+ */
+export type PasswordChanged = {
+  readonly type: "auth.password.changed";
+  readonly userId: string;
+  readonly at: Date;
+};
+
 export type AuthEvent =
   | UserRegistered
   | UserVerified
   | UserLoggedIn
   | UserLoggedOut
-  | PasswordReset;
+  | PasswordReset
+  | PasswordChanged;
