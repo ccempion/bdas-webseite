@@ -17,7 +17,13 @@ import { getEventBus, resetEventBus } from "@bdas/events";
 import type { EventsEvent } from "./events";
 import { getEvent, type Viewer } from "./services/get";
 import { listManagedEvents } from "./services/list";
-import { createEvent, deleteEvent, publishEvent, updateEvent } from "./services/manage";
+import {
+  cancelEvent,
+  createEvent,
+  deleteEvent,
+  publishEvent,
+  updateEvent,
+} from "./services/manage";
 import {
   cancelGuestByToken,
   cancelRegistration,
@@ -130,6 +136,21 @@ describeIfDb("events integration", () => {
     expect(pub.status).toBe("published");
     expect(published).toHaveLength(1);
     expect(published[0]).toMatchObject({ type: "events.event.published", eventId: ev.id });
+  });
+
+  it("a draft cannot be cancelled; a published event can", async () => {
+    const cancelled = capture("events.event.cancelled");
+    const ev = await createEvent(t.db, { title: "Entwurf", startsAt: future() }, "usr_c");
+
+    await expect(cancelEvent(t.db, ev.id)).rejects.toThrow(/Entwürfe/);
+    expect(cancelled).toHaveLength(0);
+    expect((await getEvent(t.db, ev.id, FEDERAL))?.status).toBe("draft");
+
+    await publishEvent(t.db, ev.id);
+    const done = await cancelEvent(t.db, ev.id);
+    expect(done.status).toBe("cancelled");
+    expect(cancelled).toHaveLength(1);
+    expect(cancelled[0]).toMatchObject({ type: "events.event.cancelled", eventId: ev.id });
   });
 
   it("registers up to capacity, then waitlists", async () => {
