@@ -18,6 +18,9 @@ const baseURL = process.env["PUBLIC_SITE_URL"] ?? `http://localhost:${PORT}`;
 export default defineConfig({
   testDir: "./e2e",
   testMatch: "**/*.e2e.ts",
+  // Clears groups left by earlier runs; without it a reused local database
+  // accumulates duplicates that break specs which never seeded anything.
+  globalSetup: "./e2e/global-setup.ts",
   // Shared app + shared Postgres across specs → run serially for determinism.
   fullyParallel: false,
   workers: 1,
