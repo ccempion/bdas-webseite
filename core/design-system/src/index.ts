@@ -34,3 +34,10 @@ export { Section, type SectionProps } from "./components/Section";
 export { FilterChip, type FilterChipProps } from "./components/FilterChip";
 export { Badge, type BadgeProps } from "./components/Badge";
 export { badgeText, badgeLabel } from "./components/badge-count";
+export { Combobox, type ComboboxProps } from "./components/Combobox";
+export {
+  SEARCH_THRESHOLD,
+  shouldSearch,
+  filterOptions,
+  type ComboboxOption,
+} from "./components/combobox-filter";

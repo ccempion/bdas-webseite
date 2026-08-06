@@ -11,6 +11,26 @@ import { latestVerifyToken, resetRateLimits } from "./db";
 /** A password that satisfies the registration policy comfortably. */
 export const PASSWORD = "Korrekt-Pferd-Batterie-9!";
 
+/**
+ * Picks a value from a Combobox (design-system) the way a member would: open
+ * the trigger, narrow the list if it is long enough to have a search field,
+ * then click the option.
+ *
+ * `query` only matters for searchable lists whose label differs from its value;
+ * for the Hochschule list the two are the same string.
+ */
+export async function pickCombo(
+  scope: Page | Locator,
+  triggerId: string,
+  value: string,
+  query = value,
+): Promise<void> {
+  await scope.locator(`#${triggerId}`).click();
+  const search = scope.locator('input[aria-label$="durchsuchen"]');
+  if ((await search.count()) > 0) await search.fill(query);
+  await scope.locator(`[role="option"][data-value="${value}"]`).click();
+}
+
 export async function register(
   page: Page,
   opts: { email: string; firstName?: string; lastName?: string; password?: string },
@@ -115,7 +135,7 @@ export async function createProfile(
   await form.getByLabel("Vorname").fill(opts.firstName ?? "Test");
   await form.getByLabel("Nachname").fill(opts.lastName ?? "Nutzer");
   if (opts.groupId) {
-    await form.locator("#primaryGroupId").selectOption(opts.groupId);
+    await pickCombo(form, "primaryGroupId", opts.groupId);
   }
   await submitAndSettle(page, form.getByRole("button", { name: /Profil einreichen|Speichern/ }));
 }

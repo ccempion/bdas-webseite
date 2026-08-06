@@ -51,6 +51,15 @@ the equivalent components across the app. Names refer to tokens in
   invisible "hover bridge").
 - **Dropdown link** — `radii.sm`, padding `8px 12px`, hover background
   `surface.hover`, color `ink.strong → black`.
+- **Combobox** — the pattern for any list too long to scan. The trigger matches
+  `Input`'s shape (`radii.md`, `border.soft`, red focus ring); the popup follows
+  the **dropdown panel** recipe above (`radii.md`, `shadows.dropdown`, `8px`
+  padding) and fades in via `keyframes.fadeSlideDown`; each option follows
+  **dropdown link** (`radii.sm`, hover `surface.hover`), with the selected one in
+  `brand.red`. Past `SEARCH_THRESHOLD` (30) options it grows a filter field —
+  below that the field is noise, so a short list is just the list. Use it instead
+  of a native `<select>` whenever the option count is data-driven and can grow;
+  keep `<select>` for fixed enums of a handful of values.
 - **Accordion (`<details>`)** — styled as a card. On `[open]`:
   - 4 px left border in `brand.red`
   - shadow upgrades to `redGlow`

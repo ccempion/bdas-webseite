@@ -1,8 +1,9 @@
 "use client";
 
+import { useMemo, useState } from "react";
 import { useFormState, useFormStatus } from "react-dom";
 
-import { Alert, Button, Field, Form, Input } from "@bdas/design-system";
+import { Alert, Button, Combobox, Field, Form, Input } from "@bdas/design-system";
 
 import { createEventAction, type EventFormState } from "./actions";
 
@@ -26,6 +27,17 @@ export function EventForm({
 }) {
   const [state, action] = useFormState(createEventAction, initialState);
   const err = (k: string) => (state.fields?.[k] ? { error: state.fields[k] } : {});
+
+  /** "Föderationsweit" is the empty group id, so it has to be a pickable entry
+   *  rather than the placeholder — and only for those allowed to use it. */
+  const groupOptions = useMemo(
+    () => [
+      ...(allowFederation ? [{ value: "", label: "Föderationsweit" }] : []),
+      ...groups.map((g) => ({ value: g.id, label: g.name })),
+    ],
+    [groups, allowFederation],
+  );
+  const [groupId, setGroupId] = useState(allowFederation ? "" : (groups[0]?.id ?? ""));
 
   return (
     <Form action={action}>
@@ -78,19 +90,15 @@ export function EventForm({
       </Field>
 
       <Field label="Gruppe" htmlFor="groupId" {...err("groupId")}>
-        <select
+        <Combobox
           id="groupId"
           name="groupId"
-          defaultValue={allowFederation ? "" : (groups[0]?.id ?? "")}
-          className={SELECT_CLASS}
-        >
-          {allowFederation ? <option value="">Föderationsweit</option> : null}
-          {groups.map((g) => (
-            <option key={g.id} value={g.id}>
-              {g.name}
-            </option>
-          ))}
-        </select>
+          label="Gruppe"
+          placeholder="Föderationsweit"
+          options={groupOptions}
+          value={groupId}
+          onChange={setGroupId}
+        />
       </Field>
 
       <SubmitButton />

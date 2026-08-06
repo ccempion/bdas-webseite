@@ -1,8 +1,9 @@
 "use client";
 
+import { useMemo, useState } from "react";
 import { useFormStatus } from "react-dom";
 
-import { Alert, Button, Field, Form, Input } from "@bdas/design-system";
+import { Alert, Button, Combobox, Field, Form, Input } from "@bdas/design-system";
 
 import type { ProfileFormState } from "./actions";
 
@@ -29,6 +30,12 @@ export function ProfileForm({
   state,
   action,
 }: ProfileFormProps) {
+  const [groupId, setGroupId] = useState(data.primaryGroupId ?? "");
+  const groupOptions = useMemo(
+    () => groups.map((g) => ({ value: g.id, label: `${g.name} (${g.city})` })),
+    [groups],
+  );
+
   return (
     <Form action={action}>
       {state.error ? <Alert variant="error">{state.error}</Alert> : null}
@@ -59,19 +66,15 @@ export function ProfileForm({
         />
       </Field>
       <Field label="Hochschulgruppe" htmlFor="primaryGroupId">
-        <select
+        <Combobox
           id="primaryGroupId"
           name="primaryGroupId"
-          defaultValue={data.primaryGroupId ?? ""}
-          className="block w-full rounded-bdas border border-bdas-soft bg-bdas-surface px-3 py-2.5 text-base text-bdas-ink transition-colors duration-bdas-quick ease-bdas focus:border-bdas-red focus:outline-none focus:ring-2 focus:ring-bdas-red/20"
-        >
-          <option value="">— keine Gruppe —</option>
-          {groups.map((g) => (
-            <option key={g.id} value={g.id}>
-              {g.name} ({g.city})
-            </option>
-          ))}
-        </select>
+          label="Hochschulgruppe"
+          placeholder="— keine Gruppe —"
+          options={groupOptions}
+          value={groupId}
+          onChange={setGroupId}
+        />
         {openChangeGroupName ? (
           <p className="mt-1 text-sm text-bdas-ink-muted">
             Ein Wechsel zu {openChangeGroupName} ist beantragt. Eine andere Auswahl ersetzt den
