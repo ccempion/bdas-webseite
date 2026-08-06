@@ -68,6 +68,27 @@ export async function deleteUserByEmail(email: string): Promise<void> {
   await sql`DELETE FROM auth_users WHERE email_normalized = lower(${email})`;
 }
 
+/**
+ * Drop the groups seeded by earlier runs of this suite.
+ *
+ * Nothing else removes them, so on a database that survives between runs they
+ * pile up — and they are visible to every spec, not just the one that made
+ * them. A second run finds two "E2E Aktive Gruppe" cards in the public list and
+ * two pins on the map, and strict-mode locators fail in specs that nobody
+ * touched. CI starts from an empty database and never sees this, which is
+ * precisely why it costs local time to diagnose.
+ *
+ * Everything pointing at a group either cascades or nulls out, except
+ * `member_group_change_requests`, whose two FKs declare no action — those rows
+ * go first or the delete is refused.
+ */
+export async function deleteSeededGroups(): Promise<void> {
+  await sql`
+    DELETE FROM member_group_change_requests
+     WHERE from_group_id LIKE 'grp_e2e_%' OR to_group_id LIKE 'grp_e2e_%'`;
+  await sql`DELETE FROM groups WHERE id LIKE 'grp_e2e_%'`;
+}
+
 /** Insert a group directly and return its id. `status` defaults to 'active'. */
 export async function seedGroup(input: {
   slug: string;
