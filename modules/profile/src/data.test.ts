@@ -86,7 +86,7 @@ describe("UNIVERSITIES", () => {
     // wraps onto a second physical line — hence more lines than entries.
     const source = readFileSync(join(DATA_DIR, "hochschulen.tsv"), "utf8");
     expect(source.split("\n").filter((l) => l.trim() !== "")).toHaveLength(UNIVERSITIES.length + 3);
-    expect(UNIVERSITIES).toHaveLength(388);
+    expect(UNIVERSITIES).toHaveLength(389);
   });
 
   it("has no duplicates and no untrimmed names", () => {

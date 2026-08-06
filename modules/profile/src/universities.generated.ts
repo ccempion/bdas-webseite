@@ -91,6 +91,7 @@ export const UNIVERSITIES: ReadonlyArray<string> = [
   "Health Innovation University of Applied Sciences",
   "Helmut-Schmidt-Universität/ Universität der Bundeswehr",
   "Hertie School",
+  "Hessische Hochschule für Finanzen und Rechtspflege",
   "Hessische Hochschule für öffentliches Management und Sicherheit",
   "HFH Hamburger Fern-Hochschule",
   "HHL Leipzig",
