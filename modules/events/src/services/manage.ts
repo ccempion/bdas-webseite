@@ -263,18 +263,9 @@ export async function deleteEvent(db: Db, id: string): Promise<void> {
   await db.delete(events).where(eq(events.id, id));
 }
 
-/**
- * Published → cancelled. Emits `events.event.cancelled` (notifications informs
- * registrants). A draft was never announced and has no registrants, so it
- * cannot be cancelled — delete it instead.
- */
+/** → cancelled. Emits `events.event.cancelled` (notifications informs registrants). */
 export async function cancelEvent(db: Db, id: string): Promise<EventItem> {
   const existing = await loadOrThrow(db, id);
-  if (existing.status === "draft") {
-    throw new ConflictError(
-      "Entwürfe können nicht abgesagt werden — lösche den Entwurf stattdessen.",
-    );
-  }
   if (existing.status !== "cancelled") {
     await db.update(events).set({ status: "cancelled" }).where(eq(events.id, id));
     const event: EventCancelled = {
