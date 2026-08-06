@@ -17,6 +17,12 @@ export {
   ResetRequestInput,
   ResetCompleteInput,
 } from "./services/password-reset";
+export {
+  changePassword,
+  ChangePasswordInput,
+  type ChangePasswordContext,
+  type ChangePasswordResult,
+} from "./services/password-change";
 export { getCurrentUser, requireRole, type CurrentUser } from "./services/me";
 export { resendVerification, type ResendResult } from "./services/resend-verification";
 
@@ -54,4 +60,5 @@ export type {
   UserLoggedIn,
   UserLoggedOut,
   PasswordReset,
+  PasswordChanged,
 } from "./events";
