@@ -8,6 +8,7 @@ import { requireFlag } from "@bdas/feature-flags";
 import { changePrimaryGroup, getCurrentMember } from "@bdas/members";
 import { saveProfile } from "@bdas/profile";
 
+import { purgeUnreferencedPhoto } from "../_profile/photo-url";
 import { readSessionCookie } from "../../lib/auth-cookie";
 
 export type EditProfileState = {
@@ -46,12 +47,16 @@ export async function saveProfileFieldsAction(
         grants: me.grants,
       });
     }
-    await saveProfile(db, {
+    const { supersededPhotoStorageKey } = await saveProfile(db, {
       userId: me.user.id,
       fields,
       actor: { userId: me.user.id, grants: me.grants },
       groupId: groupId || (me.member.primaryGroupId ?? null),
     });
+    // "Foto ersetzen" in this form swaps the stored key; the object it pointed
+    // at is now unreachable and should not outlive it (spec §7).
+    await purgeUnreferencedPhoto(supersededPhotoStorageKey, me.user.id);
+
     revalidatePath("/account");
     return { ok: true, notice: "Profil gespeichert." };
   } catch (err) {

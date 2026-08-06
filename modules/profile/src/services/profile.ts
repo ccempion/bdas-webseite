@@ -8,7 +8,7 @@ import { getEventBus } from "@bdas/events";
 import type { ProfileCompleted, ProfileUpdated } from "../events";
 import { memberProfiles, type MemberProfileRow } from "../schema";
 import { SaveProfileFields } from "../types";
-import type { MemberProfile, ProfileActor, SaveProfileInput } from "../types";
+import type { MemberProfile, ProfileActor, SaveProfileInput, SaveProfileResult } from "../types";
 
 export type Db = PostgresJsDatabase<Record<string, never>>;
 
@@ -52,8 +52,14 @@ export function canViewProfile(actor: ProfileActor, ownerUserId: string): boolea
  * Upsert the profile. Owner-only write. Stamps `completed_at` on the first
  * complete submit (null → now) and emits `profile.completed`; later edits emit
  * `profile.updated`. `updated_at`/`updated_by` are stamped every time.
+ *
+ * Reports `supersededPhotoStorageKey` when the write replaced a stored photo,
+ * so the caller can delete the object it just unreferenced. All three surfaces
+ * that can swap a photo — the account avatar, the account edit form and the
+ * signup wizard — come through here, which is why the bookkeeping lives here
+ * rather than in each of them.
  */
-export async function saveProfile(db: Db, input: SaveProfileInput): Promise<MemberProfile> {
+export async function saveProfile(db: Db, input: SaveProfileInput): Promise<SaveProfileResult> {
   if (input.actor.userId !== input.userId) {
     throw new ForbiddenError("Du darfst nur dein eigenes Profil bearbeiten.");
   }
@@ -68,7 +74,9 @@ export async function saveProfile(db: Db, input: SaveProfileInput): Promise<Memb
   const v = parsed.data;
   const now = new Date();
 
-  const existing = await getProfile(db, input.userId); // kept only to preserve an existing photo when this submit omits one
+  // Preserves an existing photo when this submit omits one, and tells us which
+  // object a replacement superseded.
+  const existing = await getProfile(db, input.userId);
 
   const values = {
     userId: input.userId,
@@ -114,6 +122,14 @@ export async function saveProfile(db: Db, input: SaveProfileInput): Promise<Memb
   const firstComplete =
     row.completedAt != null && row.completedAt.getTime() === row.updatedAt.getTime();
 
+  // Only a *different* key supersedes the old object. Re-submitting the same
+  // key (every profile edit that leaves the photo alone does exactly that)
+  // must not delete the photo it still points at.
+  const supersededPhotoStorageKey =
+    existing?.photoStorageKey && existing.photoStorageKey !== values.photoStorageKey
+      ? existing.photoStorageKey
+      : null;
+
   if (firstComplete) {
     const event: ProfileCompleted = {
       type: "profile.completed",
@@ -127,7 +143,7 @@ export async function saveProfile(db: Db, input: SaveProfileInput): Promise<Memb
     await getEventBus().publish(event);
   }
 
-  return row2profile(row);
+  return { profile: row2profile(row), supersededPhotoStorageKey };
 }
 
 /**

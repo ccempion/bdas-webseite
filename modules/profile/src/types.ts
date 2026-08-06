@@ -65,6 +65,14 @@ export type SaveProfileInput = {
   readonly groupId?: string | null;
 };
 
+export type SaveProfileResult = {
+  readonly profile: MemberProfile;
+  /** The photo object this write unreferenced, if it replaced a stored one.
+   *  The caller deletes it: this module owns `photo_storage_key`, not the
+   *  bytes it points at. Null when the photo was unchanged or absent. */
+  readonly supersededPhotoStorageKey: string | null;
+};
+
 export type MemberProfile = {
   readonly userId: string;
   readonly studiengang: string;

@@ -94,6 +94,70 @@ describeIfDb("clearProfilePhoto", () => {
     });
   });
 
+  it("reports the key a replacement superseded, so the caller can delete it", async () => {
+    await saveProfile(t.db, {
+      userId: USER,
+      fields: { ...FIELDS, photoStorageKey: "profile/usr/old.webp" },
+      actor: OWNER,
+    });
+
+    const out = await saveProfile(t.db, {
+      userId: USER,
+      fields: { ...FIELDS, photoStorageKey: "profile/usr/new.webp" },
+      actor: OWNER,
+    });
+
+    expect(out.supersededPhotoStorageKey).toBe("profile/usr/old.webp");
+    expect(out.profile.photoStorageKey).toBe("profile/usr/new.webp");
+  });
+
+  /** Every profile edit that leaves the photo alone re-submits the same key.
+   *  Treating that as a replacement would delete the photo still in use. */
+  it("supersedes nothing when the same key is re-submitted", async () => {
+    await saveProfile(t.db, {
+      userId: USER,
+      fields: { ...FIELDS, photoStorageKey: "profile/usr/a.webp" },
+      actor: OWNER,
+    });
+
+    const out = await saveProfile(t.db, {
+      userId: USER,
+      fields: { ...FIELDS, studiengang: "Mathematik", photoStorageKey: "profile/usr/a.webp" },
+      actor: OWNER,
+    });
+
+    expect(out.supersededPhotoStorageKey).toBeNull();
+  });
+
+  /** A form that carries no photo key keeps the stored one, so there is
+   *  nothing superseded — the object is still referenced. */
+  it("supersedes nothing when the submit omits the photo", async () => {
+    await saveProfile(t.db, {
+      userId: USER,
+      fields: { ...FIELDS, photoStorageKey: "profile/usr/a.webp" },
+      actor: OWNER,
+    });
+
+    const out = await saveProfile(t.db, {
+      userId: USER,
+      fields: { ...FIELDS, photoStorageKey: null },
+      actor: OWNER,
+    });
+
+    expect(out.supersededPhotoStorageKey).toBeNull();
+    expect(out.profile.photoStorageKey).toBe("profile/usr/a.webp");
+  });
+
+  it("supersedes nothing on a first photo", async () => {
+    const out = await saveProfile(t.db, {
+      userId: USER,
+      fields: { ...FIELDS, photoStorageKey: "profile/usr/first.webp" },
+      actor: OWNER,
+    });
+
+    expect(out.supersededPhotoStorageKey).toBeNull();
+  });
+
   /** The regression this whole service exists to avoid: the account and wizard
    *  forms submit a null photo key to mean "unchanged", never "delete". */
   it("is not what a null photoStorageKey in saveProfile does", async () => {
