@@ -28,19 +28,19 @@
 
 ## File Structure
 
-| File | Responsibility |
-| --- | --- |
-| `modules/auth/src/services/password-change.ts` | **Create.** The `changePassword` service: verify, rotate, revoke siblings, publish. |
-| `modules/auth/src/services/password-change.test.ts` | **Create.** Integration tests against Docker Postgres. |
-| `modules/auth/src/events.ts` | **Modify.** Add `PasswordChanged`, extend the `AuthEvent` union. |
-| `modules/auth/src/notifier.ts` | **Modify.** Add `PasswordChangedMessage` to `AuthMessage`; handle it in `consoleNotifier`. |
-| `modules/auth/src/notifier-resend.ts` | **Modify.** Render the `changed` mail. |
-| `modules/auth/src/notifier-resend.test.ts` | **Modify.** Cover the `changed` branch. |
-| `modules/auth/src/index.ts` | **Modify.** Export `changePassword`, `ChangePasswordInput`, its types, and `PasswordChanged`. |
-| `apps/web/app/account/password-actions.ts` | **Create.** Server Action: resolve the session, call the service, send the mail. |
-| `apps/web/app/account/ChangePasswordCard.tsx` | **Create.** Client component: accordion + form + result banner. |
-| `apps/web/app/account/page.tsx` | **Modify.** Render the card below "Meine Daten". |
-| `e2e/password-change.e2e.ts` | **Create.** Browser flow: change, then sign in with the new password. |
+| File                                                | Responsibility                                                                                |
+| --------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| `modules/auth/src/services/password-change.ts`      | **Create.** The `changePassword` service: verify, rotate, revoke siblings, publish.           |
+| `modules/auth/src/services/password-change.test.ts` | **Create.** Integration tests against Docker Postgres.                                        |
+| `modules/auth/src/events.ts`                        | **Modify.** Add `PasswordChanged`, extend the `AuthEvent` union.                              |
+| `modules/auth/src/notifier.ts`                      | **Modify.** Add `PasswordChangedMessage` to `AuthMessage`; handle it in `consoleNotifier`.    |
+| `modules/auth/src/notifier-resend.ts`               | **Modify.** Render the `changed` mail.                                                        |
+| `modules/auth/src/notifier-resend.test.ts`          | **Modify.** Cover the `changed` branch.                                                       |
+| `modules/auth/src/index.ts`                         | **Modify.** Export `changePassword`, `ChangePasswordInput`, its types, and `PasswordChanged`. |
+| `apps/web/app/account/password-actions.ts`          | **Create.** Server Action: resolve the session, call the service, send the mail.              |
+| `apps/web/app/account/ChangePasswordCard.tsx`       | **Create.** Client component: accordion + form + result banner.                               |
+| `apps/web/app/account/page.tsx`                     | **Modify.** Render the card below "Meine Daten".                                              |
+| `e2e/password-change.e2e.ts`                        | **Create.** Browser flow: change, then sign in with the new password.                         |
 
 **Deviation from the spec, deliberate:** the spec put the e2e in `e2e/auth.e2e.ts`. That file is one long linear register→verify→login→logout→reset→re-login flow; appending a sixth phase makes an already-long test longer. A separate file matches `e2e/resend-verification.e2e.ts`, which split out for the same reason.
 
@@ -49,23 +49,33 @@
 ### Task 1: `changePassword` service
 
 **Files:**
+
 - Create: `modules/auth/src/services/password-change.ts`
 - Create: `modules/auth/src/services/password-change.test.ts`
 - Modify: `modules/auth/src/events.ts`
 - Modify: `modules/auth/src/index.ts:49-57` (the events export block) and the services block above it
 
 **Interfaces:**
-- Consumes: `hashPassword`, `verifyPassword`, `passwordSchema`, `PASSWORD_ALGORITHM` from `../password`; `rateLimit` from `../rate-limit`; `authCredentials`, `authSessions`, `authUsers` from `../schema`; `getEventBus` from `@bdas/events`; `ValidationError`, `NotFoundError` from `@bdas/errors`.
+
+- Consumes: `hashPassword`, `verifyPassword`, `passwordSchema`, `PASSWORD_ALGORITHM` from `../password`; `rateLimit` from `../rate-limit`; `authCredentials`, `authSessions` from `../schema`; `getEventBus` from `@bdas/events`; `ValidationError`, `NotFoundError` from `@bdas/errors`.
 - Produces:
+
   ```ts
   export type ChangePasswordContext = {
     readonly userId: string;
     readonly sessionId: string;
     readonly ip: string;
   };
-  export type ChangePasswordResult = { readonly email: string };
-  export const ChangePasswordInput: z.ZodObject<{ currentPassword: z.ZodString; newPassword: z.ZodString }>;
-  export function changePassword(db: Db, input: unknown, ctx: ChangePasswordContext): Promise<ChangePasswordResult>;
+  export type ChangePasswordResult = { readonly userId: string };
+  export const ChangePasswordInput: z.ZodObject<{
+    currentPassword: z.ZodString;
+    newPassword: z.ZodString;
+  }>;
+  export function changePassword(
+    db: Db,
+    input: unknown,
+    ctx: ChangePasswordContext,
+  ): Promise<ChangePasswordResult>;
   export type PasswordChanged = {
     readonly type: "auth.password.changed";
     readonly userId: string;
@@ -179,10 +189,14 @@ describeIfDb("changePassword", () => {
 
   /** A verified, signed-in user. Returns the ids the service needs. */
   async function signedInUser(email = "alice@example.de") {
-    const reg = await register(t.db, { email, password: OLD, consent: true }, {
-      ip: "1.1.1.1",
-      publicSiteUrl: "https://bdas.de",
-    });
+    const reg = await register(
+      t.db,
+      { email, password: OLD, consent: true },
+      {
+        ip: "1.1.1.1",
+        publicSiteUrl: "https://bdas.de",
+      },
+    );
     await verifyEmail(t.db, reg.verifyToken);
     const session = await login(t.db, { email, password: OLD }, { ip: "1.1.1.1" });
     return { userId: reg.userId, email, ...session };
@@ -196,7 +210,7 @@ describeIfDb("changePassword", () => {
       { currentPassword: OLD, newPassword: NEW },
       { userId: u.userId, sessionId: u.sessionId, ip: "1.1.1.1" },
     );
-    expect(res.email).toBe("alice@example.de");
+    expect(res.userId).toBe(u.userId);
 
     await expect(
       login(t.db, { email: u.email, password: OLD }, { ip: "1.1.1.1" }),
@@ -341,7 +355,7 @@ import { getEventBus } from "@bdas/events";
 import type { PasswordChanged as PasswordChangedEvent } from "../events";
 import { hashPassword, passwordSchema, verifyPassword, PASSWORD_ALGORITHM } from "../password";
 import { rateLimit } from "../rate-limit";
-import { authCredentials, authSessions, authUsers } from "../schema";
+import { authCredentials, authSessions } from "../schema";
 
 export type Db = PostgresJsDatabase<Record<string, never>>;
 
@@ -357,7 +371,7 @@ export type ChangePasswordContext = {
   readonly ip: string;
 };
 
-export type ChangePasswordResult = { readonly email: string };
+export type ChangePasswordResult = { readonly userId: string };
 
 export async function changePassword(
   db: Db,
@@ -378,13 +392,13 @@ export async function changePassword(
     windowMs: 60 * 60 * 1000,
   });
 
+  // No join to auth_users: the caller resolved the user through
+  // getCurrentUser before calling, so it already holds the email address
+  // the notification goes to. Reading it again here would be a second
+  // query to hand back something the caller never let go of.
   const rows = await db
-    .select({
-      hashedPassword: authCredentials.hashedPassword,
-      email: authUsers.emailNormalized,
-    })
+    .select({ hashedPassword: authCredentials.hashedPassword })
     .from(authCredentials)
-    .innerJoin(authUsers, eq(authUsers.id, authCredentials.userId))
     .where(eq(authCredentials.userId, ctx.userId))
     .limit(1);
 
@@ -430,7 +444,7 @@ export async function changePassword(
   };
   await getEventBus().publish(event);
 
-  return { email: row.email };
+  return { userId: ctx.userId };
 }
 ```
 
@@ -504,17 +518,21 @@ EOF
 ### Task 2: Notification mail
 
 **Files:**
+
 - Modify: `modules/auth/src/notifier.ts`
 - Modify: `modules/auth/src/notifier-resend.ts:31-44` (the `render` function)
 - Modify: `modules/auth/src/notifier-resend.test.ts`
 
 **Interfaces:**
+
 - Consumes: nothing from Task 1.
 - Produces:
+
   ```ts
   export type PasswordChangedMessage = { readonly kind: "changed"; readonly to: string };
   // AuthMessage becomes: VerifyEmailMessage | ResetPasswordMessage | PasswordChangedMessage
   ```
+
   Task 3 calls `getNotifier().send({ kind: "changed", to: email })`.
 
 - [ ] **Step 1: Write the failing test**
@@ -522,19 +540,19 @@ EOF
 Add to `modules/auth/src/notifier-resend.test.ts`, inside the existing `describe` block:
 
 ```ts
-  it("renders the password-changed mail with no link in it", async () => {
-    sendMock.mockResolvedValue({ data: { id: "re_123" }, error: null });
-    const notifier = createResendNotifier({ apiKey: "re_x", from: "bdas@example.org" });
+it("renders the password-changed mail with no link in it", async () => {
+  sendMock.mockResolvedValue({ data: { id: "re_123" }, error: null });
+  const notifier = createResendNotifier({ apiKey: "re_x", from: "bdas@example.org" });
 
-    await notifier.send({ kind: "changed", to: "x@example.org" });
+  await notifier.send({ kind: "changed", to: "x@example.org" });
 
-    const arg = sendMock.mock.calls[0]?.[0];
-    expect(arg.subject).toBe("BDAS — Passwort geändert");
-    expect(arg.text).toContain("geändert");
-    // A tripwire mail also reaches an attacker who already holds the account;
-    // it must not hand them a link that does anything.
-    expect(arg.html).not.toContain("<a ");
-  });
+  const arg = sendMock.mock.calls[0]?.[0];
+  expect(arg.subject).toBe("BDAS — Passwort geändert");
+  expect(arg.text).toContain("geändert");
+  // A tripwire mail also reaches an attacker who already holds the account;
+  // it must not hand them a link that does anything.
+  expect(arg.html).not.toContain("<a ");
+});
 ```
 
 - [ ] **Step 2: Run it and verify it fails**
@@ -582,13 +600,13 @@ export const consoleNotifier: Notifier = {
 In `modules/auth/src/notifier-resend.ts`, insert a branch in `render` before the final `return` (which stays the reset branch):
 
 ```ts
-  if (message.kind === "changed") {
-    return {
-      subject: "BDAS — Passwort geändert",
-      text: `Hallo,\n\ndein BDAS-Passwort wurde soeben geändert. Alle anderen Geräte wurden abgemeldet.\n\nWarst du das nicht? Dann setze dein Passwort sofort über "Passwort vergessen" auf der Anmeldeseite zurück und melde dich bei deinem lokalen Vorstand.\n`,
-      html: `<p>Hallo,</p><p>dein BDAS-Passwort wurde soeben geändert. Alle anderen Geräte wurden abgemeldet.</p><p>Warst du das nicht? Dann setze dein Passwort sofort über &bdquo;Passwort vergessen&ldquo; auf der Anmeldeseite zurück und melde dich bei deinem lokalen Vorstand.</p>`,
-    };
-  }
+if (message.kind === "changed") {
+  return {
+    subject: "BDAS — Passwort geändert",
+    text: `Hallo,\n\ndein BDAS-Passwort wurde soeben geändert. Alle anderen Geräte wurden abgemeldet.\n\nWarst du das nicht? Dann setze dein Passwort sofort über "Passwort vergessen" auf der Anmeldeseite zurück und melde dich bei deinem lokalen Vorstand.\n`,
+    html: `<p>Hallo,</p><p>dein BDAS-Passwort wurde soeben geändert. Alle anderen Geräte wurden abgemeldet.</p><p>Warst du das nicht? Dann setze dein Passwort sofort über &bdquo;Passwort vergessen&ldquo; auf der Anmeldeseite zurück und melde dich bei deinem lokalen Vorstand.</p>`,
+  };
+}
 ```
 
 - [ ] **Step 5: Run the tests and verify they pass**
@@ -623,11 +641,14 @@ EOF
 ### Task 3: Server Action
 
 **Files:**
+
 - Create: `apps/web/app/account/password-actions.ts`
 
 **Interfaces:**
+
 - Consumes: `changePassword` and `getNotifier` from `@bdas/auth` (Tasks 1 and 2); `getCurrentUser` from `@bdas/auth`; `readSessionCookie` from `apps/web/lib/auth-cookie`; `bootAuth` from `apps/web/lib/auth-bootstrap`.
 - Produces:
+
   ```ts
   export type ChangePasswordState = { readonly ok?: true; readonly error?: string };
   export function changePasswordAction(
@@ -635,7 +656,8 @@ EOF
     formData: FormData,
   ): Promise<ChangePasswordState>;
   ```
-  Form field names: `currentPassword`, `newPassword`.
+
+  Form field names: `currentPassword`, `newPassword`, `confirmPassword`.
 
 - [ ] **Step 1: Write the action**
 
@@ -673,24 +695,30 @@ export async function changePasswordAction(
   const me = await getCurrentUser(db, readSessionCookie());
   if (!me) return { error: "Anmeldung erforderlich." };
 
-  let email: string;
+  const newPassword = String(formData.get("newPassword") ?? "");
+  const confirmPassword = String(formData.get("confirmPassword") ?? "");
+
+  // The client checks this too, for the faster feedback. This one is the
+  // binding check: a Server Action is a public endpoint.
+  if (newPassword !== confirmPassword) {
+    return { error: "Die beiden neuen Passwörter stimmen nicht überein." };
+  }
+
   try {
-    const res = await changePassword(
+    await changePassword(
       db,
-      {
-        currentPassword: String(formData.get("currentPassword") ?? ""),
-        newPassword: String(formData.get("newPassword") ?? ""),
-      },
+      { currentPassword: String(formData.get("currentPassword") ?? ""), newPassword },
       { userId: me.id, sessionId: me.sessionId, ip: clientIp() },
     );
-    email = res.email;
   } catch (err) {
     if (isAppError(err)) return { error: err.message };
     throw err;
   }
 
   try {
-    await getNotifier().send({ kind: "changed", to: email });
+    // `me.email` is the address getCurrentUser already resolved — the
+    // service has no reason to hand it back.
+    await getNotifier().send({ kind: "changed", to: me.email });
   } catch (err) {
     // The new password is already committed. A failed notification must not
     // tell the user their change didn't happen — log it and report success.
@@ -739,10 +767,12 @@ EOF
 ### Task 4: The card on `/account`
 
 **Files:**
+
 - Create: `apps/web/app/account/ChangePasswordCard.tsx`
 - Modify: `apps/web/app/account/page.tsx` (imports at the top; render after the "Meine Daten" `Card`, before the `<div>` holding the export/logout buttons at lines 154-163)
 
 **Interfaces:**
+
 - Consumes: `changePasswordAction`, `ChangePasswordState` from Task 3; `PASSWORD_RULE_HINT` from `@bdas/auth` (already exported).
 - Produces: `export function ChangePasswordCard({ passwordHint }: { passwordHint: string })`.
 
@@ -771,12 +801,20 @@ export function ChangePasswordCard({ passwordHint }: { passwordHint: string }) {
   const [state, action] = useFormState(changePasswordAction, EMPTY);
   const details = useRef<HTMLDetailsElement>(null);
   const [changed, setChanged] = useState(false);
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
 
   useEffect(() => {
     if (!state.ok) return;
     setChanged(true);
+    setNewPassword("");
+    setConfirmPassword("");
     if (details.current) details.current.open = false;
   }, [state]);
+
+  // Only once the repeat field has been typed in — nagging about a mismatch
+  // against an empty box while someone is still typing the first one is noise.
+  const mismatch = confirmPassword.length > 0 && newPassword !== confirmPassword;
 
   return (
     <Card flat className="p-6">
@@ -811,9 +849,25 @@ export function ChangePasswordCard({ passwordHint }: { passwordHint: string }) {
                 autoComplete="new-password"
                 minLength={10}
                 required
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
               />
             </Field>
-            <SubmitButton />
+            <Field
+              label="Neues Passwort wiederholen"
+              htmlFor="confirmPassword"
+              {...(mismatch ? { error: "Die beiden Passwörter stimmen nicht überein." } : {})}
+            >
+              <PasswordInput
+                id="confirmPassword"
+                name="confirmPassword"
+                autoComplete="new-password"
+                required
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+              />
+            </Field>
+            <SubmitButton disabled={mismatch} />
           </Form>
         </div>
       </details>
@@ -821,15 +875,17 @@ export function ChangePasswordCard({ passwordHint }: { passwordHint: string }) {
   );
 }
 
-function SubmitButton() {
+function SubmitButton({ disabled }: { disabled: boolean }) {
   const { pending } = useFormStatus();
   return (
-    <Button type="submit" disabled={pending}>
+    <Button type="submit" disabled={pending || disabled}>
       {pending ? "Wird gespeichert…" : "Passwort ändern"}
     </Button>
   );
 }
 ```
+
+`Field` takes an optional `error` prop (`core/design-system/src/components/Form.tsx:15-26`) and renders it with `role="alert"`; it hides `hint` while `error` is set. The prop is spread conditionally rather than passed as `error={… : undefined}` because the repo compiles with `exactOptionalPropertyTypes`.
 
 - [ ] **Step 2: Wire it into the page**
 
@@ -848,7 +904,7 @@ import { ChangePasswordCard } from "./ChangePasswordCard";
 Then render it directly after the closing `</Card>` of the "Meine Daten" section and before the `<div className="flex flex-wrap items-center gap-3">`:
 
 ```tsx
-      <ChangePasswordCard passwordHint={PASSWORD_RULE_HINT} />
+<ChangePasswordCard passwordHint={PASSWORD_RULE_HINT} />
 ```
 
 - [ ] **Step 3: Typecheck, lint, and look at it**
@@ -863,7 +919,7 @@ Then run the app and open `/account` signed in:
 pnpm dev
 ```
 
-Confirm: the card is collapsed, the `+` rotates to `×` on open, the left border and halo appear on `[open]`, and a wrong current password shows the error inside the open panel.
+Confirm: the card is collapsed, the `+` rotates to `×` on open, the left border and halo appear on `[open]`, a mismatched repeat shows the field error and disables the submit button, and a wrong current password shows the error inside the open panel.
 
 - [ ] **Step 4: Commit**
 
@@ -888,9 +944,11 @@ EOF
 ### Task 5: End-to-end flow
 
 **Files:**
+
 - Create: `e2e/password-change.e2e.ts`
 
 **Interfaces:**
+
 - Consumes: `login`, `openMobileMenu`, `register`, `verify`, `PASSWORD` from `e2e/helpers/flows`.
 - Produces: nothing consumed by later tasks.
 
@@ -921,6 +979,12 @@ test("change the password from /account, then sign in with the new one", async (
 
   await page.getByLabel("Aktuelles Passwort", { exact: true }).fill(PASSWORD);
   await page.getByLabel("Neues Passwort", { exact: true }).fill(NEW_PASSWORD);
+
+  // Mismatched repeat blocks submission, matching repeat unblocks it.
+  await page.getByLabel("Neues Passwort wiederholen", { exact: true }).fill("Etwas-Anderes-1!");
+  await expect(page.getByRole("button", { name: "Passwort ändern" })).toBeDisabled();
+  await page.getByLabel("Neues Passwort wiederholen", { exact: true }).fill(NEW_PASSWORD);
+
   await page.getByRole("button", { name: "Passwort ändern" }).click();
 
   await expect(page.getByText("Passwort geändert.")).toBeVisible();

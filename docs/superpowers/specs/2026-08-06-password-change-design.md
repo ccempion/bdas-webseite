@@ -50,7 +50,7 @@ export async function changePassword(
   db: Db,
   input: unknown,
   ctx: ChangePasswordContext,
-): Promise<{ readonly email: string }>;
+): Promise<{ readonly userId: string }>;
 ```
 
 Ablauf:
@@ -61,7 +61,7 @@ Ablauf:
 2. Rate Limit `password-change:user:${userId}`, 5 Versuche pro Stunde. Ohne das
    ist das Formular ein Passwort-Orakel für jeden, der eine fremde Sitzung hält:
    beliebig viele Rateversuche gegen `currentPassword`, ohne Spur.
-3. Credential-Zeile und E-Mail über `userId` laden. Fehlt sie ⇒ `NotFoundError`.
+3. Credential-Zeile über `userId` laden. Fehlt sie ⇒ `NotFoundError`.
 4. `verifyPassword(currentPassword, hashedPassword)` — falsch ⇒
    `ValidationError("Aktuelles Passwort ist falsch.")`. Der Hash bleibt
    unangetastet.
@@ -75,12 +75,17 @@ Ablauf:
      **außer `ctx.sessionId`**. Ein gestohlener Cookie überlebt die Änderung
      nicht; die Sitzung, aus der geändert wurde, bleibt bestehen.
 7. Event `auth.password.changed` veröffentlichen.
-8. `{ email }` zurückgeben.
+8. `{ userId }` zurückgeben.
 
-Der Dienst verschickt die Mail **nicht** selbst. Er gibt die Adresse zurück, die
-Server Action ruft den Notifier — dieselbe Aufteilung wie bei
-`requestPasswordReset`, das den Token zurückgibt und den Versand dem Aufrufer
-überlässt.
+Der Dienst verschickt die Mail **nicht** selbst; das tut die Server Action —
+dieselbe Aufteilung wie bei `requestPasswordReset`, das den Token zurückgibt und
+den Versand dem Aufrufer überlässt.
+
+Er gibt die E-Mail-Adresse auch nicht zurück. `CurrentUser` führt `email` und
+`sessionId` bereits mit sich, und die Action hat den Nutzer ohnehin über
+`getCurrentUser` aufgelöst, bevor sie den Dienst ruft. Die Adresse
+durchzureichen hieße, sie ein zweites Mal aus `auth_users` zu lesen, damit die
+Action sie nicht aus der Hand legen muss, die sie schon hält.
 
 ### 2. Event
 
@@ -127,11 +132,20 @@ eingebunden in `apps/web/app/account/page.tsx` unterhalb der Karte „Meine Date
 - Aufgeklappt wird über das `<details>`-Idiom aus §7 (linke Kante + Halo bei
   `[open]`, `+` dreht zu `×`). Zusammengeklappt im Ruhezustand: Passwortwechsel
   ist eine seltene Handlung und soll die Kontoseite nicht dominieren.
-- Felder: „Aktuelles Passwort" (`autoComplete="current-password"`) und „Neues
-  Passwort" (`autoComplete="new-password"`, `minLength={10}`), beide
-  `PasswordInput`, Hint aus `PASSWORD_RULE_HINT`. Kein
-  „Passwort wiederholen" — `PasswordInput` kann die Eingabe sichtbar machen, was
-  denselben Zweck mit einem Feld weniger erfüllt.
+- Drei Felder, alle `PasswordInput`: „Aktuelles Passwort"
+  (`autoComplete="current-password"`), „Neues Passwort"
+  (`autoComplete="new-password"`, `minLength={10}`, Hint aus
+  `PASSWORD_RULE_HINT`) und „Neues Passwort wiederholen"
+  (`autoComplete="new-password"`).
+- Der Abgleich der Wiederholung passiert im Client **und** in der Server
+  Action. Der Client-Abgleich ist die schnelle Rückmeldung; der in der Action
+  ist der verbindliche, denn eine Server Action ist ein öffentlicher Endpunkt.
+  Der Dienst selbst kennt die Wiederholung nicht — sie ist eine Eigenschaft des
+  Formulars, nicht der Passwortänderung.
+- Ein Tippfehler im neuen Passwort kostet hier mehr als anderswo: die
+  aufrufende Sitzung überlebt zwar, aber eine weitere Änderung braucht das
+  aktuelle Passwort — also den Vertipper, den niemand kennt. Der Ausweg wäre
+  „Passwort vergessen" per Mail, und genau den soll diese Funktion ersparen.
 - Fehler als `Alert variant="error"` über dem Formular.
 - Erfolg: Formular klappt zu, `Alert variant="success"` mit „Passwort geändert.
   Andere Geräte wurden abgemeldet." Kein Redirect — die aktuelle Sitzung lebt.
@@ -139,19 +153,21 @@ eingebunden in `apps/web/app/account/page.tsx` unterhalb der Karte „Meine Date
 Server Action in neuer Datei `apps/web/app/account/password-actions.ts`, passend
 zur bestehenden Aufteilung `actions.ts` / `profile-actions.ts` /
 `photo-actions.ts`. Sie liest den Session-Cookie, holt über `getCurrentUser`
-`userId` **und** `sessionId`, ruft `changePassword`, verschickt danach die Mail
-und gibt `{ ok: true }` oder `{ error }` zurück.
+`userId`, `sessionId` **und** `email`, prüft die Wiederholung, ruft
+`changePassword`, verschickt danach die Mail an die bereits bekannte Adresse und
+gibt `{ ok: true }` oder `{ error }` zurück.
 
 ## Fehlerbehandlung
 
-| Fall | Ergebnis |
-| --- | --- |
-| Nicht angemeldet | `{ error: "Anmeldung erforderlich." }` |
-| Aktuelles Passwort falsch | `ValidationError`, Hash unverändert, Sitzungen unverändert |
-| Neues Passwort zu schwach | `ValidationError` mit der Regel aus `passwordSchema` |
-| Neues = aktuelles Passwort | `ValidationError`, kein Schreibvorgang |
-| Mehr als 5 Versuche/Stunde | `RateLimitError` |
-| Mailversand scheitert | Änderung gilt, Fehler wird geloggt |
+| Fall                       | Ergebnis                                                      |
+| -------------------------- | ------------------------------------------------------------- |
+| Nicht angemeldet           | `{ error: "Anmeldung erforderlich." }`                        |
+| Aktuelles Passwort falsch  | `ValidationError`, Hash unverändert, Sitzungen unverändert    |
+| Neues Passwort zu schwach  | `ValidationError` mit der Regel aus `passwordSchema`          |
+| Wiederholung stimmt nicht  | Fehler aus der Action, kein Dienstaufruf, kein Schreibvorgang |
+| Neues = aktuelles Passwort | `ValidationError`, kein Schreibvorgang                        |
+| Mehr als 5 Versuche/Stunde | `RateLimitError`                                              |
+| Mailversand scheitert      | Änderung gilt, Fehler wird geloggt                            |
 
 `isAppError` fängt alles davon in der Action ab und gibt `err.message` an das
 Formular — dasselbe Muster wie `saveProfileAction`.
