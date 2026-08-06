@@ -4,7 +4,7 @@
  */
 import { expect, test } from "@playwright/test";
 
-import { login, logout, PASSWORD, register, verify } from "./helpers/flows";
+import { login, logout, PASSWORD, register, submitAndSettle, verify } from "./helpers/flows";
 
 const NEW_PASSWORD = "Ganz-Anderes-Pferd-7!";
 
@@ -18,6 +18,14 @@ test("change the password from /account, then sign in with the new one", async (
   await page.goto("/account");
   // getByRole("group", …) doesn't match this <details> markup; target the summary directly.
   await page.locator("details:has(summary:text('Passwort ändern')) summary").click();
+
+  // Wrong current password: the action's isAppError branch renders the error
+  // Alert, and nothing is written.
+  await page.getByLabel("Aktuelles Passwort", { exact: true }).fill("Falsch-Falsch-1!");
+  await page.getByLabel("Neues Passwort", { exact: true }).fill(NEW_PASSWORD);
+  await page.getByLabel("Neues Passwort wiederholen", { exact: true }).fill(NEW_PASSWORD);
+  await submitAndSettle(page, page.getByRole("button", { name: "Passwort ändern" }));
+  await expect(page.getByText("Aktuelles Passwort ist falsch.")).toBeVisible();
 
   await page.getByLabel("Aktuelles Passwort", { exact: true }).fill(PASSWORD);
   await page.getByLabel("Neues Passwort", { exact: true }).fill(NEW_PASSWORD);

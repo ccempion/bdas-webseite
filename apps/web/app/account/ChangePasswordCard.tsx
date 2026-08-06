@@ -18,12 +18,17 @@ export function ChangePasswordCard({ passwordHint }: { passwordHint: string }) {
   const [state, action] = useFormState(changePasswordAction, EMPTY);
   const details = useRef<HTMLDetailsElement>(null);
   const [changed, setChanged] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
   useEffect(() => {
     if (!state.ok) return;
     setChanged(true);
+    // <details> hides the panel instead of unmounting it, so anything left in
+    // a field survives the collapse — including a password a reveal toggle
+    // would show again in cleartext.
+    setCurrentPassword("");
     setNewPassword("");
     setConfirmPassword("");
     if (details.current) details.current.open = false;
@@ -57,6 +62,8 @@ export function ChangePasswordCard({ passwordHint }: { passwordHint: string }) {
                 name="currentPassword"
                 autoComplete="current-password"
                 required
+                value={currentPassword}
+                onChange={(e) => setCurrentPassword(e.target.value)}
               />
             </Field>
             <Field label="Neues Passwort" htmlFor="newPassword" hint={passwordHint}>
