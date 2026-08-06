@@ -8,6 +8,7 @@ describe("@bdas/profile public surface", () => {
       [
         "ABSCHLUSSART_OPTIONS",
         "GEFUNDEN_DURCH_OPTIONS",
+        "MAX_VORSTELLUNG",
         "SONSTIGE",
         "SaveProfileFields",
         "UNIVERSITIES",

@@ -68,6 +68,7 @@ export default async function BewerbungenPage({ params }: { params: { slug: stri
                   geburtsdatum: profile.geburtsdatum,
                   gefundenDurch: label(GEFUNDEN_DURCH_OPTIONS, profile.gefundenDurch),
                   empfehlerName: profile.empfehlerName,
+                  vorstellung: profile.vorstellung,
                 }
               : null
           }

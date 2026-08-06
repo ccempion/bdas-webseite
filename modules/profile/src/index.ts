@@ -18,6 +18,6 @@ export {
   SONSTIGE,
   canonicalUniversity,
 } from "./data";
-export { SaveProfileFields } from "./types";
+export { SaveProfileFields, MAX_VORSTELLUNG } from "./types";
 export type { MemberProfile, SaveProfileInput, SaveProfileResult, ProfileActor } from "./types";
 export type { ProfileEvent, ProfileCompleted, ProfileUpdated } from "./events";

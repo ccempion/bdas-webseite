@@ -24,6 +24,7 @@ const EMPTY: WizardValues = {
   geburtsdatum: "",
   gefundenDurch: "",
   empfehlerName: "",
+  vorstellung: "",
   photoStorageKey: null,
 };
 
@@ -94,6 +95,7 @@ export function Wizard({
             <input type="hidden" name="geburtsdatum" value={values.geburtsdatum} />
             <input type="hidden" name="gefundenDurch" value={values.gefundenDurch} />
             <input type="hidden" name="empfehlerName" value={values.empfehlerName} />
+            <input type="hidden" name="vorstellung" value={values.vorstellung} />
             <input type="hidden" name="photoStorageKey" value={values.photoStorageKey ?? ""} />
             <SubmitButton />
           </Form>

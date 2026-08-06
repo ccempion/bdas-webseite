@@ -9,6 +9,7 @@ export type WizardValues = {
   geburtsdatum: string; // yyyy-mm-dd
   gefundenDurch: string;
   empfehlerName: string;
+  vorstellung: string;
   photoStorageKey: string | null;
 };
 
@@ -16,7 +17,11 @@ export const WIZARD_STEPS = [
   { id: "studium", label: "Studium", fields: ["studiengang", "abschlussart"] },
   { id: "uni_gruppe", label: "Hochschule & Gruppe", fields: ["uni", "primaryGroupId"] },
   { id: "geburtsdatum", label: "Geburtsdatum", fields: ["geburtsdatum"] },
-  { id: "gefunden", label: "Gefunden durch", fields: ["gefundenDurch", "empfehlerName"] },
+  {
+    id: "gefunden",
+    label: "Gefunden durch",
+    fields: ["gefundenDurch", "empfehlerName", "vorstellung"],
+  },
   { id: "foto", label: "Profilbild", fields: [] },
   { id: "review", label: "Überprüfen", fields: [] },
 ] as const;
@@ -35,6 +40,7 @@ function toFields(v: WizardValues) {
     geburtsdatum: v.geburtsdatum,
     gefundenDurch: v.gefundenDurch,
     empfehlerName: v.empfehlerName,
+    vorstellung: v.vorstellung,
     photoStorageKey: v.photoStorageKey,
   };
 }

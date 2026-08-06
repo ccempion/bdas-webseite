@@ -38,6 +38,7 @@ export async function submitWizardAction(
     geburtsdatum: String(formData.get("geburtsdatum") ?? ""),
     gefundenDurch: String(formData.get("gefundenDurch") ?? ""),
     empfehlerName: String(formData.get("empfehlerName") ?? "").trim() || null,
+    vorstellung: String(formData.get("vorstellung") ?? "").trim() || null,
     photoStorageKey: String(formData.get("photoStorageKey") ?? "").trim() || null,
   };
 

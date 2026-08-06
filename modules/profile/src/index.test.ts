@@ -108,4 +108,35 @@ describeIfDb("profile service", () => {
       saveProfile(t.db, { userId: OTHER.userId, fields: FIELDS, actor: OTHER }),
     ).rejects.toThrow();
   });
+
+  it("round-trips an optional vorstellung and stores a blank one as null", async () => {
+    // Optional for every channel (#122): saving without it must succeed, and a
+    // whitespace-only answer must not become an empty string the board has to
+    // tell apart from "said nothing".
+    await saveProfile(t.db, {
+      userId: OWNER.userId,
+      fields: { ...FIELDS, gefundenDurch: "instagram", vorstellung: "  " },
+      actor: OWNER,
+    });
+    expect((await getProfile(t.db, OWNER.userId))?.vorstellung).toBeNull();
+
+    await saveProfile(t.db, {
+      userId: OWNER.userId,
+      fields: {
+        ...FIELDS,
+        gefundenDurch: "instagram",
+        vorstellung: "  Ich will mich engagieren.  ",
+      },
+      actor: OWNER,
+    });
+    expect((await getProfile(t.db, OWNER.userId))?.vorstellung).toBe("Ich will mich engagieren.");
+
+    // And it survives an edit that omits the field entirely being re-sent.
+    await saveProfile(t.db, {
+      userId: OWNER.userId,
+      fields: { ...FIELDS, gefundenDurch: "instagram" },
+      actor: OWNER,
+    });
+    expect((await getProfile(t.db, OWNER.userId))?.vorstellung).toBeNull();
+  });
 });

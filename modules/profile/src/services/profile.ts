@@ -23,6 +23,7 @@ function row2profile(row: MemberProfileRow): MemberProfile {
     geburtsdatum: row.geburtsdatum,
     gefundenDurch: row.gefundenDurch,
     empfehlerName: row.empfehlerName,
+    vorstellung: row.vorstellung,
     photoStorageKey: row.photoStorageKey,
     completedAt: row.completedAt,
     updatedAt: row.updatedAt,
@@ -86,6 +87,10 @@ export async function saveProfile(db: Db, input: SaveProfileInput): Promise<Save
     geburtsdatum: v.geburtsdatum,
     gefundenDurch: v.gefundenDurch,
     empfehlerName: v.gefundenDurch === "empfehlung" ? (v.empfehlerName ?? null) : null,
+    // Unlike empfehlerName this is not tied to a channel, so it is never
+    // cleared on the way in. An empty string means "said nothing" — store it
+    // as null so the board panel has one absent case, not two.
+    vorstellung: v.vorstellung?.trim() ? v.vorstellung.trim() : null,
     photoStorageKey: v.photoStorageKey ?? existing?.photoStorageKey ?? null,
     completedAt: now,
     updatedAt: now,
@@ -104,6 +109,7 @@ export async function saveProfile(db: Db, input: SaveProfileInput): Promise<Save
         geburtsdatum: values.geburtsdatum,
         gefundenDurch: values.gefundenDurch,
         empfehlerName: values.empfehlerName,
+        vorstellung: values.vorstellung,
         photoStorageKey: values.photoStorageKey,
         // Immutable-once completion: a concurrent re-submit cannot re-stamp it.
         // The timestamp goes in as an ISO string with an explicit cast: inside a

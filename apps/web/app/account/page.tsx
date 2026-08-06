@@ -78,6 +78,7 @@ export default async function AccountPage({
     geburtsdatum: profile?.geburtsdatum ?? "",
     gefundenDurch: profile?.gefundenDurch ?? "",
     empfehlerName: profile?.empfehlerName ?? null,
+    vorstellung: profile?.vorstellung ?? null,
     photoStorageKey: profile?.photoStorageKey ?? null,
   };
 
@@ -147,6 +148,7 @@ export default async function AccountPage({
             geburtsdatum: profile?.geburtsdatum ?? "",
             gefundenDurch: profile?.gefundenDurch ?? "",
             empfehlerName: profile?.empfehlerName ?? null,
+            vorstellung: profile?.vorstellung ?? null,
           })}
           profileForm={{ ...membersFormProps, isNew: !me.member }}
           extendedForm={profileFlagOn && me.member ? { initial: extendedInitial } : null}
