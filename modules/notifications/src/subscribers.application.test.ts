@@ -1,8 +1,9 @@
 /**
  * The application mails, which all hang off the request row's lifecycle
- * (ADR 0031): `members.group_change.requested` tells the destination board,
- * `.decided` tells the applicant, `.withdrawn` tells them their group was
- * dissolved. Integration tests against a real Postgres schema; skips when
+ * (ADR 0031): `.decided` tells the applicant, `.withdrawn` tells them their
+ * group was dissolved. The board-side `.requested` mail is currently disabled
+ * (see subscribers.ts) and pinned off by the first case below.
+ * Integration tests against a real Postgres schema; skips when
  * DATABASE_URL is unreachable, as the sibling suites do.
  *
  * Fixtures are plain SQL: @bdas/members exposes only its public surface, so a
@@ -142,7 +143,10 @@ describeIfDb("notifications: the application mails", () => {
     await new Promise((r) => setTimeout(r, 0));
   }
 
-  it("tells the destination board that an application arrived", async () => {
+  // Deliberately off until the board notification is wired properly (batching /
+  // digest / per-recipient preference). Pending Freigaben reach the board as the
+  // in-app badge instead. Flip this back when the subscription returns.
+  it("does not mail the destination board that an application arrived", async () => {
     await seedLocalBoard();
 
     await publish({
@@ -154,9 +158,7 @@ describeIfDb("notifications: the application mails", () => {
       at: new Date(),
     });
 
-    expect(sent).toHaveLength(1);
-    expect(sent[0]?.subject).toContain("Bewerbung");
-    expect(sent[0]?.text).toContain("Anna Bewerberin");
+    expect(sent).toEqual([]);
   });
 
   it("emails the applicant when the board accepts them", async () => {

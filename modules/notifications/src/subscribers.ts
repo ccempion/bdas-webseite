@@ -26,13 +26,11 @@ import type {
 import { getGroup } from "@bdas/groups";
 import {
   getGroupChangeRequest,
-  getMember,
   listBoardRecipientsForGroup,
   REJECTION_CATEGORY_LABELS,
 } from "@bdas/members";
 import type {
   GroupChangeDecided,
-  GroupChangeRequested,
   GroupChangeWithdrawn,
   RejectionCategory,
   RoleGranted,
@@ -257,21 +255,17 @@ export function registerNotificationSubscribers(db: Db, opts: { siteUrl?: string
         });
       }),
     ),
-    // An application is a request row (ADR 0031), so all three mails hang off
-    // the request's lifecycle. `profile.completed` no longer routes any of
-    // them: the wizard stopped collecting a group, so it has nothing to route by.
-    getEventBus().subscribe<GroupChangeRequested>(
-      "members.group_change.requested",
-      safe<GroupChangeRequested>(async (e) => {
-        const applicant = await getMember(db, e.memberId);
-        const recipients = await listBoardRecipientsForGroup(db, e.toGroupId);
-        for (const memberId of recipients) {
-          await sendTransactional(db, "member_application_received", memberId, {
-            applicantName: applicant ? `${applicant.firstName} ${applicant.lastName}` : undefined,
-          });
-        }
-      }),
-    ),
+    // An application is a request row (ADR 0031), so these mails hang off the
+    // request's lifecycle. `profile.completed` no longer routes any of them:
+    // the wizard stopped collecting a group, so it has nothing to route by.
+    //
+    // DISABLED: the "eine Freigabe wartet auf dich" mail to the destination
+    // board (`members.group_change.requested` → `member_application_received`).
+    // It fired per board member on every request, including plain group
+    // transfers, with no batching, no digest and no per-recipient preference —
+    // to be wired properly later. The template and its `NotificationTemplate`
+    // key are deliberately kept so re-enabling is re-adding the subscription
+    // here. The board still sees pending Freigaben as the in-app badge.
     // The board decided — tell the applicant, who otherwise waits without ever
     // hearing back. A transfer between groups is not an application and needs
     // no such mail.
