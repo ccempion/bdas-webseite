@@ -39,7 +39,7 @@ function render(message: AuthMessage): { subject: string; html: string; text: st
   if (message.kind === "changed") {
     return {
       subject: "BDAS — Passwort geändert",
-      text: `Hallo,\n\ndein BDAS-Passwort wurde soeben geändert. Alle anderen Geräte wurden abgemeldet.\n\nWarst du das nicht? Dann setze dein Passwort sofort über "Passwort vergessen" auf der Anmeldeseite zurück und melde dich bei deinem lokalen Vorstand.\n`,
+      text: `Hallo,\n\ndein BDAS-Passwort wurde soeben geändert. Alle anderen Geräte wurden abgemeldet.\n\nWarst du das nicht? Dann setze dein Passwort sofort über „Passwort vergessen“ auf der Anmeldeseite zurück und melde dich bei deinem lokalen Vorstand.\n`,
       html: `<p>Hallo,</p><p>dein BDAS-Passwort wurde soeben geändert. Alle anderen Geräte wurden abgemeldet.</p><p>Warst du das nicht? Dann setze dein Passwort sofort über &bdquo;Passwort vergessen&ldquo; auf der Anmeldeseite zurück und melde dich bei deinem lokalen Vorstand.</p>`,
     };
   }
