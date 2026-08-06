@@ -2,21 +2,27 @@
  * Changing the password while signed in.
  *
  * Unlike the reset flow, the proof is the current password rather than an
- * emailed token — and the session that made the change survives it, while
- * every other session for that user does not. A stolen cookie does not
- * outlive the change; the device you changed from does.
+ * emailed token. Every session for the user is revoked — including the one
+ * that made the change — and a fresh session is minted for the caller. The
+ * cookie *is* the session, so a copy of it carries the same `jti` as the
+ * browser it was stolen from; sparing "the calling session" would have spared
+ * the copy too. Revoking all of them and handing the caller a new cookie is
+ * what keeps the change meaningful while leaving the user signed in.
  */
-import { and, eq, isNull, ne } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import type { PostgresJsDatabase } from "drizzle-orm/postgres-js";
 import { z } from "zod";
 
 import { NotFoundError, ValidationError } from "@bdas/errors";
 import { getEventBus } from "@bdas/events";
+import { isFederalBoardEmail } from "@bdas/feature-flags";
 
 import type { PasswordChanged as PasswordChangedEvent } from "../events";
 import { hashPassword, passwordSchema, verifyPassword, PASSWORD_ALGORITHM } from "../password";
 import { rateLimit } from "../rate-limit";
-import { authCredentials, authSessions } from "../schema";
+import { authCredentials, authSessions, authUsers } from "../schema";
+import { createSession } from "../sessions";
+import { COOKIE_MAX_AGE_SECONDS, issueToken, type Role } from "../sso";
 
 export type Db = PostgresJsDatabase<Record<string, never>>;
 
@@ -27,12 +33,18 @@ export const ChangePasswordInput = z.object({
 
 export type ChangePasswordContext = {
   readonly userId: string;
-  /** The session the change was made from — the one session that survives it. */
-  readonly sessionId: string;
-  readonly ip: string;
 };
 
-export type ChangePasswordResult = { readonly userId: string };
+/**
+ * Mirrors `LoginResult`: the caller (a Server Action) sets the cookie from
+ * `token`, because the session it arrived with has just been revoked.
+ */
+export type ChangePasswordResult = {
+  readonly userId: string;
+  readonly sessionId: string;
+  readonly token: string;
+  readonly maxAgeSeconds: number;
+};
 
 export async function changePassword(
   db: Db,
@@ -53,13 +65,16 @@ export async function changePassword(
     windowMs: 60 * 60 * 1000,
   });
 
-  // No join to auth_users: the caller resolved the user through
-  // getCurrentUser before calling, so it already holds the email address
-  // the notification goes to. Reading it again here would be a second
-  // query to hand back something the caller never let go of.
+  // auth_users is joined for the email, which the replacement session's JWT
+  // claims need — not to hand it back to the caller, which resolved it
+  // through getCurrentUser before calling and never let go of it.
   const rows = await db
-    .select({ hashedPassword: authCredentials.hashedPassword })
+    .select({
+      hashedPassword: authCredentials.hashedPassword,
+      emailNormalized: authUsers.emailNormalized,
+    })
     .from(authCredentials)
+    .innerJoin(authUsers, eq(authUsers.id, authCredentials.userId))
     .where(eq(authCredentials.userId, ctx.userId))
     .limit(1);
 
@@ -70,14 +85,16 @@ export async function changePassword(
     throw new ValidationError("Aktuelles Passwort ist falsch.");
   }
 
-  // A no-op submit would otherwise sign the user out of every other device
-  // and mail them about a change that never happened.
+  // A no-op submit would otherwise sign the user out of every device and mail
+  // them about a change that never happened.
   if (currentPassword === newPassword) {
     throw new ValidationError("Das neue Passwort muss sich vom aktuellen unterscheiden.");
   }
 
   const newHash = await hashPassword(newPassword);
-  await db.transaction(async (tx) => {
+  // The replacement session is inserted in the same transaction as the mass
+  // revoke, so there is no instant in which the user holds no valid session.
+  const session = await db.transaction(async (tx) => {
     await tx
       .update(authCredentials)
       .set({
@@ -89,13 +106,16 @@ export async function changePassword(
     await tx
       .update(authSessions)
       .set({ revokedAt: new Date() })
-      .where(
-        and(
-          eq(authSessions.userId, ctx.userId),
-          isNull(authSessions.revokedAt),
-          ne(authSessions.id, ctx.sessionId),
-        ),
-      );
+      .where(and(eq(authSessions.userId, ctx.userId), isNull(authSessions.revokedAt)));
+    return createSession(tx, { userId: ctx.userId });
+  });
+
+  const roles: Role[] = isFederalBoardEmail(row.emailNormalized) ? ["federal_board"] : [];
+  const token = await issueToken({
+    userId: ctx.userId,
+    email: row.emailNormalized,
+    roles,
+    sessionId: session.id,
   });
 
   const event: PasswordChangedEvent = {
@@ -105,5 +125,10 @@ export async function changePassword(
   };
   await getEventBus().publish(event);
 
-  return { userId: ctx.userId };
+  return {
+    userId: ctx.userId,
+    sessionId: session.id,
+    token,
+    maxAgeSeconds: COOKIE_MAX_AGE_SECONDS,
+  };
 }

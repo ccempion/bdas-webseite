@@ -1,14 +1,12 @@
 "use server";
 
-import { headers } from "next/headers";
-
 import { changePassword, getCurrentUser, getNotifier } from "@bdas/auth";
 import { getDb } from "@bdas/db";
 import { isAppError } from "@bdas/errors";
 import { requireFlag } from "@bdas/feature-flags";
 
 import { bootAuth } from "../../lib/auth-bootstrap";
-import { readSessionCookie } from "../../lib/auth-cookie";
+import { readSessionCookie, setSessionCookie } from "../../lib/auth-cookie";
 
 export type ChangePasswordState = {
   /** Set only on a successful change — the form uses it to collapse. */
@@ -36,16 +34,22 @@ export async function changePasswordAction(
     return { error: "Die beiden neuen Passwörter stimmen nicht überein." };
   }
 
+  let result;
   try {
-    await changePassword(
+    result = await changePassword(
       db,
       { currentPassword: String(formData.get("currentPassword") ?? ""), newPassword },
-      { userId: me.id, sessionId: me.sessionId, ip: clientIp() },
+      { userId: me.id },
     );
   } catch (err) {
     if (isAppError(err)) return { error: err.message };
     throw err;
   }
+
+  // The change revoked every session, this request's included. Without the
+  // replacement cookie the user would be signed out by their own password
+  // change.
+  setSessionCookie(result.token);
 
   try {
     // `me.email` is the address getCurrentUser already resolved — the
@@ -58,9 +62,4 @@ export async function changePasswordAction(
   }
 
   return { ok: true };
-}
-
-function clientIp(): string {
-  const h = headers();
-  return h.get("x-forwarded-for")?.split(",")[0]?.trim() ?? h.get("x-real-ip") ?? "0.0.0.0";
 }

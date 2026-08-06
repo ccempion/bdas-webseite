@@ -88,7 +88,7 @@ describeIfDb("changePassword", () => {
     const res = await changePassword(
       t.db,
       { currentPassword: OLD, newPassword: NEW },
-      { userId: u.userId, sessionId: u.sessionId, ip: "1.1.1.1" },
+      { userId: u.userId },
     );
     expect(res.userId).toBe(u.userId);
 
@@ -110,7 +110,7 @@ describeIfDb("changePassword", () => {
       changePassword(
         t.db,
         { currentPassword: "Falsch-Falsch-1!", newPassword: NEW },
-        { userId: u.userId, sessionId: u.sessionId, ip: "1.1.1.1" },
+        { userId: u.userId },
       ),
     ).rejects.toThrow("Aktuelles Passwort ist falsch.");
 
@@ -124,53 +124,52 @@ describeIfDb("changePassword", () => {
   it("rejects a new password that fails the policy", async () => {
     const u = await signedInUser();
     await expect(
-      changePassword(
-        t.db,
-        { currentPassword: OLD, newPassword: "kurz" },
-        { userId: u.userId, sessionId: u.sessionId, ip: "1.1.1.1" },
-      ),
+      changePassword(t.db, { currentPassword: OLD, newPassword: "kurz" }, { userId: u.userId }),
     ).rejects.toThrow(/mindestens 10 Zeichen/);
   });
 
   it("rejects a new password identical to the current one", async () => {
     const u = await signedInUser();
     await expect(
-      changePassword(
-        t.db,
-        { currentPassword: OLD, newPassword: OLD },
-        { userId: u.userId, sessionId: u.sessionId, ip: "1.1.1.1" },
-      ),
+      changePassword(t.db, { currentPassword: OLD, newPassword: OLD }, { userId: u.userId }),
     ).rejects.toThrow("Das neue Passwort muss sich vom aktuellen unterscheiden.");
   });
 
-  it("revokes every other session but keeps the calling one alive", async () => {
+  it("revokes every prior session, the calling one included, and issues a fresh one", async () => {
     const u = await signedInUser();
     // Two more devices for the same user.
     const phone = await login(t.db, { email: u.email, password: OLD }, { ip: "2.2.2.2" });
     const tablet = await login(t.db, { email: u.email, password: OLD }, { ip: "3.3.3.3" });
 
-    await changePassword(
+    const res = await changePassword(
       t.db,
       { currentPassword: OLD, newPassword: NEW },
-      { userId: u.userId, sessionId: u.sessionId, ip: "1.1.1.1" },
+      { userId: u.userId },
     );
 
-    expect(await getCurrentUser(t.db, u.token)).not.toBeNull();
+    // The calling cookie dies with the rest: a stolen copy carries the same
+    // jti, so sparing the caller would spare the copy.
+    expect(await getCurrentUser(t.db, u.token)).toBeNull();
     expect(await getCurrentUser(t.db, phone.token)).toBeNull();
     expect(await getCurrentUser(t.db, tablet.token)).toBeNull();
+
+    // …and the returned token is what keeps the caller signed in.
+    expect(res.sessionId).not.toBe(u.sessionId);
+    const me = await getCurrentUser(t.db, res.token);
+    expect(me?.id).toBe(u.userId);
+    expect(me?.sessionId).toBe(res.sessionId);
 
     const rows = await t.db
       .select({ id: authSessions.id, revokedAt: authSessions.revokedAt })
       .from(authSessions)
       .where(eq(authSessions.userId, u.userId));
-    const calling = rows.find((r) => r.id === u.sessionId);
-    expect(calling?.revokedAt).toBeNull();
-    expect(rows.filter((r) => r.revokedAt !== null)).toHaveLength(2);
+    expect(rows.filter((r) => r.revokedAt === null).map((r) => r.id)).toEqual([res.sessionId]);
+    expect(rows.filter((r) => r.revokedAt !== null)).toHaveLength(3);
   });
 
   it("rate limits after 5 attempts in the window", async () => {
     const u = await signedInUser();
-    const ctx = { userId: u.userId, sessionId: u.sessionId, ip: "1.1.1.1" };
+    const ctx = { userId: u.userId };
     for (let i = 0; i < 5; i += 1) {
       await expect(
         changePassword(t.db, { currentPassword: "Falsch-Falsch-1!", newPassword: NEW }, ctx),
@@ -191,11 +190,7 @@ describeIfDb("changePassword", () => {
       },
     );
 
-    await changePassword(
-      t.db,
-      { currentPassword: OLD, newPassword: NEW },
-      { userId: u.userId, sessionId: u.sessionId, ip: "1.1.1.1" },
-    );
+    await changePassword(t.db, { currentPassword: OLD, newPassword: NEW }, { userId: u.userId });
 
     expect(seen).toEqual([{ userId: u.userId }]);
   });
