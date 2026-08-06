@@ -28,4 +28,18 @@ describe("auth createResendNotifier", () => {
       notifier.send({ kind: "reset", to: "x@example.org", resetUrl: "https://e/r" }),
     ).resolves.toBeUndefined();
   });
+
+  it("renders the password-changed mail with no link in it", async () => {
+    sendMock.mockResolvedValue({ data: { id: "re_123" }, error: null });
+    const notifier = createResendNotifier({ apiKey: "re_x", from: "bdas@example.org" });
+
+    await notifier.send({ kind: "changed", to: "x@example.org" });
+
+    const arg = sendMock.mock.calls[0]?.[0];
+    expect(arg.subject).toBe("BDAS — Passwort geändert");
+    expect(arg.text).toContain("geändert");
+    // A tripwire mail also reaches an attacker who already holds the account;
+    // it must not hand them a link that does anything.
+    expect(arg.html).not.toContain("<a ");
+  });
 });
