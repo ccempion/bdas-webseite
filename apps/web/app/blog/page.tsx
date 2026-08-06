@@ -6,7 +6,7 @@ import { getDb } from "@bdas/db";
 import { Alert, Button, Card } from "@bdas/design-system";
 
 import { requireBlogFlag } from "../_blog/flag";
-import { InitialsAvatar } from "../_blog/InitialsAvatar";
+import { AuthorAvatar } from "../_blog/AuthorAvatar";
 import { canAuthor, loadBlogViewer, resolveAuthors } from "../_blog/access";
 import { BlogFilterBar } from "../_blog/BlogFilterBar";
 import { parseCategory, parseZeitraum, resolveSince } from "../_blog/filters";
@@ -38,7 +38,10 @@ export default async function BlogFeedPage({
     ...(since !== undefined && { since }),
   };
   const posts = await listPosts(db, viewer, filters);
-  const authors = await resolveAuthors(posts.map((p) => p.createdBy));
+  const authors = await resolveAuthors(
+    posts.map((p) => p.createdBy),
+    me !== null,
+  );
 
   return (
     <main className="mx-auto flex max-w-2xl flex-col gap-8 px-4 py-12">
@@ -69,7 +72,11 @@ export default async function BlogFeedPage({
               <li key={p.id}>
                 <Card className="p-6">
                   <div className="flex items-center gap-3">
-                    <InitialsAvatar initials={author?.initials ?? "?"} />
+                    <AuthorAvatar
+                      initials={author?.initials ?? "?"}
+                      name={author?.name ?? "BDAS-Mitglied"}
+                      photoUrl={author?.photoUrl ?? null}
+                    />
                     <div className="flex flex-col">
                       <span className="font-semibold text-bdas-ink">
                         {author?.name ?? "BDAS-Mitglied"}
