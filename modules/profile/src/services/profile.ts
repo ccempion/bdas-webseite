@@ -130,6 +130,44 @@ export async function saveProfile(db: Db, input: SaveProfileInput): Promise<Memb
   return row2profile(row);
 }
 
+/**
+ * Clear the profile photo. Owner-only.
+ *
+ * Deliberately *not* folded into `saveProfile` as an explicit-null case: the
+ * account and wizard forms already submit `photoStorageKey: null` to mean "this
+ * form does not carry a photo", which the upsert reads as "keep the stored key"
+ * (see `values.photoStorageKey` above). Teaching that null to mean "delete"
+ * would make every profile edit wipe the photo. Removal needs a write that says
+ * so unambiguously, so it gets its own.
+ *
+ * Reports the key it just unreferenced so the caller can delete the object
+ * itself. This module owns the `photo_storage_key` column, not the bytes it
+ * points at, so `@bdas/storage` is not its to call.
+ */
+export async function clearProfilePhoto(
+  db: Db,
+  input: { readonly userId: string; readonly actor: ProfileActor },
+): Promise<{ readonly cleared: boolean; readonly previousStorageKey: string | null }> {
+  if (input.actor.userId !== input.userId) {
+    throw new ForbiddenError("Du darfst nur dein eigenes Profil bearbeiten.");
+  }
+
+  // Read first: Postgres RETURNING yields the new row, and the caller needs the
+  // key that was there before to know what to delete.
+  const existing = await getProfile(db, input.userId);
+  if (!existing) return { cleared: false, previousStorageKey: null };
+
+  const now = new Date();
+  await db
+    .update(memberProfiles)
+    .set({ photoStorageKey: null, updatedAt: now, updatedBy: input.actor.userId })
+    .where(eq(memberProfiles.userId, input.userId));
+
+  const event: ProfileUpdated = { type: "profile.updated", userId: input.userId, at: now };
+  await getEventBus().publish(event);
+  return { cleared: true, previousStorageKey: existing.photoStorageKey };
+}
+
 function flatten(err: z.ZodError): Record<string, string> {
   const out: Record<string, string> = {};
   for (const i of err.issues) out[i.path.join(".") || "_"] = i.message;

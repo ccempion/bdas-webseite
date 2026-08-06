@@ -3,18 +3,21 @@
 import { useEffect, useRef, useState } from "react";
 
 import { CropDialog } from "../_profile/CropDialog";
+import { PhotoLightbox } from "../_profile/PhotoLightbox";
 import { DropZone } from "../_upload/DropZone";
 import { IMAGE_ACCEPT, PROFILE_IMAGE } from "../_upload/accept";
 import { uploadImage } from "../_upload/upload-image";
-import { savePhotoAction } from "./photo-actions";
+import { removePhotoAction, savePhotoAction } from "./photo-actions";
 
 /** Large enough to read as the page's identity anchor, not a form field. */
 const SIZE = 112;
 
 /**
- * The profile photo at the top of /account. The circle *is* the control: click
- * it to pick a file, which uploads to the private bucket and saves straight
- * away — no separate submit.
+ * The profile photo at the top of /account.
+ *
+ * With a photo the circle opens it enlarged, and the two things you can do to
+ * it live in there. With no photo there is nothing to enlarge, so the circle
+ * stays the shortcut it always was and goes straight to the file picker.
  *
  * Private objects have no public URL, so the rendered image is either the
  * server-signed `photoUrl` or, right after picking a file, a local object URL
@@ -32,18 +35,23 @@ export function AccountAvatar({
   const [error, setError] = useState<string | null>(null);
   const [localPreview, setLocalPreview] = useState<string | null>(null);
   const [pending, setPending] = useState<File | null>(null);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  // `photoUrl` is a server prop and stays stale until the revalidated route
+  // reaches the client, so a removal needs its own flag to take effect now.
+  const [removed, setRemoved] = useState(false);
 
   useEffect(() => {
     if (!localPreview) return;
     return () => URL.revokeObjectURL(localPreview);
   }, [localPreview]);
 
-  const preview = localPreview ?? photoUrl ?? null;
+  const preview = localPreview ?? (removed ? null : photoUrl);
 
   async function handle(file: File) {
     setBusy(true);
     setError(null);
     try {
+      setRemoved(false);
       setLocalPreview(URL.createObjectURL(file));
       const out = await uploadImage<{ uploadUrl: string; storageKey: string }>(
         "/api/profile/upload-url",
@@ -60,10 +68,34 @@ export function AccountAvatar({
     }
   }
 
+  /** Hand off to the crop step, and get the lightbox out from under it —
+   *  two stacked modal dialogs would be one too many. */
+  function choose(file: File) {
+    setLightboxOpen(false);
+    setPending(file);
+  }
+
+  async function remove() {
+    setBusy(true);
+    setError(null);
+    try {
+      const out = await removePhotoAction();
+      if (out.error) {
+        setError(out.error);
+        return;
+      }
+      setLocalPreview(null);
+      setRemoved(true);
+      setLightboxOpen(false);
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
     <DropZone
       accept={PROFILE_IMAGE}
-      onFile={(file) => setPending(file)}
+      onFile={choose}
       onReject={(messages) => setError(messages[0] ?? null)}
       label="Bild hier ablegen"
       disabled={busy}
@@ -76,14 +108,16 @@ export function AccountAvatar({
         className="hidden"
         onChange={(e) => {
           const file = e.currentTarget.files?.[0];
-          if (file) setPending(file);
+          if (file) choose(file);
+          // Or picking the same file twice in a row fires no change event.
+          e.currentTarget.value = "";
         }}
       />
       <button
         type="button"
         disabled={busy}
-        onClick={() => inputRef.current?.click()}
-        aria-label={preview ? "Profilbild ändern" : "Profilbild hochladen"}
+        onClick={() => (preview ? setLightboxOpen(true) : inputRef.current?.click())}
+        aria-label={preview ? "Profilbild vergrößern" : "Profilbild hochladen"}
         style={{ width: SIZE, height: SIZE }}
         className="shrink-0 overflow-hidden rounded-bdas-full border border-bdas-soft bg-bdas-overlay-soft transition-shadow duration-bdas-quick ease-bdas hover:shadow-bdas-card focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-bdas-red disabled:opacity-60"
       >
@@ -102,9 +136,18 @@ export function AccountAvatar({
       {/* Constrained to the circle's width, or the caption starts at the header
           column's left edge instead of sitting under the circle. */}
       <p style={{ width: SIZE }} className="text-center text-sm text-bdas-ink-muted">
-        {busy ? "Lädt hoch…" : preview ? "Bild ändern" : "Bild hochladen"}
+        {busy ? "Einen Moment…" : preview ? "Bild ansehen" : "Bild hochladen"}
       </p>
       {error ? <p className="max-w-xs text-center text-sm text-bdas-red">{error}</p> : null}
+      {lightboxOpen && preview ? (
+        <PhotoLightbox
+          src={preview}
+          busy={busy}
+          onChange={() => inputRef.current?.click()}
+          onRemove={() => void remove()}
+          onClose={() => setLightboxOpen(false)}
+        />
+      ) : null}
       {pending ? (
         <CropDialog
           file={pending}

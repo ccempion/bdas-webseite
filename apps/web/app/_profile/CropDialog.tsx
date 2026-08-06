@@ -8,8 +8,10 @@ import { clampOffset, minZoom, sourceRect, type CropState, type Size } from "./c
 
 /** Preview frame in CSS pixels. The output is always OUTPUT_SIZE, independent of this. */
 const FRAME = 280;
-/** Stored edge length. Large enough for the 112px avatar on a 2x display, with room to spare. */
-const OUTPUT_SIZE = 512;
+/** Stored edge length. Sized for the largest place the photo is shown — the
+ *  account lightbox, which caps at 1024px — not for the 112px avatar. Photos
+ *  saved before this went to 1024 are 512 and upscale there. */
+const OUTPUT_SIZE = 1024;
 const NUDGE = 8;
 const ZOOM_STEP = 0.1;
 
