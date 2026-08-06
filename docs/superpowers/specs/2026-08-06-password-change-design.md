@@ -215,8 +215,12 @@ Docker-Postgres, `describeIfDb` wie in `index.test.ts`):
 **`modules/auth/src/notifier-resend.test.ts`**: der `changed`-Zweig rendert
 Betreff und Text.
 
-**`e2e/auth.e2e.ts`**: angemeldet auf `/account`, Karte aufklappen, Passwort
-ändern, Bestätigung sehen; abmelden und mit dem neuen Passwort anmelden.
+**`e2e/password-change.e2e.ts`**: angemeldet auf `/account`, Karte aufklappen,
+mit falschem aktuellem Passwort absenden und die Fehlermeldung sehen, dann
+Passwort ändern, Bestätigung sehen; abmelden und mit dem neuen Passwort
+anmelden. Eigene Datei statt Anhang an `auth.e2e.ts` — die ist bereits ein
+langer linearer Durchlauf; `resend-verification.e2e.ts` wurde aus demselben
+Grund ausgegliedert.
 
 ## Folgen
 
