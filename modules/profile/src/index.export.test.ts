@@ -13,8 +13,8 @@ describe("@bdas/profile public surface", () => {
         "UNIVERSITIES",
         "canViewProfile",
         "clearProfilePhoto",
+        "canonicalUniversity",
         "getProfile",
-        "isKnownUniversity",
         "saveProfile",
       ].sort(),
     );
