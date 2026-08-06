@@ -17,8 +17,10 @@ import {
   isFederalBoard,
   type CurrentMember,
 } from "@bdas/members";
+import { getProfile } from "@bdas/profile";
 
 import { readSessionCookie } from "../../lib/auth-cookie";
+import { signedProfilePhotoUrl } from "../_profile/photo-url";
 
 /** Current principal, deduped per request. */
 export const loadBlogMe = cache(
@@ -63,29 +65,47 @@ export function canModerate(me: CurrentMember | null, post: Post): boolean {
 export type AuthorDisplay = {
   readonly name: string;
   readonly initials: string;
+  /** Short-lived signed URL for the profile photo, or null (no photo / not shown). */
+  readonly photoUrl: string | null;
 };
 
-const FALLBACK: AuthorDisplay = { name: "BDAS-Mitglied", initials: "?" };
+const FALLBACK: AuthorDisplay = { name: "BDAS-Mitglied", initials: "?", photoUrl: null };
 
-function displayFrom(first: string, last: string): AuthorDisplay {
+function displayFrom(first: string, last: string, photoUrl: string | null): AuthorDisplay {
   const name = `${first} ${last}`.trim() || FALLBACK.name;
   const initials = `${first[0] ?? ""}${last[0] ?? ""}`.toUpperCase() || FALLBACK.initials;
-  return { name, initials };
+  return { name, initials, photoUrl };
 }
 
-/** Resolve one author's display name/initials (auth user id → member profile). */
-export async function resolveAuthor(userId: string): Promise<AuthorDisplay> {
-  const member = await getMemberByUserId(getDb(), userId);
-  return member ? displayFrom(member.firstName, member.lastName) : FALLBACK;
+/**
+ * Profile photos are personal data in a private bucket (spec §7). The blog feed
+ * is also readable signed-out, so the photo is resolved for signed-in viewers
+ * only — a visitor off the street gets the initials chip.
+ */
+async function authorPhotoUrl(userId: string, withPhoto: boolean): Promise<string | null> {
+  if (!withPhoto) return null;
+  const profile = await getProfile(getDb(), userId);
+  return signedProfilePhotoUrl(profile?.photoStorageKey);
+}
+
+/** Resolve one author's display name/initials/photo (auth user id → member + profile). */
+export async function resolveAuthor(userId: string, withPhoto = false): Promise<AuthorDisplay> {
+  const [member, photoUrl] = await Promise.all([
+    getMemberByUserId(getDb(), userId),
+    authorPhotoUrl(userId, withPhoto),
+  ]);
+  if (!member) return { ...FALLBACK, photoUrl };
+  return displayFrom(member.firstName, member.lastName, photoUrl);
 }
 
 /** Batch-resolve author displays for a feed, one lookup per unique author. */
 export async function resolveAuthors(
   userIds: ReadonlyArray<string>,
+  withPhotos = false,
 ): Promise<Map<string, AuthorDisplay>> {
   const unique = [...new Set(userIds)];
   const entries = await Promise.all(
-    unique.map(async (id) => [id, await resolveAuthor(id)] as const),
+    unique.map(async (id) => [id, await resolveAuthor(id, withPhotos)] as const),
   );
   return new Map(entries);
 }
