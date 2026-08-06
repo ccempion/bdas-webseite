@@ -30,9 +30,21 @@ test("change the password from /account, then sign in with the new one", async (
   await page.getByLabel("Aktuelles Passwort", { exact: true }).fill(PASSWORD);
   await page.getByLabel("Neues Passwort", { exact: true }).fill(NEW_PASSWORD);
 
+  // Field wires its hint to the control, not to a wrapper — otherwise a screen
+  // reader announces nothing on focus. Asserted here because this form carries
+  // both a hint and a field-level error; the fix lives in @bdas/design-system.
+  await expect(page.getByLabel("Neues Passwort", { exact: true })).toHaveAttribute(
+    "aria-describedby",
+    "newPassword-hint",
+  );
+
   // Mismatched repeat blocks submission, matching repeat unblocks it.
   await page.getByLabel("Neues Passwort wiederholen", { exact: true }).fill("Etwas-Anderes-1!");
   await expect(page.getByRole("button", { name: "Passwort ändern" })).toBeDisabled();
+  await expect(page.getByLabel("Neues Passwort wiederholen", { exact: true })).toHaveAttribute(
+    "aria-describedby",
+    "confirmPassword-error",
+  );
   await page.getByLabel("Neues Passwort wiederholen", { exact: true }).fill(NEW_PASSWORD);
 
   await page.getByRole("button", { name: "Passwort ändern" }).click();

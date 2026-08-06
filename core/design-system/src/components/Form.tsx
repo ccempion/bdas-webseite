@@ -1,4 +1,5 @@
-import type { FormHTMLAttributes, LabelHTMLAttributes, ReactNode } from "react";
+import { cloneElement, isValidElement } from "react";
+import type { FormHTMLAttributes, LabelHTMLAttributes, ReactElement, ReactNode } from "react";
 
 import { cx } from "../cx";
 
@@ -25,6 +26,21 @@ export type FieldProps = {
   children: ReactNode;
 };
 
+/**
+ * The control itself has to carry `aria-describedby`. Putting the id on a
+ * wrapper associates nothing: a screen reader announces the hint and the
+ * error only if the focused input points at them. Anything the caller already
+ * set is kept and appended to, never replaced.
+ */
+function describedControl(children: ReactNode, describedBy: string | undefined): ReactNode {
+  if (!describedBy || !isValidElement(children)) return children;
+  const child = children as ReactElement<{ "aria-describedby"?: string }>;
+  const existing = child.props["aria-describedby"];
+  return cloneElement(child, {
+    "aria-describedby": existing ? `${existing} ${describedBy}` : describedBy,
+  });
+}
+
 export function Field({ label, htmlFor, hint, error, children }: FieldProps) {
   const hintId = hint ? `${htmlFor}-hint` : undefined;
   const errorId = error ? `${htmlFor}-error` : undefined;
@@ -33,7 +49,7 @@ export function Field({ label, htmlFor, hint, error, children }: FieldProps) {
   return (
     <div className="flex flex-col gap-1.5" data-field={htmlFor}>
       <Label htmlFor={htmlFor}>{label}</Label>
-      <div data-described-by={describedBy}>{children}</div>
+      <div>{describedControl(children, describedBy)}</div>
       {hint && !error ? (
         <p id={hintId} className="text-sm text-bdas-ink-muted">
           {hint}
