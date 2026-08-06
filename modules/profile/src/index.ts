@@ -10,7 +10,7 @@ export {
   GEFUNDEN_DURCH_OPTIONS,
   UNIVERSITIES,
   SONSTIGE,
-  isKnownUniversity,
+  canonicalUniversity,
 } from "./data";
 export { SaveProfileFields } from "./types";
 export type { MemberProfile, SaveProfileInput, ProfileActor } from "./types";
