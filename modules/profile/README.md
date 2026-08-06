@@ -1,7 +1,8 @@
 # @bdas/profile
 
 Owns `member_profiles` — the federation's extended member data (course of
-study, degree type, university, birth date, "found BDAS via", optional photo).
+study, degree type, university, birth date, "found BDAS via", an optional
+self-introduction, optional photo).
 Keyed by `user_id`, which FKs `auth_users(id) ON DELETE CASCADE` so erasing an
 identity erases the profile with it — this row holds personal data (birth date,
 university, referral, private photo key), so it must not outlive its user. The
@@ -37,6 +38,12 @@ university as a selection instead of free text.
 Photos live in the **private** `profile-media` bucket (`core/storage`
 `getProfileMediaStorage()`); the app mints short-lived signed URLs — never a
 public URL, never proxied bytes.
+
+The self-introduction (`vorstellung`) is optional for every "found via" channel
+and verifies nothing — it exists so the board has the applicant's own words when
+there is no recommender to recognise (#122). Nothing gates on it; an empty one is
+never grounds for rejection. Consistent with ADR 0029 decision 4: self-typed
+input is a signal, not proof.
 
 Completing a profile grants no membership status: `members.approveMember` stays
 the sole `pending → active` decision. This module only emits `profile.completed`,

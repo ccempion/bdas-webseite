@@ -45,6 +45,7 @@ test("register → verify → wizard → the local board sees the application", 
   const lastName = marker("Bewerb");
   const studiengang = marker("Wirtschaftsinformatik-");
   const empfehler = marker("Empfehlerin-");
+  const vorstellung = marker("Ich will mich engagieren, weil ");
 
   await register(page, { email, firstName: "Neue", lastName });
   await verify(page, email);
@@ -71,9 +72,11 @@ test("register → verify → wizard → the local board sees the application", 
   await page.getByLabel("Geburtsdatum").fill("2000-05-17");
   await weiter.click();
 
-  // Step 4 — a referral carries the referrer's name through to the board.
+  // Step 4 — a referral carries the referrer's name through to the board, and
+  // the optional introduction (#122) travels the same way.
   await page.locator("#gefundenDurch").selectOption("empfehlung");
   await page.getByLabel("Wer hat es dir empfohlen?").fill(empfehler);
+  await page.locator("#vorstellung").fill(vorstellung);
   await weiter.click();
 
   // Step 5 — Profilbild is optional; skip it.
@@ -107,6 +110,8 @@ test("register → verify → wizard → the local board sees the application", 
   await expect(card.getByText("Bachelor")).toBeVisible();
   // The referral is a board signal, nothing automatic.
   await expect(card.getByText(empfehler)).toBeVisible();
+  // The whole point of the introduction is that the board reads it (#122).
+  await expect(card.getByText(vorstellung)).toBeVisible();
 });
 
 /**

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { SaveProfileFields } from "./types";
+import { MAX_VORSTELLUNG, SaveProfileFields } from "./types";
 
 const valid = {
   studiengang: "Informatik",
@@ -11,6 +11,34 @@ const valid = {
 };
 
 describe("SaveProfileFields", () => {
+  it("accepts a profile without a vorstellung — it is optional for every channel", () => {
+    expect(SaveProfileFields.safeParse(valid).success).toBe(true);
+    expect(SaveProfileFields.safeParse({ ...valid, vorstellung: "" }).success).toBe(true);
+    expect(SaveProfileFields.safeParse({ ...valid, vorstellung: null }).success).toBe(true);
+  });
+
+  it("accepts a vorstellung on a channel that has no recommender", () => {
+    const r = SaveProfileFields.safeParse({
+      ...valid,
+      gefundenDurch: "instagram",
+      vorstellung: "Ich studiere im 3. Semester und will mich engagieren.",
+    });
+    expect(r.success).toBe(true);
+  });
+
+  it("rejects a vorstellung past the length cap", () => {
+    const r = SaveProfileFields.safeParse({
+      ...valid,
+      vorstellung: "x".repeat(MAX_VORSTELLUNG + 1),
+    });
+    expect(r.success).toBe(false);
+  });
+
+  it("accepts a vorstellung exactly at the cap", () => {
+    const r = SaveProfileFields.safeParse({ ...valid, vorstellung: "x".repeat(MAX_VORSTELLUNG) });
+    expect(r.success).toBe(true);
+  });
+
   it("accepts a well-formed profile", () => {
     expect(SaveProfileFields.safeParse(valid).success).toBe(true);
   });

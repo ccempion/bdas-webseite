@@ -15,6 +15,7 @@ export const memberProfiles = pgTable("member_profiles", {
   geburtsdatum: date("geburtsdatum").notNull(),
   gefundenDurch: text("gefunden_durch").notNull(),
   empfehlerName: text("empfehler_name"),
+  vorstellung: text("vorstellung"),
   photoStorageKey: text("photo_storage_key"),
   completedAt: timestamp("completed_at", { withTimezone: true }),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),

@@ -6,6 +6,7 @@ import { Combobox, Field, Input } from "@bdas/design-system";
 import {
   ABSCHLUSSART_OPTIONS,
   GEFUNDEN_DURCH_OPTIONS,
+  MAX_VORSTELLUNG,
   SONSTIGE,
   UNIVERSITIES,
 } from "@bdas/profile";
@@ -22,6 +23,9 @@ const UNI_OPTIONS = [
   ...UNIVERSITIES.map((u) => ({ value: u, label: u })),
   { value: SONSTIGE, label: "Sonstige …" },
 ];
+
+/** Same treatment as the select, minus the fixed height. */
+const TEXTAREA_CLASS = `${SELECT_CLASS} resize-y`;
 
 type Groups = ReadonlyArray<{ id: string; name: string; city: string }>;
 type Setter = <K extends keyof WizardValues>(k: K, v: WizardValues[K]) => void;
@@ -219,6 +223,25 @@ export function GefundenFields({
           />
         </Field>
       ) : null}
+      {/* Shown for every channel, not just the ones without a recommender: a
+          field that appears for some answers reads as if that answer were
+          under suspicion. Optional — the board never rejects for an empty one
+          (#122). */}
+      <Field
+        label="Magst du kurz erzählen, warum du dabei sein willst? (optional)"
+        htmlFor={`${idPrefix}vorstellung`}
+        hint={`Der Vorstand liest das bei deiner Bewerbung. Maximal ${MAX_VORSTELLUNG} Zeichen.`}
+        {...(errors["vorstellung"] ? { error: errors["vorstellung"] } : {})}
+      >
+        <textarea
+          id={`${idPrefix}vorstellung`}
+          className={TEXTAREA_CLASS}
+          rows={4}
+          maxLength={MAX_VORSTELLUNG}
+          value={values.vorstellung}
+          onChange={(e) => set("vorstellung", e.currentTarget.value)}
+        />
+      </Field>
     </>
   );
 }

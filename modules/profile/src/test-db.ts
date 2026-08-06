@@ -19,6 +19,7 @@ export const PROFILE_TEST_MIGRATIONS: ReadonlyArray<ReadonlyArray<string>> = [
   ["..", "..", "auth", "migrations", "0001_init.sql"],
   ["..", "migrations", "0001_init.sql"],
   ["..", "migrations", "0002_user_fk.sql"],
+  ["..", "migrations", "0003_vorstellung.sql"],
 ];
 
 export async function dbReachable(): Promise<boolean> {

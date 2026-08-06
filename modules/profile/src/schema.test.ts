@@ -34,6 +34,7 @@ describeIfDb("member_profiles migration", () => {
         "updated_at",
         "updated_by",
         "user_id",
+        "vorstellung",
       ].sort(),
     );
   });

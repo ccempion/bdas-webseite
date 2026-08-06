@@ -23,6 +23,7 @@ export type EditProfileFormProps = {
     geburtsdatum: string;
     gefundenDurch: string;
     empfehlerName: string | null;
+    vorstellung: string | null;
     photoStorageKey: string | null;
   };
   /** Owned by EditableProfile — see ProfileFormProps.state. */
@@ -47,6 +48,7 @@ function toWizardValues(initial: EditProfileFormProps["initial"]): WizardValues 
     geburtsdatum: initial.geburtsdatum,
     gefundenDurch: initial.gefundenDurch,
     empfehlerName: initial.empfehlerName ?? "",
+    vorstellung: initial.vorstellung ?? "",
     photoStorageKey: initial.photoStorageKey,
   };
 }
@@ -84,6 +86,7 @@ export function EditProfileForm({ initial, state, action }: EditProfileFormProps
       <input type="hidden" name="geburtsdatum" value={values.geburtsdatum} />
       <input type="hidden" name="gefundenDurch" value={values.gefundenDurch} />
       <input type="hidden" name="empfehlerName" value={values.empfehlerName} />
+      <input type="hidden" name="vorstellung" value={values.vorstellung} />
 
       <SubmitButton />
     </Form>

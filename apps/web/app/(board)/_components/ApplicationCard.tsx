@@ -36,6 +36,7 @@ export function ApplicationCard({
     geburtsdatum: string;
     gefundenDurch: string;
     empfehlerName: string | null;
+    vorstellung: string | null;
   } | null;
   priorRejections: ReadonlyArray<{ decidedAt: Date | null; categoryLabel: string }>;
   categories: ReadonlyArray<{ key: RejectionCategory; label: string }>;
@@ -76,14 +77,23 @@ export function ApplicationCard({
           </h2>
 
           {profile ? (
-            <p className="mt-1 text-sm text-bdas-ink-body">
-              {profile.uni} · {profile.studiengang}, {profile.abschlussart}
-              <br />
-              geb. {new Date(profile.geburtsdatum).toLocaleDateString("de-DE")}
-              <br />
-              Gefunden durch: {profile.gefundenDurch}
-              {profile.empfehlerName ? ` — empfohlen von ${profile.empfehlerName}` : ""}
-            </p>
+            <>
+              <p className="mt-1 text-sm text-bdas-ink-body">
+                {profile.uni} · {profile.studiengang}, {profile.abschlussart}
+                <br />
+                geb. {new Date(profile.geburtsdatum).toLocaleDateString("de-DE")}
+                <br />
+                Gefunden durch: {profile.gefundenDurch}
+                {profile.empfehlerName ? ` — empfohlen von ${profile.empfehlerName}` : ""}
+              </p>
+              {/* Optional and unverified (#122) — the applicant's own words, so
+                  it is quoted rather than folded into the facts above. */}
+              {profile.vorstellung ? (
+                <blockquote className="mt-2 border-l-2 border-bdas-soft pl-3 text-sm italic text-bdas-ink-body">
+                  {profile.vorstellung}
+                </blockquote>
+              ) : null}
+            </>
           ) : (
             <p className="mt-1 text-sm text-bdas-ink-muted">Kein erweitertes Profil hinterlegt.</p>
           )}

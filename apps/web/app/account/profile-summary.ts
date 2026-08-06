@@ -12,6 +12,7 @@ export type SummaryInput = {
   geburtsdatum: string;
   gefundenDurch: string;
   empfehlerName: string | null;
+  vorstellung: string | null;
 };
 
 const label = (options: ReadonlyArray<{ value: string; label: string }>, key: string): string =>
@@ -51,6 +52,10 @@ export function buildProfileSummary(input: SummaryInput): SummaryRow[] {
   if (input.gefundenDurch === "empfehlung") {
     rows.push({ label: "Empfohlen von", value: input.empfehlerName });
   }
+
+  // Optional (#122) — an empty one is dropped by the filter below, so an
+  // applicant who said nothing sees no empty row.
+  rows.push({ label: "Vorstellung", value: input.vorstellung });
 
   return rows.flatMap((r) => {
     const value = r.value?.trim() ?? "";

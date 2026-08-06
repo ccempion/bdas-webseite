@@ -5,12 +5,15 @@ import { ABSCHLUSSART_KEYS, GEFUNDEN_DURCH_KEYS } from "./data";
 const MAX_TEXT = 200;
 const MAX_UNI = 200;
 const MIN_BIRTH_YEAR = 1900;
+/** Room for a paragraph or two, not an essay (#122). */
+export const MAX_VORSTELLUNG = 1000;
 
 /**
- * The six domain fields written to member_profiles. `uni` is the *resolved*
+ * The domain fields written to member_profiles. `uni` is the *resolved*
  * university string: either a value from the curated list, or the free text a
  * user typed after choosing "Sonstige" — validated as non-empty in either case.
- * `empfehlerName` is required only when `gefundenDurch === "empfehlung"`.
+ * `empfehlerName` is required only when `gefundenDurch === "empfehlung"`;
+ * `vorstellung` is optional for every channel.
  */
 export const SaveProfileFields = z
   .object({
@@ -41,6 +44,14 @@ export const SaveProfileFields = z
       errorMap: () => ({ message: "Bitte wähle aus, wie du BDAS gefunden hast." }),
     }),
     empfehlerName: z.string().trim().max(MAX_TEXT).optional().nullable(),
+    // Optional for every channel, never required (#122). It gives the board
+    // something to read; it verifies nothing and gates nothing.
+    vorstellung: z
+      .string()
+      .trim()
+      .max(MAX_VORSTELLUNG, `Bitte fasse dich auf ${MAX_VORSTELLUNG} Zeichen.`)
+      .optional()
+      .nullable(),
     photoStorageKey: z.string().trim().max(MAX_TEXT).optional().nullable(),
   })
   .refine((v) => v.gefundenDurch !== "empfehlung" || (v.empfehlerName?.trim().length ?? 0) > 0, {
@@ -81,6 +92,7 @@ export type MemberProfile = {
   readonly geburtsdatum: string;
   readonly gefundenDurch: string;
   readonly empfehlerName: string | null;
+  readonly vorstellung: string | null;
   readonly photoStorageKey: string | null;
   readonly completedAt: Date | null;
   readonly updatedAt: Date;

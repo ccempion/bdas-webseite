@@ -12,12 +12,22 @@ const complete: SummaryInput = {
   geburtsdatum: "1999-01-02",
   gefundenDurch: "instagram",
   empfehlerName: null,
+  vorstellung: null,
 };
 
 const rowsByLabel = (input: SummaryInput): Record<string, string> =>
   Object.fromEntries(buildProfileSummary(input).map((r) => [r.label, r.value]));
 
 describe("buildProfileSummary", () => {
+  it("omits the vorstellung row when the applicant wrote nothing", () => {
+    expect(rowsByLabel(complete)["Vorstellung"]).toBeUndefined();
+  });
+
+  it("shows the vorstellung when there is one", () => {
+    const rows = rowsByLabel({ ...complete, vorstellung: "Ich will mich engagieren." });
+    expect(rows["Vorstellung"]).toBe("Ich will mich engagieren.");
+  });
+
   it("resolves stored keys to their German labels", () => {
     const rows = rowsByLabel(complete);
     expect(rows["Abschlussart"]).toBe("Master");

@@ -11,10 +11,20 @@ const base: WizardValues = {
   geburtsdatum: "2000-05-01",
   gefundenDurch: "webseite",
   empfehlerName: "",
+  vorstellung: "",
   photoStorageKey: null,
 };
 
 describe("validateStep", () => {
+  it("passes the gefunden step with an empty vorstellung — it is optional", () => {
+    expect(validateStep("gefunden", { ...base, vorstellung: "" })).toEqual({});
+  });
+
+  it("fails the gefunden step when the vorstellung is too long", () => {
+    const errors = validateStep("gefunden", { ...base, vorstellung: "x".repeat(1001) });
+    expect(Object.keys(errors)).toContain("vorstellung");
+  });
+
   it("passes the studium step with valid input", () => {
     expect(validateStep("studium", base)).toEqual({});
   });
