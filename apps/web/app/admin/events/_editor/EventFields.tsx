@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
-import { Field, Input } from "@bdas/design-system";
+import { Combobox, Field, Input } from "@bdas/design-system";
 import type { EventContent } from "@bdas/events-module";
 
 import { LocationPicker } from "../../../_components/LocationPicker";
@@ -43,6 +43,19 @@ export function EventFields({ d }: { d: EventDefaults }) {
   // toggle disables (and unchecks) itself when the event isn't public.
   const [visibility, setVisibility] = useState(d.visibility);
   const [allowGuest, setAllowGuest] = useState(d.allowGuestRegistration);
+
+  /** "Föderationsweit" is the empty group id, so it has to be a pickable entry
+   *  rather than the placeholder — and only for those allowed to use it. */
+  const groupOptions = useMemo(
+    () => [
+      ...(d.allowFederation ? [{ value: "", label: "Föderationsweit" }] : []),
+      ...d.groups.map((g) => ({ value: g.id, label: g.name })),
+    ],
+    [d.groups, d.allowFederation],
+  );
+  const [groupId, setGroupId] = useState(
+    d.groupId ?? (d.allowFederation ? "" : (d.groups[0]?.id ?? "")),
+  );
   const guestAllowed = visibility === "public";
 
   async function uploadCover(file: File) {
@@ -216,19 +229,15 @@ export function EventFields({ d }: { d: EventDefaults }) {
       </Field>
 
       <Field label="Gruppe" htmlFor="groupId" error={d.errors?.["groupId"]}>
-        <select
+        <Combobox
           id="groupId"
           name="groupId"
-          defaultValue={d.groupId ?? (d.allowFederation ? "" : (d.groups[0]?.id ?? ""))}
-          className={SELECT_CLASS}
-        >
-          {d.allowFederation ? <option value="">Föderationsweit</option> : null}
-          {d.groups.map((g) => (
-            <option key={g.id} value={g.id}>
-              {g.name}
-            </option>
-          ))}
-        </select>
+          label="Gruppe"
+          placeholder="Föderationsweit"
+          options={groupOptions}
+          value={groupId}
+          onChange={setGroupId}
+        />
       </Field>
     </>
   );

@@ -16,13 +16,15 @@ import {
   login,
   logout,
   PASSWORD,
+  pickCombo,
   register,
   registerVerifyLogin,
   submitAndSettle,
   verify,
 } from "./helpers/flows";
 
-// Must be an entry of UNIVERSITIES (@bdas/profile) — the select has no other values.
+// Must be an entry of UNIVERSITIES (@bdas/profile) — the combobox offers no
+// other values, and its label doubles as the value it stores.
 const UNI = "RWTH Aachen";
 
 /** Unique per run so a shared DB never makes an assertion ambiguous. */
@@ -61,8 +63,8 @@ test("register → verify → wizard → the local board sees the application", 
   await weiter.click();
 
   // Step 2 — Hochschule & Gruppe.
-  await page.locator("#uni").selectOption(UNI);
-  await page.locator("#primaryGroupId").selectOption(groupId);
+  await pickCombo(page, "uni", UNI);
+  await pickCombo(page, "primaryGroupId", groupId);
   await weiter.click();
 
   // Step 3 — Geburtsdatum.
@@ -139,8 +141,8 @@ test("submitting repeatedly still lands on /account", async ({ page }) => {
   await page.getByLabel("Studiengang").fill(marker("Rechtswissenschaft-"));
   await page.locator("#abschlussart").selectOption("bachelor");
   await weiter.click();
-  await page.locator("#uni").selectOption(UNI);
-  await page.locator("#primaryGroupId").selectOption(groupId);
+  await pickCombo(page, "uni", UNI);
+  await pickCombo(page, "primaryGroupId", groupId);
   await weiter.click();
   await page.getByLabel("Geburtsdatum").fill("2000-05-17");
   await weiter.click();
@@ -196,7 +198,7 @@ test("a member edits their extended profile on Mein Konto", async ({ page }) => 
   const form = page.locator("form:has(#konto-studiengang)");
   await form.locator("#konto-studiengang").fill(studiengang);
   await form.locator("#konto-abschlussart").selectOption("master");
-  await form.locator("#konto-uni").selectOption(UNI);
+  await pickCombo(form, "konto-uni", UNI);
   await form.locator("#konto-geburtsdatum").fill("1999-01-02");
   await form.locator("#konto-gefundenDurch").selectOption("instagram");
   await submitAndSettle(page, form.getByRole("button", { name: "Speichern" }));

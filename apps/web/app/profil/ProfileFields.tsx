@@ -1,6 +1,8 @@
 "use client";
 
-import { Field, Input } from "@bdas/design-system";
+import { useMemo } from "react";
+
+import { Combobox, Field, Input } from "@bdas/design-system";
 import {
   ABSCHLUSSART_OPTIONS,
   GEFUNDEN_DURCH_OPTIONS,
@@ -13,6 +15,13 @@ import { PhotoField } from "./PhotoField";
 
 export const SELECT_CLASS =
   "block w-full rounded-bdas border border-bdas-soft bg-bdas-surface px-3 py-2.5 text-base text-bdas-ink transition-colors duration-bdas-quick ease-bdas focus:border-bdas-red focus:outline-none focus:ring-2 focus:ring-bdas-red/20";
+
+/** Built once: the list is 388 entries and never changes at runtime. "Sonstige"
+ *  trails it as the escape hatch for anything the HRK export does not cover. */
+const UNI_OPTIONS = [
+  ...UNIVERSITIES.map((u) => ({ value: u, label: u })),
+  { value: SONSTIGE, label: "Sonstige …" },
+];
 
 type Groups = ReadonlyArray<{ id: string; name: string; city: string }>;
 type Setter = <K extends keyof WizardValues>(k: K, v: WizardValues[K]) => void;
@@ -89,6 +98,11 @@ export function UniGruppeFields({
    *  here. */
   showGruppe?: boolean;
 } & WithIdPrefix) {
+  const groupOptions = useMemo(
+    () => groups.map((g) => ({ value: g.id, label: `${g.name} (${g.city})` })),
+    [groups],
+  );
+
   return (
     <>
       <Field
@@ -96,20 +110,14 @@ export function UniGruppeFields({
         htmlFor={`${idPrefix}uni`}
         {...(errors["uni"] ? { error: errors["uni"] } : {})}
       >
-        <select
+        <Combobox
           id={`${idPrefix}uni`}
-          className={SELECT_CLASS}
+          label="Hochschule"
+          options={UNI_OPTIONS}
           value={values.uni}
-          onChange={(e) => set("uni", e.currentTarget.value)}
-        >
-          <option value="">— bitte wählen —</option>
-          {UNIVERSITIES.map((u) => (
-            <option key={u} value={u}>
-              {u}
-            </option>
-          ))}
-          <option value={SONSTIGE}>Sonstige …</option>
-        </select>
+          onChange={(v) => set("uni", v)}
+          invalid={Boolean(errors["uni"])}
+        />
         {values.uni === SONSTIGE ? (
           <Input
             aria-label="Andere Hochschule"
@@ -126,19 +134,14 @@ export function UniGruppeFields({
           htmlFor={`${idPrefix}primaryGroupId`}
           {...(errors["primaryGroupId"] ? { error: errors["primaryGroupId"] } : {})}
         >
-          <select
+          <Combobox
             id={`${idPrefix}primaryGroupId`}
-            className={SELECT_CLASS}
+            label="BDAS-Gruppe"
+            options={groupOptions}
             value={values.primaryGroupId}
-            onChange={(e) => set("primaryGroupId", e.currentTarget.value)}
-          >
-            <option value="">— bitte wählen —</option>
-            {groups.map((g) => (
-              <option key={g.id} value={g.id}>
-                {g.name} ({g.city})
-              </option>
-            ))}
-          </select>
+            onChange={(v) => set("primaryGroupId", v)}
+            invalid={Boolean(errors["primaryGroupId"])}
+          />
         </Field>
       ) : null}
     </>

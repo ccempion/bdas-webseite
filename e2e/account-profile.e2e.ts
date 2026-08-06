@@ -8,9 +8,10 @@
 import { expect, test, type Page } from "@playwright/test";
 
 import { seedGroup, uniqueEmail, uniqueSlug } from "./helpers/db";
-import { createProfile, registerVerifyLogin, submitAndSettle } from "./helpers/flows";
+import { createProfile, pickCombo, registerVerifyLogin, submitAndSettle } from "./helpers/flows";
 
-// Must be an entry of UNIVERSITIES (@bdas/profile) — the select has no other values.
+// Must be an entry of UNIVERSITIES (@bdas/profile) — the combobox offers no
+// other values, and its label doubles as the value it stores.
 const UNI = "RWTH Aachen";
 
 /** Register, join a group and fill in the extended profile, which stamps
@@ -33,7 +34,7 @@ async function completeProfile(
   const form = page.locator("form:has(#konto-studiengang)");
   await form.locator("#konto-studiengang").fill(opts.studiengang);
   await form.locator("#konto-abschlussart").selectOption("bachelor");
-  await form.locator("#konto-uni").selectOption(UNI);
+  await pickCombo(form, "konto-uni", UNI);
   await form.locator("#konto-geburtsdatum").fill("2000-03-04");
   await form.locator("#konto-gefundenDurch").selectOption("webseite");
   await submitAndSettle(page, form.getByRole("button", { name: "Speichern" }));
