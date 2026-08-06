@@ -4,7 +4,7 @@
 
 **Goal:** A signed-in member can change their password from `/account` by proving the current one, which revokes every other session and sends a notification mail.
 
-**Architecture:** A new service in `modules/auth` (the module that owns `auth_credentials` and `auth_sessions`) rotates the hash and revokes sibling sessions in one transaction, then publishes `auth.password.changed`. It returns the user's email; the Server Action in `apps/web` sends the notification, mirroring how `requestPasswordReset` returns a token and lets the caller mail it. The UI is a `<details>` accordion card on `/account`.
+**Architecture:** A new service in `modules/auth` (the module that owns `auth_credentials` and `auth_sessions`) rotates the hash and revokes sibling sessions in one transaction, then publishes `auth.password.changed`. The Server Action in `apps/web` sends the notification to the address `getCurrentUser` already resolved, mirroring how `requestPasswordReset` returns its result and lets the caller mail it. The UI is a `<details>` accordion card on `/account`.
 
 **Tech Stack:** TypeScript, Drizzle ORM on Postgres, zod, `@node-rs/argon2`, Next.js 14 App Router Server Actions, vitest (integration against Docker Postgres), Playwright.
 
