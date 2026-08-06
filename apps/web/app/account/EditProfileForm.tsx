@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useFormStatus } from "react-dom";
 
 import { Alert, Button, Form } from "@bdas/design-system";
-import { isKnownUniversity, SONSTIGE } from "@bdas/profile";
+import { canonicalUniversity, SONSTIGE } from "@bdas/profile";
 
 import { resolveUni, type WizardValues } from "../_profile/steps";
 import {
@@ -32,8 +32,9 @@ export type EditProfileFormProps = {
 
 function toWizardValues(initial: EditProfileFormProps["initial"]): WizardValues {
   const stored = initial.uni;
+  const listed = stored === "" ? null : canonicalUniversity(stored);
   const [uni, uniOther] =
-    stored === "" ? ["", ""] : isKnownUniversity(stored) ? [stored, ""] : [SONSTIGE, stored];
+    stored === "" ? ["", ""] : listed !== null ? [listed, ""] : [SONSTIGE, stored];
 
   return {
     studiengang: initial.studiengang,
