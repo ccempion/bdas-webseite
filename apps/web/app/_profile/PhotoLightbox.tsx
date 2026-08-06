@@ -75,7 +75,11 @@ export function PhotoLightbox({ src, busy, onChange, onRemove, onClose }: PhotoL
           <div className="flex flex-col items-center gap-3">
             <p className="text-sm text-bdas-ink-body">Profilbild wirklich entfernen?</p>
             <div className="flex gap-3">
-              <Button variant="secondary" onClick={() => setConfirmingRemove(false)} disabled={busy}>
+              <Button
+                variant="secondary"
+                onClick={() => setConfirmingRemove(false)}
+                disabled={busy}
+              >
                 Abbrechen
               </Button>
               <Button onClick={onRemove} disabled={busy}>

@@ -41,19 +41,36 @@ describeIfDb("clearProfilePhoto", () => {
     await t.cleanup();
   });
 
-  it("clears a stored key and reports that it did", async () => {
+  /** The caller deletes the object, so the key it must delete has to come back
+   *  out — clearing the column is only half the job. */
+  it("clears a stored key and hands it back for deletion", async () => {
     await saveProfile(t.db, {
       userId: USER,
       fields: { ...FIELDS, photoStorageKey: "profile/usr/a.webp" },
       actor: OWNER,
     });
 
-    await expect(clearProfilePhoto(t.db, { userId: USER, actor: OWNER })).resolves.toBe(true);
+    await expect(clearProfilePhoto(t.db, { userId: USER, actor: OWNER })).resolves.toEqual({
+      cleared: true,
+      previousStorageKey: "profile/usr/a.webp",
+    });
     expect((await getProfile(t.db, USER))?.photoStorageKey).toBeNull();
   });
 
-  it("reports false when there is no profile row", async () => {
-    await expect(clearProfilePhoto(t.db, { userId: USER, actor: OWNER })).resolves.toBe(false);
+  it("reports not-cleared when there is no profile row", async () => {
+    await expect(clearProfilePhoto(t.db, { userId: USER, actor: OWNER })).resolves.toEqual({
+      cleared: false,
+      previousStorageKey: null,
+    });
+  });
+
+  it("clears a row that never had a photo, with no key to delete", async () => {
+    await saveProfile(t.db, { userId: USER, fields: FIELDS, actor: OWNER });
+
+    await expect(clearProfilePhoto(t.db, { userId: USER, actor: OWNER })).resolves.toEqual({
+      cleared: true,
+      previousStorageKey: null,
+    });
   });
 
   it("leaves the rest of the profile untouched", async () => {
