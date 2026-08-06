@@ -8,6 +8,7 @@ import { requireFlag } from "@bdas/feature-flags";
 import { changePrimaryGroup, getCurrentMember } from "@bdas/members";
 import { saveProfile } from "@bdas/profile";
 
+import { purgeUnreferencedPhoto } from "../_profile/photo-url";
 import { SUBMITTED_URL } from "../_profile/submitted";
 import { readSessionCookie } from "../../lib/auth-cookie";
 
@@ -45,12 +46,15 @@ export async function submitWizardAction(
     // an active member's would file a transfer request — either way the value is
     // recorded before we stamp completion.
     await changePrimaryGroup(db, me.member.id, groupId, { userId: me.user.id, grants: me.grants });
-    await saveProfile(db, {
+    const { supersededPhotoStorageKey } = await saveProfile(db, {
       userId: me.user.id,
       fields,
       actor: { userId: me.user.id, grants: me.grants },
       groupId,
     });
+    // Re-running the wizard over an existing profile can swap the photo; the
+    // one it replaced is unreachable from here on (spec §7).
+    await purgeUnreferencedPhoto(supersededPhotoStorageKey, me.user.id);
   } catch (err) {
     if (isAppError(err)) {
       const f = "fields" in err && (err as { fields?: Record<string, string> }).fields;

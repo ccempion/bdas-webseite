@@ -65,8 +65,8 @@ describeIfDb("profile service", () => {
       fields: { ...FIELDS, studiengang: "Mathematik" },
       actor: OWNER,
     });
-    expect(second.studiengang).toBe("Mathematik");
-    expect(second.completedAt?.getTime()).toBe(first.completedAt?.getTime());
+    expect(second.profile.studiengang).toBe("Mathematik");
+    expect(second.profile.completedAt?.getTime()).toBe(first.profile.completedAt?.getTime());
     expect(seen.map((e) => e.type)).toEqual(["profile.completed", "profile.updated"]);
     expect((seen[0] as ProfileCompleted).groupId).toBe("grp_1");
   });

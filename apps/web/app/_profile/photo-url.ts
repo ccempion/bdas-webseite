@@ -50,3 +50,22 @@ export async function deleteProfilePhotoObject(
     return false;
   }
 }
+
+/**
+ * Delete a photo object no longer referenced by any profile — the one a
+ * replacement superseded, or the one a removal cleared.
+ *
+ * Best-effort by design. The database write that unreferenced the key has
+ * already committed, so the member's photo is changed or gone from their side
+ * whatever happens here; a failure leaves an orphaned object, which is an
+ * operator problem rather than something to put in front of the member.
+ */
+export async function purgeUnreferencedPhoto(
+  storageKey: string | null,
+  userId: string,
+): Promise<void> {
+  if (!storageKey) return;
+  if (!(await deleteProfilePhotoObject(storageKey))) {
+    console.error(`[profile] photo object not deleted for user ${userId}`);
+  }
+}
