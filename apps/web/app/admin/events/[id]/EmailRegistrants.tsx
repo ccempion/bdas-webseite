@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import { useFormState, useFormStatus } from "react-dom";
 
 import { Alert, Button, Input } from "@bdas/design-system";
@@ -16,9 +17,14 @@ export function EmailRegistrants({
   recipientCount: number;
 }) {
   const [state, action] = useFormState(emailRegistrantsAction, initial);
+  const formRef = useRef<HTMLFormElement>(null);
+
+  useEffect(() => {
+    if (state.ok) formRef.current?.reset();
+  }, [state]);
 
   return (
-    <form action={action} className="flex flex-col gap-3">
+    <form ref={formRef} action={action} className="flex flex-col gap-3">
       <input type="hidden" name="eventId" value={eventId} />
       {state.error ? <Alert variant="error">{state.error}</Alert> : null}
       {state.ok ? (
