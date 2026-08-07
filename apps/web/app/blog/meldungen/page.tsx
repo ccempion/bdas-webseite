@@ -24,7 +24,7 @@ export default async function ReportedPostsPage() {
   const reports = await listOpenReports(db);
 
   return (
-    <main className="mx-auto flex max-w-2xl flex-col gap-6 px-4 py-12">
+    <main className="mx-auto flex max-w-4xl flex-col gap-6 px-4 py-12">
       <h1 className="text-2xl font-semibold text-bdas-ink">Gemeldete Beiträge</h1>
 
       {reports.length === 0 ? (

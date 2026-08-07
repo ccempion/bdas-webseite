@@ -44,7 +44,7 @@ export default async function BlogFeedPage({
   );
 
   return (
-    <main className="mx-auto flex max-w-2xl flex-col gap-8 px-4 py-12">
+    <main className="mx-auto flex max-w-6xl flex-col gap-8 px-4 py-12">
       <header className="flex items-center justify-between gap-4">
         <div className="flex flex-col gap-1">
           <h1 className="text-3xl font-semibold text-bdas-ink">Blog</h1>
@@ -64,13 +64,13 @@ export default async function BlogFeedPage({
           Für diese Auswahl gibt es aktuell keine Beiträge.
         </Alert>
       ) : (
-        <ul className="flex flex-col gap-6">
+        <ul className="grid gap-6 sm:grid-cols-2">
           {posts.map((p) => {
             const author = authors.get(p.createdBy);
             const html = renderPostContentHtml(p.content);
             return (
               <li key={p.id}>
-                <Card className="p-6">
+                <Card className="flex h-full flex-col p-6">
                   <div className="flex items-center gap-3">
                     <AuthorAvatar
                       initials={author?.initials ?? "?"}
@@ -101,7 +101,7 @@ export default async function BlogFeedPage({
 
                   <Link
                     href={`/blog/${p.slug}`}
-                    className="mt-4 inline-block text-sm text-bdas-red hover:underline"
+                    className="mt-auto self-start pt-4 text-sm text-bdas-red hover:underline"
                   >
                     Beitrag öffnen
                   </Link>
