@@ -16,6 +16,7 @@ export const FLAGS = [
   "notifications",
   "projects",
   "blog",
+  "blog_comments",
   "handover",
   "payments",
   "dashboard",
