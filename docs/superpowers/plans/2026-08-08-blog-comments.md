@@ -41,23 +41,24 @@
 
 **Modify:**
 
-| File                                  | Change                                           |
-| ------------------------------------- | ------------------------------------------------ |
-| `core/feature-flags/src/index.ts`     | Add `"blog_comments"` to `FLAGS`                 |
-| `modules/blog/src/schema.ts`          | Add the `postComments` Drizzle table             |
-| `modules/blog/src/types.ts`           | Add the `Comment` type                           |
-| `modules/blog/src/visibility.ts`      | Add `canModerateComment`                         |
-| `modules/blog/src/visibility.test.ts` | Cases for `canModerateComment`                   |
-| `modules/blog/src/events.ts`          | Add `CommentCreated`, extend `BlogEvent`         |
-| `modules/blog/src/index.ts`           | Re-export the new public surface                 |
-| `modules/blog/src/index.test.ts:58`   | Apply `0003_comments.sql` in the test harness    |
-| `modules/blog/README.md`              | Document the comments surface                    |
-| `apps/web/app/_blog/flag.ts`          | Add `commentsEnabled()`                          |
-| `apps/web/app/blog/actions.ts`        | Add `createCommentAction`, `deleteCommentAction` |
-| `apps/web/app/blog/[slug]/page.tsx`   | Swap placeholder for `CommentsSection`           |
-| `apps/web/app/blog/page.tsx`          | Render the comment count on feed cards           |
-| `playwright.config.ts:70`             | `BDAS_FLAG_BLOG_COMMENTS: "true"`                |
-| `e2e/blog.e2e.ts`                     | Comment E2E cases                                |
+| File                                      | Change                                             |
+| ----------------------------------------- | -------------------------------------------------- |
+| `core/feature-flags/src/index.ts`         | Add `"blog_comments"` to `FLAGS`                   |
+| `modules/blog/src/schema.ts`              | Add the `postComments` Drizzle table               |
+| `modules/blog/src/types.ts`               | Add the `Comment` type                             |
+| `modules/blog/src/visibility.ts`          | Add `canModerateComment`                           |
+| `modules/blog/src/visibility.test.ts`     | Cases for `canModerateComment`                     |
+| `modules/blog/src/events.ts`              | Add `CommentCreated`, extend `BlogEvent`           |
+| `modules/blog/src/index.ts`               | Re-export the new public surface                   |
+| `modules/blog/src/index.test.ts:58`       | Apply `0003_comments.sql` in the test harness      |
+| `modules/blog/README.md`                  | Document the comments surface                      |
+| `apps/web/app/_blog/flag.ts`              | Add `commentsEnabled()`                            |
+| `apps/web/app/_blog/ReportPostButton.tsx` | Import `TEXTAREA_CLASS` from the new shared module |
+| `apps/web/app/blog/actions.ts`            | Add `createCommentAction`, `deleteCommentAction`   |
+| `apps/web/app/blog/[slug]/page.tsx`       | Swap placeholder for `CommentsSection`             |
+| `apps/web/app/blog/page.tsx`              | Render the comment count on feed cards             |
+| `playwright.config.ts:70`                 | `BDAS_FLAG_BLOG_COMMENTS: "true"`                  |
+| `e2e/blog.e2e.ts`                         | Comment E2E cases                                  |
 
 **Delete:** `apps/web/app/_blog/CommentsPlaceholder.tsx` (in Task 7, once nothing imports it).
 
@@ -175,7 +176,7 @@ CREATE TABLE post_comments (
   body        text NOT NULL,
   created_at  timestamptz NOT NULL DEFAULT now(),
   deleted_at  timestamptz,
-  CONSTRAINT post_comments_body_length CHECK (char_length(body) BETWEEN 1 AND 1000)
+  CONSTRAINT post_comments_body_check CHECK (char_length(body) BETWEEN 1 AND 1000)
 );
 
 CREATE INDEX post_comments_post_idx   ON post_comments(post_id, created_at) WHERE deleted_at IS NULL;
@@ -1116,10 +1117,12 @@ git commit -m "feat(blog): comment server actions"
 
 **Files:**
 
+- Create: `apps/web/app/_blog/form-styles.ts`
 - Create: `apps/web/app/_blog/CommentForm.tsx`
 - Create: `apps/web/app/_blog/DeleteCommentButton.tsx`
 - Create: `apps/web/app/_blog/CommentsSection.tsx`
 - Delete: `apps/web/app/_blog/CommentsPlaceholder.tsx`
+- Modify: `apps/web/app/_blog/ReportPostButton.tsx` (import the shared class)
 - Modify: `apps/web/app/blog/[slug]/page.tsx`
 
 **Interfaces:**
@@ -1128,6 +1131,31 @@ git commit -m "feat(blog): comment server actions"
 - Produces: `<CommentsSection post={post} me={me} />`.
 
 Visual treatment is the "quiet thread" from the spec §6: one `Card flat` holds the section, comments separated by hairlines and whitespace — **not** nested cards.
+
+- [ ] **Step 0: Extract the shared textarea class**
+
+`ReportPostButton.tsx:9-11` defines a `TEXTAREA_CLASS` constant that the comment composer needs identically. Rather than copying it, move it to a shared module so the two inputs cannot drift apart.
+
+Create `apps/web/app/_blog/form-styles.ts`:
+
+```ts
+/**
+ * Shared input styling for blog forms. Extracted so the report form and the
+ * comment composer cannot drift apart visually — they are the same control in
+ * two places, not two independent designs.
+ */
+export const TEXTAREA_CLASS =
+  "block w-full rounded-bdas border border-bdas-soft bg-bdas-surface px-3 py-2 " +
+  "text-sm text-bdas-ink focus:border-bdas-red focus:outline-none focus:ring-2 focus:ring-bdas-red/20";
+```
+
+Then in `apps/web/app/_blog/ReportPostButton.tsx`, delete the local `TEXTAREA_CLASS` constant (lines 9-11) and import it instead:
+
+```ts
+import { TEXTAREA_CLASS } from "./form-styles";
+```
+
+The class string must be byte-identical to what `ReportPostButton` used before — this is a pure move, with no visual change to the report form. Verify with `git diff` that the string is unchanged.
 
 - [ ] **Step 1: Write the composer**
 
@@ -1140,13 +1168,10 @@ import { useState } from "react";
 import { useFormState, useFormStatus } from "react-dom";
 
 import { createCommentAction, type CommentFormState } from "../blog/actions";
+import { TEXTAREA_CLASS } from "./form-styles";
 
 const initialState: CommentFormState = {};
 const MAX = 1000;
-
-const TEXTAREA_CLASS =
-  "block w-full rounded-bdas border border-bdas-soft bg-bdas-surface px-3 py-2 " +
-  "text-sm text-bdas-ink focus:border-bdas-red focus:outline-none focus:ring-2 focus:ring-bdas-red/20";
 
 /** Plain-text composer. Comments are capped at 1000 characters (ADR 0033). */
 export function CommentForm({ postId }: { postId: string }) {
@@ -1194,7 +1219,7 @@ function SubmitButton() {
 }
 ```
 
-`TEXTAREA_CLASS` is copied verbatim from `ReportPostButton.tsx:9-11` — keep it identical so the two inputs cannot drift apart visually.
+`TEXTAREA_CLASS` now comes from the shared `form-styles.ts` created in Step 0 — do not redefine it locally.
 
 - [ ] **Step 2: Write the delete control**
 
