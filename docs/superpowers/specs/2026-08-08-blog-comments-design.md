@@ -212,8 +212,9 @@ service → `revalidatePath`, with errors funnelled through `appErr`.
   then `resolveAuthors` **once** for the whole list, so N comments cost one
   lookup per unique author.
 - **`CommentForm.tsx`** (client) — `<textarea>`, live character counter against
-  the 1000 cap, disabled while submitting, inline error line. `useActionState`,
-  as `PostForm` does.
+  the 1000 cap, disabled while submitting, inline error line. Uses
+  `useFormState` + `useFormStatus` from `react-dom`, the idiom every existing
+  blog client component uses.
 - **`DeleteCommentButton.tsx`** (client) — near-copy of `DeletePostButton.tsx`.
 
 ### Pages
@@ -276,9 +277,12 @@ Rejected: a card per comment (too heavy, nests cards); chat bubbles (imports
 the WhatsApp idiom, which the platform spec's non-goals deliberately keep as a
 separate channel).
 
-Timestamps use the existing `formatDateTime` from `apps/web/lib/format.ts`.
-The mockup showed relative times ("vor 2 Stunden"); there is no relative-time
-helper in the codebase, and adding one is not worth its own tests here.
+Timestamps use the existing `formatDate` from `apps/web/lib/format.ts`, the
+same helper the feed cards use. (`formatDateTime` is `dateStyle: "full"` —
+"Freitag, 8. August 2026 um 14:30" — far too long to sit inline next to a
+name.) The mockup showed relative times ("vor 2 Stunden"); there is no
+relative-time helper in the codebase, and adding one is not worth its own
+tests here.
 
 Empty state: "Noch keine Kommentare." above the composer, so the region never
 looks broken.
