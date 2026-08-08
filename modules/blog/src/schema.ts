@@ -1,4 +1,5 @@
 import { index, jsonb, pgTable, text, timestamp } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 
 import type { TiptapDoc } from "./types";
 
@@ -68,7 +69,9 @@ export const postComments = pgTable(
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
   },
   (t) => ({
-    postIdx: index("post_comments_post_idx").on(t.postId, t.createdAt),
+    postIdx: index("post_comments_post_idx")
+      .on(t.postId, t.createdAt)
+      .where(sql`${t.deletedAt} IS NULL`),
     authorIdx: index("post_comments_author_idx").on(t.authorId, t.createdAt),
   }),
 );
