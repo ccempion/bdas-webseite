@@ -28,7 +28,7 @@ export function Sidebar({ scopes }: { scopes: Scope[] }) {
       <div className="mb-2">
         <ScopeSwitcher scopes={scopes} activeLabel={labelFor(active)} />
       </div>
-      {/* Eight items stacked would push the content a screen down on a phone,
+      {/* Seven items stacked would push the content a screen down on a phone,
           so below `md` the nav scrolls sideways instead of growing downwards. */}
       <div className="flex flex-row gap-1 overflow-x-auto md:flex-col md:overflow-x-visible">
         {items.map((item) => {
