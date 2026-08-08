@@ -585,7 +585,7 @@ describeIfDb("blog comments", () => {
       await addComment(t.db, p.id, member, `Kommentar ${i}`);
     }
     await expect(addComment(t.db, p.id, member, "einer zu viel")).rejects.toMatchObject({
-      code: "RATE_LIMIT",
+      code: "RATE_LIMITED",
     });
   });
 
