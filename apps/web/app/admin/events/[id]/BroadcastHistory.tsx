@@ -2,11 +2,7 @@ import type { BroadcastLogEntry } from "@bdas/notifications";
 
 import { formatDateTime } from "../../../../lib/format";
 
-export function BroadcastHistory({
-  broadcasts,
-}: {
-  broadcasts: ReadonlyArray<BroadcastLogEntry>;
-}) {
+export function BroadcastHistory({ broadcasts }: { broadcasts: ReadonlyArray<BroadcastLogEntry> }) {
   if (broadcasts.length === 0) {
     return <p className="text-sm text-bdas-ink-muted">Noch keine Nachrichten gesendet.</p>;
   }

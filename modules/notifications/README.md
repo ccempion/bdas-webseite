@@ -6,9 +6,9 @@ send for audit.
 
 ## Owned tables
 
-| Table              | Purpose                                             |
-| ------------------ | ---------------------------------------------------- |
-| `notification_log` | One audit row per send (`sent` / `failed`)           |
+| Table              | Purpose                                               |
+| ------------------ | ----------------------------------------------------- |
+| `notification_log` | One audit row per send (`sent` / `failed`)            |
 | `event_broadcast`  | One row per organizer broadcast, for the history view |
 
 Migrations, run after `members` (the FK target) per the `infra/migrations`
