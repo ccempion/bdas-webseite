@@ -34,32 +34,35 @@ test("federal board can create, edit, and archive a group", async ({ page }) => 
   const slug = uniqueSlug("e2e-board");
   const name = "E2E Board Gruppe";
 
-  // Create (active).
-  await page.goto("/admin/gruppen/neu");
-  await page.getByLabel(/Kürzel/).fill(slug);
+  // Create (active) — /admin/gruppen is gone (#62); creation lives on the
+  // federal board scope and takes name/city/slug only.
+  await page.goto("/federal/groups");
+  await page.getByRole("button", { name: "+ Gruppe anlegen" }).click();
   await page.getByLabel("Name").fill(name);
   await page.getByLabel("Stadt").fill("Boardstadt");
-  await page.locator("#status").selectOption("active");
-  await page.getByRole("button", { name: "Gruppe anlegen" }).click();
-  await page.waitForURL("**/admin/gruppen");
+  await page.getByLabel("Slug").fill(slug);
+  await page.getByRole("button", { name: "Anlegen" }).click();
+  await expect(page.getByRole("cell", { name })).toBeVisible();
 
   // It is now public.
   await page.goto("/gruppen");
   await expect(page.getByText(name)).toBeVisible();
 
-  // Edit the name.
+  // Edit the name on the group's own profile page (federal passes the lead gate).
   const edited = `${name} (bearbeitet)`;
-  await page.goto(`/admin/gruppen/${slug}/bearbeiten`);
+  await page.goto(`/gruppe/${slug}/profil`);
   await page.getByLabel("Name").fill(edited);
-  await page.getByRole("button", { name: "Änderungen speichern" }).click();
-  await page.waitForURL("**/admin/gruppen");
+  await page.getByRole("button", { name: "Speichern" }).click();
+  await expect(page.getByText("Gespeichert.")).toBeVisible();
   await page.goto("/gruppen");
   await expect(page.getByText(edited)).toBeVisible();
 
-  // Archive — confirm() must be accepted.
-  page.once("dialog", (d) => d.accept());
-  await page.goto(`/admin/gruppen/${slug}/bearbeiten`);
-  await page.getByRole("button", { name: "Gruppe archivieren" }).click();
+  // Archive from the federal groups table.
+  await page.goto("/federal/groups");
+  await page
+    .getByRole("row", { name: new RegExp(edited.replace(/[()]/g, "\\$&")) })
+    .getByRole("button", { name: "Archivieren" })
+    .click();
   await expect(async () => {
     await page.goto("/gruppen");
     await expect(page.getByText(edited)).toHaveCount(0);

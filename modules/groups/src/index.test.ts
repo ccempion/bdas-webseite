@@ -51,6 +51,8 @@ describeIfDb("groups integration", () => {
       "0002_status_check.sql",
       "0003_drop_university_description.sql",
       "0004_location.sql",
+      "0005_image_key.sql",
+      "0006_link_scheme_guard.sql",
     ]) {
       const sql = await fs.readFile(path.join(__dirname, "..", "migrations", file), "utf8");
       await t.client.unsafe(sql);
@@ -224,6 +226,111 @@ describeIfDb("groups integration", () => {
     });
     expect(cleared.location).toBeNull();
     expect((await getGroup(t.db, created.id))?.location).toBeNull();
+  });
+
+  // Security review of #62: `z.string().url()` accepts `javascript:`, and the
+  // public page renders these fields as a live <a href>.
+  it.each(["javascript:alert(1)", "data:text/html,<script>alert(1)</script>", "mailto:x@y.z"])(
+    "rejects %s as a link field",
+    async (bad) => {
+      await expect(
+        createGroup(t.db, { slug: "boese", name: "BDAS Böse", city: "Bösestadt", websiteUrl: bad }),
+      ).rejects.toMatchObject({ code: "VALIDATION" });
+      await expect(
+        upsertGroupBySlug(t.db, {
+          slug: "boese",
+          name: "BDAS Böse",
+          city: "Bösestadt",
+          instagramUrl: bad,
+        }),
+      ).rejects.toMatchObject({ code: "VALIDATION" });
+    },
+  );
+
+  it("keeps the DB constraint as a backstop against a non-http link", async () => {
+    await expect(
+      t.client`insert into groups (id, slug, name, city, website_url)
+               values ('grp_xss', 'xss', 'XSS', 'Nowhere', 'javascript:alert(1)')`,
+    ).rejects.toThrow();
+  });
+
+  // Every write in this module goes through Drizzle's query builder, so a
+  // payload is bound as a parameter and can never reach the parser as SQL.
+  it("treats SQL metacharacters in group fields as data, not as SQL", async () => {
+    const payload = "'; DROP TABLE groups; --";
+
+    const created = await createGroup(t.db, { slug: "inject", name: payload, city: payload });
+    expect(created.name).toBe(payload);
+
+    const updated = await updateGroup(t.db, created.id, {
+      name: `${payload} UNION SELECT`,
+      city: payload,
+    });
+    expect(updated.name).toBe(`${payload} UNION SELECT`);
+
+    // The table is still there and holds exactly the row we wrote.
+    const stored = await getGroupBySlug(t.db, "inject");
+    expect(stored?.name).toBe(`${payload} UNION SELECT`);
+    expect(await listGroups(t.db)).toHaveLength(1);
+  });
+
+  it("accepts ordinary http(s) links", async () => {
+    const g = await createGroup(t.db, {
+      slug: "gut",
+      name: "BDAS Gut",
+      city: "Gutstadt",
+      websiteUrl: "http://bdas-gut.de",
+      instagramUrl: "https://www.instagram.com/bdas_gut/",
+    });
+    expect(g.websiteUrl).toBe("http://bdas-gut.de");
+    expect(g.instagramUrl).toBe("https://www.instagram.com/bdas_gut/");
+  });
+
+  it("stores a banner key, preserves it on a key-less update, clears on null", async () => {
+    const created = await createGroup(t.db, {
+      slug: "trier",
+      name: "BDAS Trier",
+      city: "Trier",
+      imageKey: "gruppen-trier/banner.webp",
+    });
+    expect(created.imageKey).toBe("gruppen-trier/banner.webp");
+    expect((await getGroup(t.db, created.id))?.imageKey).toBe("gruppen-trier/banner.webp");
+
+    // `imageKey` absent → stored banner untouched
+    const kept = await updateGroup(t.db, created.id, { name: "BDAS Trier", city: "Trier" });
+    expect(kept.imageKey).toBe("gruppen-trier/banner.webp");
+    expect((await getGroup(t.db, created.id))?.imageKey).toBe("gruppen-trier/banner.webp");
+
+    // explicit null → cleared
+    const cleared = await updateGroup(t.db, created.id, {
+      name: "BDAS Trier",
+      city: "Trier",
+      imageKey: null,
+    });
+    expect(cleared.imageKey).toBeNull();
+    expect((await getGroup(t.db, created.id))?.imageKey).toBeNull();
+  });
+
+  it("re-seeding via upsert without a banner keeps the stored one", async () => {
+    await upsertGroupBySlug(t.db, {
+      slug: "jena",
+      name: "BDAS Jena",
+      city: "Jena",
+      imageKey: "gruppen-jena/banner.webp",
+    });
+    await upsertGroupBySlug(t.db, { slug: "jena", name: "BDAS Jena", city: "Jena" });
+    expect((await getGroupBySlug(t.db, "jena"))?.imageKey).toBe("gruppen-jena/banner.webp");
+  });
+
+  it("rejects an over-long banner key", async () => {
+    await expect(
+      createGroup(t.db, {
+        slug: "lang",
+        name: "BDAS Lang",
+        city: "Langstadt",
+        imageKey: "x".repeat(501),
+      }),
+    ).rejects.toThrow("Eingabe ungültig");
   });
 
   it("re-seeding via upsert without location keeps the stored location", async () => {

@@ -10,6 +10,7 @@ import { listUpcomingEvents } from "@bdas/events-module";
 import { isFlagOn } from "@bdas/feature-flags";
 import { getGroupBySlug } from "@bdas/groups";
 import { canEditGroupPage } from "@bdas/members";
+import { contentMediaPublicUrl } from "@bdas/storage";
 
 import { breiteClass, puckConfig, withBreite } from "../../_content/puck-config";
 import { loadCurrentMember } from "../../_dashboard/session";
@@ -53,6 +54,15 @@ export default async function GruppeDetailPage({ params }: { params: { slug: str
             ← Alle Hochschulgruppen
           </Link>
         </p>
+
+        {group.imageKey ? (
+          // Decorative: the group name follows immediately as the <h1>.
+          <img
+            src={contentMediaPublicUrl(group.imageKey)}
+            alt=""
+            className="aspect-[16/9] w-full rounded-bdas object-cover shadow-bdas-card"
+          />
+        ) : null}
 
         <header className="flex flex-col items-start gap-4 sm:flex-row sm:justify-between">
           <div className="flex flex-col gap-1">

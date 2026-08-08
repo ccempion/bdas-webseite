@@ -1,13 +1,13 @@
 /**
- * Group map: a local_board member sets their group's location through the
- * admin edit form (Photon stubbed), then the public map on /gruppen and the
- * start page shows the pin, whose popup links to the group page.
+ * Group map: a group's lead sets the location on their own profile page
+ * (Photon stubbed), then the public map on /gruppen and the start page shows
+ * the pin, whose popup links to the group page.
  * Requires BDAS_FLAG_GROUP_MAP=true (set in the CI e2e job env).
  */
 import { expect, test } from "@playwright/test";
 
 import {
-  grantLocalBoard,
+  grantLocalBoardLead,
   groupContactEmail,
   seedGroup,
   uniqueEmail,
@@ -34,9 +34,7 @@ test.beforeEach(async ({ page }) => {
   );
 });
 
-test("local board sets a location; the public map pin links to the group page", async ({
-  page,
-}) => {
+test("the lead sets a location; the public map pin links to the group page", async ({ page }) => {
   const slug = uniqueSlug("e2e-karte");
   const groupId = await seedGroup({
     slug,
@@ -49,18 +47,12 @@ test("local board sets a location; the public map pin links to the group page", 
   const email = uniqueEmail("karte");
   await registerVerifyLogin(page, { email });
   await createProfile(page, {});
-  await grantLocalBoard(email, groupId); // takes effect on next request (DB-read grants)
+  await grantLocalBoardLead(email, groupId); // takes effect on next request (DB-read grants)
 
-  // Set the location through the admin edit form (Photon is stubbed above).
-  await page.goto(`/admin/gruppen/${slug}/bearbeiten`);
+  // Set the location on the group's own profile page (Photon is stubbed above).
+  await page.goto(`/gruppe/${slug}/profil`);
   await page.getByLabel("Ort (suchen)").fill("Uni Köln");
   await page.getByRole("button", { name: /Universität zu Köln/ }).click();
-  await page.getByRole("button", { name: "Änderungen speichern" }).click();
-  await page.waitForURL("**/admin/gruppen");
-
-  // Task 5b regression: saving the board Profil form must preserve the
-  // admin-managed fields AND the stored location.
-  await page.goto(`/gruppe/${slug}/profile`);
   await page.getByRole("button", { name: "Speichern" }).click();
   // Match any outcome the form can report (GroupProfileForm renders either
   // "Gespeichert." or the action's error), so a failed save shows up as the
@@ -70,6 +62,9 @@ test("local board sets a location; the public map pin links to the group page", 
   );
   await expect(saveResult).toBeVisible();
   await expect(saveResult).toHaveText("Gespeichert.");
+
+  // Regression: a save from this form must not wipe the seeded contact address
+  // — it now round-trips through the form instead of being merged server-side.
   expect(await groupContactEmail(slug)).toBe("karte@bdas.de");
 
   // /gruppen renders the map; the pin's popup links to the group page.

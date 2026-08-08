@@ -5,9 +5,9 @@ slug-based URL (`/gruppen/aachen`) and a small profile.
 
 ## Owned tables
 
-| Table    | Purpose                                                                                                      |
-| -------- | ------------------------------------------------------------------------------------------------------------ |
-| `groups` | Slug, display name, city, contacts, status, optional map location (name/address editor-only; lat/lng public) |
+| Table    | Purpose                                                                                                                                                        |
+| -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `groups` | Slug, display name, city, contacts, status, optional map location (name/address editor-only; lat/lng public), optional `image_key` banner reference (ADR 0032) |
 
 `join_fee_*` columns deliberately omitted (Phase 6 per spec). The
 join-policy service returns `{ required: false }` for every group until

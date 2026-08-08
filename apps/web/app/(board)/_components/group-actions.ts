@@ -13,6 +13,14 @@ async function assertFederal() {
   requireFederalBoard(me); // throws ForbiddenError if not federal_board
 }
 
+/** The public `/gruppen` list is statically renderable, so a created or
+ *  archived group stays visible/invisible there until the next deploy without
+ *  this. `/gruppen/[slug]` is force-dynamic and needs no revalidation. */
+function revalidateGroupViews(): void {
+  revalidatePath("/federal/groups");
+  revalidatePath("/gruppen");
+}
+
 export async function createGroupAction(input: {
   name: string;
   city: string;
@@ -20,11 +28,11 @@ export async function createGroupAction(input: {
 }): Promise<void> {
   await assertFederal();
   await createGroup(getDb(), input);
-  revalidatePath("/federal/groups");
+  revalidateGroupViews();
 }
 
 export async function archiveGroupAction(groupId: string): Promise<void> {
   await assertFederal();
   await archiveGroup(getDb(), groupId);
-  revalidatePath("/federal/groups");
+  revalidateGroupViews();
 }

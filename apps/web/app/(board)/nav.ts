@@ -23,7 +23,7 @@ export function groupNav(slug: string): ReadonlyArray<NavItem> {
     { href: `${base}/bewerbungen`, label: "Bewerbungen" },
     { href: `${base}/events`, label: "Events" },
     { href: `${base}/vorstand`, label: "Vorstand" },
-    { href: `${base}/profile`, label: "Profil" },
+    { href: `${base}/profil`, label: "Profil" },
     { href: `/gruppen/${slug}`, label: "Öffentliche Seite" },
     { href: `${base}/files`, label: "Dateien" },
   ];
