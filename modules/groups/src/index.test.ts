@@ -254,6 +254,26 @@ describeIfDb("groups integration", () => {
     ).rejects.toThrow();
   });
 
+  // Every write in this module goes through Drizzle's query builder, so a
+  // payload is bound as a parameter and can never reach the parser as SQL.
+  it("treats SQL metacharacters in group fields as data, not as SQL", async () => {
+    const payload = "'; DROP TABLE groups; --";
+
+    const created = await createGroup(t.db, { slug: "inject", name: payload, city: payload });
+    expect(created.name).toBe(payload);
+
+    const updated = await updateGroup(t.db, created.id, {
+      name: `${payload} UNION SELECT`,
+      city: payload,
+    });
+    expect(updated.name).toBe(`${payload} UNION SELECT`);
+
+    // The table is still there and holds exactly the row we wrote.
+    const stored = await getGroupBySlug(t.db, "inject");
+    expect(stored?.name).toBe(`${payload} UNION SELECT`);
+    expect(await listGroups(t.db)).toHaveLength(1);
+  });
+
   it("accepts ordinary http(s) links", async () => {
     const g = await createGroup(t.db, {
       slug: "gut",
