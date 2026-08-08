@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useFormState, useFormStatus } from "react-dom";
 
 import { createCommentAction, type CommentFormState } from "../blog/actions";
@@ -12,7 +12,15 @@ const MAX = 1000;
 /** Plain-text composer. Comments are capped at 1000 characters (ADR 0033). */
 export function CommentForm({ postId }: { postId: string }) {
   const [state, action] = useFormState(createCommentAction, initialState);
-  const [length, setLength] = useState(0);
+  const [body, setBody] = useState("");
+
+  // `state` is a fresh object on every action return, so this effect re-fires
+  // on each successful post (not just the first) — the textarea and its
+  // counter, now both driven by `body`, clear together instead of the
+  // counter going stale once the (uncontrolled) field reset on its own.
+  useEffect(() => {
+    if (state.success) setBody("");
+  }, [state]);
 
   return (
     <form action={action} className="mt-5 flex flex-col gap-2 border-t border-bdas-soft pt-5">
@@ -28,15 +36,21 @@ export function CommentForm({ postId }: { postId: string }) {
         required
         placeholder="Schreib einen Kommentar …"
         className={TEXTAREA_CLASS}
-        onChange={(e) => setLength(e.target.value.length)}
+        value={body}
+        onChange={(e) => setBody(e.target.value)}
+        aria-describedby={state.error ? "comment-count comment-error" : "comment-count"}
       />
       <div className="flex items-center justify-between">
-        <span className="text-xs text-bdas-ink-muted">
-          {length}/{MAX}
+        <span id="comment-count" aria-live="polite" className="text-xs text-bdas-ink-muted">
+          {body.length}/{MAX}
         </span>
         <SubmitButton />
       </div>
-      {state.error ? <span className="text-sm text-bdas-red">{state.error}</span> : null}
+      {state.error ? (
+        <span id="comment-error" role="alert" className="text-sm text-bdas-red">
+          {state.error}
+        </span>
+      ) : null}
     </form>
   );
 }

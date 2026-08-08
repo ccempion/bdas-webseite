@@ -170,7 +170,7 @@ export async function dismissReportAction(_prev: ActionState, fd: FormData): Pro
   return {};
 }
 
-export type CommentFormState = { readonly error?: string };
+export type CommentFormState = { readonly error?: string; readonly success?: boolean };
 
 /**
  * Add a comment. Eligibility is ADR 0030's authoring rule reused verbatim —
@@ -204,7 +204,7 @@ export async function createCommentAction(
 
   revalidatePath(`/blog/${post.slug}`);
   revalidatePath("/blog");
-  return {};
+  return { success: true };
 }
 
 export async function deleteCommentAction(_prev: ActionState, fd: FormData): Promise<ActionState> {
