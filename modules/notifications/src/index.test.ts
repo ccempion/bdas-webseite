@@ -19,7 +19,7 @@ import { getEventBus, resetEventBus } from "@bdas/events";
 import { setNotifier, type OutboundEmail } from "./notifier";
 import { setRecipientResolver } from "./resolver";
 import { notificationLog } from "./schema";
-import { sendOrganizerMessage } from "./services/broadcast";
+import { listBroadcastsForEvent, sendOrganizerMessage } from "./services/broadcast";
 import { sendTransactional } from "./services/send";
 import { registerNotificationSubscribers, unregisterNotificationSubscribers } from "./subscribers";
 import type { RecipientContact } from "./types";
@@ -67,6 +67,7 @@ describeIfDb("notifications integration", () => {
       ["..", "..", "events", "migrations", "0003_guest_registration.sql"],
       ["..", "migrations", "0001_init.sql"],
       ["..", "migrations", "0002_guest_recipient.sql"],
+      ["..", "migrations", "0003_broadcast_log.sql"],
     ]) {
       const sql = await fs.readFile(path.join(__dirname, ...file), "utf8");
       await t.client.unsafe(sql);
@@ -312,6 +313,57 @@ describeIfDb("notifications integration", () => {
     const rows = await t.db.select().from(notificationLog);
     expect(rows).toHaveLength(2);
     expect(rows.every((r) => r.template === "event_organizer_message")).toBe(true);
+  });
+
+  it("sendOrganizerMessage records one event_broadcast row with the sent count", async () => {
+    const ids = [await seedMemberN(1), await seedMemberN(2)];
+
+    await sendOrganizerMessage(t.db, {
+      memberIds: ids,
+      eventTitle: "Sommerfest",
+      eventId: "evt_bcast",
+      subject: "Wichtige Info",
+      body: "Bitte denkt an euren Ausweis.",
+    });
+
+    const broadcasts = await listBroadcastsForEvent(t.db, "evt_bcast");
+    expect(broadcasts).toHaveLength(1);
+    expect(broadcasts[0]).toMatchObject({
+      eventId: "evt_bcast",
+      subject: "Wichtige Info",
+      body: "Bitte denkt an euren Ausweis.",
+      recipientCount: 2,
+    });
+  });
+
+  it("listBroadcastsForEvent returns only that event's broadcasts, newest first", async () => {
+    const ids = [await seedMemberN(1)];
+
+    await sendOrganizerMessage(t.db, {
+      memberIds: ids,
+      eventTitle: "Sommerfest",
+      eventId: "evt_a",
+      subject: "Erste Nachricht",
+      body: "Zuerst.",
+    });
+    await sendOrganizerMessage(t.db, {
+      memberIds: ids,
+      eventTitle: "Sommerfest",
+      eventId: "evt_a",
+      subject: "Zweite Nachricht",
+      body: "Danach.",
+    });
+    await sendOrganizerMessage(t.db, {
+      memberIds: ids,
+      eventTitle: "Anderes Fest",
+      eventId: "evt_b",
+      subject: "Anderes Event",
+      body: "Sollte nicht auftauchen.",
+    });
+
+    const broadcasts = await listBroadcastsForEvent(t.db, "evt_a");
+    expect(broadcasts).toHaveLength(2);
+    expect(broadcasts.map((b) => b.subject)).toEqual(["Zweite Nachricht", "Erste Nachricht"]);
   });
 
   it("emails the new organizer on members.role.granted, and ignores other roles", async () => {

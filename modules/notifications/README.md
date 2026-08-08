@@ -6,9 +6,10 @@ send for audit.
 
 ## Owned tables
 
-| Table              | Purpose                                    |
-| ------------------ | ------------------------------------------ |
-| `notification_log` | One audit row per send (`sent` / `failed`) |
+| Table              | Purpose                                             |
+| ------------------ | ---------------------------------------------------- |
+| `notification_log` | One audit row per send (`sent` / `failed`)           |
+| `event_broadcast`  | One row per organizer broadcast, for the history view |
 
 Migrations, run after `members` (the FK target) per the `infra/migrations`
 manifest:
@@ -17,6 +18,8 @@ manifest:
 - `migrations/0002_guest_recipient.sql` — makes `member_id` nullable so
   transactional mail to event **guests** (non-members) can be logged with
   `to_email` and a null `member_id` (Slice 4)
+- `migrations/0003_broadcast_log.sql` — adds `event_broadcast`, written by
+  `sendOrganizerMessage` so the admin UI can show past broadcasts per event
 
 Guest sends use `sendTransactionalToGuest(template, { email, name }, extra)`
 internally (no member resolver); the bus subscribers branch on whether a
@@ -27,6 +30,8 @@ registrant event carries a `memberId` or guest fields.
 ```ts
 import {
   sendTransactional,
+  sendOrganizerMessage,
+  listBroadcastsForEvent,
   registerNotificationSubscribers,
   // composition seams (wired in apps/web at boot)
   setNotifier,
@@ -44,6 +49,9 @@ import {
   type TemplateData,
   type SendResult,
   type RecipientContact,
+  type OrganizerMessage,
+  type BroadcastResult,
+  type BroadcastLogEntry,
 } from "@bdas/notifications";
 ```
 

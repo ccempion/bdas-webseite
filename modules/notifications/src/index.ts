@@ -8,8 +8,10 @@
 export { sendTransactional } from "./services/send";
 export {
   sendOrganizerMessage,
+  listBroadcastsForEvent,
   type OrganizerMessage,
   type BroadcastResult,
+  type BroadcastLogEntry,
 } from "./services/broadcast";
 export { registerNotificationSubscribers } from "./subscribers";
 

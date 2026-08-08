@@ -1,4 +1,4 @@
-import { index, pgTable, text, timestamp } from "drizzle-orm/pg-core";
+import { index, integer, pgTable, text, timestamp } from "drizzle-orm/pg-core";
 
 // Drizzle table definition for query building. The authoritative DDL — FKs,
 // CHECKs — lives in migrations/0001_init.sql.
@@ -25,5 +25,24 @@ export const notificationLog = pgTable(
   (t) => ({
     memberIdx: index("notification_log_member_idx").on(t.memberId),
     createdIdx: index("notification_log_created_idx").on(t.createdAt),
+  }),
+);
+
+/**
+ * One row per organizer broadcast (`sendOrganizerMessage`), for the admin
+ * "history" view — distinct from `notification_log`, which is per-recipient.
+ */
+export const eventBroadcast = pgTable(
+  "event_broadcast",
+  {
+    id: text("id").primaryKey(),
+    eventId: text("event_id").notNull(),
+    subject: text("subject").notNull(),
+    body: text("body").notNull(),
+    recipientCount: integer("recipient_count").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    eventCreatedIdx: index("event_broadcast_event_created_idx").on(t.eventId, t.createdAt),
   }),
 );

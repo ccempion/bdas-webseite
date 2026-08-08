@@ -5,6 +5,7 @@ import { getDb } from "@bdas/db";
 import { Card } from "@bdas/design-system";
 import { canManage, getEvent } from "@bdas/events-module";
 import { getCurrentMember } from "@bdas/members";
+import { listBroadcastsForEvent } from "@bdas/notifications";
 
 import { requireEventsFlag } from "../../../_events/flag";
 import { readSessionCookie } from "../../../../lib/auth-cookie";
@@ -12,6 +13,7 @@ import { viewerFrom } from "../../../../lib/event-viewer";
 import { loadRoster } from "../../../../lib/event-roster";
 import { formatDateTime } from "../../../../lib/format";
 import { ManageButtons } from "../ManageButtons";
+import { BroadcastHistory } from "./BroadcastHistory";
 import { CancelRegistrationButton } from "./CancelRegistrationButton";
 import { EmailRegistrants } from "./EmailRegistrants";
 
@@ -39,6 +41,7 @@ export default async function ManageEventPage({ params }: { params: { id: string
   if (!event || !canManage(viewer, event)) notFound();
 
   const roster = await loadRoster(event.id);
+  const broadcasts = await listBroadcastsForEvent(db, event.id);
 
   return (
     <main className="mx-auto flex max-w-2xl flex-col gap-6 px-4 py-12">
@@ -130,6 +133,11 @@ export default async function ManageEventPage({ params }: { params: { id: string
           Sendet eine E-Mail an alle bestätigten Teilnehmenden ({event.confirmedCount}).
         </p>
         <EmailRegistrants eventId={event.id} recipientCount={event.confirmedCount} />
+      </Card>
+
+      <Card flat className="p-6">
+        <h2 className="mb-4 text-lg font-semibold text-bdas-ink">Bisherige Nachrichten</h2>
+        <BroadcastHistory broadcasts={broadcasts} />
       </Card>
 
       <Link href="/admin/events" className="text-sm text-bdas-red hover:underline">

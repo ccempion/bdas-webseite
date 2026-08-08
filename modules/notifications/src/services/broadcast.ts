@@ -6,7 +6,10 @@
  * a later concern.
  */
 import type { Db } from "@bdas/db";
+import { createId } from "@bdas/id";
+import { desc, eq } from "drizzle-orm";
 
+import { eventBroadcast } from "../schema";
 import { sendTransactional, sendTransactionalToGuest } from "./send";
 
 export type OrganizerMessage = {
@@ -62,5 +65,39 @@ export async function sendOrganizerMessage(
     if (result.status === "sent") sent += 1;
     else failed += 1;
   }
+
+  // No eventId (not currently a real caller) means nothing to key the history
+  // view on, so the broadcast itself goes unrecorded — the sends still happen.
+  if (msg.eventId) {
+    await db.insert(eventBroadcast).values({
+      id: createId("bcst"),
+      eventId: msg.eventId,
+      subject: msg.subject,
+      body: msg.body,
+      recipientCount: sent,
+    });
+  }
+
   return { sent, failed, skipped };
+}
+
+export type BroadcastLogEntry = {
+  readonly id: string;
+  readonly eventId: string;
+  readonly subject: string;
+  readonly body: string;
+  readonly recipientCount: number;
+  readonly createdAt: Date;
+};
+
+/** Past broadcasts for one event, newest first — for the admin history view. */
+export async function listBroadcastsForEvent(
+  db: Db,
+  eventId: string,
+): Promise<ReadonlyArray<BroadcastLogEntry>> {
+  return db
+    .select()
+    .from(eventBroadcast)
+    .where(eq(eventBroadcast.eventId, eventId))
+    .orderBy(desc(eventBroadcast.createdAt));
 }
