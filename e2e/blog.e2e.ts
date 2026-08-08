@@ -275,4 +275,64 @@ test.describe("blog", () => {
     await page.goto("/blog/meldungen");
     await expect(page.getByRole("heading", { name: "Gemeldete Beiträge" })).toHaveCount(0);
   });
+
+  test("a member comments on a post, sees it, and deletes it", async ({ page }) => {
+    const email = uniqueEmail("blog-comment");
+    await registerVerifyLogin(page, { email });
+    await activateMemberByEmail(email);
+
+    const slug = await writePost(page, {
+      title: "Kommentierbarer Beitrag",
+      body: "Bitte kommentieren.",
+    });
+
+    await page.goto(`/blog/${slug}`);
+    // CommentsSection renders an <h2>; scope to that level, not just a substring
+    // match, so this can never collide with a post's own <h1> title.
+    await expect(page.getByRole("heading", { level: 2, name: "Kommentare" })).toBeVisible();
+    await expect(page.getByText("Noch keine Kommentare.")).toBeVisible();
+
+    await page.getByPlaceholder("Schreib einen Kommentar …").fill("Sehr guter Beitrag!");
+    await page.getByRole("button", { name: "Kommentieren" }).click();
+
+    await expect(page.getByText("Sehr guter Beitrag!")).toBeVisible();
+    await expect(page.getByText("1 Kommentar", { exact: true })).toBeVisible();
+
+    // The feed shows the count too.
+    await page.goto("/blog");
+    await expect(page.getByText("1 Kommentar", { exact: true })).toBeVisible();
+
+    // Delete it again — the author may remove their own comment. Scope the
+    // locator to the comment's own <li>: the post page also carries a
+    // post-level "Löschen" control, and an unscoped match is ambiguous.
+    await page.goto(`/blog/${slug}`);
+    const comment = page.getByRole("listitem").filter({ hasText: "Sehr guter Beitrag!" });
+    page.once("dialog", (d) => void d.accept());
+    await comment.getByRole("button", { name: "Löschen" }).click();
+    await expect(page.getByText("Sehr guter Beitrag!")).toHaveCount(0);
+    await expect(page.getByText("Noch keine Kommentare.")).toBeVisible();
+  });
+
+  test("a signed-out visitor never sees the comments region", async ({ page }) => {
+    const email = uniqueEmail("blog-comment-guest");
+    await registerVerifyLogin(page, { email });
+    await activateMemberByEmail(email);
+
+    const slug = await writePost(page, {
+      title: "Öffentlicher Beitrag ohne Kommentare",
+      body: "Für alle sichtbar.",
+    });
+
+    await logout(page);
+    await page.goto(`/blog/${slug}`);
+
+    await expect(
+      page.getByRole("heading", { level: 1, name: "Öffentlicher Beitrag ohne Kommentare" }),
+    ).toBeVisible();
+    // Scoped to level 2 (CommentsSection's own heading level): the post's <h1>
+    // title happens to contain the substring "Kommentare" too, and an
+    // unscoped role query matches on substring, so it would false-negative here.
+    await expect(page.getByRole("heading", { level: 2, name: "Kommentare" })).toHaveCount(0);
+    await expect(page.getByPlaceholder("Schreib einen Kommentar …")).toHaveCount(0);
+  });
 });
