@@ -327,7 +327,7 @@ kept separate because CLAUDE.md §4 is one module per PR.
 
 ## 9. ADR
 
-**ADR 0032 — Blog comments**, to be written with the implementation. Records:
+**ADR 0033 — Blog comments**, to be written with the implementation. Records:
 
 - Comments exist despite `docs/bdas-platform-spec.md` §3's non-goal "Internal
   social-network features (DMs, feeds, comments)". This is the same override

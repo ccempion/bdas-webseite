@@ -37,7 +37,7 @@
 | `apps/web/app/_blog/CommentsSection.tsx`     | Server component: gate, load, render list + composer           |
 | `apps/web/app/_blog/CommentForm.tsx`         | Client component: textarea, counter, submit                    |
 | `apps/web/app/_blog/DeleteCommentButton.tsx` | Client component: confirm + delete                             |
-| `docs/decisions/0032-blog-comments.md`       | ADR recording the spec-override                                |
+| `docs/decisions/0033-blog-comments.md`       | ADR recording the spec-override                                |
 
 **Modify:**
 
@@ -113,7 +113,7 @@ Append to `apps/web/app/_blog/flag.ts`:
 /**
  * Comments ride the blog module but ship behind their own flag: `blog` is
  * already on in production, so without this a merge would switch comments on
- * federation-wide (ADR 0032). Unlike `requireBlogFlag`, this returns a boolean
+ * federation-wide (ADR 0033). Unlike `requireBlogFlag`, this returns a boolean
  * — a post page still renders fine with the comments region absent.
  */
 export function commentsEnabled(): boolean {
@@ -163,7 +163,7 @@ git commit -m "feat(blog): add blog_comments feature flag"
 Create `modules/blog/migrations/0003_comments.sql`:
 
 ```sql
--- Blog module — member comments on posts (spec 2026-08-08, ADR 0032).
+-- Blog module — member comments on posts (spec 2026-08-08, ADR 0033).
 -- Flat (no threading), plain text, member-and-alumni only. `deleted_at` is the
 -- moderation soft delete, matching posts; erasure on account deletion is a
 -- hard DELETE instead (see deleteCommentsByAuthor).
@@ -318,7 +318,7 @@ Append to `modules/blog/src/visibility.ts`:
 /**
  * Whether the viewer may delete this comment: its own author, or federal board
  * (moderation). Post authors deliberately may NOT delete comments on their own
- * post — see ADR 0032. Writing a comment requires member status the `Viewer`
+ * post — see ADR 0033. Writing a comment requires member status the `Viewer`
  * does not carry, so eligibility is checked at the app layer instead.
  */
 export function canModerateComment(v: Viewer, c: { readonly authorId: string }): boolean {
@@ -620,7 +620,7 @@ describeIfDb("blog comments", () => {
   });
 
   it("deleteComment rejects the post's author, who is not the comment's author", async () => {
-    // `author` wrote the post but not the comment. ADR 0032: a post author may
+    // `author` wrote the post but not the comment. ADR 0033: a post author may
     // not silence commenters on their own post. This is also the general
     // "some other member" case — usr_a has no special standing here.
     const p = await aPost();
@@ -709,7 +709,7 @@ Create `modules/blog/src/services/comments.ts`:
 
 ```ts
 /**
- * Member comments on a post (spec 2026-08-08, ADR 0032). Flat — comments never
+ * Member comments on a post (spec 2026-08-08, ADR 0033). Flat — comments never
  * reference each other — plain text, and visible only to members and alumni.
  *
  * Unlike `report.ts`, the write path takes a `Viewer` and applies `canViewPost`
@@ -983,7 +983,7 @@ Append to `modules/blog/README.md` (adjust the heading depth to match the file's
 ```markdown
 ## Comments
 
-Flat, plain-text discussion under a post (ADR 0032). Comments never reference
+Flat, plain-text discussion under a post (ADR 0033). Comments never reference
 each other — there is no threading, and a posted comment cannot be edited.
 
 - **Who may read and write:** active members and alumni. Eligibility is
@@ -1148,7 +1148,7 @@ const TEXTAREA_CLASS =
   "block w-full rounded-bdas border border-bdas-soft bg-bdas-surface px-3 py-2 " +
   "text-sm text-bdas-ink focus:border-bdas-red focus:outline-none focus:ring-2 focus:ring-bdas-red/20";
 
-/** Plain-text composer. Comments are capped at 1000 characters (ADR 0032). */
+/** Plain-text composer. Comments are capped at 1000 characters (ADR 0033). */
 export function CommentForm({ postId }: { postId: string }) {
   const [state, action] = useFormState(createCommentAction, initialState);
   const [length, setLength] = useState(0);
@@ -1261,7 +1261,7 @@ import { formatDate } from "../../lib/format";
  * Member discussion under a post. Renders nothing at all for guests and
  * non-members — a post's share link must never expose the comments region
  * (blog spec 2026-07-26, requirement 5). Eligibility to read matches
- * eligibility to write: active member or alumnus (ADR 0030, reused by 0032).
+ * eligibility to write: active member or alumnus (ADR 0030, reused by 0033).
  */
 export async function CommentsSection({ post, me }: { post: Post; me: CurrentMember | null }) {
   if (!canAuthor(me)) return null;
@@ -1521,7 +1521,7 @@ git commit -m "test(blog): e2e for commenting and the guest gate"
 
 **Files:**
 
-- Create: `docs/decisions/0032-blog-comments.md`
+- Create: `docs/decisions/0033-blog-comments.md`
 
 **Interfaces:**
 
@@ -1530,10 +1530,10 @@ git commit -m "test(blog): e2e for commenting and the guest gate"
 
 - [ ] **Step 1: Write the ADR**
 
-Create `docs/decisions/0032-blog-comments.md`:
+Create `docs/decisions/0033-blog-comments.md`:
 
 ```markdown
-# ADR 0032: Blog comments are flat, member-only, and plain text
+# ADR 0033: Blog comments are flat, member-only, and plain text
 
 **Status:** Accepted
 **Date:** 2026-08-08
@@ -1611,9 +1611,9 @@ Expected: all PASS. Do not proceed while anything is red — fix it, then re-run
 - [ ] **Step 3: Commit**
 
 ```bash
-npx prettier --write docs/decisions/0032-blog-comments.md
-git add docs/decisions/0032-blog-comments.md
-git commit -m "docs(adr-0032): record blog comments decision"
+npx prettier --write docs/decisions/0033-blog-comments.md
+git add docs/decisions/0033-blog-comments.md
+git commit -m "docs(adr-0033): record blog comments decision"
 ```
 
 ---
@@ -1624,7 +1624,7 @@ git commit -m "docs(adr-0032): record blog comments decision"
 
 1. **Apply the migration by hand.** Vercel deploys do **not** run the migration runner. Apply `modules/blog/migrations/0003_comments.sql` to the production database and insert the tracking row into `_bdas_migrations` (id `blog/0003_comments.sql`). Skipping this breaks every post page with "relation post_comments does not exist".
 2. **Check RLS.** Row-Level Security (RLS) posture for `post_comments` should match whatever the other blog tables use in the production project. If `posts` and `post_reports` have RLS enabled with policies, `post_comments` needs the same before go-live.
-3. **Flip the flag.** Set `BDAS_FLAG_BLOG_COMMENTS=true` in Vercel production once the federation has ratified ADR 0032. Until then the feature is dark in production and fully testable in preview.
+3. **Flip the flag.** Set `BDAS_FLAG_BLOG_COMMENTS=true` in Vercel production once the federation has ratified ADR 0033. Until then the feature is dark in production and fully testable in preview.
 
 ## Follow-ups — out of scope, each its own PR
 
