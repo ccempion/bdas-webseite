@@ -14,6 +14,7 @@ import { createId } from "@bdas/id";
 import type { GroupCreated, GroupUpdated } from "../events";
 import { GroupLocationInput, locationColumns, rowLocation } from "../location";
 import { groups } from "../schema";
+import { HttpUrlInput } from "../url";
 import type { Group, GroupLocation, GroupStatus } from "../types";
 
 export type Db = PostgresJsDatabase<Record<string, never>>;
@@ -27,8 +28,8 @@ export const UpsertGroupInput = z.object({
   name: z.string().min(2).max(120),
   city: z.string().min(2).max(120),
   contactEmail: z.string().email().max(254).optional().nullable(),
-  instagramUrl: z.string().url().max(500).optional().nullable(),
-  websiteUrl: z.string().url().max(500).optional().nullable(),
+  instagramUrl: HttpUrlInput.optional().nullable(),
+  websiteUrl: HttpUrlInput.optional().nullable(),
   status: z.enum(["active", "dormant", "new", "archived"]).default("active"),
   location: GroupLocationInput.optional().nullable(),
   imageKey: z.string().max(500).optional().nullable(),

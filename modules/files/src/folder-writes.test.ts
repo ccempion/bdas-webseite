@@ -45,6 +45,7 @@ async function applyMigrations(t: TestDb): Promise<void> {
     ["..", "..", "groups", "migrations", "0001_init.sql"],
     ["..", "..", "groups", "migrations", "0004_location.sql"],
     ["..", "..", "groups", "migrations", "0005_image_key.sql"],
+    ["..", "..", "groups", "migrations", "0006_link_scheme_guard.sql"],
     ["..", "..", "members", "migrations", "0001_init.sql"],
     ["..", "migrations", "0001_init.sql"],
     ["..", "migrations", "0002_rls_lockdown.sql"],

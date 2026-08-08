@@ -58,6 +58,7 @@ describeIfDb("notifications: the application mails", () => {
       ["..", "..", "groups", "migrations", "0001_init.sql"],
       ["..", "..", "groups", "migrations", "0004_location.sql"],
       ["..", "..", "groups", "migrations", "0005_image_key.sql"],
+      ["..", "..", "groups", "migrations", "0006_link_scheme_guard.sql"],
       ["..", "..", "members", "migrations", "0001_init.sql"],
       ["..", "..", "members", "migrations", "0002_role_grants.sql"],
       ["..", "..", "members", "migrations", "0003_local_board_lead.sql"],

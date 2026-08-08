@@ -59,6 +59,12 @@ same table with different field sets and different authorization.
 - Replacing a banner leaves the previous object in `content-media`. Same as
   every other media surface today; a sweeper is out of scope.
 - Migration `groups/0005_image_key.sql` adds a nullable `image_key` column.
+- `instagramUrl` / `websiteUrl` are now scheme-checked (`HttpUrlInput`). Moving
+  these fields onto the lead's form made this action their only writer, and
+  `z.string().url()` alone accepts `javascript:` — which React 18 renders as a
+  live `<a href>` on the public page. Migration
+  `groups/0006_link_scheme_guard.sql` clears any stored non-`http(s)` value and
+  adds a CHECK as a structural backstop.
 - Revalidation of the statically renderable `/gruppen` list moved out of the
   deleted admin actions into `group-actions.ts` (create/archive) and
   `group-profile-actions.ts` (edit); without it a renamed or archived group

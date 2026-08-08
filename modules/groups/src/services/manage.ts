@@ -20,6 +20,7 @@ import { createId } from "@bdas/id";
 import type { GroupArchived, GroupCreated, GroupUpdated } from "../events";
 import { GroupLocationInput, locationColumns, rowLocation } from "../location";
 import { groups } from "../schema";
+import { HttpUrlInput } from "../url";
 import type { Group, GroupLocation, GroupStatus } from "../types";
 
 export type Db = PostgresJsDatabase<Record<string, never>>;
@@ -47,18 +48,8 @@ export const UpdateGroupInput = z.object({
     .max(254, "E-Mail-Adresse ist zu lang")
     .optional()
     .nullable(),
-  instagramUrl: z
-    .string()
-    .url("Ungültige Instagram-URL")
-    .max(500, "URL ist zu lang")
-    .optional()
-    .nullable(),
-  websiteUrl: z
-    .string()
-    .url("Ungültige Website-URL")
-    .max(500, "URL ist zu lang")
-    .optional()
-    .nullable(),
+  instagramUrl: HttpUrlInput.optional().nullable(),
+  websiteUrl: HttpUrlInput.optional().nullable(),
   status: z.enum(["active", "dormant", "new"]).default("active"),
   location: GroupLocationInput.optional().nullable(),
   imageKey: z.string().max(500, "Bildreferenz ist zu lang").optional().nullable(),

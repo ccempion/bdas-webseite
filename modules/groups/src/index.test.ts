@@ -52,6 +52,7 @@ describeIfDb("groups integration", () => {
       "0003_drop_university_description.sql",
       "0004_location.sql",
       "0005_image_key.sql",
+      "0006_link_scheme_guard.sql",
     ]) {
       const sql = await fs.readFile(path.join(__dirname, "..", "migrations", file), "utf8");
       await t.client.unsafe(sql);
@@ -225,6 +226,44 @@ describeIfDb("groups integration", () => {
     });
     expect(cleared.location).toBeNull();
     expect((await getGroup(t.db, created.id))?.location).toBeNull();
+  });
+
+  // Security review of #62: `z.string().url()` accepts `javascript:`, and the
+  // public page renders these fields as a live <a href>.
+  it.each(["javascript:alert(1)", "data:text/html,<script>alert(1)</script>", "mailto:x@y.z"])(
+    "rejects %s as a link field",
+    async (bad) => {
+      await expect(
+        createGroup(t.db, { slug: "boese", name: "BDAS Böse", city: "Bösestadt", websiteUrl: bad }),
+      ).rejects.toMatchObject({ code: "VALIDATION" });
+      await expect(
+        upsertGroupBySlug(t.db, {
+          slug: "boese",
+          name: "BDAS Böse",
+          city: "Bösestadt",
+          instagramUrl: bad,
+        }),
+      ).rejects.toMatchObject({ code: "VALIDATION" });
+    },
+  );
+
+  it("keeps the DB constraint as a backstop against a non-http link", async () => {
+    await expect(
+      t.client`insert into groups (id, slug, name, city, website_url)
+               values ('grp_xss', 'xss', 'XSS', 'Nowhere', 'javascript:alert(1)')`,
+    ).rejects.toThrow();
+  });
+
+  it("accepts ordinary http(s) links", async () => {
+    const g = await createGroup(t.db, {
+      slug: "gut",
+      name: "BDAS Gut",
+      city: "Gutstadt",
+      websiteUrl: "http://bdas-gut.de",
+      instagramUrl: "https://www.instagram.com/bdas_gut/",
+    });
+    expect(g.websiteUrl).toBe("http://bdas-gut.de");
+    expect(g.instagramUrl).toBe("https://www.instagram.com/bdas_gut/");
   });
 
   it("stores a banner key, preserves it on a key-less update, clears on null", async () => {
