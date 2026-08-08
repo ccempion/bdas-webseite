@@ -127,8 +127,8 @@ export async function memberIdByEmail(email: string): Promise<string | null> {
   return rows[0]?.id ?? null;
 }
 
-/** Grant local_board of a group to the member with this email (immediate, DB-side). */
-export async function grantLocalBoard(email: string, groupId: string): Promise<void> {
+/** Grant a group-scoped role to the member with this email (immediate, DB-side). */
+async function grantGroupRole(email: string, groupId: string, role: string): Promise<void> {
   // The member row is created by the /account Server Action just before this;
   // poll briefly so we don't race its commit.
   let memberId: string | null = null;
@@ -136,10 +136,20 @@ export async function grantLocalBoard(email: string, groupId: string): Promise<v
     memberId = await memberIdByEmail(email);
     if (!memberId) await new Promise((r) => setTimeout(r, 250));
   }
-  if (!memberId) throw new Error(`grantLocalBoard: no member for ${email}`);
+  if (!memberId) throw new Error(`grantGroupRole(${role}): no member for ${email}`);
   await sql`
     INSERT INTO member_role_grants (id, member_id, role, group_id, granted_by)
-    VALUES (${`mrg_e2e_${rand()}`}, ${memberId}, 'local_board', ${groupId}, 'e2e')`;
+    VALUES (${`mrg_e2e_${rand()}`}, ${memberId}, ${role}, ${groupId}, 'e2e')`;
+}
+
+/** Grant local_board of a group to the member with this email. */
+export function grantLocalBoard(email: string, groupId: string): Promise<void> {
+  return grantGroupRole(email, groupId, "local_board");
+}
+
+/** Grant local_board_lead — the authority that owns the group's profile (#62). */
+export function grantLocalBoardLead(email: string, groupId: string): Promise<void> {
+  return grantGroupRole(email, groupId, "local_board_lead");
 }
 
 /** Current status of the member with this email (for asserting approval). */

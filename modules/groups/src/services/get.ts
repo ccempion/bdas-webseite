@@ -17,6 +17,7 @@ function row2group(r: typeof groups.$inferSelect): Group {
     instagramUrl: r.instagramUrl,
     websiteUrl: r.websiteUrl,
     location: rowLocation(r),
+    imageKey: r.imageKey,
     status: r.status as GroupStatus,
   };
 }

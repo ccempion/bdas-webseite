@@ -57,6 +57,8 @@ describeIfDb("notifications integration", () => {
       ["..", "..", "auth", "migrations", "0001_init.sql"],
       ["..", "..", "groups", "migrations", "0001_init.sql"],
       ["..", "..", "groups", "migrations", "0004_location.sql"],
+      ["..", "..", "groups", "migrations", "0005_image_key.sql"],
+      ["..", "..", "groups", "migrations", "0006_link_scheme_guard.sql"],
       ["..", "..", "members", "migrations", "0001_init.sql"],
       // The change/cancellation subscribers read the events roster, so this
       // suite needs the events tables too.
