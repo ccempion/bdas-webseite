@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest";
 
-import { ANON, canModeratePost, canViewPost, visibleLevelsFor, type Viewer } from "./visibility";
+import {
+  ANON,
+  canModerateComment,
+  canModeratePost,
+  canViewPost,
+  visibleLevelsFor,
+  type Viewer,
+} from "./visibility";
 
 const guest = ANON;
 const member: Viewer = { userId: "usr_m", isMember: true, isFederal: false };
@@ -60,5 +67,32 @@ describe("canModeratePost", () => {
   });
   it("guest may not moderate", () => {
     expect(canModeratePost(guest, post("public", ""))).toBe(false);
+  });
+});
+
+describe("canModerateComment", () => {
+  const author: Viewer = { userId: "usr_a", isMember: true, isFederal: false };
+  const other: Viewer = { userId: "usr_b", isMember: true, isFederal: false };
+  const federal: Viewer = { userId: "usr_f", isMember: true, isFederal: true };
+  const comment = { authorId: "usr_a" };
+
+  it("lets the comment's author delete it", () => {
+    expect(canModerateComment(author, comment)).toBe(true);
+  });
+
+  it("lets the federal board delete anyone's comment", () => {
+    expect(canModerateComment(federal, comment)).toBe(true);
+  });
+
+  it("does not let another member delete it", () => {
+    expect(canModerateComment(other, comment)).toBe(false);
+  });
+
+  it("does not let an anonymous viewer delete it", () => {
+    expect(canModerateComment(ANON, comment)).toBe(false);
+  });
+
+  it("does not let a signed-out viewer match a comment with an empty author id", () => {
+    expect(canModerateComment(ANON, { authorId: "" })).toBe(false);
   });
 });

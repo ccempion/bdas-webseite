@@ -66,3 +66,14 @@ export function canModeratePost(v: Viewer, post: { readonly createdBy: string })
   if (v.isFederal) return true;
   return v.userId !== null && post.createdBy === v.userId;
 }
+
+/**
+ * Whether the viewer may delete this comment: its own author, or federal board
+ * (moderation). Post authors deliberately may NOT delete comments on their own
+ * post — see ADR 0033. Writing a comment requires member status the `Viewer`
+ * does not carry, so eligibility is checked at the app layer instead.
+ */
+export function canModerateComment(v: Viewer, c: { readonly authorId: string }): boolean {
+  if (v.isFederal) return true;
+  return v.userId !== null && c.authorId === v.userId;
+}
