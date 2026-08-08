@@ -61,6 +61,7 @@ export const UpdateGroupInput = z.object({
     .nullable(),
   status: z.enum(["active", "dormant", "new"]).default("active"),
   location: GroupLocationInput.optional().nullable(),
+  imageKey: z.string().max(500, "Bildreferenz ist zu lang").optional().nullable(),
 });
 export type UpdateGroupInput = z.infer<typeof UpdateGroupInput>;
 
@@ -98,17 +99,21 @@ function rowToGroup(r: typeof groups.$inferSelect): Group {
     instagramUrl: r.instagramUrl,
     websiteUrl: r.websiteUrl,
     location: rowLocation(r),
+    imageKey: r.imageKey,
     status: r.status as GroupStatus,
   };
 }
 
 /** Build the returned domain object from validated input (slug passed in
- *  separately since it is immutable / absent from the update surface). */
+ *  separately since it is immutable / absent from the update surface;
+ *  `location` and `imageKey` separately because omitting them means "leave
+ *  as stored", not "clear"). */
 function toGroup(
   id: string,
   slug: string,
   v: UpdateGroupInput,
   location: GroupLocation | null,
+  imageKey: string | null,
 ): Group {
   return {
     id,
@@ -120,6 +125,7 @@ function toGroup(
     websiteUrl: v.websiteUrl ?? null,
     status: v.status as GroupStatus,
     location,
+    imageKey,
   };
 }
 
@@ -142,6 +148,7 @@ export async function createGroup(db: Db, input: unknown): Promise<Group> {
     instagramUrl: v.instagramUrl ?? null,
     websiteUrl: v.websiteUrl ?? null,
     status: v.status,
+    imageKey: v.imageKey ?? null,
     ...locationColumns(v.location),
   });
 
@@ -153,7 +160,7 @@ export async function createGroup(db: Db, input: unknown): Promise<Group> {
   };
   await getEventBus().publish(event);
 
-  return toGroup(id, v.slug, v, v.location ?? null);
+  return toGroup(id, v.slug, v, v.location ?? null, v.imageKey ?? null);
 }
 
 export async function updateGroup(db: Db, id: string, input: unknown): Promise<Group> {
@@ -174,6 +181,9 @@ export async function updateGroup(db: Db, id: string, input: unknown): Promise<G
       instagramUrl: v.instagramUrl ?? null,
       websiteUrl: v.websiteUrl ?? null,
       status: v.status,
+      // Omitted means "leave the stored banner alone"; an explicit null clears
+      // it. Same contract as `location`.
+      ...(v.imageKey !== undefined ? { imageKey: v.imageKey } : {}),
       ...(v.location !== undefined ? locationColumns(v.location) : {}),
       updatedAt: now,
     })
@@ -188,7 +198,8 @@ export async function updateGroup(db: Db, id: string, input: unknown): Promise<G
   await getEventBus().publish(event);
 
   const location = v.location === undefined ? rowLocation(existing[0]) : (v.location ?? null);
-  return toGroup(id, existing[0].slug, v, location);
+  const imageKey = v.imageKey === undefined ? existing[0].imageKey : v.imageKey;
+  return toGroup(id, existing[0].slug, v, location, imageKey);
 }
 
 export async function archiveGroup(db: Db, id: string): Promise<Group> {

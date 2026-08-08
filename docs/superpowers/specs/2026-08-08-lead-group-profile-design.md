@@ -15,16 +15,16 @@ Puck editor at `/gruppen/<slug>/bearbeiten`. The half-built federal surface
 
 ## Decisions made
 
-| Question                                  | Decision                                                                                                                                                        |
-| ----------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Which fields the lead may edit            | name, city, contactEmail, instagramUrl, websiteUrl, location, imageKey. **Not** status (federal-only), **not** slug (immutable public URL)                       |
-| Who reaches the profile page              | `requireLeadScope` — federal_board ∨ local_board_lead of that group. Plain `local_board` loses today's name/city/location edit (consistent with ADR 0026 §Decision) |
-| Group image placement                     | 16:9 banner above the fixed server-rendered header of `/gruppen/<slug>`. Not on `/gruppen` list cards, not in the map popup                                       |
-| Group image storage                       | Existing public `content-media` bucket via the existing `POST /api/content/upload-url` with `slug: "gruppen/<slug>"`. No new bucket, route, or env var           |
-| Public page body editing                  | No new editor. Surface the existing `/gruppen/<slug>/bearbeiten` (Puck, ADR 0026) from the profile page                                                          |
-| `/admin/gruppen`                          | Deleted outright. `(board)/federal/groups` already covers create + archive; every other field is now edited on the profile page                                  |
-| Status switching (active/dormant/new)     | Loses its UI with no replacement. Accepted — rebuilt later (issue #62 comment: "Wir bauen das später nochmal")                                                   |
-| Route spelling                            | `profile` → `profil`, matching the German dashboard routes (`bewerbungen`, `vorstand`) and the URL named in the issue                                            |
+| Question                              | Decision                                                                                                                                                            |
+| ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Which fields the lead may edit        | name, city, contactEmail, instagramUrl, websiteUrl, location, imageKey. **Not** status (federal-only), **not** slug (immutable public URL)                          |
+| Who reaches the profile page          | `requireLeadScope` — federal_board ∨ local_board_lead of that group. Plain `local_board` loses today's name/city/location edit (consistent with ADR 0026 §Decision) |
+| Group image placement                 | 16:9 banner above the fixed server-rendered header of `/gruppen/<slug>`. Not on `/gruppen` list cards, not in the map popup                                         |
+| Group image storage                   | Existing public `content-media` bucket via the existing `POST /api/content/upload-url` with `slug: "gruppen/<slug>"`. No new bucket, route, or env var              |
+| Public page body editing              | No new editor. Surface the existing `/gruppen/<slug>/bearbeiten` (Puck, ADR 0026) from the profile page                                                             |
+| `/admin/gruppen`                      | Deleted outright. `(board)/federal/groups` already covers create + archive; every other field is now edited on the profile page                                     |
+| Status switching (active/dormant/new) | Loses its UI with no replacement. Accepted — rebuilt later (issue #62 comment: "Wir bauen das später nochmal")                                                      |
+| Route spelling                        | `profile` → `profil`, matching the German dashboard routes (`bewerbungen`, `vorstand`) and the URL named in the issue                                               |
 
 ## 1. Data model (groups module)
 
@@ -55,13 +55,13 @@ public URL is `@bdas/storage`'s job, called from the app layer. This keeps
 
 ## 2. Routes
 
-| Path                                  | Change                                                                            |
-| ------------------------------------- | --------------------------------------------------------------------------------- |
-| `(board)/gruppe/[slug]/profile`       | renamed to `profil`; becomes the full master-data page                            |
-| `(board)/nav.ts` `groupNav`           | `Profil` href → `/gruppe/<slug>/profil`                                           |
-| `admin/gruppen/**`                    | deleted: `page.tsx`, `neu/page.tsx`, `[slug]/bearbeiten/page.tsx`, `GroupForm.tsx`, `ArchiveButton.tsx`, `actions.ts` |
-| `/gruppen/[slug]`                     | renders the banner above the existing header when `group.imageKey` is set         |
-| `/gruppen/[slug]/bearbeiten`          | unchanged; linked from the profile page                                           |
+| Path                            | Change                                                                                                                |
+| ------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| `(board)/gruppe/[slug]/profile` | renamed to `profil`; becomes the full master-data page                                                                |
+| `(board)/nav.ts` `groupNav`     | `Profil` href → `/gruppe/<slug>/profil`                                                                               |
+| `admin/gruppen/**`              | deleted: `page.tsx`, `neu/page.tsx`, `[slug]/bearbeiten/page.tsx`, `GroupForm.tsx`, `ArchiveButton.tsx`, `actions.ts` |
+| `/gruppen/[slug]`               | renders the banner above the existing header when `group.imageKey` is set                                             |
+| `/gruppen/[slug]/bearbeiten`    | unchanged; linked from the profile page                                                                               |
 
 No redirect from `/gruppe/<slug>/profile` is added — the old path is reachable
 only through the dashboard sidebar, which moves with it.
@@ -128,13 +128,15 @@ authoritative cap.
 the same `breiteClass("schmal")` container:
 
 ```tsx
-{group.imageKey ? (
-  <img
-    src={contentMediaPublicUrl(group.imageKey)}
-    alt=""
-    className="aspect-[16/9] w-full rounded-bdas object-cover"
-  />
-) : null}
+{
+  group.imageKey ? (
+    <img
+      src={contentMediaPublicUrl(group.imageKey)}
+      alt=""
+      className="aspect-[16/9] w-full rounded-bdas object-cover"
+    />
+  ) : null;
+}
 ```
 
 `alt=""` is deliberate: the banner is decorative and the group name follows
@@ -144,13 +146,13 @@ content.
 
 ## 6. Authorization summary
 
-| Actor                        | `/gruppe/<slug>/profil` | Banner upload | `/gruppen/<slug>/bearbeiten` |
-| ---------------------------- | ----------------------- | ------------- | ---------------------------- |
-| `federal_board`              | ✅                      | ✅            | ✅                           |
-| `local_board_lead` (own)     | ✅                      | ✅            | ✅                           |
-| `page_editor` (own)          | ❌                      | ✅            | ✅                           |
-| `local_board` (own)          | ❌                      | ❌            | ❌                           |
-| any of the above, other group| ❌                      | ❌            | ❌                           |
+| Actor                         | `/gruppe/<slug>/profil` | Banner upload | `/gruppen/<slug>/bearbeiten` |
+| ----------------------------- | ----------------------- | ------------- | ---------------------------- |
+| `federal_board`               | ✅                      | ✅            | ✅                           |
+| `local_board_lead` (own)      | ✅                      | ✅            | ✅                           |
+| `page_editor` (own)           | ❌                      | ✅            | ✅                           |
+| `local_board` (own)           | ❌                      | ❌            | ❌                           |
+| any of the above, other group | ❌                      | ❌            | ❌                           |
 
 `page_editor` retaining upload access is pre-existing ADR 0026 behaviour for the
 Puck editor and is not narrowed here.

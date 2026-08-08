@@ -31,6 +31,7 @@ export const UpsertGroupInput = z.object({
   websiteUrl: z.string().url().max(500).optional().nullable(),
   status: z.enum(["active", "dormant", "new", "archived"]).default("active"),
   location: GroupLocationInput.optional().nullable(),
+  imageKey: z.string().max(500).optional().nullable(),
 });
 export type UpsertGroupInput = z.infer<typeof UpsertGroupInput>;
 
@@ -64,6 +65,9 @@ export async function upsertGroupBySlug(db: Db, input: unknown): Promise<UpsertR
         instagramUrl: v.instagramUrl ?? null,
         websiteUrl: v.websiteUrl ?? null,
         status: v.status,
+        // The seed never carries a banner; omitting it must not wipe one a
+        // lead uploaded since the last seed run.
+        ...(v.imageKey !== undefined ? { imageKey: v.imageKey } : {}),
         ...(v.location !== undefined ? locationColumns(v.location) : {}),
         updatedAt: now,
       })
@@ -78,7 +82,8 @@ export async function upsertGroupBySlug(db: Db, input: unknown): Promise<UpsertR
     await getEventBus().publish(event);
 
     const location = v.location === undefined ? rowLocation(existing[0]) : (v.location ?? null);
-    return { group: toGroup(id, v, location), created: false };
+    const imageKey = v.imageKey === undefined ? existing[0].imageKey : v.imageKey;
+    return { group: toGroup(id, v, location, imageKey), created: false };
   }
 
   const id = createId("grp");
@@ -91,6 +96,7 @@ export async function upsertGroupBySlug(db: Db, input: unknown): Promise<UpsertR
     instagramUrl: v.instagramUrl ?? null,
     websiteUrl: v.websiteUrl ?? null,
     status: v.status,
+    imageKey: v.imageKey ?? null,
     ...locationColumns(v.location),
   });
 
@@ -102,10 +108,15 @@ export async function upsertGroupBySlug(db: Db, input: unknown): Promise<UpsertR
   };
   await getEventBus().publish(event);
 
-  return { group: toGroup(id, v, v.location ?? null), created: true };
+  return { group: toGroup(id, v, v.location ?? null, v.imageKey ?? null), created: true };
 }
 
-function toGroup(id: string, v: UpsertGroupInput, location: GroupLocation | null): Group {
+function toGroup(
+  id: string,
+  v: UpsertGroupInput,
+  location: GroupLocation | null,
+  imageKey: string | null,
+): Group {
   return {
     id,
     slug: v.slug,
@@ -116,5 +127,6 @@ function toGroup(id: string, v: UpsertGroupInput, location: GroupLocation | null
     websiteUrl: v.websiteUrl ?? null,
     status: v.status as GroupStatus,
     location,
+    imageKey,
   };
 }

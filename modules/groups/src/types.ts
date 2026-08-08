@@ -21,6 +21,10 @@ export type Group = {
   readonly instagramUrl: string | null;
   readonly websiteUrl: string | null;
   readonly location: GroupLocation | null;
+  /** Storage key of the page banner in the public content-media bucket, or
+   *  null. The module stays storage-agnostic: resolving the key to a URL is
+   *  the app layer's job (CLAUDE.md §1 rule 2). */
+  readonly imageKey: string | null;
   readonly status: GroupStatus;
 };
 

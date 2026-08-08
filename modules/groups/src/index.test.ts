@@ -51,6 +51,7 @@ describeIfDb("groups integration", () => {
       "0002_status_check.sql",
       "0003_drop_university_description.sql",
       "0004_location.sql",
+      "0005_image_key.sql",
     ]) {
       const sql = await fs.readFile(path.join(__dirname, "..", "migrations", file), "utf8");
       await t.client.unsafe(sql);
@@ -224,6 +225,53 @@ describeIfDb("groups integration", () => {
     });
     expect(cleared.location).toBeNull();
     expect((await getGroup(t.db, created.id))?.location).toBeNull();
+  });
+
+  it("stores a banner key, preserves it on a key-less update, clears on null", async () => {
+    const created = await createGroup(t.db, {
+      slug: "trier",
+      name: "BDAS Trier",
+      city: "Trier",
+      imageKey: "gruppen-trier/banner.webp",
+    });
+    expect(created.imageKey).toBe("gruppen-trier/banner.webp");
+    expect((await getGroup(t.db, created.id))?.imageKey).toBe("gruppen-trier/banner.webp");
+
+    // `imageKey` absent → stored banner untouched
+    const kept = await updateGroup(t.db, created.id, { name: "BDAS Trier", city: "Trier" });
+    expect(kept.imageKey).toBe("gruppen-trier/banner.webp");
+    expect((await getGroup(t.db, created.id))?.imageKey).toBe("gruppen-trier/banner.webp");
+
+    // explicit null → cleared
+    const cleared = await updateGroup(t.db, created.id, {
+      name: "BDAS Trier",
+      city: "Trier",
+      imageKey: null,
+    });
+    expect(cleared.imageKey).toBeNull();
+    expect((await getGroup(t.db, created.id))?.imageKey).toBeNull();
+  });
+
+  it("re-seeding via upsert without a banner keeps the stored one", async () => {
+    await upsertGroupBySlug(t.db, {
+      slug: "jena",
+      name: "BDAS Jena",
+      city: "Jena",
+      imageKey: "gruppen-jena/banner.webp",
+    });
+    await upsertGroupBySlug(t.db, { slug: "jena", name: "BDAS Jena", city: "Jena" });
+    expect((await getGroupBySlug(t.db, "jena"))?.imageKey).toBe("gruppen-jena/banner.webp");
+  });
+
+  it("rejects an over-long banner key", async () => {
+    await expect(
+      createGroup(t.db, {
+        slug: "lang",
+        name: "BDAS Lang",
+        city: "Langstadt",
+        imageKey: "x".repeat(501),
+      }),
+    ).rejects.toThrow("Eingabe ungültig");
   });
 
   it("re-seeding via upsert without location keeps the stored location", async () => {
