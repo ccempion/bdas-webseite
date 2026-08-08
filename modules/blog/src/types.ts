@@ -70,3 +70,13 @@ export type PostReport = {
   readonly status: PostReportStatus;
   readonly createdAt: Date;
 };
+
+/** One member's comment on a post. Flat — comments never reference each other. */
+export type Comment = {
+  readonly id: string;
+  readonly postId: string;
+  /** Auth user id of the commenter (no FK, matches `Post.createdBy`). */
+  readonly authorId: string;
+  readonly body: string;
+  readonly createdAt: Date;
+};

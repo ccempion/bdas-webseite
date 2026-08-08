@@ -53,3 +53,24 @@ export const postReports = pgTable(
 );
 
 export type PostReportRow = typeof postReports.$inferSelect;
+
+// A member's comment on a post (spec 2026-08-08). Blog-owned per rule 1.
+export const postComments = pgTable(
+  "post_comments",
+  {
+    id: text("id").primaryKey(),
+    postId: text("post_id").notNull(),
+    // Auth user id of the commenter. Plain id, no FK (matches posts.createdBy).
+    authorId: text("author_id").notNull(),
+    body: text("body").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    // Moderation soft delete. Every read path filters it out.
+    deletedAt: timestamp("deleted_at", { withTimezone: true }),
+  },
+  (t) => ({
+    postIdx: index("post_comments_post_idx").on(t.postId, t.createdAt),
+    authorIdx: index("post_comments_author_idx").on(t.authorId, t.createdAt),
+  }),
+);
+
+export type PostCommentRow = typeof postComments.$inferSelect;
