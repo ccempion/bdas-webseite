@@ -1,11 +1,11 @@
 import Link from "next/link";
 
 import type { ListPostsFilters } from "@bdas/blog";
-import { CATEGORY_LABELS, listPosts, renderPostContentHtml } from "@bdas/blog";
+import { CATEGORY_LABELS, countCommentsByPost, listPosts, renderPostContentHtml } from "@bdas/blog";
 import { getDb } from "@bdas/db";
 import { Alert, Button, Card } from "@bdas/design-system";
 
-import { requireBlogFlag } from "../_blog/flag";
+import { commentsEnabled, requireBlogFlag } from "../_blog/flag";
 import { AuthorAvatar } from "../_blog/AuthorAvatar";
 import { canAuthor, loadBlogViewer, resolveAuthors } from "../_blog/access";
 import { BlogFilterBar } from "../_blog/BlogFilterBar";
@@ -42,6 +42,12 @@ export default async function BlogFeedPage({
     posts.map((p) => p.createdBy),
     me !== null,
   );
+  const commentCounts = commentsEnabled()
+    ? await countCommentsByPost(
+        db,
+        posts.map((p) => p.id),
+      )
+    : new Map<string, number>();
 
   return (
     <main className="mx-auto flex max-w-6xl flex-col gap-8 px-4 py-12">
@@ -99,12 +105,20 @@ export default async function BlogFeedPage({
                     dangerouslySetInnerHTML={{ __html: html }}
                   />
 
-                  <Link
-                    href={`/blog/${p.slug}`}
-                    className="mt-auto self-start pt-4 text-sm text-bdas-red hover:underline"
-                  >
-                    Beitrag öffnen
-                  </Link>
+                  <div className="mt-auto flex items-center justify-between gap-3 pt-4">
+                    <Link
+                      href={`/blog/${p.slug}`}
+                      className="self-start text-sm text-bdas-red hover:underline"
+                    >
+                      Beitrag öffnen
+                    </Link>
+                    {commentCounts.get(p.id) ? (
+                      <span className="text-sm text-bdas-ink-muted">
+                        {commentCounts.get(p.id)}{" "}
+                        {commentCounts.get(p.id) === 1 ? "Kommentar" : "Kommentare"}
+                      </span>
+                    ) : null}
+                  </div>
                 </Card>
               </li>
             );
