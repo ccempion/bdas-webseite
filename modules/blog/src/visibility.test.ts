@@ -92,7 +92,11 @@ describe("canModerateComment", () => {
     expect(canModerateComment(ANON, comment)).toBe(false);
   });
 
-  it("does not let a signed-out viewer match a comment with an empty author id", () => {
-    expect(canModerateComment(ANON, { authorId: "" })).toBe(false);
+  it("does not let a signed-out viewer match a comment with a null author id", () => {
+    // The `v.userId !== null` guard exists for callers that reach this with
+    // unvalidated data. Without it, null === null would grant moderation to a
+    // signed-out viewer. A `""` author id would NOT catch this — null === ""
+    // is false either way — so the cast is what makes this test discriminate.
+    expect(canModerateComment(ANON, { authorId: null as unknown as string })).toBe(false);
   });
 });
