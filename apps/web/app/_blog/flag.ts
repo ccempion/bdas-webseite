@@ -13,7 +13,7 @@ export function requireBlogFlag(): void {
 /**
  * Comments ride the blog module but ship behind their own flag: `blog` is
  * already on in production, so without this a merge would switch comments on
- * federation-wide (ADR 0032). Unlike `requireBlogFlag`, this returns a boolean
+ * federation-wide (ADR 0033). Unlike `requireBlogFlag`, this returns a boolean
  * — a post page still renders fine with the comments region absent.
  */
 export function commentsEnabled(): boolean {
