@@ -75,7 +75,7 @@ CREATE TABLE post_comments (
   body        text NOT NULL,
   created_at  timestamptz NOT NULL DEFAULT now(),
   deleted_at  timestamptz,
-  CONSTRAINT post_comments_body_length CHECK (char_length(body) BETWEEN 1 AND 1000)
+  CONSTRAINT post_comments_body_check CHECK (char_length(body) BETWEEN 1 AND 1000)
 );
 
 CREATE INDEX post_comments_post_idx   ON post_comments(post_id, created_at) WHERE deleted_at IS NULL;
