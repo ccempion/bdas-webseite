@@ -298,9 +298,14 @@ test.describe("blog", () => {
     await expect(page.getByText("Sehr guter Beitrag!")).toBeVisible();
     await expect(page.getByText("1 Kommentar", { exact: true })).toBeVisible();
 
-    // The feed shows the count too.
+    // The feed shows the count too. Scope to this post's own <li>: an
+    // unscoped match would collide with any other card that also picks up a
+    // first comment (e.g. a retried attempt of this very test after a
+    // partial failure, since retries reuse the database and this is the only
+    // comment-creating case in the suite).
     await page.goto("/blog");
-    await expect(page.getByText("1 Kommentar", { exact: true })).toBeVisible();
+    const feedCard = page.getByRole("listitem").filter({ hasText: "Kommentierbarer Beitrag" });
+    await expect(feedCard.getByText("1 Kommentar", { exact: true })).toBeVisible();
 
     // Delete it again — the author may remove their own comment. Scope the
     // locator to the comment's own <li>: the post page also carries a
