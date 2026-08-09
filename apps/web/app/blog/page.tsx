@@ -42,12 +42,17 @@ export default async function BlogFeedPage({
     posts.map((p) => p.createdBy),
     me !== null,
   );
-  const commentCounts = commentsEnabled()
-    ? await countCommentsByPost(
-        db,
-        posts.map((p) => p.id),
-      )
-    : new Map<string, number>();
+  // Mirrors CommentsSection's own gate (canAuthor): the count must be
+  // members-and-alumni only, same as reading the comments themselves
+  // (ADR 0033), not just the environment flag — so the query is skipped
+  // entirely for a viewer who could never see a comment.
+  const commentCounts =
+    commentsEnabled() && canAuthor(me)
+      ? await countCommentsByPost(
+          db,
+          posts.map((p) => p.id),
+        )
+      : new Map<string, number>();
 
   return (
     <main className="mx-auto flex max-w-6xl flex-col gap-8 px-4 py-12">
@@ -74,6 +79,7 @@ export default async function BlogFeedPage({
           {posts.map((p) => {
             const author = authors.get(p.createdBy);
             const html = renderPostContentHtml(p.content);
+            const commentCount = commentCounts.get(p.id);
             return (
               <li key={p.id}>
                 <Card className="flex h-full flex-col p-6">
@@ -112,10 +118,9 @@ export default async function BlogFeedPage({
                     >
                       Beitrag öffnen
                     </Link>
-                    {commentCounts.get(p.id) ? (
+                    {commentCount ? (
                       <span className="text-sm text-bdas-ink-muted">
-                        {commentCounts.get(p.id)}{" "}
-                        {commentCounts.get(p.id) === 1 ? "Kommentar" : "Kommentare"}
+                        {commentCount} {commentCount === 1 ? "Kommentar" : "Kommentare"}
                       </span>
                     ) : null}
                   </div>
