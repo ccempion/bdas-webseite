@@ -210,18 +210,23 @@ export async function createCommentAction(
 export async function deleteCommentAction(_prev: ActionState, fd: FormData): Promise<ActionState> {
   if (!commentsEnabled()) return { error: "Nicht verfügbar." };
   const commentId = s(fd, "commentId");
-  const slug = s(fd, "slug");
 
+  // The slug to revalidate is resolved server-side from the deleted comment's
+  // postId, never trusted from the form — a caller could otherwise submit an
+  // arbitrary slug and trigger revalidation of a path they don't control.
+  let slug: string | undefined;
   try {
     const me = await loadBlogMe();
     if (!me) throw new ForbiddenError("Anmeldung erforderlich.");
-    await deleteComment(getDb(), commentId, blogViewer(me));
+    const postId = await deleteComment(getDb(), commentId, blogViewer(me));
+    const post = await getPostById(getDb(), postId);
+    slug = post?.slug;
   } catch (err) {
     if (isAppError(err)) return { error: err.message };
     throw err;
   }
 
-  revalidatePath(`/blog/${slug}`);
+  if (slug) revalidatePath(`/blog/${slug}`);
   revalidatePath("/blog");
   return {};
 }

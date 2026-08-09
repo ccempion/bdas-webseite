@@ -7,7 +7,7 @@ import { deleteCommentAction, type ActionState } from "../blog/actions";
 const initialState: ActionState = {};
 
 /** Author/board delete control for one comment. Confirms before firing. */
-export function DeleteCommentButton({ commentId, slug }: { commentId: string; slug: string }) {
+export function DeleteCommentButton({ commentId }: { commentId: string }) {
   const [state, action] = useFormState(deleteCommentAction, initialState);
   return (
     <form
@@ -17,7 +17,6 @@ export function DeleteCommentButton({ commentId, slug }: { commentId: string; sl
       }}
     >
       <input type="hidden" name="commentId" value={commentId} />
-      <input type="hidden" name="slug" value={slug} />
       <DeleteButton />
       {state.error ? <span className="ml-2 text-bdas-red">{state.error}</span> : null}
     </form>

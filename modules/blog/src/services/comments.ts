@@ -120,6 +120,16 @@ export async function addComment(
  * Comments on a post, oldest first. Takes no `Viewer`: callers reach this only
  * after resolving the post through the visibility-gated `getPostBySlug`, and
  * soft-deleted posts are filtered here as a backstop.
+ *
+ * Trap for a future caller: this module has two notions of "member" that
+ * happen to agree today but are not the same rule. `blogViewer` (app layer)
+ * sets `isMember` only for status `active`; eligibility to read and write
+ * comments is `canAuthor`, which is `active` OR `alumnus`. They cannot
+ * disagree today because every caller reaches `listComments` only after
+ * `getPostBySlug`'s visibility gate. A surface that called `listComments`
+ * without going through that gate first would render comments to an alumnus
+ * regardless of whether the post itself is visible to them — this function
+ * does not re-check that on its own.
  */
 export async function listComments(db: Db, postId: string): Promise<Comment[]> {
   const rows = await db
@@ -139,10 +149,14 @@ export async function listComments(db: Db, postId: string): Promise<Comment[]> {
   return rows.map(rowToComment);
 }
 
-/** Soft-delete a comment. Its author, or the federal board. */
-export async function deleteComment(db: Db, commentId: string, viewer: Viewer): Promise<void> {
+/**
+ * Soft-delete a comment. Its author, or the federal board. Returns the
+ * deleted comment's `postId` so a caller can revalidate the right path
+ * without trusting a client-submitted slug.
+ */
+export async function deleteComment(db: Db, commentId: string, viewer: Viewer): Promise<string> {
   const rows = await db
-    .select({ authorId: postComments.authorId })
+    .select({ authorId: postComments.authorId, postId: postComments.postId })
     .from(postComments)
     .where(and(eq(postComments.id, commentId), isNull(postComments.deletedAt)))
     .limit(1);
@@ -156,6 +170,8 @@ export async function deleteComment(db: Db, commentId: string, viewer: Viewer): 
     .update(postComments)
     .set({ deletedAt: new Date() })
     .where(eq(postComments.id, commentId));
+
+  return comment.postId;
 }
 
 /**

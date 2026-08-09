@@ -200,6 +200,13 @@ describeIfDb("blog comments", () => {
     expect(await listComments(t.db, p.id)).toEqual([]);
   });
 
+  it("deleteComment returns the deleted comment's postId", async () => {
+    const p = await aPost();
+    const c = await addComment(t.db, p.id, member, "Weg damit");
+    const returnedPostId = await deleteComment(t.db, c.id, member);
+    expect(returnedPostId).toBe(p.id);
+  });
+
   it("deleteComment rejects the post's author, who is not the comment's author", async () => {
     // `author` wrote the post but not the comment. ADR 0033: a post author may
     // not silence commenters on their own post. This is also the general
