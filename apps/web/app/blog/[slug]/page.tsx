@@ -4,8 +4,8 @@ import { notFound } from "next/navigation";
 import { CATEGORY_LABELS, getPostBySlug, renderPostContentHtml } from "@bdas/blog";
 import { getDb } from "@bdas/db";
 
-import { requireBlogFlag } from "../../_blog/flag";
-import { CommentsPlaceholder } from "../../_blog/CommentsPlaceholder";
+import { commentsEnabled, requireBlogFlag } from "../../_blog/flag";
+import { CommentsSection } from "../../_blog/CommentsSection";
 import { canModerate, loadBlogViewer, resolveAuthor } from "../../_blog/access";
 import { DeletePostButton } from "../../_blog/DeletePostButton";
 import { ReportPostButton } from "../../_blog/ReportPostButton";
@@ -66,7 +66,7 @@ export default async function PostPage({ params }: { params: { slug: string } })
       {me && me.user.id !== post.createdBy ? <ReportPostButton postId={post.id} /> : null}
 
       {/* Comments are member-only; guests never see this region (requirement 5). */}
-      <CommentsPlaceholder canSeeComments={viewer.isMember} />
+      {commentsEnabled() ? <CommentsSection post={post} me={me} /> : null}
     </main>
   );
 }

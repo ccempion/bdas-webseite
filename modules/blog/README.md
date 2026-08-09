@@ -97,10 +97,25 @@ URLs, no client JS.
 
 ## Comments
 
-Not built. The single-post page mounts `CommentsPlaceholder`, which renders
-nothing for signed-out/external visitors — the decided visibility rule (spec
-requirement 5) is in place so a future comments module drops in behind the same
-`canSeeComments` gate.
+Flat, plain-text discussion under a post (ADR 0033). Comments never reference
+each other — there is no threading, and a posted comment cannot be edited.
+
+- **Who may read and write:** active members and alumni. Eligibility is
+  `canAuthor()` from the app layer (ADR 0030), reused rather than redefined, so
+  posting and commenting rights cannot drift apart. Guests and `pending` /
+  `inactive` accounts never see the comments region at all.
+- **Who may delete:** the comment's own author, or the federal board
+  (`canModerateComment`). Deliberately _not_ the post's author.
+- **Limits:** 1–1000 characters after trimming; 20 comments per rolling 24
+  hours per author. The window counts a member's soft-deleted comments too —
+  writing 20 and deleting all 20 still blocks further comments for 24 hours.
+  This is deliberate anti-evasion, not a bug.
+- **Deletion:** `deleteComment` is a soft delete (`deleted_at`), excluded from
+  every read path. `deleteCommentsByAuthor` is a hard delete — it exists as the
+  seam a future account-deletion feature will call, so nothing outside this
+  module ever touches `post_comments` (rule 1).
+- **Events:** `blog.comment.created` is published on every add. It has no
+  subscriber yet; the author-notification email is deferred.
 
 ## App integration
 

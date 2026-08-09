@@ -9,3 +9,13 @@ import { isFlagOn } from "@bdas/feature-flags";
 export function requireBlogFlag(): void {
   if (!isFlagOn("blog")) notFound();
 }
+
+/**
+ * Comments ride the blog module but ship behind their own flag: `blog` is
+ * already on in production, so without this a merge would switch comments on
+ * federation-wide (ADR 0033). Unlike `requireBlogFlag`, this returns a boolean
+ * — a post page still renders fine with the comments region absent.
+ */
+export function commentsEnabled(): boolean {
+  return isFlagOn("blog") && isFlagOn("blog_comments");
+}

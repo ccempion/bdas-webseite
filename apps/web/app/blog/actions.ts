@@ -4,9 +4,11 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import {
+  addComment,
   canModeratePost,
   canViewPost,
   createPost,
+  deleteComment,
   deletePost,
   dismissReport,
   getPostById,
@@ -19,6 +21,7 @@ import { isFlagOn } from "@bdas/feature-flags";
 import { requireFederalBoard } from "@bdas/members";
 
 import { blogViewer, canAuthor, loadBlogMe } from "../_blog/access";
+import { commentsEnabled } from "../_blog/flag";
 
 export type PostFormState = {
   readonly error?: string;
@@ -164,5 +167,66 @@ export async function dismissReportAction(_prev: ActionState, fd: FormData): Pro
   }
 
   revalidatePath("/blog/meldungen");
+  return {};
+}
+
+export type CommentFormState = { readonly error?: string; readonly success?: boolean };
+
+/**
+ * Add a comment. Eligibility is ADR 0030's authoring rule reused verbatim —
+ * active member or alumnus — so posting and commenting cannot drift apart.
+ */
+export async function createCommentAction(
+  _prev: CommentFormState,
+  fd: FormData,
+): Promise<CommentFormState> {
+  if (!commentsEnabled()) return { error: "Nicht verfügbar." };
+  const me = await loadBlogMe();
+  if (!me) return { error: "Anmeldung erforderlich." };
+  if (!canAuthor(me)) {
+    return { error: "Nur aktive Mitglieder oder Alumni dürfen kommentieren." };
+  }
+
+  const postId = s(fd, "postId");
+  const body = s(fd, "body");
+
+  // The post is loaded for its slug (to revalidate the right path); addComment
+  // re-checks existence and visibility itself.
+  const post = await getPostById(getDb(), postId);
+  if (!post) return { error: "Beitrag nicht gefunden." };
+
+  try {
+    await addComment(getDb(), postId, blogViewer(me), body);
+  } catch (err) {
+    if (isAppError(err)) return { error: err.message };
+    throw err;
+  }
+
+  revalidatePath(`/blog/${post.slug}`);
+  revalidatePath("/blog");
+  return { success: true };
+}
+
+export async function deleteCommentAction(_prev: ActionState, fd: FormData): Promise<ActionState> {
+  if (!commentsEnabled()) return { error: "Nicht verfügbar." };
+  const commentId = s(fd, "commentId");
+
+  // The slug to revalidate is resolved server-side from the deleted comment's
+  // postId, never trusted from the form — a caller could otherwise submit an
+  // arbitrary slug and trigger revalidation of a path they don't control.
+  let slug: string | undefined;
+  try {
+    const me = await loadBlogMe();
+    if (!me) throw new ForbiddenError("Anmeldung erforderlich.");
+    const postId = await deleteComment(getDb(), commentId, blogViewer(me));
+    const post = await getPostById(getDb(), postId);
+    slug = post?.slug;
+  } catch (err) {
+    if (isAppError(err)) return { error: err.message };
+    throw err;
+  }
+
+  if (slug) revalidatePath(`/blog/${slug}`);
+  revalidatePath("/blog");
   return {};
 }

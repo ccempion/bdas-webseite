@@ -3,12 +3,9 @@
 import { useFormState, useFormStatus } from "react-dom";
 
 import { reportPostAction, type ReportFormState } from "../blog/actions";
+import { TEXTAREA_CLASS } from "./form-styles";
 
 const initialState: ReportFormState = {};
-
-const TEXTAREA_CLASS =
-  "block w-full rounded-bdas border border-bdas-soft bg-bdas-surface px-3 py-2 " +
-  "text-sm text-bdas-ink focus:border-bdas-red focus:outline-none focus:ring-2 focus:ring-bdas-red/20";
 
 /** Member-facing report control: a collapsed disclosure with an optional reason. */
 export function ReportPostButton({ postId }: { postId: string }) {

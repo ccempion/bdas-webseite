@@ -34,4 +34,12 @@ export type PostReported = {
   readonly at: Date;
 };
 
-export type BlogEvent = PostPublished | PostUpdated | PostDeleted | PostReported;
+export type CommentCreated = {
+  readonly type: "blog.comment.created";
+  readonly postId: string;
+  readonly commentId: string;
+  readonly authorId: string;
+  readonly at: Date;
+};
+
+export type BlogEvent = PostPublished | PostUpdated | PostDeleted | PostReported | CommentCreated;
