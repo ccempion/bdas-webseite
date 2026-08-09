@@ -107,7 +107,9 @@ each other — there is no threading, and a posted comment cannot be edited.
 - **Who may delete:** the comment's own author, or the federal board
   (`canModerateComment`). Deliberately _not_ the post's author.
 - **Limits:** 1–1000 characters after trimming; 20 comments per rolling 24
-  hours per author.
+  hours per author. The window counts a member's soft-deleted comments too —
+  writing 20 and deleting all 20 still blocks further comments for 24 hours.
+  This is deliberate anti-evasion, not a bug.
 - **Deletion:** `deleteComment` is a soft delete (`deleted_at`), excluded from
   every read path. `deleteCommentsByAuthor` is a hard delete — it exists as the
   seam a future account-deletion feature will call, so nothing outside this
