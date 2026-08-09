@@ -11,3 +11,6 @@ pnpm-lock.yaml
 docs/bdas-platform-spec.md
 # Vendored as-is from isellsoap/deutschlandGeoJSON — keep byte-identical to upstream.
 apps/web/app/_groups/germany.geo.json
+# Print-styled source for the Datenschutz PDF. Prettier reflows its German prose
+# to 80 columns, which churns 879 lines and fights the A4 page layout.
+docs/datenschutz/datenschutz-bestandsaufnahme.html
