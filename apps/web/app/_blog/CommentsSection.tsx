@@ -47,15 +47,15 @@ export async function CommentsSection({ post, me }: { post: Post; me: CurrentMem
                   size={36}
                 />
                 <div className="flex min-w-0 flex-col gap-1">
-                  <p className="flex flex-wrap items-center gap-2 text-sm">
+                  <div className="flex flex-wrap items-center gap-2 text-sm">
                     <span className="font-semibold text-bdas-ink">
                       {author?.name ?? "BDAS-Mitglied"}
                     </span>
                     <span className="text-bdas-ink-muted">{formatDate(c.createdAt)}</span>
                     {canModerateComment(viewer, c) ? (
-                      <DeleteCommentButton commentId={c.id} slug={post.slug} />
+                      <DeleteCommentButton commentId={c.id} />
                     ) : null}
-                  </p>
+                  </div>
                   {/* Plain text: preserve the author's line breaks, never render HTML. */}
                   <p className="whitespace-pre-wrap break-words text-sm text-bdas-ink-body">
                     {c.body}
