@@ -1,0 +1,1511 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8" />
+    <title>BDAS-Plattform — Datenschutz-Bestandsaufnahme</title>
+    <style>
+      @page {
+        size: A4;
+        margin: 18mm 16mm 20mm 16mm;
+      }
+
+      :root {
+        --ink-strong: #333;
+        --ink-body: #555;
+        --ink-muted: #888;
+        --accent: #d12020;
+        --rule: #e3e3e3;
+        --surface: #f7f7f7;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: -apple-system, "Helvetica Neue", Helvetica, Arial, sans-serif;
+        font-size: 9.6pt;
+        line-height: 1.5;
+        color: var(--ink-body);
+      }
+
+      h1 {
+        font-size: 19pt;
+        line-height: 1.2;
+        color: var(--ink-strong);
+        margin: 0 0 4mm;
+      }
+
+      h2 {
+        font-size: 12.5pt;
+        color: var(--ink-strong);
+        margin: 9mm 0 2.5mm;
+        padding-bottom: 1.5mm;
+        border-bottom: 1.5px solid var(--accent);
+        break-after: avoid;
+      }
+
+      h3 {
+        font-size: 10.5pt;
+        color: var(--ink-strong);
+        margin: 5mm 0 1.5mm;
+        break-after: avoid;
+      }
+
+      p {
+        margin: 0 0 2.5mm;
+      }
+
+      ul,
+      ol {
+        margin: 0 0 2.5mm;
+        padding-left: 5mm;
+      }
+
+      li {
+        margin-bottom: 1mm;
+      }
+
+      code {
+        font-family: "SF Mono", Menlo, Consolas, monospace;
+        font-size: 8.4pt;
+        background: var(--surface);
+        padding: 0.3mm 1mm;
+        border-radius: 2px;
+        color: var(--ink-strong);
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 0 0 3mm;
+        font-size: 8.6pt;
+        break-inside: auto;
+      }
+
+      thead {
+        display: table-header-group;
+      }
+
+      th {
+        text-align: left;
+        background: var(--surface);
+        color: var(--ink-strong);
+        font-weight: 600;
+        padding: 1.6mm 2mm;
+        border-bottom: 1px solid var(--rule);
+        vertical-align: top;
+      }
+
+      td {
+        padding: 1.6mm 2mm;
+        border-bottom: 1px solid var(--rule);
+        vertical-align: top;
+      }
+
+      tr {
+        break-inside: avoid;
+      }
+
+      .lead {
+        font-size: 10pt;
+        color: var(--ink-body);
+      }
+
+      .meta {
+        color: var(--ink-muted);
+        font-size: 8.6pt;
+        margin-bottom: 6mm;
+      }
+
+      .box {
+        background: var(--surface);
+        border-left: 3px solid var(--accent);
+        border-radius: 3px;
+        padding: 3mm 4mm;
+        margin: 0 0 4mm;
+        break-inside: avoid;
+      }
+
+      .box p:last-child {
+        margin-bottom: 0;
+      }
+
+      .box-title {
+        font-weight: 600;
+        color: var(--ink-strong);
+        display: block;
+        margin-bottom: 1.5mm;
+      }
+
+      .tag {
+        display: inline-block;
+        font-size: 7.6pt;
+        font-weight: 600;
+        letter-spacing: 0.02em;
+        padding: 0.4mm 1.6mm;
+        border-radius: 3px;
+        white-space: nowrap;
+      }
+
+      .tag-ok {
+        background: #e8f2e8;
+        color: #2f6b34;
+      }
+
+      .tag-gap {
+        background: #fbe9e9;
+        color: #a01c1c;
+      }
+
+      .tag-open {
+        background: #fdf2e2;
+        color: #97621a;
+      }
+
+      .tag-na {
+        background: #eee;
+        color: #666;
+      }
+
+      .toc {
+        columns: 2;
+        column-gap: 8mm;
+        font-size: 9pt;
+        margin-bottom: 4mm;
+      }
+
+      .toc ol {
+        margin: 0;
+        padding-left: 6mm;
+      }
+
+      .page-break {
+        break-before: page;
+      }
+
+      .footnote {
+        font-size: 8.2pt;
+        color: var(--ink-muted);
+      }
+    </style>
+  </head>
+  <body>
+    <h1>BDAS-Plattform — Datenschutz-Bestandsaufnahme</h1>
+    <p class="meta">
+      Technische Grundlage für die Erstellung der Datenschutzerklärung · Stand: 9. August 2026 ·
+      Erstellt aus dem Quellcode der Plattform (Repository <code>Bdas_website</code>, Branch
+      <code>main</code>)
+    </p>
+
+    <div class="box">
+      <span class="box-title">Zweck und Grenzen dieses Dokuments</span>
+      <p>
+        Dieses Dokument beschreibt <strong>vollständig und faktenbasiert, welche personenbezogenen
+        Daten die BDAS-Plattform tatsächlich verarbeitet</strong>, wo sie liegen, wer sie sieht, an
+        wen sie fließen und wie lange sie gespeichert bleiben. Es ist als Arbeitsgrundlage für eine
+        Datenschutzspezialistin bzw. einen Datenschutzspezialisten gedacht, die bzw. der daraus die
+        Datenschutzerklärung und das Verzeichnis von Verarbeitungstätigkeiten (Art. 30 DSGVO)
+        erstellt.
+      </p>
+      <p>
+        Alle Angaben sind aus dem Quellcode abgeleitet (Datenbankschemata, Migrationen, Formulare,
+        externe Aufrufe) und mit Dateipfaden belegt. <strong>Es handelt sich nicht um eine
+        Rechtsberatung.</strong> Vorschläge zu Rechtsgrundlagen sind als Diskussionsangebot
+        gekennzeichnet und ausdrücklich zu prüfen. Angaben, die sich nicht aus dem Code ergeben
+        (Vertragslage mit Dienstleistern, Serverstandorte in den Anbieter-Konten, Identität des
+        Verantwortlichen), sind als <span class="tag tag-open">offen</span> markiert.
+      </p>
+    </div>
+
+    <div class="toc">
+      <ol>
+        <li>Die Plattform in Kürze</li>
+        <li>Verantwortlicher — offene Angaben</li>
+        <li>Verarbeitete Datenkategorien im Detail</li>
+        <li>Verarbeitungszwecke und Rechtsgrundlagen (Vorschlag)</li>
+        <li>Empfänger und Auftragsverarbeiter</li>
+        <li>Dritt-Inhalte im Browser der Nutzenden</li>
+        <li>Cookies und lokale Speicherung</li>
+        <li>Sichtbarkeit und Zugriffsrechte innerhalb der Plattform</li>
+        <li>Betroffenenrechte — Ist-Stand der Umsetzung</li>
+        <li>Speicherdauer und Löschkonzept</li>
+        <li>Technische und organisatorische Maßnahmen</li>
+        <li>Geplante, noch nicht umgesetzte Verarbeitungen</li>
+        <li>Offene Punkte und Fragen</li>
+        <li>Anhang: vollständiges Tabellenverzeichnis</li>
+      </ol>
+    </div>
+
+    <h2>1. Die Plattform in Kürze</h2>
+    <p>
+      Die BDAS-Plattform ist eine einzelne Webanwendung (Next.js 14, TypeScript), die sowohl den
+      öffentlichen Webauftritt als auch den geschlossenen Mitglieder- und Vorstandsbereich des
+      Verbands abbildet. Sie ersetzt die bisherige WordPress-Installation. Der Zugang zum
+      geschlossenen Bereich erfolgt über ein eigenes Konto mit E-Mail-Adresse und Passwort.
+    </p>
+
+    <table>
+      <thead>
+        <tr>
+          <th style="width: 26%">Baustein</th>
+          <th style="width: 30%">Technologie</th>
+          <th>Datenschutzrelevanz</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Anwendung / Hosting</td>
+          <td>Next.js 14 auf Vercel</td>
+          <td>
+            Verarbeitet jede Anfrage; Server-Logs des Hosters (IP-Adresse, Zeitstempel, angefragte
+            URL) liegen beim Anbieter. Die Ausführungsregion ist im Code nicht festgelegt
+            (<code>vercel.json</code> enthält keine <code>regions</code>-Angabe) —
+            <span class="tag tag-open">offen</span>
+          </td>
+        </tr>
+        <tr>
+          <td>Datenbank</td>
+          <td>PostgreSQL bei Supabase (Drizzle ORM)</td>
+          <td>Speichert sämtliche im Abschnitt 3 aufgeführten Daten</td>
+        </tr>
+        <tr>
+          <td>Dateispeicher</td>
+          <td>Supabase Storage (Objektspeicher)</td>
+          <td>
+            Vier Buckets: <code>files</code> (privat, Verbandsdokumente),
+            <code>profile-media</code> (privat, Profilfotos), <code>event-media</code> (öffentlich,
+            Veranstaltungsbilder), Content-Medien (öffentlich, Seitenbilder)
+          </td>
+        </tr>
+        <tr>
+          <td>E-Mail-Versand</td>
+          <td>Resend</td>
+          <td>
+            Erhält Empfänger-E-Mail-Adresse, Name und Inhalt jeder transaktionalen E-Mail
+          </td>
+        </tr>
+        <tr>
+          <td>Sitzungsverwaltung</td>
+          <td>Eigenentwicklung: Argon2-Passworthash, HS256-JWT im Cookie</td>
+          <td>Ein einziges, technisch notwendiges Cookie (Abschnitt 7)</td>
+        </tr>
+        <tr>
+          <td>Web-Analyse / Tracking</td>
+          <td>—</td>
+          <td>
+            <span class="tag tag-ok">Nicht vorhanden</span> Kein Analyse-Werkzeug, kein
+            Werbe-Pixel, kein Consent-Management-Tool, keine externen Schriftarten im Code
+            auffindbar
+          </td>
+        </tr>
+        <tr>
+          <td>Zahlungen</td>
+          <td>—</td>
+          <td>
+            <span class="tag tag-na">Noch nicht umgesetzt</span> Stripe ist in der Architektur
+            vorgesehen, es existiert jedoch kein Code und keine Datenverarbeitung (Abschnitt 12)
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>Funktionsmodule</h3>
+    <p>
+      Die Plattform ist in Module aufgeteilt, die einzeln über Umgebungsvariablen
+      (<code>BDAS_FLAG_&lt;NAME&gt;</code>) an- und abschaltbar sind. Ein abgeschaltetes Modul
+      verarbeitet keine Daten. Vorhanden sind: <code>auth</code> (Konten), <code>members</code>
+      (Mitgliedschaft und Rollen), <code>profile</code> (Mitgliedsprofil), <code>groups</code>
+      (Hochschulgruppen), <code>events</code> (Veranstaltungen), <code>files</code> (Dateiablage),
+      <code>notifications</code> (E-Mails), <code>blog</code>, <code>projects</code>,
+      <code>content</code> (redaktionelle Seiten), <code>dashboard</code>,
+      <code>public_shell</code>, <code>group_map</code>, <code>handover</code>,
+      <code>payments</code>.
+    </p>
+    <p class="footnote">
+      Welche Module im Produktivbetrieb aktuell eingeschaltet sind, ergibt sich aus den
+      Umgebungsvariablen der Produktivumgebung und ist vor Veröffentlichung der
+      Datenschutzerklärung abzugleichen. <span class="tag tag-open">offen</span>
+    </p>
+
+    <h2>2. Verantwortlicher — offene Angaben</h2>
+    <p>
+      Die folgenden Angaben ergeben sich nicht aus dem Quellcode und müssen vom Verband beigebracht
+      werden. Sie sind für die Datenschutzerklärung zwingend erforderlich:
+    </p>
+    <ul>
+      <li>
+        <strong>Verantwortlicher im Sinne des Art. 4 Nr. 7 DSGVO</strong>: vollständiger Name des
+        Vereins, Rechtsform, Anschrift, Registergericht und Registernummer, Vertretungsberechtigte
+      </li>
+      <li>
+        <strong>Kontaktdaten für Datenschutzanfragen</strong>: E-Mail-Adresse und Postanschrift
+      </li>
+      <li>
+        <strong>Datenschutzbeauftragte(r)</strong>: ob ein solcher bestellt ist bzw. bestellt werden
+        muss (§ 38 BDSG — regelmäßig mindestens 20 Personen, die ständig mit automatisierter
+        Verarbeitung beschäftigt sind), und falls ja: Kontaktdaten
+      </li>
+      <li>
+        <strong>Verhältnis Bundesverband ↔ Hochschulgruppen</strong>: Die Plattform bildet
+        Hochschulgruppen mit eigenen Vorständen ab, die Zugriff auf die Daten ihrer
+        Gruppenmitglieder haben (Abschnitt 8). Ob dies eine gemeinsame Verantwortlichkeit
+        (Art. 26 DSGVO) begründet oder die Gruppen rechtlich unselbständige Untergliederungen des
+        Verbands sind, ist die zentrale offene Frage dieser Bestandsaufnahme.
+      </li>
+      <li>
+        <strong>Aufsichtsbehörde</strong> für die Beschwerdebelehrung (abhängig vom Sitz des
+        Verbands)
+      </li>
+    </ul>
+
+    <h2>3. Verarbeitete Datenkategorien im Detail</h2>
+    <p>
+      Nachfolgend jede Datenkategorie, die die Plattform speichert, mit der zugehörigen
+      Datenbanktabelle, dem Zeitpunkt der Erhebung und der Quelle der Daten.
+    </p>
+
+    <h3>3.1 Kontodaten (Modul <code>auth</code>)</h3>
+    <table>
+      <thead>
+        <tr>
+          <th style="width: 24%">Tabelle</th>
+          <th style="width: 40%">Felder</th>
+          <th>Erhebung / Anmerkung</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>auth_users</code></td>
+          <td>
+            ID, E-Mail-Adresse (normalisiert und in Anzeigeform), Status, Zeitpunkt und Version der
+            Einwilligung in die Datenschutzerklärung, Erstell- und Änderungszeitpunkt
+          </td>
+          <td>Bei der Registrierung durch die betroffene Person selbst</td>
+        </tr>
+        <tr>
+          <td><code>auth_credentials</code></td>
+          <td>Passwort-Hash, verwendetes Hash-Verfahren, Änderungszeitpunkt</td>
+          <td>
+            Das Passwort wird <strong>nie im Klartext gespeichert</strong>, sondern ausschließlich
+            als Argon2-Hash (Bibliothek <code>@node-rs/argon2</code>)
+          </td>
+        </tr>
+        <tr>
+          <td><code>auth_sessions</code></td>
+          <td>
+            Sitzungs-ID, Nutzer-ID, Ablaufzeitpunkt, Widerrufszeitpunkt,
+            <strong>IP-Adresse</strong>, <strong>User-Agent</strong> (Browser-/Gerätekennung),
+            Erstellzeitpunkt
+          </td>
+          <td>
+            Bei jedem Login. IP-Adresse und User-Agent werden im Klartext gespeichert
+            (<code>apps/web/app/anmelden/actions.ts</code>,
+            <code>modules/auth/src/sessions.ts</code>)
+          </td>
+        </tr>
+        <tr>
+          <td><code>auth_email_verifications</code></td>
+          <td>Einmal-Token, Nutzer-ID, Ablauf, Einlösezeitpunkt</td>
+          <td>Bei Registrierung bzw. erneutem Versand der Bestätigungsmail</td>
+        </tr>
+        <tr>
+          <td><code>auth_password_resets</code></td>
+          <td>Einmal-Token, Nutzer-ID, Ablauf, Einlösezeitpunkt</td>
+          <td>Bei Anforderung eines Passwort-Zurücksetzens</td>
+        </tr>
+        <tr>
+          <td><code>auth_rate_limits</code></td>
+          <td>
+            Schlüssel, Zähler, Fensterbeginn, Ablauf — der Schlüssel enthält je nach Vorgang die
+            <strong>IP-Adresse im Klartext</strong> (z. B. <code>login:ip:…</code>,
+            <code>register:ip:…</code>, <code>reset-request:ip:…</code>) oder die
+            <strong>E-Mail-Adresse</strong> (<code>login:email:…</code>)
+          </td>
+          <td>
+            Missbrauchsschutz gegen automatisiertes Ausprobieren von Passwörtern und
+            Massenregistrierungen (<code>modules/auth/src/rate-limit.ts</code>)
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>3.2 Mitgliedschaftsdaten (Modul <code>members</code>)</h3>
+    <table>
+      <thead>
+        <tr>
+          <th style="width: 24%">Tabelle</th>
+          <th style="width: 40%">Felder</th>
+          <th>Erhebung / Anmerkung</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>members</code></td>
+          <td>
+            Vorname, Nachname, zugeordnete Hochschulgruppe, Status (offen / aktiv / inaktiv),
+            Rollen, Beitrittszeitpunkt, Zeitstempel
+          </td>
+          <td>Vor- und Nachname bei der Registrierung; Status und Gruppe durch Vorstände</td>
+        </tr>
+        <tr>
+          <td><code>member_role_grants</code></td>
+          <td>
+            Rolle (Mitglied, Gruppenvorstand, Gruppenvorstandsvorsitz, Bundesvorstand, Alumni),
+            Gruppenbezug, wer wann verliehen und wer wann entzogen hat
+          </td>
+          <td>
+            Vollständige Historie der Rollenvergaben, einschließlich der Identität der handelnden
+            Vorstandsperson
+          </td>
+        </tr>
+        <tr>
+          <td><code>member_group_change_requests</code></td>
+          <td>
+            Mitglied, Herkunfts- und Zielgruppe, Status, Zeitpunkt der Beantragung und der
+            Entscheidung, entscheidende Person, <strong>Ablehnungsgrund</strong> (Kategorie und
+            Freitextbegründung)
+          </td>
+          <td>
+            Bildet Aufnahmeanträge und Gruppenwechsel ab. Der Freitext einer Ablehnung kann
+            beliebige Angaben zur Person enthalten und ist damit besonders sensibel
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>3.3 Profildaten (Modul <code>profile</code>)</h3>
+    <table>
+      <thead>
+        <tr>
+          <th style="width: 24%">Tabelle</th>
+          <th style="width: 40%">Felder</th>
+          <th>Erhebung / Anmerkung</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>member_profiles</code></td>
+          <td>
+            Studiengang, Abschlussart, Hochschule, <strong>Geburtsdatum</strong>, „gefunden durch“,
+            Name der empfehlenden Person, Schlüssel des <strong>Profilfotos</strong>,
+            Fertigstellungszeitpunkt
+          </td>
+          <td>
+            Vom Mitglied selbst im Profil-Assistenten ausgefüllt. Das Feld „Name der empfehlenden
+            Person“ ist ein <strong>personenbezogenes Datum einer dritten Person</strong>, die von
+            der Erhebung nichts erfährt — hierzu ist eine Bewertung erforderlich
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    <p>
+      Das Profilfoto liegt im privaten Bucket <code>profile-media</code> und ist nur über zeitlich
+      begrenzte, signierte Links abrufbar. Ein Foto ist ein Bildnis einer natürlichen Person; eine
+      biometrische Verarbeitung im Sinne des Art. 9 DSGVO findet <em>nicht</em> statt (keine
+      Gesichtserkennung, kein Abgleich).
+    </p>
+
+    <h3>3.4 Hochschulgruppen (Modul <code>groups</code>)</h3>
+    <p>
+      <code>groups</code> speichert Name, Kürzel, Stadt, Kontakt-E-Mail-Adresse, Instagram- und
+      Website-Adresse sowie Status und — seit der Standort-Erweiterung — Bezeichnung, Anschrift und
+      <strong>Geokoordinaten</strong> des Gruppenstandorts. Diese Daten sind überwiegend
+      organisationsbezogen, die Kontakt-E-Mail-Adresse kann jedoch personenbezogen sein
+      (z. B. <code>vorname.nachname@…</code>) und wird auf den <strong>öffentlichen</strong>
+      Gruppenseiten und in der Gruppenkarte angezeigt.
+    </p>
+
+    <h3>3.5 Veranstaltungen (Modul <code>events</code>)</h3>
+    <table>
+      <thead>
+        <tr>
+          <th style="width: 24%">Tabelle</th>
+          <th style="width: 40%">Felder</th>
+          <th>Erhebung / Anmerkung</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>events</code></td>
+          <td>
+            Titel, Beschreibung (Rich-Text), Zusammenfassung, Beginn/Ende, Ort mit Anschrift und
+            Geokoordinaten, Kapazität, Sichtbarkeit (öffentlich / Mitglieder / Gruppe), Status,
+            Titelbild, erstellende Person
+          </td>
+          <td>
+            Von Gruppenvorständen bzw. Veranstaltungsorganisierenden gepflegt. Der Rich-Text kann
+            beliebige Inhalte einschließlich Bilder und YouTube-Einbettungen enthalten
+            (Abschnitt 6)
+          </td>
+        </tr>
+        <tr>
+          <td><code>event_registrations</code></td>
+          <td>
+            Veranstaltung, Mitglied <em>oder</em> <strong>Gastname und Gast-E-Mail-Adresse</strong>,
+            Anmeldezeitpunkt, Stornierungszeitpunkt, Warteliste-Position, Storno-Token für Gäste
+          </td>
+          <td>
+            Gäste sind <strong>Nicht-Mitglieder ohne Konto</strong>. Für sie werden Name und
+            E-Mail-Adresse allein zur Veranstaltungsteilnahme erhoben — eigener
+            Informationspflichten- und Löschtatbestand
+          </td>
+        </tr>
+        <tr>
+          <td><code>event_attendance</code></td>
+          <td>
+            Veranstaltung, Mitglied, Teilnahme ja/nein, Zeitpunkt des Eincheckens, einscheckende
+            Person
+          </td>
+          <td>
+            <strong>Anwesenheitsdaten</strong> — dokumentiert das tatsächliche Verhalten einzelner
+            Mitglieder über die Zeit. Rechtsgrundlage und Speicherdauer sind gesondert zu bewerten
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>3.6 Dateiablage (Modul <code>files</code>)</h3>
+    <table>
+      <thead>
+        <tr>
+          <th style="width: 24%">Tabelle</th>
+          <th style="width: 40%">Felder</th>
+          <th>Erhebung / Anmerkung</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>folders</code></td>
+          <td>
+            Name, Sichtbarkeitsbereich (alle Mitglieder / Gruppenmitglieder / Gruppenvorstand /
+            Bundesvorstand), Gruppenbezug, Verschachtelung bis Tiefe 5, erstellende Person
+          </td>
+          <td>Legt fest, wer die enthaltenen Dateien sehen darf</td>
+        </tr>
+        <tr>
+          <td><code>files</code></td>
+          <td>
+            Dateiname, Speicherschlüssel, MIME-Typ, Größe, Status, <strong>hochladende
+            Person</strong>, Zeitstempel
+          </td>
+          <td>
+            <strong>Der Inhalt der Dateien ist inhaltlich unbestimmt</strong> — Vorstände können
+            Protokolle, Mitgliederlisten und andere personenbezogene Dokumente ablegen. Dies ist
+            datenschutzrechtlich der risikoreichste Bereich der Plattform
+          </td>
+        </tr>
+        <tr>
+          <td><code>file_access_log</code></td>
+          <td>Datei, Mitglied, Aktion (Download / Upload / Löschung), Zeitpunkt</td>
+          <td>
+            <strong>Protokoll des Nutzungsverhaltens</strong> einzelner Mitglieder. Die Spezifikation
+            sieht 90 Tage Aufbewahrung vor; im Code ist keine automatische Löschung umgesetzt
+            (Abschnitt 10)
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>3.7 Redaktionelle Inhalte (Module <code>blog</code>, <code>content</code>,
+      <code>projects</code>)</h3>
+    <ul>
+      <li>
+        <code>posts</code>: Beiträge mit Titel, Rich-Text-Inhalt, Kategorie, Sichtbarkeit
+        (öffentlich / Mitglieder / Vorstand), <strong>verfassende Person</strong>, Zeitstempel und
+        Zeitpunkt der Löschung („soft delete“ — gelöschte Beiträge bleiben in der Datenbank
+        erhalten und werden nur ausgeblendet)
+      </li>
+      <li>
+        <code>post_reports</code>: Meldungen zu Beiträgen mit <strong>meldender Person</strong>,
+        Freitext-Begründung und Status — enthält typischerweise Aussagen über das Verhalten einer
+        anderen Person
+      </li>
+      <li>
+        <code>content_pages</code>: redaktionelle Seiten (auch Impressum und Datenschutzerklärung
+        selbst) mit Inhalt und der zuletzt bearbeitenden Person
+      </li>
+      <li>
+        <code>projects</code>: Projekte einer Gruppe mit Titel, Beschreibung, Kontaktangabe,
+        verknüpften Dateien und erstellender Person
+      </li>
+    </ul>
+
+    <h3>3.8 E-Mail-Protokoll (Modul <code>notifications</code>)</h3>
+    <p>
+      <code>notification_log</code> speichert für <strong>jede versendete E-Mail</strong>: Empfänger
+      (Mitglied oder Gast), Kanal, Vorlage, <strong>Empfänger-E-Mail-Adresse</strong>, Betreff,
+      Status (versendet / fehlgeschlagen), Fehlerdetails und Zeitpunkt. Der Nachrichtentext selbst
+      wird nicht gespeichert, wohl aber der Betreff — der bei Veranstaltungs- und
+      Antragsbenachrichtigungen Rückschlüsse auf den Vorgang zulässt.
+    </p>
+    <p>Versendet werden derzeit folgende Vorlagen:</p>
+    <ul>
+      <li>
+        <strong>Veranstaltungen</strong>: Anmeldebestätigung, Warteliste, Abmeldebestätigung,
+        Nachrücken von der Warteliste, Änderung von Zeit oder Ort, Absage, Nachricht der
+        Organisierenden an Angemeldete
+      </li>
+      <li>
+        <strong>Rollen</strong>: Erteilung und Entzug der Organisationsberechtigung für
+        Veranstaltungen
+      </li>
+      <li>
+        <strong>Mitgliedschaft</strong>: Antrag eingegangen, Antrag angenommen, Antrag abgelehnt
+        (einschließlich Begründung), Gruppe aufgelöst
+      </li>
+      <li><strong>Moderation</strong>: Meldung zu einem Blogbeitrag</li>
+      <li>
+        <strong>Konto</strong> (eigener Versandweg im Modul <code>auth</code>):
+        E-Mail-Bestätigung, Passwort zurücksetzen
+      </li>
+    </ul>
+
+    <h2 class="page-break">4. Verarbeitungszwecke und Rechtsgrundlagen (Vorschlag)</h2>
+    <div class="box">
+      <p>
+        Die folgende Zuordnung ist ein <strong>Vorschlag zur fachlichen Prüfung</strong>, keine
+        rechtliche Festlegung. Insbesondere die Abgrenzung zwischen Vertragserfüllung
+        (Art. 6 Abs. 1 lit. b DSGVO — Mitgliedschaftsverhältnis) und berechtigtem Interesse
+        (lit. f) ist zu entscheiden; für einen Verein wird die Mitgliederverwaltung überwiegend auf
+        lit. b bzw. die Vereinssatzung gestützt.
+      </p>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th style="width: 30%">Zweck</th>
+          <th style="width: 32%">Daten</th>
+          <th>Rechtsgrundlage — Vorschlag</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Bereitstellung der Website</td>
+          <td>Server-Logs des Hosters, IP-Adresse</td>
+          <td>Art. 6 Abs. 1 lit. f — berechtigtes Interesse am sicheren Betrieb</td>
+        </tr>
+        <tr>
+          <td>Kontoerstellung und Anmeldung</td>
+          <td>E-Mail, Passwort-Hash, Sitzungsdaten inkl. IP und User-Agent</td>
+          <td>Art. 6 Abs. 1 lit. b — Durchführung des Nutzungsverhältnisses</td>
+        </tr>
+        <tr>
+          <td>Missbrauchsschutz (Rate Limiting)</td>
+          <td>IP-Adresse, E-Mail-Adresse, Zähler</td>
+          <td>Art. 6 Abs. 1 lit. f — Sicherheit der Verarbeitung, vgl. Art. 32</td>
+        </tr>
+        <tr>
+          <td>Aufnahme in den Verband, Mitgliederverwaltung</td>
+          <td>Name, Gruppe, Status, Rollen, Anträge und Ablehnungsgründe</td>
+          <td>Art. 6 Abs. 1 lit. b bzw. Vereinsmitgliedschaft</td>
+        </tr>
+        <tr>
+          <td>Mitgliedsprofil (Studium, Geburtsdatum, Foto)</td>
+          <td><code>member_profiles</code></td>
+          <td>
+            Prüfen: teils Vertragserfüllung, teils Einwilligung (insbesondere Foto und
+            „Empfehler:in“) — die Felder sind derzeit technisch als Pflichtfelder ausgeführt
+          </td>
+        </tr>
+        <tr>
+          <td>Veranstaltungsorganisation (Mitglieder)</td>
+          <td>Anmeldungen, Warteliste, Anwesenheit</td>
+          <td>Art. 6 Abs. 1 lit. b; Anwesenheitserfassung ggf. lit. f — gesondert zu begründen</td>
+        </tr>
+        <tr>
+          <td>Veranstaltungsanmeldung durch Gäste</td>
+          <td>Gastname, Gast-E-Mail-Adresse</td>
+          <td>
+            Art. 6 Abs. 1 lit. b (vorvertraglich/Teilnahmevertrag) — eigene Informationspflicht
+            nach Art. 13 im Anmeldeformular erforderlich
+          </td>
+        </tr>
+        <tr>
+          <td>Transaktionale E-Mails</td>
+          <td>Name, E-Mail-Adresse, Vorgangsbezug</td>
+          <td>Art. 6 Abs. 1 lit. b — notwendige Begleitkommunikation, keine Werbung</td>
+        </tr>
+        <tr>
+          <td>Nachweis der Einwilligung in die Datenschutzerklärung</td>
+          <td><code>consent_at</code>, <code>consent_version</code></td>
+          <td>Art. 7 Abs. 1 — Rechenschaftspflicht</td>
+        </tr>
+        <tr>
+          <td>Verbandsinterne Dokumentenablage</td>
+          <td>Dateien, Zugriffsprotokoll</td>
+          <td>
+            Art. 6 Abs. 1 lit. b/f — Zugriffsprotokoll als Sicherheitsmaßnahme
+            (Art. 32) zu begründen und zu befristen
+          </td>
+        </tr>
+        <tr>
+          <td>Redaktionelle Inhalte und Autorennennung</td>
+          <td>Beiträge, verfassende Person</td>
+          <td>Art. 6 Abs. 1 lit. f — Transparenz der Verbandskommunikation</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2>5. Empfänger und Auftragsverarbeiter</h2>
+    <p>
+      Für alle nachfolgenden Dienstleister ist ein Auftragsverarbeitungsvertrag nach Art. 28 DSGVO
+      erforderlich; das Vorliegen ist zu prüfen und zu dokumentieren.
+    </p>
+    <table>
+      <thead>
+        <tr>
+          <th style="width: 17%">Dienst</th>
+          <th style="width: 20%">Rolle</th>
+          <th style="width: 30%">Übermittelte Daten</th>
+          <th>Status / zu klären</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Vercel</strong></td>
+          <td>Hosting der Anwendung</td>
+          <td>
+            Alle Anfragedaten: IP-Adresse, User-Agent, aufgerufene URL, Formularinhalte im
+            Durchlauf, Session-Cookie
+          </td>
+          <td>
+            <span class="tag tag-open">offen</span> AVV, Ausführungsregion der Funktionen,
+            Standardvertragsklauseln bzw. EU-US Data Privacy Framework. Im Code ist keine Region
+            festgelegt — die Voreinstellung des Anbieters ist zu prüfen und auf die EU zu setzen
+          </td>
+        </tr>
+        <tr>
+          <td><strong>Supabase</strong></td>
+          <td>Datenbank und Dateispeicher</td>
+          <td>Sämtliche in Abschnitt 3 genannten Daten sowie alle hochgeladenen Dateien</td>
+          <td>
+            <span class="tag tag-open">offen</span> AVV, Projektregion (EU?), Aufbewahrung der
+            Sicherungskopien seitens des Anbieters
+          </td>
+        </tr>
+        <tr>
+          <td><strong>Resend</strong></td>
+          <td>E-Mail-Versand</td>
+          <td>
+            Empfänger-Adresse, Name, Betreff und vollständiger Inhalt jeder transaktionalen E-Mail
+          </td>
+          <td>
+            <span class="tag tag-open">offen</span> AVV, Verarbeitungsregion, Speicherdauer der
+            Zustellprotokolle beim Anbieter
+          </td>
+        </tr>
+        <tr>
+          <td><strong>Cloudflare R2</strong></td>
+          <td>Aufbewahrung von Datenbanksicherungen</td>
+          <td>Vollständige Datenbankabzüge</td>
+          <td>
+            <span class="tag tag-na">Beschlossen, aber nicht implementiert</span> Im Code existiert
+            keine Sicherungsautomatisierung. Sofern Sicherungen tatsächlich angelegt werden, ist der
+            Dienst aufzunehmen
+          </td>
+        </tr>
+        <tr>
+          <td><strong>GitHub / Vercel-Build</strong></td>
+          <td>Entwicklung und Auslieferung</td>
+          <td>Kein Zugriff auf Produktivdaten im Regelbetrieb</td>
+          <td>
+            Zu prüfen: Zugriffe von Entwicklerinnen und Entwicklern auf die Produktivdatenbank
+            (technische Administration) — im Verzeichnis als interner Empfängerkreis zu führen
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2>6. Dritt-Inhalte im Browser der Nutzenden</h2>
+    <p>
+      Diese Aufrufe erfolgen <strong>direkt aus dem Browser der Besucherinnen und Besucher</strong>.
+      Dabei wird deren IP-Adresse zwangsläufig an den jeweiligen Anbieter übermittelt — auch ohne
+      Cookie. Sie sind in der Datenschutzerklärung zu benennen.
+    </p>
+    <table>
+      <thead>
+        <tr>
+          <th style="width: 22%">Dienst</th>
+          <th style="width: 26%">Wo</th>
+          <th>Was übermittelt wird / Bewertung</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>OpenStreetMap</strong><br /><code>tile.openstreetmap.org</code></td>
+          <td>
+            Kartenanzeige der Hochschulgruppen (<code>apps/web/app/_groups/GroupMap.tsx</code>,
+            Leaflet)
+          </td>
+          <td>
+            IP-Adresse, User-Agent, angefragter Kartenausschnitt. Betreiber ist die OpenStreetMap
+            Foundation (Vereinigtes Königreich → Drittland mit Angemessenheitsbeschluss). Die Karte
+            lädt beim Seitenaufruf ohne weitere Interaktion — eine Zwei-Klick-Lösung wäre die
+            datensparsamere Variante
+          </td>
+        </tr>
+        <tr>
+          <td><strong>Photon (Komoot)</strong><br /><code>photon.komoot.io</code></td>
+          <td>
+            Adresssuche beim Anlegen von Veranstaltungs- und Gruppenstandorten
+            (<code>apps/web/app/lib/photon.ts</code>, clientseitig)
+          </td>
+          <td>
+            IP-Adresse und <strong>der eingegebene Suchbegriff</strong>. Betrifft nur eingeloggte
+            Vorstände und Organisierende, nicht die Öffentlichkeit. Anbieter: komoot GmbH,
+            Deutschland
+          </td>
+        </tr>
+        <tr>
+          <td><strong>YouTube (Google)</strong></td>
+          <td>
+            Optionale Video-Einbettung im Rich-Text-Editor für Veranstaltungs- und Blogbeiträge
+            (Tiptap-Erweiterung <code>extension-youtube</code>)
+          </td>
+          <td>
+            Sobald ein Redaktionsmitglied ein Video einbettet, lädt die Seite Inhalte von Google.
+            <strong>Hier greift die Einwilligungspflicht nach § 25 TTDSG</strong>, da YouTube
+            Cookies bzw. lokale Speicherung setzt. Zu klären: ob die Funktion genutzt wird, ob auf
+            <code>youtube-nocookie.com</code> umgestellt und ob eine Zwei-Klick-Lösung ergänzt wird
+          </td>
+        </tr>
+        <tr>
+          <td><strong>Google Maps</strong></td>
+          <td>Veranstaltungsseite (<code>apps/web/app/events/[id]/page.tsx</code>)</td>
+          <td>
+            Nur ein <strong>Hyperlink</strong> zur Kartensuche, keine Einbettung. Datenübermittlung
+            erst nach aktivem Klick — unkritisch, aber erwähnenswert
+          </td>
+        </tr>
+        <tr>
+          <td><strong>Instagram, bdaj.de, alevi.com</strong></td>
+          <td>Fußzeile des öffentlichen Bereichs</td>
+          <td>Reine Hyperlinks, keine Einbettung, kein Social-Media-Plugin</td>
+        </tr>
+        <tr>
+          <td>Schriftarten, Analyse, Werbung</td>
+          <td>—</td>
+          <td>
+            <span class="tag tag-ok">Keine externen Aufrufe</span> Es sind keine Google Fonts, keine
+            Analysewerkzeuge und keine Werbenetzwerke eingebunden
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2 class="page-break">7. Cookies und lokale Speicherung</h2>
+    <table>
+      <thead>
+        <tr>
+          <th style="width: 22%">Bezeichnung</th>
+          <th style="width: 16%">Art</th>
+          <th style="width: 20%">Laufzeit</th>
+          <th>Zweck und Eigenschaften</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>bdas_session</code></td>
+          <td>Cookie (Erstanbieter)</td>
+          <td>7 Tage</td>
+          <td>
+            Angemeldet-Bleiben. Enthält ein signiertes JWT (HS256).
+            <code>HttpOnly</code> (für JavaScript nicht lesbar), <code>SameSite=Lax</code>,
+            <code>Secure</code> im Produktivbetrieb, <code>Path=/</code>. Technisch notwendig
+          </td>
+        </tr>
+        <tr>
+          <td><code>bdas-cookie-notice</code></td>
+          <td>localStorage</td>
+          <td>unbegrenzt, lokal</td>
+          <td>
+            Merkt sich, dass der Cookie-Hinweis weggeklickt wurde. Verlässt das Gerät nicht
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    <p>
+      Die Plattform zeigt einen <strong>informativen Cookie-Hinweis, kein Consent-Banner</strong>.
+      Begründung der Architekturentscheidung (ADR 0008): Da ausschließlich ein technisch notwendiges
+      Cookie gesetzt wird, verlangt § 25 Abs. 2 TTDSG Information, aber keine vorherige
+      Einwilligung; ein Ablehnen-Knopf wäre funktionslos, weil das Cookie für die Anmeldung
+      unverzichtbar ist. Der Hinweis-Baustein ist so gebaut, dass er zu einem echten Consent-Banner
+      ausgebaut werden kann.
+    </p>
+    <div class="box">
+      <span class="box-title">Zu prüfen</span>
+      <p>
+        Diese Begründung trägt nur, solange keine YouTube-Videos eingebettet werden. Wird die
+        Einbettungsfunktion genutzt, entsteht eine Einwilligungspflicht — dann ist der Hinweis zum
+        Consent-Banner auszubauen oder die Funktion abzuschalten.
+      </p>
+    </div>
+
+    <h2>8. Sichtbarkeit und Zugriffsrechte innerhalb der Plattform</h2>
+    <p>
+      Für die Datenschutzerklärung ist wesentlich, wer welche Daten sehen kann. Die Plattform
+      unterscheidet fünf Rollen: Mitglied, Gruppenvorstand, Gruppenvorstandsvorsitz,
+      Bundesvorstand und Alumni. Rollen sind <strong>gruppenbezogen</strong>: ein Gruppenvorstand
+      sieht ausschließlich die eigene Gruppe.
+    </p>
+    <table>
+      <thead>
+        <tr>
+          <th style="width: 30%">Daten</th>
+          <th>Sichtbar für</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Name und Gruppenzugehörigkeit</td>
+          <td>Mitglieder der eigenen Gruppe, Gruppenvorstand, Bundesvorstand</td>
+        </tr>
+        <tr>
+          <td>Profildaten (Studium, Geburtsdatum, Foto)</td>
+          <td>
+            Die Person selbst, der Vorstand der eigenen Gruppe, der Bundesvorstand — der genaue
+            Umfang je Rolle ist mit dem Verband zu bestätigen
+          </td>
+        </tr>
+        <tr>
+          <td>Aufnahmeanträge einschließlich Ablehnungsgrund</td>
+          <td>Vorstand der Zielgruppe, Bundesvorstand</td>
+        </tr>
+        <tr>
+          <td>Veranstaltungsanmeldungen (Teilnehmendenliste)</td>
+          <td>Organisierende der Veranstaltung, Gruppenvorstand</td>
+        </tr>
+        <tr>
+          <td>Dateien</td>
+          <td>
+            Je Ordner-Sichtbarkeit: alle Mitglieder / Mitglieder einer Gruppe / Gruppenvorstand /
+            Bundesvorstand
+          </td>
+        </tr>
+        <tr>
+          <td>Zugriffsprotokoll der Dateien</td>
+          <td>Vorstandsrollen (Verhaltensdaten einzelner Mitglieder)</td>
+        </tr>
+        <tr>
+          <td>Blogbeiträge</td>
+          <td>Je Beitrag: öffentlich / alle Mitglieder / Vorstand</td>
+        </tr>
+        <tr>
+          <td>Öffentlich sichtbar ohne Anmeldung</td>
+          <td>
+            Gruppenseiten mit Kontakt-E-Mail und Standort, öffentliche Veranstaltungen mit Ort und
+            Zeit, öffentliche Blogbeiträge mit Autorennennung, redaktionelle Seiten
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2>9. Betroffenenrechte — Ist-Stand der Umsetzung</h2>
+    <table>
+      <thead>
+        <tr>
+          <th style="width: 26%">Recht</th>
+          <th style="width: 14%">Status</th>
+          <th>Umsetzung in der Plattform</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Auskunft (Art. 15) und Datenübertragbarkeit (Art. 20)</td>
+          <td><span class="tag tag-open">teilweise</span></td>
+          <td>
+            Selbstbedienung unter <code>/account/datenexport</code> — JSON-Download der eigenen
+            Daten. <strong>Abgedeckt sind derzeit nur Konto, Mitgliedsdaten, Rollen und
+            Profil.</strong> Nicht enthalten: Veranstaltungsanmeldungen und Anwesenheit, Dateien und
+            Zugriffsprotokoll, Blogbeiträge und Meldungen, E-Mail-Protokoll, Sitzungsdaten,
+            Gruppenwechselanträge. Der Export weist im Text auf seine Unvollständigkeit hin.
+            Anfragen nach Art. 15 müssen daher derzeit <strong>manuell ergänzt</strong> werden
+          </td>
+        </tr>
+        <tr>
+          <td>Berichtigung (Art. 16)</td>
+          <td><span class="tag tag-ok">umgesetzt</span></td>
+          <td>Profil- und Kontodaten sind unter <code>/account</code> selbst bearbeitbar</td>
+        </tr>
+        <tr>
+          <td>Löschung (Art. 17)</td>
+          <td><span class="tag tag-gap">nicht umgesetzt</span></td>
+          <td>
+            Es gibt <strong>keine Selbstbedienungs-Löschung und kein automatisiertes
+            Löschverfahren</strong>. Die Spezifikation sieht eine Löschung mit modulübergreifender
+            Kaskade binnen 30 Tagen vor; sie ist ausdrücklich auf eine spätere Phase verschoben
+            (ADR 0008). Technisch sind die Fremdschlüssel überwiegend mit
+            <code>ON DELETE CASCADE</code> ausgestattet, sodass eine manuelle Löschung des
+            Kontos die abhängigen Datensätze mitnimmt — <strong>ausgenommen</strong> u. a. Blogbeiträge
+            und Ordner, die nur die Urheberkennung verlieren, sowie Gast-Anmeldungen ohne Konto.
+            <strong>Bis zur Umsetzung ist ein dokumentierter manueller Prozess erforderlich</strong>
+          </td>
+        </tr>
+        <tr>
+          <td>Einschränkung (Art. 18), Widerspruch (Art. 21)</td>
+          <td><span class="tag tag-gap">nicht umgesetzt</span></td>
+          <td>Nur manuell durch Administration; kein Sperrkennzeichen im Datenmodell</td>
+        </tr>
+        <tr>
+          <td>Widerruf der Einwilligung (Art. 7 Abs. 3)</td>
+          <td><span class="tag tag-open">teilweise</span></td>
+          <td>
+            Die Einwilligung in die Datenschutzerklärung wird mit Zeitpunkt und Version
+            protokolliert (aktuelle Version: <code>2026-05-18</code>). Ein Widerrufsweg in der
+            Oberfläche existiert nicht
+          </td>
+        </tr>
+        <tr>
+          <td>Benachrichtigung bei Datenpanne (Art. 33/34)</td>
+          <td><span class="tag tag-open">offen</span></td>
+          <td>Kein dokumentierter Meldeprozess im Repository — organisatorisch festzulegen</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2 class="page-break">10. Speicherdauer und Löschkonzept</h2>
+    <div class="box">
+      <span class="box-title">Kernbefund</span>
+      <p>
+        Die Plattform hat derzeit <strong>kein umgesetztes Löschkonzept</strong>. Der einzige
+        automatisierte Aufräumvorgang ist ein täglicher Lauf um 03:00 Uhr, der abgebrochene
+        Datei-Uploads älter als 24 Stunden entfernt (<code>/api/cron/files-sweep</code>). Alle
+        übrigen Daten bleiben unbefristet gespeichert. Das betrifft insbesondere Daten mit
+        IP-Bezug und Verhaltensdaten.
+      </p>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th style="width: 30%">Daten</th>
+          <th style="width: 20%">Ist-Zustand</th>
+          <th>Empfehlung zur Festlegung</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Abgelaufene Sitzungen inkl. IP und User-Agent</td>
+          <td>
+            <span class="tag tag-gap">unbegrenzt</span> Ablaufzeitpunkt vorhanden, aber keine
+            Löschung der Zeilen
+          </td>
+          <td>Löschung kurz nach Ablauf, z. B. 7–30 Tage</td>
+        </tr>
+        <tr>
+          <td>Bestätigungs- und Passwort-Reset-Token</td>
+          <td><span class="tag tag-gap">unbegrenzt</span></td>
+          <td>Löschung nach Einlösung bzw. Ablauf</td>
+        </tr>
+        <tr>
+          <td>Rate-Limit-Einträge mit IP-Adresse</td>
+          <td><span class="tag tag-gap">unbegrenzt</span> trotz Ablauffeld</td>
+          <td>Löschung nach Fensterablauf (Stunden)</td>
+        </tr>
+        <tr>
+          <td>Zugriffsprotokoll Dateien</td>
+          <td>
+            <span class="tag tag-gap">unbegrenzt</span> — die Spezifikation nennt 90 Tage, im Code
+            nicht umgesetzt
+          </td>
+          <td>90 Tage, automatisiert</td>
+        </tr>
+        <tr>
+          <td>E-Mail-Protokoll (Adresse und Betreff)</td>
+          <td><span class="tag tag-gap">unbegrenzt</span></td>
+          <td>Kurz (z. B. 30–90 Tage) oder Anonymisierung nach Zustellnachweis</td>
+        </tr>
+        <tr>
+          <td>Gast-Anmeldungen zu Veranstaltungen</td>
+          <td><span class="tag tag-gap">unbegrenzt</span></td>
+          <td>Löschung nach der Veranstaltung, z. B. nach 30–90 Tagen</td>
+        </tr>
+        <tr>
+          <td>Anwesenheitsdaten</td>
+          <td><span class="tag tag-gap">unbegrenzt</span></td>
+          <td>Frist festlegen; ohne Zweck zeitnah löschen</td>
+        </tr>
+        <tr>
+          <td>Gelöschte Blogbeiträge</td>
+          <td>
+            <span class="tag tag-open">verbleiben</span> — nur als gelöscht markiert
+            („soft delete“)
+          </td>
+          <td>Endgültige Löschung nach Frist</td>
+        </tr>
+        <tr>
+          <td>Daten ausgetretener Mitglieder</td>
+          <td><span class="tag tag-gap">unbegrenzt</span></td>
+          <td>
+            Regelfrist festlegen; steuer- und vereinsrechtliche Aufbewahrungspflichten
+            (z. B. Beitragsunterlagen) berücksichtigen
+          </td>
+        </tr>
+        <tr>
+          <td>Abgebrochene Uploads</td>
+          <td><span class="tag tag-ok">24 Stunden</span></td>
+          <td>—</td>
+        </tr>
+        <tr>
+          <td>Server-Logs und Sicherungen der Dienstleister</td>
+          <td><span class="tag tag-open">offen</span></td>
+          <td>Bei Vercel, Supabase und Resend erfragen und in die Erklärung übernehmen</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2>11. Technische und organisatorische Maßnahmen (Art. 32 DSGVO)</h2>
+    <h3>Umgesetzt</h3>
+    <ul>
+      <li>
+        <strong>Passwortschutz</strong>: Speicherung ausschließlich als Argon2-Hash; das verwendete
+        Verfahren wird je Datensatz mitgeführt, sodass eine Umstellung möglich bleibt
+      </li>
+      <li>
+        <strong>Sitzungen</strong>: signiertes JWT in einem <code>HttpOnly</code>-Cookie, damit für
+        Skripte im Browser unzugänglich; <code>SameSite=Lax</code> gegen
+        Cross-Site-Request-Forgery; <code>Secure</code> im Produktivbetrieb; Sitzungen sind
+        widerrufbar; bei Passwortänderung wird die Sitzung erneuert
+      </li>
+      <li>
+        <strong>Missbrauchsschutz</strong>: Ratenbegrenzung für Anmeldung, Registrierung und
+        Passwort-Zurücksetzen, jeweils nach IP-Adresse und E-Mail-Adresse
+      </li>
+      <li>
+        <strong>Kontenbestätigung</strong>: Registrierung erfordert die Bestätigung der
+        E-Mail-Adresse über einen einmaligen, ablaufenden Link
+      </li>
+      <li>
+        <strong>Rollen- und Sichtbarkeitsmodell</strong>: gruppenbezogene Rollen mit vollständiger
+        Vergabe-Historie; Ordner- und Beitragssichtbarkeiten (Abschnitt 8); Berechtigungsprüfung
+        erfolgt serverseitig
+      </li>
+      <li>
+        <strong>Row Level Security</strong> (zeilenbasierter Zugriffsschutz in der Datenbank) ist in
+        den Migrationen für die Tabellen <code>files</code>, <code>folders</code>,
+        <code>file_access_log</code>, <code>content_pages</code>, <code>member_profiles</code> und
+        <code>member_group_change_requests</code> aktiviert
+      </li>
+      <li>
+        <strong>Dateiablage</strong>: privater Bucket, Zugriff ausschließlich über zeitlich
+        begrenzte signierte Links; Prüfung von Dateityp und -größe; Protokollierung jedes Zugriffs
+      </li>
+      <li>
+        <strong>Datenexport</strong> ist streng auf die anfragende Person beschränkt — es gibt
+        keinen Parameter, über den fremde Daten abgerufen werden könnten
+      </li>
+      <li>
+        <strong>Transportverschlüsselung</strong> durchgängig über HTTPS (Vercel), Datenbank- und
+        Speicherzugriff über TLS
+      </li>
+      <li>
+        <strong>Entwicklungsprozess</strong>: automatisierte Tests, Code-Review-Pflicht,
+        Sicherheitsreview für Änderungen an Authentifizierung, Zahlungen und Dateien; Module hinter
+        Schaltern, sodass unfertige Funktionen keine Daten verarbeiten
+      </li>
+    </ul>
+    <h3>Zu prüfen oder offen</h3>
+    <ul>
+      <li>
+        <span class="tag tag-open">offen</span> <strong>Tatsächlicher Aktivierungszustand von Row
+        Level Security in der Produktivdatenbank</strong> — der Anwendungszugriff läuft über eine
+        privilegierte Verbindung, sodass ein Fehler in der Anwendungslogik nicht auf Datenbankebene
+        aufgefangen würde. Vor Freigabe der Dateiablage für echte Dokumente zu verifizieren
+      </li>
+      <li>
+        <span class="tag tag-open">offen</span> <strong>Zwei-Faktor-Authentisierung</strong> ist
+        nicht vorhanden — auch nicht für Vorstandskonten, die Zugriff auf Mitgliederdaten haben
+      </li>
+      <li>
+        <span class="tag tag-open">offen</span> <strong>Datensicherung</strong>: Über die vom
+        Anbieter bereitgestellten Sicherungen hinaus ist keine eigene Sicherungsroutine umgesetzt;
+        ein Wiederherstellungstest ist nicht dokumentiert
+      </li>
+      <li>
+        <span class="tag tag-open">offen</span> <strong>Löschroutinen</strong> (Abschnitt 10)
+      </li>
+      <li>
+        <span class="tag tag-open">offen</span> <strong>Zugriff der administrierenden Personen</strong>
+        auf die Produktivdatenbank: Kreis der Berechtigten, Verpflichtung auf Vertraulichkeit,
+        Protokollierung
+      </li>
+      <li>
+        <span class="tag tag-open">offen</span> <strong>Schulung und Verpflichtung der
+        Vorstände</strong>, die über die Plattform auf Mitgliederdaten zugreifen
+      </li>
+    </ul>
+
+    <h2 class="page-break">12. Geplante, noch nicht umgesetzte Verarbeitungen</h2>
+    <p>
+      Diese Punkte sind in Spezifikation oder Architekturentscheidungen vorgesehen, verarbeiten
+      derzeit aber <strong>keine</strong> Daten. Sie sollten bei der Gestaltung der
+      Datenschutzerklärung mitgedacht werden, damit sie später nicht zu einer Neufassung zwingen:
+    </p>
+    <ul>
+      <li>
+        <strong>Mitgliedsbeiträge über Stripe</strong> — Zahlungsdaten, Beitragshistorie,
+        steuerrechtliche Aufbewahrungsfristen. Es existiert kein Code
+      </li>
+      <li>
+        <strong>Kontolöschung mit 30-Tage-Kaskade</strong> über alle Module
+      </li>
+      <li>
+        <strong>Erweiterung des Datenexports</strong> um Veranstaltungen, Dateien, Blog und
+        E-Mail-Protokoll
+      </li>
+      <li>
+        <strong>Newsletter bzw. Rundmails</strong> und Benachrichtigungseinstellungen — derzeit
+        werden ausschließlich transaktionale E-Mails versendet, es gibt kein Abmelde-Verfahren, weil
+        es keine Werbe-E-Mails gibt
+      </li>
+      <li>
+        <strong>Gruppenbezogene Absenderadressen</strong> für E-Mails
+      </li>
+      <li>
+        <strong>Web-Analyse</strong> — nicht vorhanden; bei Einführung wird der Cookie-Hinweis
+        einwilligungspflichtig
+      </li>
+    </ul>
+
+    <h2>13. Offene Punkte und Fragen</h2>
+    <p>Checkliste für das Gespräch mit der Datenschutzspezialistin bzw. dem Datenschutzspezialisten:</p>
+    <ol>
+      <li>
+        <strong>Verantwortlichkeit</strong>: Sind die Hochschulgruppen unselbständige
+        Untergliederungen oder eigene Verantwortliche? Braucht es eine Vereinbarung nach Art. 26
+        DSGVO?
+      </li>
+      <li>
+        <strong>Rechtsgrundlage für die Profilpflichtfelder</strong>: Sind Geburtsdatum, Studiengang
+        und Hochschule als Pflichtangaben erforderlich, oder ist eine Einwilligungslösung mit
+        Freiwilligkeit vorzuziehen?
+      </li>
+      <li>
+        <strong>Profilfoto</strong>: Einwilligung erforderlich? Wer darf es sehen? Wie erfolgt der
+        Widerruf?
+      </li>
+      <li>
+        <strong>Feld „empfehlende Person“</strong>: Erhebung von Daten Dritter — Informationspflicht
+        nach Art. 14 DSGVO?
+      </li>
+      <li>
+        <strong>Ablehnungsbegründungen</strong> für Aufnahmeanträge: Speicherdauer und
+        Zugriffskreis, da Freitext über eine Person
+      </li>
+      <li>
+        <strong>Anwesenheitserfassung</strong> bei Veranstaltungen: Zweck, Rechtsgrundlage,
+        Löschfrist
+      </li>
+      <li>
+        <strong>Zugriffsprotokoll der Dateiablage</strong>: als Sicherheitsmaßnahme begründbar? Wer
+        darf es einsehen? Mitbestimmungsähnliche Bedenken bei Verhaltensdaten Ehrenamtlicher
+      </li>
+      <li>
+        <strong>Gäste bei Veranstaltungen</strong>: eigener Datenschutzhinweis im Anmeldeformular,
+        Löschfrist
+      </li>
+      <li>
+        <strong>YouTube-Einbettung</strong>: abschalten, auf die cookiefreie Variante umstellen oder
+        Consent-Banner einführen?
+      </li>
+      <li>
+        <strong>Kartenanzeige</strong>: OpenStreetMap direkt laden oder Zwei-Klick-Lösung?
+      </li>
+      <li>
+        <strong>Serverstandorte</strong> von Vercel, Supabase und Resend: EU-Region bestätigen bzw.
+        umstellen; Drittlandtransfer und Standardvertragsklauseln dokumentieren
+      </li>
+      <li>
+        <strong>Auftragsverarbeitungsverträge</strong> mit Vercel, Supabase und Resend abschließen
+        bzw. nachweisen
+      </li>
+      <li>
+        <strong>Löschkonzept</strong> mit konkreten Fristen je Datenart festlegen (Abschnitt 10) —
+        anschließend technisch umsetzen
+      </li>
+      <li>
+        <strong>Löschverfahren für Konten</strong>: Bis zur technischen Umsetzung ein
+        dokumentierter manueller Ablauf inklusive Nachweis
+      </li>
+      <li>
+        <strong>Vollständigkeit des Datenexports</strong>: reicht der derzeitige Umfang für Art. 15,
+        oder muss vor dem Start nachgebessert werden?
+      </li>
+      <li>
+        <strong>Verzeichnis von Verarbeitungstätigkeiten</strong> (Art. 30) — dieses Dokument kann
+        als Grundlage dienen
+      </li>
+      <li>
+        <strong>Datenschutzbeauftragte(r)</strong>: Bestellpflicht prüfen
+      </li>
+      <li>
+        <strong>Verpflichtung und Schulung der Vorstände</strong>, die Mitgliederdaten einsehen
+      </li>
+      <li>
+        <strong>Meldeprozess für Datenschutzverletzungen</strong> festlegen
+      </li>
+      <li>
+        <strong>Einwilligungsversion</strong>: Bei Inkrafttreten der neuen Datenschutzerklärung ist
+        die Versionskennung im Code zu erhöhen; zu klären, ob bestehende Konten erneut zustimmen
+        müssen
+      </li>
+    </ol>
+
+    <h2 class="page-break">14. Anhang: vollständiges Tabellenverzeichnis</h2>
+    <p>
+      Alle Datenbanktabellen der Plattform mit Personenbezug. Grundlage: die
+      Migrationsdateien unter <code>modules/&lt;modul&gt;/migrations/</code>.
+    </p>
+    <table>
+      <thead>
+        <tr>
+          <th style="width: 26%">Tabelle</th>
+          <th style="width: 14%">Modul</th>
+          <th style="width: 18%">Personenbezug</th>
+          <th>Inhalt in Stichworten</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>auth_users</code></td>
+          <td>auth</td>
+          <td>direkt</td>
+          <td>E-Mail, Status, Einwilligung</td>
+        </tr>
+        <tr>
+          <td><code>auth_credentials</code></td>
+          <td>auth</td>
+          <td>direkt</td>
+          <td>Passwort-Hash</td>
+        </tr>
+        <tr>
+          <td><code>auth_sessions</code></td>
+          <td>auth</td>
+          <td>direkt</td>
+          <td>Sitzungen, IP-Adresse, User-Agent</td>
+        </tr>
+        <tr>
+          <td><code>auth_email_verifications</code></td>
+          <td>auth</td>
+          <td>indirekt</td>
+          <td>Bestätigungstoken</td>
+        </tr>
+        <tr>
+          <td><code>auth_password_resets</code></td>
+          <td>auth</td>
+          <td>indirekt</td>
+          <td>Reset-Token</td>
+        </tr>
+        <tr>
+          <td><code>auth_rate_limits</code></td>
+          <td>auth</td>
+          <td>direkt</td>
+          <td>IP-Adresse bzw. E-Mail im Schlüssel</td>
+        </tr>
+        <tr>
+          <td><code>members</code></td>
+          <td>members</td>
+          <td>direkt</td>
+          <td>Name, Gruppe, Status, Rollen</td>
+        </tr>
+        <tr>
+          <td><code>member_role_grants</code></td>
+          <td>members</td>
+          <td>direkt</td>
+          <td>Rollenhistorie mit handelnden Personen</td>
+        </tr>
+        <tr>
+          <td><code>member_group_change_requests</code></td>
+          <td>members</td>
+          <td>direkt</td>
+          <td>Anträge, Entscheidungen, Ablehnungsgründe</td>
+        </tr>
+        <tr>
+          <td><code>member_profiles</code></td>
+          <td>profile</td>
+          <td>direkt</td>
+          <td>Studium, Geburtsdatum, Foto, Empfehler:in</td>
+        </tr>
+        <tr>
+          <td><code>groups</code></td>
+          <td>groups</td>
+          <td>möglich</td>
+          <td>Gruppendaten, Kontakt-E-Mail, Standort</td>
+        </tr>
+        <tr>
+          <td><code>events</code></td>
+          <td>events</td>
+          <td>indirekt</td>
+          <td>Veranstaltungen, erstellende Person</td>
+        </tr>
+        <tr>
+          <td><code>event_registrations</code></td>
+          <td>events</td>
+          <td>direkt</td>
+          <td>Anmeldungen von Mitgliedern und Gästen</td>
+        </tr>
+        <tr>
+          <td><code>event_attendance</code></td>
+          <td>events</td>
+          <td>direkt</td>
+          <td>Anwesenheit, Check-in</td>
+        </tr>
+        <tr>
+          <td><code>folders</code></td>
+          <td>files</td>
+          <td>indirekt</td>
+          <td>Ordner mit Sichtbarkeitsbereich</td>
+        </tr>
+        <tr>
+          <td><code>files</code></td>
+          <td>files</td>
+          <td>direkt / Inhalt</td>
+          <td>Dateien und hochladende Person</td>
+        </tr>
+        <tr>
+          <td><code>file_access_log</code></td>
+          <td>files</td>
+          <td>direkt</td>
+          <td>Zugriffsprotokoll je Mitglied</td>
+        </tr>
+        <tr>
+          <td><code>notification_log</code></td>
+          <td>notifications</td>
+          <td>direkt</td>
+          <td>Empfängeradresse, Betreff, Status</td>
+        </tr>
+        <tr>
+          <td><code>posts</code></td>
+          <td>blog</td>
+          <td>indirekt</td>
+          <td>Beiträge, verfassende Person, Soft-Delete</td>
+        </tr>
+        <tr>
+          <td><code>post_reports</code></td>
+          <td>blog</td>
+          <td>direkt</td>
+          <td>Meldungen mit meldender Person und Begründung</td>
+        </tr>
+        <tr>
+          <td><code>projects</code></td>
+          <td>projects</td>
+          <td>indirekt</td>
+          <td>Projekte, Kontakt, erstellende Person</td>
+        </tr>
+        <tr>
+          <td><code>content_pages</code></td>
+          <td>content</td>
+          <td>indirekt</td>
+          <td>Redaktionsseiten, bearbeitende Person</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p class="footnote" style="margin-top: 8mm">
+      Erstellt am 9. August 2026 auf Grundlage des Repository-Standes des Branches
+      <code>main</code>. Bei Änderungen an Datenmodell, Dienstleistern oder eingebundenen
+      Dritt-Inhalten ist dieses Dokument fortzuschreiben.
+    </p>
+  </body>
+</html>
