@@ -325,4 +325,30 @@ describe("puckConfig", () => {
     );
     expect(publicOut).not.toContain("data-block-platzhalter");
   });
+
+  it("PersonenRaster shows a placeholder in the editor while it holds nobody", () => {
+    const render = puckConfig.components.PersonenRaster?.render;
+    if (!render) throw new Error("PersonenRaster render missing");
+    const editing = renderToStaticMarkup(
+      render({ personen: [], puck: { isEditing: true } } as never) as never,
+    );
+    expect(editing).toContain("data-block-platzhalter");
+    const publicOut = renderToStaticMarkup(
+      render({ personen: [], puck: { isEditing: false } } as never) as never,
+    );
+    expect(publicOut).not.toContain("data-block-platzhalter");
+  });
+
+  it("Organigramm shows a placeholder in the editor while it holds no boxes", () => {
+    const render = puckConfig.components.Organigramm?.render;
+    if (!render) throw new Error("Organigramm render missing");
+    const editing = renderToStaticMarkup(
+      render({ kaesten: [], puck: { isEditing: true } } as never) as never,
+    );
+    expect(editing).toContain("data-block-platzhalter");
+    const publicOut = renderToStaticMarkup(
+      render({ kaesten: [], puck: { isEditing: false } } as never) as never,
+    );
+    expect(publicOut).not.toContain("data-block-platzhalter");
+  });
 });

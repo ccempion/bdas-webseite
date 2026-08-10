@@ -165,25 +165,28 @@ export const puckConfig: Config<Blocks> = {
       // Two columns from the narrowest viewport up: each card is a full-width
       // square photo, so a single column meant a phone showed one person at a
       // time. The tighter gap below `sm` buys the two cards usable width.
-      render: ({ personen }) => (
-        <div className="grid grid-cols-2 gap-4 sm:gap-6 lg:grid-cols-3">
-          {personen.map((p, i) => (
-            <Card key={i} className="overflow-hidden">
-              {p.foto ? (
-                <img src={p.foto} alt={p.name} className="aspect-square w-full object-cover" />
-              ) : (
-                <div className="aspect-square w-full bg-bdas-surface-hover" aria-hidden />
-              )}
-              <div className="flex flex-col gap-1 p-4">
-                <p className="font-semibold text-bdas-ink">{p.name}</p>
-                <p className="text-bdas-ink-body">{p.rolle}</p>
-                <p className="text-sm text-bdas-ink-muted">{p.uni}</p>
-                <p className="text-sm text-bdas-ink-muted">{p.studiengang}</p>
-              </div>
-            </Card>
-          ))}
-        </div>
-      ),
+      render: ({ personen, puck }) =>
+        (personen ?? []).length === 0 && puck?.isEditing ? (
+          <BlockPlatzhalter titel="Personen-Raster" hinweis="Noch keine Personen hinzugefügt." />
+        ) : (
+          <div className="grid grid-cols-2 gap-4 sm:gap-6 lg:grid-cols-3">
+            {personen.map((p, i) => (
+              <Card key={i} className="overflow-hidden">
+                {p.foto ? (
+                  <img src={p.foto} alt={p.name} className="aspect-square w-full object-cover" />
+                ) : (
+                  <div className="aspect-square w-full bg-bdas-surface-hover" aria-hidden />
+                )}
+                <div className="flex flex-col gap-1 p-4">
+                  <p className="font-semibold text-bdas-ink">{p.name}</p>
+                  <p className="text-bdas-ink-body">{p.rolle}</p>
+                  <p className="text-sm text-bdas-ink-muted">{p.uni}</p>
+                  <p className="text-sm text-bdas-ink-muted">{p.studiengang}</p>
+                </div>
+              </Card>
+            ))}
+          </div>
+        ),
     },
     Bild: {
       label: "Bild",
@@ -374,7 +377,12 @@ export const puckConfig: Config<Blocks> = {
         },
       },
       defaultProps: { kaesten: [] },
-      render: ({ kaesten }) => <Organigramm kaesten={kaesten} />,
+      render: ({ kaesten, puck }) =>
+        (kaesten ?? []).length === 0 && puck?.isEditing ? (
+          <BlockPlatzhalter titel="Organigramm" hinweis="Noch keine Kästen angelegt." />
+        ) : (
+          <Organigramm kaesten={kaesten} />
+        ),
     },
   },
 };
