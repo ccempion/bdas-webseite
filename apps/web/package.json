@@ -28,7 +28,7 @@
     "@bdas/profile": "workspace:*",
     "@bdas/storage": "workspace:*",
     "@node-rs/argon2": "^2.0.2",
-    "@puckeditor/core": "^0.22.1",
+    "@puckeditor/core": "^0.23.0",
     "@tiptap/extension-file-handler": "3.27.4",
     "@tiptap/extension-image": "3.27.4",
     "@tiptap/extension-youtube": "3.27.4",
