@@ -582,4 +582,44 @@ describe("puckConfig", () => {
       expect(puckConfig.components[name]?.defaultProps?.ausrichtung).toBe("links");
     }
   });
+
+  it("exactly the six intended blocks carry an Ausrichtung field", () => {
+    const mit = Object.entries(puckConfig.components)
+      .filter(([, c]) => c?.fields && "ausrichtung" in c.fields)
+      .map(([name]) => name)
+      .sort();
+    expect(mit).toEqual(["Absatz", "Bild", "Button", "Fliesstext", "Ueberschrift", "Zitat"]);
+  });
+
+  it("a document saved before Ausrichtung existed still renders left-aligned", () => {
+    const puck = { isEditing: false, renderDropZone: () => null, dragRef: null, metadata: {} };
+    const faelle: Array<[string, Record<string, unknown>]> = [
+      ["Ueberschrift", { text: "Titel", ebene: "h2" }],
+      ["Absatz", { text: "Ein Satz." }],
+      ["Zitat", { text: "Ein Zitat", quelle: "" }],
+      [
+        "Fliesstext",
+        {
+          inhalt: {
+            type: "doc",
+            content: [{ type: "paragraph", content: [{ type: "text", text: "Hi" }] }],
+          },
+        },
+      ],
+      [
+        "Bild",
+        { bild: "https://cdn.test/x.jpg", altText: "a", bildunterschrift: "", breite: "voll" },
+      ],
+      ["Button", { label: "x", href: "/impressum", variante: "primaer" }],
+    ];
+
+    for (const [name, props] of faelle) {
+      const render = puckConfig.components[name as keyof typeof puckConfig.components]?.render;
+      if (!render) throw new Error(`${name} render missing`);
+      const out = renderToStaticMarkup(render({ ...props, puck } as never) as never);
+      expect(out, `${name} must not centre or right-align a legacy document`).not.toMatch(
+        /text-center|text-right|justify-center|justify-end/,
+      );
+    }
+  });
 });
