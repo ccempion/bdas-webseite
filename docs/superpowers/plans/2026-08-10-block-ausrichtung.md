@@ -52,7 +52,8 @@ No new files. The helpers live beside the existing `breiteClass` export, which i
   - `type Ausrichtung = "links" | "mittig" | "rechts"`
   - `ausrichtungText(a: Ausrichtung | undefined): string` → `"text-left" | "text-center" | "text-right"`
   - `ausrichtungFlex(a: Ausrichtung | undefined): string` → `"justify-start" | "justify-center" | "justify-end"`
-  - a module-local `ausrichtungField` select definition (not exported)
+
+The shared `ausrichtungField` select definition is **not** part of this task. It is module-local and therefore unused until a block consumes it, and `eslint.config.mjs:40-43` sets `@typescript-eslint/no-unused-vars` to `error` with only `^_` exempt — so declaring it here would fail lint. It is introduced in Task 2 alongside its first consumer.
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -118,17 +119,9 @@ export const ausrichtungText = (a: Ausrichtung | undefined): string =>
 
 export const ausrichtungFlex = (a: Ausrichtung | undefined): string =>
   AUSRICHTUNG_FLEX[a as Ausrichtung] ?? AUSRICHTUNG_FLEX.links;
-
-const ausrichtungField = {
-  type: "select" as const,
-  label: "Ausrichtung",
-  options: [
-    { label: "Linksbündig", value: "links" },
-    { label: "Mittig", value: "mittig" },
-    { label: "Rechtsbündig", value: "rechts" },
-  ],
-};
 ```
+
+Do **not** add `ausrichtungField` here — see the Interfaces note above.
 
 - [ ] **Step 4: Run tests to verify they pass**
 
@@ -156,8 +149,8 @@ These take `text-align` on their existing element. No new DOM.
 
 **Interfaces:**
 
-- Consumes: `ausrichtungText`, `ausrichtungField`, `type Ausrichtung` from Task 1.
-- Produces: nothing new.
+- Consumes: `ausrichtungText`, `type Ausrichtung` from Task 1.
+- Produces: the module-local `ausrichtungField` select definition, consumed by Tasks 3 and 4.
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -219,7 +212,21 @@ Expected: FAIL on the five new tests.
 
 - [ ] **Step 3: Implement**
 
-Add `ausrichtung: Ausrichtung;` to the `Ueberschrift`, `Absatz` and `Zitat` entries in the `Blocks` type at the top of the file.
+First add the shared field definition directly below `ausrichtungFlex` (it is module-local, not exported — this task is where it first gains a consumer, which is why it lives here rather than in Task 1):
+
+```tsx
+const ausrichtungField = {
+  type: "select" as const,
+  label: "Ausrichtung",
+  options: [
+    { label: "Linksbündig", value: "links" },
+    { label: "Mittig", value: "mittig" },
+    { label: "Rechtsbündig", value: "rechts" },
+  ],
+};
+```
+
+Then add `ausrichtung: Ausrichtung;` to the `Ueberschrift`, `Absatz` and `Zitat` entries in the `Blocks` type at the top of the file.
 
 **`Ueberschrift`** — add `ausrichtung: ausrichtungField,` to its `fields`, add `ausrichtung: "links"` to its `defaultProps`, and replace its render with:
 
@@ -290,7 +297,7 @@ Rich text renders as a sequence of `<p>` elements, so alignment goes on a wrappe
 
 **Interfaces:**
 
-- Consumes: `ausrichtungText`, `ausrichtungField`, `type Ausrichtung` from Task 1.
+- Consumes: `ausrichtungText` and `type Ausrichtung` from Task 1; `ausrichtungField` from Task 2.
 - Produces: nothing new.
 
 - [ ] **Step 1: Write the failing tests**
@@ -377,7 +384,7 @@ These two move the element itself rather than its text, so they get a `flex just
 
 **Interfaces:**
 
-- Consumes: `ausrichtungFlex`, `ausrichtungText`, `ausrichtungField`, `type Ausrichtung` from Task 1.
+- Consumes: `ausrichtungFlex`, `ausrichtungText` and `type Ausrichtung` from Task 1; `ausrichtungField` from Task 2.
 - Produces: nothing new.
 
 - [ ] **Step 1: Write the failing tests**
