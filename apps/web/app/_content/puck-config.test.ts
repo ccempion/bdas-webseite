@@ -593,10 +593,10 @@ describe("puckConfig", () => {
 
   it("a document saved before Ausrichtung existed still renders left-aligned", () => {
     const puck = { isEditing: false, renderDropZone: () => null, dragRef: null, metadata: {} };
-    const faelle: Array<[string, Record<string, unknown>]> = [
-      ["Ueberschrift", { text: "Titel", ebene: "h2" }],
-      ["Absatz", { text: "Ein Satz." }],
-      ["Zitat", { text: "Ein Zitat", quelle: "" }],
+    const faelle: Array<[string, Record<string, unknown>, string[]]> = [
+      ["Ueberschrift", { text: "Titel", ebene: "h2" }, ["text-left"]],
+      ["Absatz", { text: "Ein Satz." }, ["text-left"]],
+      ["Zitat", { text: "Ein Zitat", quelle: "" }, ["text-left"]],
       [
         "Fliesstext",
         {
@@ -605,21 +605,34 @@ describe("puckConfig", () => {
             content: [{ type: "paragraph", content: [{ type: "text", text: "Hi" }] }],
           },
         },
+        ["text-left"],
       ],
       [
         "Bild",
-        { bild: "https://cdn.test/x.jpg", altText: "a", bildunterschrift: "", breite: "voll" },
+        {
+          bild: "https://cdn.test/x.jpg",
+          altText: "a",
+          bildunterschrift: "Unterschrift",
+          breite: "voll",
+        },
+        // Bild calls ausrichtungText/ausrichtungFlex at two sites: the flex
+        // wrapper and (only when a caption is set) the figcaption. A non-empty
+        // caption is required here so both call sites are exercised.
+        ["justify-start", "text-left"],
       ],
-      ["Button", { label: "x", href: "/impressum", variante: "primaer" }],
+      ["Button", { label: "x", href: "/impressum", variante: "primaer" }, ["justify-start"]],
     ];
 
-    for (const [name, props] of faelle) {
+    for (const [name, props, erwarteteKlassen] of faelle) {
       const render = puckConfig.components[name as keyof typeof puckConfig.components]?.render;
       if (!render) throw new Error(`${name} render missing`);
       const out = renderToStaticMarkup(render({ ...props, puck } as never) as never);
       expect(out, `${name} must not centre or right-align a legacy document`).not.toMatch(
         /text-center|text-right|justify-center|justify-end/,
       );
+      for (const klasse of erwarteteKlassen) {
+        expect(out, `${name} must carry ${klasse} for a legacy document`).toContain(klasse);
+      }
     }
   });
 });
