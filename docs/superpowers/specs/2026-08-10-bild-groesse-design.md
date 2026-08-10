@@ -17,16 +17,17 @@
 Decisions made during brainstorming:
 
 - **In-canvas handle, not a sidebar slider.** Dragging the picture itself is the requested interaction.
-- **Snap to six steps** — 25 / 33 / 50 / 66 / 75 / 100 %. These map onto Tailwind fraction classes, so no inline width styles and nothing outside the design system (CLAUDE.md §7). Snapping also prevents 63 %-wide images that read as accidental. Free-form percentages were rejected for requiring `style={{ width }}`.
+- **Snap to four steps** — 25 / 50 / 75 / 100 %. These map onto Tailwind fraction classes, so no inline width styles and nothing outside the design system (CLAUDE.md §7). Snapping also prevents 63 %-wide images that read as accidental. Free-form percentages were rejected for requiring `style={{ width }}`.
+- **The scale matches the rest of the codebase.** The blog and events editors already standardise on `["25%", "50%", "75%", "100%"]` (`_blog/PostEditor.tsx:36`, `admin/events/_editor/RichTextEditor.tsx:32`), and the inline `Fliesstext` images in `2026-08-10-fliesstext-bilder-umfliessen-design.md` use the same. One image scale everywhere; the drag handle also gets larger, easier snap targets. This supersedes an earlier six-step proposal made before the existing precedent was found.
 - **Full width below the `sm` breakpoint.** The percentage applies on tablet and desktop only. This is exactly what `breite: "halb"` does today (`sm:max-w-md`), so mobile rendering is unchanged and no image becomes a thumbnail on a phone.
 - **Keep the prop name `breite`.** It _is_ a width; one concept, one name. Only its type changes.
-- **The sidebar keeps a select** with the same six steps. A drag-only control is unusable by keyboard, and this codebase already takes accessibility seriously (the alt-text field is labelled _Barrierefreiheit_).
+- **The sidebar keeps a select** with the same four steps. A drag-only control is unusable by keyboard, and this codebase already takes accessibility seriously (the alt-text field is labelled _Barrierefreiheit_).
 
 ## 2. Goals and non-goals
 
 **Goals**
 
-- Drag a handle on the selected image in the canvas to resize it, snapping to six steps.
+- Drag a handle on the selected image in the canvas to resize it, snapping to four steps.
 - A keyboard-reachable equivalent in the sidebar.
 - Existing documents keep rendering correctly with no manual intervention.
 - The handle never reaches the public page.
@@ -40,7 +41,7 @@ Decisions made during brainstorming:
 
 ## 3. Data model and migration
 
-`Bild.breite` changes from `"voll" | "halb"` to `25 | 33 | 50 | 66 | 75 | 100`.
+`Bild.breite` changes from `"voll" | "halb"` to `25 | 50 | 75 | 100`.
 
 Legacy values migrate `voll → 100`, `halb → 50`, anything unrecognised → `100`, via Puck's exported `transformProps`.
 
@@ -57,13 +58,11 @@ A lookup of literal class strings with the mobile rule folded in:
 | Step | Classes           |
 | ---- | ----------------- |
 | 25   | `w-full sm:w-1/4` |
-| 33   | `w-full sm:w-1/3` |
 | 50   | `w-full sm:w-1/2` |
-| 66   | `w-full sm:w-2/3` |
 | 75   | `w-full sm:w-3/4` |
 | 100  | `w-full`          |
 
-Static strings in a lookup object, never template-interpolated.
+Static strings in a lookup object, never template-interpolated. The same lookup serves the inline `Fliesstext` images, so the two surfaces cannot drift apart.
 
 ## 5. The handle
 
@@ -83,7 +82,7 @@ See `2026-08-10-block-ausrichtung-design.md`. Today only `halb` images can be mo
 **Unit** (node env):
 
 - Snapping: pointer x → step, including both clamped ends.
-- Step → class lookup, all six steps.
+- Step → class lookup, all four steps.
 - Migration: `voll` → 100, `halb` → 50, unrecognised → 100, already-numeric passes through.
 
 **Render:** `renderToStaticMarkup` with `isEditing: false` emits no handle markup.

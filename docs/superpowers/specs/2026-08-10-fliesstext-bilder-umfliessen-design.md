@@ -1,7 +1,7 @@
 # Bilder im Fließtext mit Textumfluss — Design
 
 **Date:** 2026-08-10
-**Status:** Approved (brainstormed with product owner) — one decision open, see §9
+**Status:** Approved (brainstormed with product owner)
 **Scope:** Inline images inside the `Fliesstext` block, sized and optionally floated so body text wraps around them. `apps/web/app/_content/` only. No `content` module, schema, migration, or flag change.
 
 ---
@@ -86,8 +86,14 @@ No new E2E: image upload is already covered by the existing files/blog specs, an
 
 - **Tall floats.** An image floated beside a short paragraph overhangs into whatever follows _inside the same Fließtext block_. This is normal float behaviour and is what the board asked for, but it is worth a look during implementation to decide whether the block should clear its floats at the end. It cannot affect other Puck blocks — see §1.
 
-## 9. Open decision
+## 9. Width scale — decided
 
-**Which width scale?** The blog and events editors use four steps — `25 / 50 / 75 / 100 %`. The approved `Bild` drag-handle spec proposes six — `25 / 33 / 50 / 66 / 75 / 100 %`. Shipping both would put two different image scales on the same page.
+**Four steps: 25 / 50 / 75 / 100 %.** One image scale across the whole codebase, matching what the blog and events editors already use (`_blog/PostEditor.tsx:36`, `admin/events/_editor/RichTextEditor.tsx:32`).
 
-Recommendation: **align everything on content pages to the existing four steps**, so the whole codebase has one image scale and the drag handle gets larger, easier snap targets. This revises the six-step choice made earlier, on the strength of the codebase precedent discovered afterwards. Requires the product owner's confirmation before either spec is implemented.
+The `Bild` drag-handle spec briefly proposed six steps (`25 / 33 / 50 / 66 / 75 / 100 %`); that was written before the existing precedent was found, and has been revised to four. Shipping both would have put two different image scales on the same page. The drag handle also benefits from the larger snap targets.
+
+Both surfaces read the **same class lookup**, so they cannot drift apart. See §4 of `2026-08-10-bild-groesse-design.md`.
+
+## 10. Open questions
+
+None.
