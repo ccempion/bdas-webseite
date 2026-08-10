@@ -1,11 +1,12 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
-import { istLeererRichText, renderRichText } from "./rich-text";
+import { istLeererRichText, renderRichText, umflussClass } from "./rich-text";
 
 const doc = (content: unknown[]) => ({ type: "doc", content });
 const para = (content: unknown[]) => ({ type: "paragraph", content });
 const text = (t: string, marks?: unknown[]) => ({ type: "text", text: t, marks });
+const bild = (attrs: Record<string, unknown>) => ({ type: "image", attrs });
 const html = (d: unknown) => renderToStaticMarkup(renderRichText(d) as never);
 
 describe("renderRichText", () => {
@@ -95,5 +96,86 @@ describe("istLeererRichText", () => {
     expect(istLeererRichText({ type: "doc", content: [undefined] })).toBe(true);
     expect(() => istLeererRichText({ type: "doc", content: ["x"] })).not.toThrow();
     expect(istLeererRichText({ type: "doc", content: ["x"] })).toBe(true);
+  });
+});
+
+describe("umflussClass", () => {
+  it("floats only from the sm breakpoint up", () => {
+    expect(umflussClass("links")).toBe("sm:float-left sm:mr-4 sm:mb-2");
+    expect(umflussClass("rechts")).toBe("sm:float-right sm:ml-4 sm:mb-2");
+  });
+
+  it("emits no float class when text should not wrap", () => {
+    expect(umflussClass("keine")).toBe("");
+    expect(umflussClass(undefined)).toBe("");
+    expect(umflussClass("mittig" as never)).toBe("");
+  });
+});
+
+describe("renderRichText images", () => {
+  it("renders an image with its width and float classes", () => {
+    const out = html(
+      doc([bild({ src: "https://cdn.test/a.jpg", alt: "Ein Bild", breite: 50, umfluss: "links" })]),
+    );
+    expect(out).toContain('src="https://cdn.test/a.jpg"');
+    expect(out).toContain('alt="Ein Bild"');
+    expect(out).toMatch(/\bw-full\b/);
+    expect(out).toMatch(/\bsm:w-1\/2\b/);
+    expect(out).toMatch(/\bsm:float-left\b/);
+  });
+
+  it("covers every width and wrap combination", () => {
+    const breiten = [25, 50, 75, 100] as const;
+    const erwartet: Record<number, RegExp> = {
+      25: /\bsm:w-1\/4\b/,
+      50: /\bsm:w-1\/2\b/,
+      75: /\bsm:w-3\/4\b/,
+      100: /class="[^"]*"/,
+    };
+    for (const breite of breiten) {
+      for (const umfluss of ["keine", "links", "rechts"] as const) {
+        const out = html(doc([bild({ src: "https://cdn.test/a.jpg", alt: "x", breite, umfluss })]));
+        expect(out, `breite ${breite}`).toMatch(erwartet[breite] as RegExp);
+        if (umfluss === "keine") expect(out, "keine darf nicht floaten").not.toMatch(/sm:float-/);
+        else
+          expect(out, `umfluss ${umfluss}`).toMatch(
+            new RegExp(`sm:float-${umfluss === "links" ? "left" : "right"}`),
+          );
+      }
+    }
+  });
+
+  it("renders nothing for an unsafe src", () => {
+    // The direct analogue of the existing unsafe-link test: the renderer
+    // allow-lists on top of the editor, defence in depth.
+    const out = html(doc([bild({ src: "javascript:alert(1)", alt: "böse", breite: 50 })]));
+    expect(out).not.toContain("<img");
+    expect(out).not.toContain("alert");
+  });
+
+  it("renders nothing when src is missing entirely", () => {
+    expect(html(doc([bild({ alt: "ohne" })]))).not.toContain("<img");
+  });
+
+  it("emits an empty alt rather than dropping the attribute", () => {
+    // A decorative image must not be announced as "image" by a screen reader.
+    const out = html(doc([bild({ src: "https://cdn.test/a.jpg", breite: 100 })]));
+    expect(out).toContain('alt=""');
+  });
+
+  it("falls back to full width for an unrecognised stored width", () => {
+    const out = html(doc([bild({ src: "https://cdn.test/a.jpg", alt: "x", breite: "50%" })]));
+    expect(out).toMatch(/\bw-full\b/);
+    expect(out).not.toMatch(/\bsm:w-/);
+  });
+
+  it("renders an image sitting inside a paragraph's content", () => {
+    // Tiptap's Image node is inline-capable; a dropped image commonly lands
+    // inside the paragraph the cursor was in.
+    const out = html(
+      doc([para([text("Vorher "), bild({ src: "https://cdn.test/a.jpg", alt: "Mitte" })])]),
+    );
+    expect(out).toContain("Vorher");
+    expect(out).toContain('alt="Mitte"');
   });
 });
