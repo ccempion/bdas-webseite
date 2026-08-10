@@ -279,7 +279,7 @@ export const puckConfig: Config<Blocks> = {
         }
         return (
           <div className={`flex ${ausrichtungFlex(ausrichtung)}`}>
-            <figure className={breite === "halb" ? "sm:max-w-md" : "w-full"}>
+            <figure className={breite === "halb" ? "w-full sm:max-w-md" : "w-full"}>
               <img src={bild} alt={altText} className="w-full rounded-bdas" />
               {bildunterschrift ? (
                 <figcaption

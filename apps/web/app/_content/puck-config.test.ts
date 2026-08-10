@@ -502,6 +502,27 @@ describe("puckConfig", () => {
     expect(out).toContain("justify-center");
     expect(out).toContain("text-center");
     expect(out).toContain('alt="Gruppenfoto"');
+    // Element-scoped: the wrapper must carry justify-center and only the
+    // figcaption must carry text-center, so a swap between ausrichtungFlex
+    // and ausrichtungText on the wrong element would fail this.
+    expect(out).toMatch(/<div class="flex justify-center">/);
+    expect(out).toMatch(/<figcaption class="[^"]*\btext-center\b[^"]*">/);
+  });
+
+  it("Bild at halber Breite keeps an explicit width so it does not shrink-wrap", () => {
+    const render = puckConfig.components.Bild?.render;
+    if (!render) throw new Error("Bild render missing");
+    const out = renderToStaticMarkup(
+      render({
+        bild: "https://cdn.test/x.jpg",
+        altText: "a",
+        bildunterschrift: "",
+        breite: "halb",
+        ausrichtung: "links",
+        puck: {},
+      } as never) as never,
+    );
+    expect(out).toMatch(/<figure class="[^"]*\bw-full\b[^"]*\bsm:max-w-md\b/);
   });
 
   it("Bild does not align its placeholder", () => {
