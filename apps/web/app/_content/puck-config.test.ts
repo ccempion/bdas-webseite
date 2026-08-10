@@ -242,4 +242,50 @@ describe("puckConfig", () => {
   it("starts an Organigramm empty so an unfilled block renders nothing", () => {
     expect(puckConfig.components.Organigramm?.defaultProps).toEqual({ kaesten: [] });
   });
+
+  it("Bild shows a placeholder in the editor when no image is chosen", () => {
+    const render = puckConfig.components.Bild?.render;
+    if (!render) throw new Error("Bild render missing");
+    const out = renderToStaticMarkup(
+      render({
+        bild: "",
+        altText: "",
+        bildunterschrift: "",
+        breite: "voll",
+        puck: { isEditing: true },
+      } as never) as never,
+    );
+    expect(out).toContain("data-block-platzhalter");
+    expect(out).toContain("Bild");
+  });
+
+  it("Button shows a placeholder in the editor when the link is still empty", () => {
+    const render = puckConfig.components.Button?.render;
+    if (!render) throw new Error("Button render missing");
+    const out = renderToStaticMarkup(
+      render({
+        label: "Mehr erfahren",
+        href: "",
+        variante: "primaer",
+        puck: { isEditing: true },
+      } as never) as never,
+    );
+    expect(out).toContain("data-block-platzhalter");
+    expect(out).toContain("Button");
+  });
+
+  it("Button shows a placeholder in the editor for an unsafe link, and nothing publicly", () => {
+    const render = puckConfig.components.Button?.render;
+    if (!render) throw new Error("Button render missing");
+    const props = { label: "x", href: "javascript:alert(1)", variante: "primaer" };
+    const editing = renderToStaticMarkup(
+      render({ ...props, puck: { isEditing: true } } as never) as never,
+    );
+    expect(editing).toContain("data-block-platzhalter");
+    expect(editing).not.toContain("javascript:");
+    const publicOut = renderToStaticMarkup(
+      render({ ...props, puck: { isEditing: false } } as never) as never,
+    );
+    expect(publicOut).toBe("");
+  });
 });

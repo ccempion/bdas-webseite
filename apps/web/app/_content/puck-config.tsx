@@ -9,6 +9,7 @@ import type { Kasten } from "./org-tree";
 import { RichTextField } from "./RichTextField";
 import { renderRichText } from "./rich-text";
 import { isExternalHref, safeHref } from "./href";
+import { BlockPlatzhalter } from "./BlockPlatzhalter";
 
 type Person = {
   foto: string;
@@ -194,8 +195,15 @@ export const puckConfig: Config<Blocks> = {
         },
       },
       defaultProps: { bild: "", altText: "", bildunterschrift: "", breite: "voll" },
-      render: ({ bild, altText, bildunterschrift, breite }) =>
-        bild ? (
+      render: ({ bild, altText, bildunterschrift, breite, puck }) => {
+        if (!bild) {
+          return puck?.isEditing ? (
+            <BlockPlatzhalter titel="Bild" hinweis="Noch kein Bild ausgewählt." />
+          ) : (
+            <></>
+          );
+        }
+        return (
           <figure className={breite === "halb" ? "sm:max-w-md" : "w-full"}>
             <img src={bild} alt={altText} className="w-full rounded-bdas" />
             {bildunterschrift ? (
@@ -204,9 +212,8 @@ export const puckConfig: Config<Blocks> = {
               </figcaption>
             ) : null}
           </figure>
-        ) : (
-          <></>
-        ),
+        );
+      },
     },
     Button: {
       label: "Button",
@@ -223,9 +230,15 @@ export const puckConfig: Config<Blocks> = {
         },
       },
       defaultProps: { label: "Mehr erfahren", href: "", variante: "primaer" },
-      render: ({ label, href, variante }) => {
+      render: ({ label, href, variante, puck }) => {
         const safe = safeHref(href);
-        if (!safe) return <></>;
+        if (!safe) {
+          return puck?.isEditing ? (
+            <BlockPlatzhalter titel="Button" hinweis="Noch kein gültiger Link hinterlegt." />
+          ) : (
+            <></>
+          );
+        }
 
         const cls =
           variante === "sekundaer"
