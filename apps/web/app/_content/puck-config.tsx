@@ -4,6 +4,7 @@ import React from "react";
 import { Card } from "@bdas/design-system";
 
 import { type BildBreite, bildBreiteClass, normalizeBildBreite } from "./bild-breite";
+import { BildGroesseGriff } from "./BildGroesseGriff";
 import { FotoField } from "./FotoField";
 import { Organigramm } from "./Organigramm";
 import type { Kasten } from "./org-tree";
@@ -291,7 +292,7 @@ export const puckConfig: Config<Blocks> = {
         breite: 100,
         ausrichtung: "links",
       },
-      render: ({ bild, altText, bildunterschrift, breite, ausrichtung, puck }) => {
+      render: ({ id, bild, altText, bildunterschrift, breite, ausrichtung, puck }) => {
         if (!bild) {
           return puck?.isEditing ? (
             <BlockPlatzhalter titel="Bild" hinweis="Noch kein Bild ausgewählt." />
@@ -300,8 +301,12 @@ export const puckConfig: Config<Blocks> = {
           );
         }
         return (
-          <div className={`flex ${ausrichtungFlex(ausrichtung)}`}>
-            <figure className={bildBreiteClass(breite)}>
+          // `data-bild-rahmen` marks the alignment wrapper, not the figure: the
+          // wrapper spans the full content column, which is the width the
+          // percentage is a percentage *of*. Measuring the figure would make
+          // each drag relative to the size the last drag produced.
+          <div className={`flex ${ausrichtungFlex(ausrichtung)}`} data-bild-rahmen>
+            <figure className={`relative ${bildBreiteClass(breite)}`}>
               <img src={bild} alt={altText} className="w-full rounded-bdas" />
               {bildunterschrift ? (
                 <figcaption
@@ -310,6 +315,7 @@ export const puckConfig: Config<Blocks> = {
                   {bildunterschrift}
                 </figcaption>
               ) : null}
+              {puck?.isEditing ? <BildGroesseGriff id={id} breite={breite} /> : null}
             </figure>
           </div>
         );

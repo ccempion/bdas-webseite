@@ -510,8 +510,10 @@ describe("puckConfig", () => {
     expect(out).toContain('alt="Gruppenfoto"');
     // Element-scoped: the wrapper must carry justify-center and only the
     // figcaption must carry text-center, so a swap between ausrichtungFlex
-    // and ausrichtungText on the wrong element would fail this.
-    expect(out).toMatch(/<div class="flex justify-center">/);
+    // and ausrichtungText on the wrong element would fail this. The class
+    // value is still pinned exactly; the element just carries attributes
+    // after it now (`data-bild-rahmen`).
+    expect(out).toMatch(/<div class="flex justify-center"[ >]/);
     expect(out).toMatch(/<figcaption class="[^"]*\btext-center\b[^"]*">/);
   });
 
@@ -570,6 +572,23 @@ describe("puckConfig", () => {
     expect(figureClass(100)).not.toMatch(/\bsm:w-/);
   });
 
+  it("Bild ships no resize handle to the public page", () => {
+    const render = puckConfig.components.Bild?.render;
+    if (!render) throw new Error("Bild render missing");
+    const out = renderToStaticMarkup(
+      render({
+        id: "bild-1",
+        bild: "https://cdn.test/x.jpg",
+        altText: "a",
+        bildunterschrift: "",
+        breite: 50,
+        ausrichtung: "links",
+        puck: { isEditing: false },
+      } as never) as never,
+    );
+    expect(out).not.toContain("data-bild-groesse-griff");
+  });
+
   it("a Bild saved before the numeric scale still renders full width", () => {
     // The migration runs in normalizeContent, but the render must not blow up on
     // an unmigrated prop bag either — the structural sweep passes none at all.
@@ -585,7 +604,8 @@ describe("puckConfig", () => {
         puck: {},
       } as never) as never,
     );
-    expect(out).toMatch(/<figure class="w-full">/);
+    expect(out).toMatch(/<figure class="[^"]*\bw-full\b/);
+    expect(out).not.toMatch(/\bsm:w-/);
   });
 
   it("Bild does not align its placeholder", () => {
