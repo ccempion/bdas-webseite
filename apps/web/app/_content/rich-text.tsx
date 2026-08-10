@@ -74,7 +74,7 @@ export function istLeererRichText(doc: unknown): boolean {
   const content = (doc as { content?: unknown[] } | null | undefined)?.content;
   if (!Array.isArray(content) || content.length === 0) return true;
   return content.every((node) => {
-    const kinder = (node as { content?: unknown[] }).content;
+    const kinder = (node as { content?: unknown[] } | null | undefined)?.content;
     return !Array.isArray(kinder) || kinder.length === 0;
   });
 }

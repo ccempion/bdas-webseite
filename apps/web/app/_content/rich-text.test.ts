@@ -87,4 +87,13 @@ describe("istLeererRichText", () => {
   it("treats a document with text as non-empty", () => {
     expect(istLeererRichText(doc([para([text("Hallo")])]))).toBe(false);
   });
+
+  it("treats malformed nodes as empty instead of throwing", () => {
+    expect(() => istLeererRichText({ type: "doc", content: [null] })).not.toThrow();
+    expect(istLeererRichText({ type: "doc", content: [null] })).toBe(true);
+    expect(() => istLeererRichText({ type: "doc", content: [undefined] })).not.toThrow();
+    expect(istLeererRichText({ type: "doc", content: [undefined] })).toBe(true);
+    expect(() => istLeererRichText({ type: "doc", content: ["x"] })).not.toThrow();
+    expect(istLeererRichText({ type: "doc", content: ["x"] })).toBe(true);
+  });
 });
