@@ -3,7 +3,7 @@ import React from "react";
 
 import { Card } from "@bdas/design-system";
 
-import { normalizeBildBreite } from "./bild-breite";
+import { type BildBreite, bildBreiteClass, normalizeBildBreite } from "./bild-breite";
 import { FotoField } from "./FotoField";
 import { Organigramm } from "./Organigramm";
 import type { Kasten } from "./org-tree";
@@ -32,7 +32,7 @@ type Blocks = {
     bild: string;
     altText: string;
     bildunterschrift: string;
-    breite: "voll" | "halb";
+    breite: BildBreite;
     ausrichtung: Ausrichtung;
   };
   Button: {
@@ -276,8 +276,10 @@ export const puckConfig: Config<Blocks> = {
           type: "select",
           label: "Breite",
           options: [
-            { label: "Volle Breite", value: "voll" },
-            { label: "Halbe Breite", value: "halb" },
+            { label: "25 %", value: 25 },
+            { label: "50 %", value: 50 },
+            { label: "75 %", value: 75 },
+            { label: "100 %", value: 100 },
           ],
         },
         ausrichtung: ausrichtungField,
@@ -286,7 +288,7 @@ export const puckConfig: Config<Blocks> = {
         bild: "",
         altText: "",
         bildunterschrift: "",
-        breite: "voll",
+        breite: 100,
         ausrichtung: "links",
       },
       render: ({ bild, altText, bildunterschrift, breite, ausrichtung, puck }) => {
@@ -299,7 +301,7 @@ export const puckConfig: Config<Blocks> = {
         }
         return (
           <div className={`flex ${ausrichtungFlex(ausrichtung)}`}>
-            <figure className={breite === "halb" ? "w-full sm:max-w-md" : "w-full"}>
+            <figure className={bildBreiteClass(breite)}>
               <img src={bild} alt={altText} className="w-full rounded-bdas" />
               {bildunterschrift ? (
                 <figcaption

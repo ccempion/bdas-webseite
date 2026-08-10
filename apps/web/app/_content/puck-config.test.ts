@@ -500,7 +500,7 @@ describe("puckConfig", () => {
         bild: "https://cdn.test/x.jpg",
         altText: "Gruppenfoto",
         bildunterschrift: "Unterschrift",
-        breite: "halb",
+        breite: 50,
         ausrichtung: "mittig",
         puck: {},
       } as never) as never,
@@ -515,7 +515,64 @@ describe("puckConfig", () => {
     expect(out).toMatch(/<figcaption class="[^"]*\btext-center\b[^"]*">/);
   });
 
-  it("Bild at halber Breite keeps an explicit width so it does not shrink-wrap", () => {
+  it("Bild below full width keeps an explicit width so it does not shrink-wrap", () => {
+    const render = puckConfig.components.Bild?.render;
+    if (!render) throw new Error("Bild render missing");
+    const out = renderToStaticMarkup(
+      render({
+        bild: "https://cdn.test/x.jpg",
+        altText: "a",
+        bildunterschrift: "",
+        breite: 50,
+        ausrichtung: "links",
+        puck: {},
+      } as never) as never,
+    );
+    // `w-full` under the alignment wrapper, narrowed from `sm` up. Without the
+    // explicit width the figure shrink-wraps to the image's intrinsic size.
+    expect(out).toMatch(/<figure class="[^"]*\bw-full\b[^"]*\bsm:w-1\/2\b/);
+  });
+
+  it("Bild offers the four width steps as numbers", () => {
+    const breite = puckConfig.components.Bild?.fields?.breite;
+    if (breite?.type !== "select") throw new Error("breite must be a select field");
+    expect(breite.options.map((o) => o.value)).toEqual([25, 50, 75, 100]);
+    expect(breite.options.map((o) => o.label)).toEqual(["25 %", "50 %", "75 %", "100 %"]);
+  });
+
+  it("a new Bild is full width", () => {
+    expect(puckConfig.components.Bild?.defaultProps?.breite).toBe(100);
+  });
+
+  it("Bild renders the width class for each step", () => {
+    const render = puckConfig.components.Bild?.render;
+    if (!render) throw new Error("Bild render missing");
+    const figureClass = (breite: number) => {
+      const out = renderToStaticMarkup(
+        render({
+          bild: "https://cdn.test/x.jpg",
+          altText: "a",
+          bildunterschrift: "",
+          breite,
+          ausrichtung: "links",
+          puck: {},
+        } as never) as never,
+      );
+      return out.match(/<figure class="([^"]*)"/)?.[1] ?? "";
+    };
+    // Matched by containment, not equality: Task 4 adds `relative` to this same
+    // element, and an exact-string assertion would break on a change that has
+    // nothing to do with width.
+    expect(figureClass(25)).toMatch(/\bw-full\b.*\bsm:w-1\/4\b/);
+    expect(figureClass(50)).toMatch(/\bw-full\b.*\bsm:w-1\/2\b/);
+    expect(figureClass(75)).toMatch(/\bw-full\b.*\bsm:w-3\/4\b/);
+    expect(figureClass(100)).toMatch(/\bw-full\b/);
+    expect(figureClass(100)).not.toMatch(/\bsm:w-/);
+  });
+
+  it("a Bild saved before the numeric scale still renders full width", () => {
+    // The migration runs in normalizeContent, but the render must not blow up on
+    // an unmigrated prop bag either — the structural sweep passes none at all.
     const render = puckConfig.components.Bild?.render;
     if (!render) throw new Error("Bild render missing");
     const out = renderToStaticMarkup(
@@ -528,7 +585,7 @@ describe("puckConfig", () => {
         puck: {},
       } as never) as never,
     );
-    expect(out).toMatch(/<figure class="[^"]*\bw-full\b[^"]*\bsm:max-w-md\b/);
+    expect(out).toMatch(/<figure class="w-full">/);
   });
 
   it("Bild does not align its placeholder", () => {
