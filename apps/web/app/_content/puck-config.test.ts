@@ -439,7 +439,12 @@ describe("puckConfig", () => {
     const render = puckConfig.components.Zitat?.render;
     if (!render) throw new Error("Zitat render missing");
     const out = renderToStaticMarkup(
-      render({ text: "Ein Zitat", quelle: "BSR", ausrichtung: "mittig", puck: {} } as never) as never,
+      render({
+        text: "Ein Zitat",
+        quelle: "BSR",
+        ausrichtung: "mittig",
+        puck: {},
+      } as never) as never,
     );
     expect(out).toContain("text-center");
     expect(out).toContain("<blockquote");

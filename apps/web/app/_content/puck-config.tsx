@@ -84,10 +84,14 @@ const AUSRICHTUNG_FLEX: Record<Ausrichtung, string> = {
  *  and they must keep rendering exactly as they did. Class strings are
  *  literals — Tailwind's scanner never sees an interpolated class. */
 export const ausrichtungText = (a: Ausrichtung | undefined): string =>
-  a !== undefined && Object.hasOwn(AUSRICHTUNG_TEXT, a) ? AUSRICHTUNG_TEXT[a] : AUSRICHTUNG_TEXT.links;
+  a !== undefined && Object.hasOwn(AUSRICHTUNG_TEXT, a)
+    ? AUSRICHTUNG_TEXT[a]
+    : AUSRICHTUNG_TEXT.links;
 
 export const ausrichtungFlex = (a: Ausrichtung | undefined): string =>
-  a !== undefined && Object.hasOwn(AUSRICHTUNG_FLEX, a) ? AUSRICHTUNG_FLEX[a] : AUSRICHTUNG_FLEX.links;
+  a !== undefined && Object.hasOwn(AUSRICHTUNG_FLEX, a)
+    ? AUSRICHTUNG_FLEX[a]
+    : AUSRICHTUNG_FLEX.links;
 
 const ausrichtungField = {
   type: "select" as const,
