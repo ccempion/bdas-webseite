@@ -351,4 +351,34 @@ describe("puckConfig", () => {
     );
     expect(publicOut).not.toContain("data-block-platzhalter");
   });
+
+  it("no block renders a placeholder outside the editor", () => {
+    const leereProps: Record<string, unknown> = {
+      bild: "",
+      altText: "",
+      bildunterschrift: "",
+      breite: "voll",
+      label: "",
+      href: "",
+      variante: "primaer",
+      text: "",
+      quelle: "",
+      inhalt: { type: "doc", content: [{ type: "paragraph" }] },
+      personen: [],
+      kaesten: [],
+      ebene: "h2",
+      hoehe: "mittel",
+      anzahl: "2",
+    };
+    const puck = { isEditing: false, renderDropZone: () => null, dragRef: null, metadata: {} };
+
+    for (const [name, component] of Object.entries(puckConfig.components)) {
+      const render = component?.render;
+      if (!render) throw new Error(`${name} render missing`);
+      const out = renderToStaticMarkup(render({ ...leereProps, puck } as never) as never);
+      expect(out, `${name} leaked a placeholder to the public page`).not.toContain(
+        "data-block-platzhalter",
+      );
+    }
+  });
 });
