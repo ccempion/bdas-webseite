@@ -1,8 +1,9 @@
-import { type Config, type Data } from "@puckeditor/core";
+import { type Config, type Data, transformProps } from "@puckeditor/core";
 import React from "react";
 
 import { Card } from "@bdas/design-system";
 
+import { normalizeBildBreite } from "./bild-breite";
 import { FotoField } from "./FotoField";
 import { Organigramm } from "./Organigramm";
 import type { Kasten } from "./org-tree";
@@ -103,13 +104,28 @@ const ausrichtungField = {
   ],
 };
 
-/** Ensure a document carries a `breite` before it reaches `<Puck>`/`<Render>`.
- *  Documents authored before the root existed have none; fall back per page so
- *  the editor and the published page frame them identically. */
-export function withBreite(data: Data, fallback: Breite): Data {
+/** The single seam every Puck tree passes through, on all eight paths — the
+ *  seven public `<Render>` call sites and `<Puck>`.
+ *
+ *  Two jobs. First, ensure the document carries a `breite`: documents authored
+ *  before the root existed have none, and the fallback differs per page so the
+ *  editor and the published page frame them identically. Second, migrate
+ *  `Bild.breite` off the legacy `"voll" | "halb"` strings onto the numeric
+ *  scale.
+ *
+ *  Order matters: the width is seeded first because `transformProps` unwraps
+ *  `data.root` to `data.root.props` when the incoming root has no `props` key,
+ *  which would rewrite the document into the legacy root shape. */
+export function normalizeContent(data: Data, fallback: Breite): Data {
   const props = (data.root?.props ?? {}) as Record<string, unknown>;
-  if (props.breite === "schmal" || props.breite === "breit") return data;
-  return { ...data, root: { ...data.root, props: { ...props, breite: fallback } } } as Data;
+  const mitBreite =
+    props.breite === "schmal" || props.breite === "breit"
+      ? data
+      : ({ ...data, root: { ...data.root, props: { ...props, breite: fallback } } } as Data);
+
+  return transformProps(mitBreite, {
+    Bild: (bild) => ({ ...bild, breite: normalizeBildBreite(bild.breite) }),
+  });
 }
 
 /**
@@ -122,7 +138,7 @@ export function withBreite(data: Data, fallback: Breite): Data {
  * layout lives only in the route's `<main>` and the editor renders full-bleed.
  */
 export const puckConfig: Config<Blocks> = {
-  // `breite` is carried on root.props (seeded by withBreite), not a Puck field —
+  // `breite` is carried on root.props (seeded by normalizeContent), not a Puck field —
   // it's a per-page layout constant, not something the board edits.
   root: {
     render: ({ children, ...props }) => {

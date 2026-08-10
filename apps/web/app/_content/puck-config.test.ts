@@ -1,9 +1,10 @@
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 
+import type { Data } from "@puckeditor/core";
 import { describe, expect, it } from "vitest";
 
-import { ausrichtungFlex, ausrichtungText, puckConfig } from "./puck-config";
+import { ausrichtungFlex, ausrichtungText, normalizeContent, puckConfig } from "./puck-config";
 
 describe("puckConfig", () => {
   it("keeps the legacy Absatz and PersonenRaster blocks", () => {
@@ -639,5 +640,56 @@ describe("puckConfig", () => {
         expect(out, `${name} must carry ${klasse} for a legacy document`).toContain(klasse);
       }
     }
+  });
+
+  it("normalizeContent seeds the root width when the document has none", () => {
+    const data = { content: [], root: {} } as unknown as Data;
+    const out = normalizeContent(data, "breit");
+    expect((out.root.props as { breite?: string }).breite).toBe("breit");
+  });
+
+  it("normalizeContent keeps a width the document already carries", () => {
+    const data = { content: [], root: { props: { breite: "schmal" } } } as unknown as Data;
+    const out = normalizeContent(data, "breit");
+    expect((out.root.props as { breite?: string }).breite).toBe("schmal");
+  });
+
+  it("normalizeContent migrates legacy Bild widths onto the numeric scale", () => {
+    const data = {
+      content: [
+        { type: "Bild", props: { id: "a", bild: "x.jpg", breite: "voll" } },
+        { type: "Bild", props: { id: "b", bild: "y.jpg", breite: "halb" } },
+        { type: "Bild", props: { id: "c", bild: "z.jpg" } },
+      ],
+      root: {},
+    } as unknown as Data;
+
+    const breiten = normalizeContent(data, "schmal").content.map(
+      (item) => (item.props as { breite?: unknown }).breite,
+    );
+    expect(breiten).toEqual([100, 50, 100]);
+  });
+
+  it("normalizeContent leaves a document's other blocks and ids alone", () => {
+    const data = {
+      content: [
+        { type: "Bild", props: { id: "a", bild: "x.jpg", altText: "Foto", breite: "halb" } },
+        { type: "Absatz", props: { id: "b", text: "Ein Satz." } },
+      ],
+      root: {},
+    } as unknown as Data;
+
+    const out = normalizeContent(data, "schmal");
+    expect(out.content[0]?.props).toMatchObject({ id: "a", altText: "Foto", breite: 50 });
+    expect(out.content[1]?.props).toEqual({ id: "b", text: "Ein Satz." });
+  });
+
+  it("normalizeContent keeps root under a props key, never the legacy flat shape", () => {
+    // transformProps unwraps root to root.props when the incoming root has no
+    // props key. Seeding the width first is what stops that from happening.
+    const data = { content: [], root: {} } as unknown as Data;
+    const out = normalizeContent(data, "schmal");
+    expect(out.root.props).toBeDefined();
+    expect((out.root as { breite?: string }).breite).toBeUndefined();
   });
 });
