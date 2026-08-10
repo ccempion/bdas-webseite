@@ -25,6 +25,7 @@ type Blocks = {
   PersonenRaster: { personen: Person[] };
   Fliesstext: {
     inhalt: unknown;
+    ausrichtung: Ausrichtung;
   };
   Bild: {
     bild: string;
@@ -178,13 +179,17 @@ export const puckConfig: Config<Blocks> = {
           label: "Text",
           render: ({ value, onChange }) => <RichTextField value={value} onChange={onChange} />,
         },
+        ausrichtung: ausrichtungField,
       },
-      defaultProps: { inhalt: { type: "doc", content: [{ type: "paragraph" }] } },
-      render: ({ inhalt, puck }) =>
+      defaultProps: {
+        inhalt: { type: "doc", content: [{ type: "paragraph" }] },
+        ausrichtung: "links",
+      },
+      render: ({ inhalt, ausrichtung, puck }) =>
         istLeererRichText(inhalt) && puck?.isEditing ? (
           <BlockPlatzhalter titel="Fließtext" hinweis="Noch kein Text erfasst." />
         ) : (
-          <>{renderRichText(inhalt)}</>
+          <div className={ausrichtungText(ausrichtung)}>{renderRichText(inhalt)}</div>
         ),
     },
     PersonenRaster: {

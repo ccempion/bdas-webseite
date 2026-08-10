@@ -445,6 +445,38 @@ describe("puckConfig", () => {
     expect(out).toContain("<blockquote");
   });
 
+  it("Fließtext wraps its rich text in an aligned container", () => {
+    const render = puckConfig.components.Fliesstext?.render;
+    if (!render) throw new Error("Fliesstext render missing");
+    const inhalt = {
+      type: "doc",
+      content: [{ type: "paragraph", content: [{ type: "text", text: "Hallo" }] }],
+    };
+    const out = renderToStaticMarkup(
+      render({ inhalt, ausrichtung: "mittig", puck: { isEditing: false } } as never) as never,
+    );
+    expect(out).toContain("text-center");
+    expect(out).toContain("Hallo");
+  });
+
+  it("Fließtext does not align the placeholder", () => {
+    const render = puckConfig.components.Fliesstext?.render;
+    if (!render) throw new Error("Fliesstext render missing");
+    const leer = { type: "doc", content: [{ type: "paragraph" }] };
+    const out = renderToStaticMarkup(
+      render({ inhalt: leer, ausrichtung: "rechts", puck: { isEditing: true } } as never) as never,
+    );
+    expect(out).toContain("data-block-platzhalter");
+    expect(out).not.toContain("text-right");
+  });
+
+  it("Fließtext exposes an Ausrichtung select defaulting to links", () => {
+    const field = puckConfig.components.Fliesstext?.fields?.ausrichtung;
+    if (field?.type !== "select") throw new Error("Fliesstext needs an ausrichtung select");
+    expect(field.options?.map((o) => o.value)).toEqual(["links", "mittig", "rechts"]);
+    expect(puckConfig.components.Fliesstext?.defaultProps?.ausrichtung).toBe("links");
+  });
+
   it("the three text blocks expose an Ausrichtung select", () => {
     for (const name of ["Ueberschrift", "Absatz", "Zitat"] as const) {
       const field = puckConfig.components[name]?.fields?.ausrichtung;
