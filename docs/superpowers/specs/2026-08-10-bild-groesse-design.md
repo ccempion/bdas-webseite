@@ -12,7 +12,7 @@
 
 `Bild` currently offers `breite: "voll" | "halb"` — full width or `sm:max-w-md`. The board wants to decide how big a picture is by dragging it.
 
-**Puck ships nothing for this.** Verified against the installed 0.23 `.d.ts`, not the docs: the field union is `array · custom · external · number · object · radio · richtext · select · slot · text · textarea` — no `image`, `media`, `file`, `resize`, or dimension field. The `ResizeHandle` symbol in `index.js` (18 occurrences, zero in any `.d.ts`) is internal and drives the resizable _sidebars_ from 0.20. The official `@puckeditor/*` plugins (`plugin-heading-analyzer`, `plugin-emotion-cache`, `field-contentful`, `plugin-ai`) do not cover it, and the nearest third-party package, `@caprionlinesrl/puck-plugin-media`, is a media _picker_, not a resizer. So this is hand-rolled — but on first-party APIs.
+**Puck ships nothing for this.** Verified against the shipped `.d.ts` of both 0.22.2 (deployed) and 0.23.0, not the docs — the field union is identical in each: the union is `array · custom · external · number · object · radio · richtext · select · slot · text · textarea` — no `image`, `media`, `file`, `resize`, or dimension field. The `ResizeHandle` symbol in `index.js` (18 occurrences, zero in any `.d.ts`) is internal and drives the resizable _sidebars_ from 0.20. The official `@puckeditor/*` plugins (`plugin-heading-analyzer`, `plugin-emotion-cache`, `field-contentful`, `plugin-ai`) do not cover it, and the nearest third-party package, `@caprionlinesrl/puck-plugin-media`, is a media _picker_, not a resizer. So this is hand-rolled — but on first-party APIs.
 
 Decisions made during brainstorming:
 

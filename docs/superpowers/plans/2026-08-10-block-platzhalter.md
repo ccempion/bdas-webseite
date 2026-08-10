@@ -15,7 +15,7 @@ Implements §3 of `docs/superpowers/specs/2026-08-10-editor-realismus-design.md`
 - **Vitest runs in `environment: "node"`** (`vitest.config.ts:5`). No jsdom, no testing-library. React is tested via `renderToStaticMarkup` — see `apps/web/app/_content/Organigramm.test.tsx`. **Do not add jsdom**; that is a stack change requiring an ADR.
 - **All user-facing copy is German.**
 - **Never inline a hex, radius, shadow, or duration** (CLAUDE.md §7). Use only classes already in use in `apps/web/app/_files/FileUploader.tsx:109`: `rounded-bdas`, `border-dashed`, `border-bdas-soft`, `bg-bdas-surface`, `text-bdas-ink`, `text-bdas-ink-muted`.
-- **Public rendering must not change.** Three existing tests pin this (`puck-config.test.ts:89`, `:114`, `:242`); they pass `puck: {}`, so `isEditing` is falsy and they must keep passing **unedited**. If one needs changing, the implementation is wrong.
+- **Public rendering must not change.** Two existing render tests pin this (`puck-config.test.ts:89`, `:114`); they pass `puck: {}`, so `isEditing` is falsy. A third (`:242`) pins `Organigramm`'s empty `defaultProps` without calling a render. All three must keep passing **unedited**. If one needs changing, the implementation is wrong.
 - **Use `puck?.isEditing`, never `puck.isEditing`.** The existing `PersonenRaster` render test (`puck-config.test.ts:53`) calls `render({ personen: [...] })` with no `puck` key, so a bare property access throws a TypeError. Optional chaining also fails safe: a missing context means no placeholder, which is the public-page behaviour.
 - **Commit after every task**, conventional-commit style (`feat(web): …`).
 - Before each commit run: `pnpm --filter @bdas/web test && pnpm --filter @bdas/web typecheck && pnpm --filter @bdas/web lint`
@@ -330,7 +330,7 @@ export function istLeererRichText(doc: unknown): boolean {
   const content = (doc as { content?: unknown[] } | null | undefined)?.content;
   if (!Array.isArray(content) || content.length === 0) return true;
   return content.every((node) => {
-    const kinder = (node as { content?: unknown[] }).content;
+    const kinder = (node as { content?: unknown[] } | null | undefined)?.content;
     return !Array.isArray(kinder) || kinder.length === 0;
   });
 }
