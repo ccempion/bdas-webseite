@@ -47,7 +47,7 @@ Emptiness predicates stay inline in each `render` — they are one-liners, and e
 **Interfaces:**
 
 - Consumes: nothing.
-- Produces: `BlockPlatzhalter({ titel: string; hinweis: string }): JSX.Element` — renders a container carrying the attribute `data-block-platzhalter`, used by every later task and by the E2E hook in Task 6.
+- Produces: `BlockPlatzhalter({ titel: string; hinweis: string }): JSX.Element` — renders a container carrying the attribute `data-block-platzhalter`, which every later task asserts against and Task 5 uses for its structural sweep.
 
 - [ ] **Step 1: Write the failing test**
 
