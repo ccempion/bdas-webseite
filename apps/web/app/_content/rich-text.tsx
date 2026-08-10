@@ -66,3 +66,15 @@ export function renderRichText(doc: unknown): ReactNode {
   if (root.type !== "doc" || !Array.isArray(root.content)) return null;
   return <>{renderChildren(root.content)}</>;
 }
+
+/** True when a stored Tiptap document would render to nothing visible.
+ *  `{ type: "doc", content: [{ type: "paragraph" }] }` — Fließtext's own
+ *  defaultProps — counts as empty: it is one paragraph with no children. */
+export function istLeererRichText(doc: unknown): boolean {
+  const content = (doc as { content?: unknown[] } | null | undefined)?.content;
+  if (!Array.isArray(content) || content.length === 0) return true;
+  return content.every((node) => {
+    const kinder = (node as { content?: unknown[] }).content;
+    return !Array.isArray(kinder) || kinder.length === 0;
+  });
+}

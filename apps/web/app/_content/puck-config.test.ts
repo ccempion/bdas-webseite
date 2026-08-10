@@ -288,4 +288,41 @@ describe("puckConfig", () => {
     );
     expect(publicOut).toBe("");
   });
+
+  it("Absatz shows a placeholder in the editor while its text is empty", () => {
+    const render = puckConfig.components.Absatz?.render;
+    if (!render) throw new Error("Absatz render missing");
+    const editing = renderToStaticMarkup(
+      render({ text: "   ", puck: { isEditing: true } } as never) as never,
+    );
+    expect(editing).toContain("data-block-platzhalter");
+    const publicOut = renderToStaticMarkup(
+      render({ text: "", puck: { isEditing: false } } as never) as never,
+    );
+    expect(publicOut).not.toContain("data-block-platzhalter");
+  });
+
+  it("Absatz renders its text once written", () => {
+    const render = puckConfig.components.Absatz?.render;
+    if (!render) throw new Error("Absatz render missing");
+    const out = renderToStaticMarkup(
+      render({ text: "Ein Satz.", puck: { isEditing: true } } as never) as never,
+    );
+    expect(out).toContain("Ein Satz.");
+    expect(out).not.toContain("data-block-platzhalter");
+  });
+
+  it("Fließtext shows a placeholder in the editor while its document is empty", () => {
+    const render = puckConfig.components.Fliesstext?.render;
+    if (!render) throw new Error("Fliesstext render missing");
+    const leer = { type: "doc", content: [{ type: "paragraph" }] };
+    const editing = renderToStaticMarkup(
+      render({ inhalt: leer, puck: { isEditing: true } } as never) as never,
+    );
+    expect(editing).toContain("data-block-platzhalter");
+    const publicOut = renderToStaticMarkup(
+      render({ inhalt: leer, puck: { isEditing: false } } as never) as never,
+    );
+    expect(publicOut).not.toContain("data-block-platzhalter");
+  });
 });

@@ -7,7 +7,7 @@ import { FotoField } from "./FotoField";
 import { Organigramm } from "./Organigramm";
 import type { Kasten } from "./org-tree";
 import { RichTextField } from "./RichTextField";
-import { renderRichText } from "./rich-text";
+import { istLeererRichText, renderRichText } from "./rich-text";
 import { isExternalHref, safeHref } from "./href";
 import { BlockPlatzhalter } from "./BlockPlatzhalter";
 
@@ -116,7 +116,12 @@ export const puckConfig: Config<Blocks> = {
       label: "Absatz",
       fields: { text: { type: "textarea", label: "Text" } },
       defaultProps: { text: "" },
-      render: ({ text }) => <p className="whitespace-pre-line text-bdas-ink-body">{text}</p>,
+      render: ({ text, puck }) =>
+        (text ?? "").trim() === "" && puck?.isEditing ? (
+          <BlockPlatzhalter titel="Absatz" hinweis="Noch kein Text erfasst." />
+        ) : (
+          <p className="whitespace-pre-line text-bdas-ink-body">{text}</p>
+        ),
     },
     Fliesstext: {
       label: "Fließtext",
@@ -128,7 +133,12 @@ export const puckConfig: Config<Blocks> = {
         },
       },
       defaultProps: { inhalt: { type: "doc", content: [{ type: "paragraph" }] } },
-      render: ({ inhalt }) => <>{renderRichText(inhalt)}</>,
+      render: ({ inhalt, puck }) =>
+        istLeererRichText(inhalt) && puck?.isEditing ? (
+          <BlockPlatzhalter titel="Fließtext" hinweis="Noch kein Text erfasst." />
+        ) : (
+          <>{renderRichText(inhalt)}</>
+        ),
     },
     PersonenRaster: {
       label: "Personen-Raster",
