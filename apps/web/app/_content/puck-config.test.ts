@@ -3,7 +3,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 
 import { describe, expect, it } from "vitest";
 
-import { puckConfig } from "./puck-config";
+import { ausrichtungFlex, ausrichtungText, puckConfig } from "./puck-config";
 
 describe("puckConfig", () => {
   it("keeps the legacy Absatz and PersonenRaster blocks", () => {
@@ -380,5 +380,24 @@ describe("puckConfig", () => {
         "data-block-platzhalter",
       );
     }
+  });
+
+  it("maps each Ausrichtung to its text class", () => {
+    expect(ausrichtungText("links")).toBe("text-left");
+    expect(ausrichtungText("mittig")).toBe("text-center");
+    expect(ausrichtungText("rechts")).toBe("text-right");
+  });
+
+  it("maps each Ausrichtung to its flex-justify class", () => {
+    expect(ausrichtungFlex("links")).toBe("justify-start");
+    expect(ausrichtungFlex("mittig")).toBe("justify-center");
+    expect(ausrichtungFlex("rechts")).toBe("justify-end");
+  });
+
+  it("falls back to left for a missing or unknown Ausrichtung", () => {
+    expect(ausrichtungText(undefined)).toBe("text-left");
+    expect(ausrichtungFlex(undefined)).toBe("justify-start");
+    expect(ausrichtungText("quatsch" as never)).toBe("text-left");
+    expect(ausrichtungFlex("quatsch" as never)).toBe("justify-start");
   });
 });

@@ -59,6 +59,32 @@ export type Breite = "schmal" | "breit";
 export const breiteClass = (breite: Breite): string =>
   breite === "breit" ? "max-w-5xl" : "max-w-3xl";
 
+/** Per-block horizontal alignment (ADR 0023 palette). `links` is the default
+ *  and is what every block rendered before the control existed. */
+export type Ausrichtung = "links" | "mittig" | "rechts";
+
+const AUSRICHTUNG_TEXT: Record<Ausrichtung, string> = {
+  links: "text-left",
+  mittig: "text-center",
+  rechts: "text-right",
+};
+
+const AUSRICHTUNG_FLEX: Record<Ausrichtung, string> = {
+  links: "justify-start",
+  mittig: "justify-center",
+  rechts: "justify-end",
+};
+
+/** Both lookups fall back to the `links` classes for a missing or unrecognised
+ *  value: documents saved before this field existed carry no `ausrichtung`,
+ *  and they must keep rendering exactly as they did. Class strings are
+ *  literals — Tailwind's scanner never sees an interpolated class. */
+export const ausrichtungText = (a: Ausrichtung | undefined): string =>
+  AUSRICHTUNG_TEXT[a as Ausrichtung] ?? AUSRICHTUNG_TEXT.links;
+
+export const ausrichtungFlex = (a: Ausrichtung | undefined): string =>
+  AUSRICHTUNG_FLEX[a as Ausrichtung] ?? AUSRICHTUNG_FLEX.links;
+
 /** Ensure a document carries a `breite` before it reaches `<Puck>`/`<Render>`.
  *  Documents authored before the root existed have none; fall back per page so
  *  the editor and the published page frame them identically. */
