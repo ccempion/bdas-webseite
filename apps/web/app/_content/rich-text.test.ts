@@ -1,7 +1,7 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
-import { renderRichText } from "./rich-text";
+import { istLeererRichText, renderRichText } from "./rich-text";
 
 const doc = (content: unknown[]) => ({ type: "doc", content });
 const para = (content: unknown[]) => ({ type: "paragraph", content });
@@ -70,5 +70,30 @@ describe("renderRichText", () => {
     expect(renderRichText(null)).toBeNull();
     expect(renderRichText({ foo: 1 })).toBeNull();
     expect(renderRichText("string")).toBeNull();
+  });
+});
+
+describe("istLeererRichText", () => {
+  it("treats the Fließtext default document as empty", () => {
+    expect(istLeererRichText({ type: "doc", content: [{ type: "paragraph" }] })).toBe(true);
+  });
+
+  it("treats a missing or contentless document as empty", () => {
+    expect(istLeererRichText(null)).toBe(true);
+    expect(istLeererRichText({ type: "doc" })).toBe(true);
+    expect(istLeererRichText({ type: "doc", content: [] })).toBe(true);
+  });
+
+  it("treats a document with text as non-empty", () => {
+    expect(istLeererRichText(doc([para([text("Hallo")])]))).toBe(false);
+  });
+
+  it("treats malformed nodes as empty instead of throwing", () => {
+    expect(() => istLeererRichText({ type: "doc", content: [null] })).not.toThrow();
+    expect(istLeererRichText({ type: "doc", content: [null] })).toBe(true);
+    expect(() => istLeererRichText({ type: "doc", content: [undefined] })).not.toThrow();
+    expect(istLeererRichText({ type: "doc", content: [undefined] })).toBe(true);
+    expect(() => istLeererRichText({ type: "doc", content: ["x"] })).not.toThrow();
+    expect(istLeererRichText({ type: "doc", content: ["x"] })).toBe(true);
   });
 });

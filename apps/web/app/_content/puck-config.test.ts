@@ -242,4 +242,143 @@ describe("puckConfig", () => {
   it("starts an Organigramm empty so an unfilled block renders nothing", () => {
     expect(puckConfig.components.Organigramm?.defaultProps).toEqual({ kaesten: [] });
   });
+
+  it("Bild shows a placeholder in the editor when no image is chosen", () => {
+    const render = puckConfig.components.Bild?.render;
+    if (!render) throw new Error("Bild render missing");
+    const out = renderToStaticMarkup(
+      render({
+        bild: "",
+        altText: "",
+        bildunterschrift: "",
+        breite: "voll",
+        puck: { isEditing: true },
+      } as never) as never,
+    );
+    expect(out).toContain("data-block-platzhalter");
+    expect(out).toContain("Bild");
+  });
+
+  it("Button shows a placeholder in the editor when the link is still empty", () => {
+    const render = puckConfig.components.Button?.render;
+    if (!render) throw new Error("Button render missing");
+    const out = renderToStaticMarkup(
+      render({
+        label: "Mehr erfahren",
+        href: "",
+        variante: "primaer",
+        puck: { isEditing: true },
+      } as never) as never,
+    );
+    expect(out).toContain("data-block-platzhalter");
+    expect(out).toContain("Button");
+  });
+
+  it("Button shows a placeholder in the editor for an unsafe link, and nothing publicly", () => {
+    const render = puckConfig.components.Button?.render;
+    if (!render) throw new Error("Button render missing");
+    const props = { label: "x", href: "javascript:alert(1)", variante: "primaer" };
+    const editing = renderToStaticMarkup(
+      render({ ...props, puck: { isEditing: true } } as never) as never,
+    );
+    expect(editing).toContain("data-block-platzhalter");
+    expect(editing).not.toContain("javascript:");
+    const publicOut = renderToStaticMarkup(
+      render({ ...props, puck: { isEditing: false } } as never) as never,
+    );
+    expect(publicOut).toBe("");
+  });
+
+  it("Absatz shows a placeholder in the editor while its text is empty", () => {
+    const render = puckConfig.components.Absatz?.render;
+    if (!render) throw new Error("Absatz render missing");
+    const editing = renderToStaticMarkup(
+      render({ text: "   ", puck: { isEditing: true } } as never) as never,
+    );
+    expect(editing).toContain("data-block-platzhalter");
+    const publicOut = renderToStaticMarkup(
+      render({ text: "", puck: { isEditing: false } } as never) as never,
+    );
+    expect(publicOut).not.toContain("data-block-platzhalter");
+  });
+
+  it("Absatz renders its text once written", () => {
+    const render = puckConfig.components.Absatz?.render;
+    if (!render) throw new Error("Absatz render missing");
+    const out = renderToStaticMarkup(
+      render({ text: "Ein Satz.", puck: { isEditing: true } } as never) as never,
+    );
+    expect(out).toContain("Ein Satz.");
+    expect(out).not.toContain("data-block-platzhalter");
+  });
+
+  it("Fließtext shows a placeholder in the editor while its document is empty", () => {
+    const render = puckConfig.components.Fliesstext?.render;
+    if (!render) throw new Error("Fliesstext render missing");
+    const leer = { type: "doc", content: [{ type: "paragraph" }] };
+    const editing = renderToStaticMarkup(
+      render({ inhalt: leer, puck: { isEditing: true } } as never) as never,
+    );
+    expect(editing).toContain("data-block-platzhalter");
+    const publicOut = renderToStaticMarkup(
+      render({ inhalt: leer, puck: { isEditing: false } } as never) as never,
+    );
+    expect(publicOut).not.toContain("data-block-platzhalter");
+  });
+
+  it("PersonenRaster shows a placeholder in the editor while it holds nobody", () => {
+    const render = puckConfig.components.PersonenRaster?.render;
+    if (!render) throw new Error("PersonenRaster render missing");
+    const editing = renderToStaticMarkup(
+      render({ personen: [], puck: { isEditing: true } } as never) as never,
+    );
+    expect(editing).toContain("data-block-platzhalter");
+    const publicOut = renderToStaticMarkup(
+      render({ personen: [], puck: { isEditing: false } } as never) as never,
+    );
+    expect(publicOut).not.toContain("data-block-platzhalter");
+  });
+
+  it("Organigramm shows a placeholder in the editor while it holds no boxes", () => {
+    const render = puckConfig.components.Organigramm?.render;
+    if (!render) throw new Error("Organigramm render missing");
+    const editing = renderToStaticMarkup(
+      render({ kaesten: [], puck: { isEditing: true } } as never) as never,
+    );
+    expect(editing).toContain("data-block-platzhalter");
+    const publicOut = renderToStaticMarkup(
+      render({ kaesten: [], puck: { isEditing: false } } as never) as never,
+    );
+    expect(publicOut).not.toContain("data-block-platzhalter");
+  });
+
+  it("no block renders a placeholder outside the editor", () => {
+    const leereProps: Record<string, unknown> = {
+      bild: "",
+      altText: "",
+      bildunterschrift: "",
+      breite: "voll",
+      label: "",
+      href: "",
+      variante: "primaer",
+      text: "",
+      quelle: "",
+      inhalt: { type: "doc", content: [{ type: "paragraph" }] },
+      personen: [],
+      kaesten: [],
+      ebene: "h2",
+      hoehe: "mittel",
+      anzahl: "2",
+    };
+    const puck = { isEditing: false, renderDropZone: () => null, dragRef: null, metadata: {} };
+
+    for (const [name, component] of Object.entries(puckConfig.components)) {
+      const render = component?.render;
+      if (!render) throw new Error(`${name} render missing`);
+      const out = renderToStaticMarkup(render({ ...leereProps, puck } as never) as never);
+      expect(out, `${name} leaked a placeholder to the public page`).not.toContain(
+        "data-block-platzhalter",
+      );
+    }
+  });
 });
