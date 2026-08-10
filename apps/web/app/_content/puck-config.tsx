@@ -20,26 +20,30 @@ type Person = {
 };
 
 type Blocks = {
-  Ueberschrift: { text: string; ebene: "h2" | "h3" };
-  Absatz: { text: string };
+  Ueberschrift: { text: string; ebene: "h2" | "h3"; ausrichtung: Ausrichtung };
+  Absatz: { text: string; ausrichtung: Ausrichtung };
   PersonenRaster: { personen: Person[] };
   Fliesstext: {
     inhalt: unknown;
+    ausrichtung: Ausrichtung;
   };
   Bild: {
     bild: string;
     altText: string;
     bildunterschrift: string;
     breite: "voll" | "halb";
+    ausrichtung: Ausrichtung;
   };
   Button: {
     label: string;
     href: string;
     variante: "primaer" | "sekundaer";
+    ausrichtung: Ausrichtung;
   };
   Zitat: {
     text: string;
     quelle: string;
+    ausrichtung: Ausrichtung;
   };
   Trenner: Record<string, never>;
   Abstand: {
@@ -58,6 +62,46 @@ export type Breite = "schmal" | "breit";
 
 export const breiteClass = (breite: Breite): string =>
   breite === "breit" ? "max-w-5xl" : "max-w-3xl";
+
+/** Per-block horizontal alignment (ADR 0023 palette). `links` is the default
+ *  and is what every block rendered before the control existed. */
+export type Ausrichtung = "links" | "mittig" | "rechts";
+
+const AUSRICHTUNG_TEXT: Record<Ausrichtung, string> = {
+  links: "text-left",
+  mittig: "text-center",
+  rechts: "text-right",
+};
+
+const AUSRICHTUNG_FLEX: Record<Ausrichtung, string> = {
+  links: "justify-start",
+  mittig: "justify-center",
+  rechts: "justify-end",
+};
+
+/** Both lookups fall back to the `links` classes for a missing or unrecognised
+ *  value: documents saved before this field existed carry no `ausrichtung`,
+ *  and they must keep rendering exactly as they did. Class strings are
+ *  literals — Tailwind's scanner never sees an interpolated class. */
+export const ausrichtungText = (a: Ausrichtung | undefined): string =>
+  a !== undefined && Object.hasOwn(AUSRICHTUNG_TEXT, a)
+    ? AUSRICHTUNG_TEXT[a]
+    : AUSRICHTUNG_TEXT.links;
+
+export const ausrichtungFlex = (a: Ausrichtung | undefined): string =>
+  a !== undefined && Object.hasOwn(AUSRICHTUNG_FLEX, a)
+    ? AUSRICHTUNG_FLEX[a]
+    : AUSRICHTUNG_FLEX.links;
+
+const ausrichtungField = {
+  type: "select" as const,
+  label: "Ausrichtung",
+  options: [
+    { label: "Linksbündig", value: "links" },
+    { label: "Mittig", value: "mittig" },
+    { label: "Rechtsbündig", value: "rechts" },
+  ],
+};
 
 /** Ensure a document carries a `breite` before it reaches `<Puck>`/`<Render>`.
  *  Documents authored before the root existed have none; fall back per page so
@@ -103,24 +147,34 @@ export const puckConfig: Config<Blocks> = {
             { label: "Klein (h3)", value: "h3" },
           ],
         },
+        ausrichtung: ausrichtungField,
       },
-      defaultProps: { text: "Überschrift", ebene: "h2" },
-      render: ({ text, ebene }) =>
+      defaultProps: { text: "Überschrift", ebene: "h2", ausrichtung: "links" },
+      render: ({ text, ebene, ausrichtung }) =>
         ebene === "h3" ? (
-          <h3 className="text-xl font-semibold text-bdas-ink">{text}</h3>
+          <h3 className={`text-xl font-semibold text-bdas-ink ${ausrichtungText(ausrichtung)}`}>
+            {text}
+          </h3>
         ) : (
-          <h2 className="text-2xl font-semibold text-bdas-ink">{text}</h2>
+          <h2 className={`text-2xl font-semibold text-bdas-ink ${ausrichtungText(ausrichtung)}`}>
+            {text}
+          </h2>
         ),
     },
     Absatz: {
       label: "Absatz",
-      fields: { text: { type: "textarea", label: "Text" } },
-      defaultProps: { text: "" },
-      render: ({ text, puck }) =>
+      fields: {
+        text: { type: "textarea", label: "Text" },
+        ausrichtung: ausrichtungField,
+      },
+      defaultProps: { text: "", ausrichtung: "links" },
+      render: ({ text, ausrichtung, puck }) =>
         (text ?? "").trim() === "" && puck?.isEditing ? (
           <BlockPlatzhalter titel="Absatz" hinweis="Noch kein Text erfasst." />
         ) : (
-          <p className="whitespace-pre-line text-bdas-ink-body">{text}</p>
+          <p className={`whitespace-pre-line text-bdas-ink-body ${ausrichtungText(ausrichtung)}`}>
+            {text}
+          </p>
         ),
     },
     Fliesstext: {
@@ -131,13 +185,17 @@ export const puckConfig: Config<Blocks> = {
           label: "Text",
           render: ({ value, onChange }) => <RichTextField value={value} onChange={onChange} />,
         },
+        ausrichtung: ausrichtungField,
       },
-      defaultProps: { inhalt: { type: "doc", content: [{ type: "paragraph" }] } },
-      render: ({ inhalt, puck }) =>
+      defaultProps: {
+        inhalt: { type: "doc", content: [{ type: "paragraph" }] },
+        ausrichtung: "links",
+      },
+      render: ({ inhalt, ausrichtung, puck }) =>
         istLeererRichText(inhalt) && puck?.isEditing ? (
           <BlockPlatzhalter titel="Fließtext" hinweis="Noch kein Text erfasst." />
         ) : (
-          <>{renderRichText(inhalt)}</>
+          <div className={ausrichtungText(ausrichtung)}>{renderRichText(inhalt)}</div>
         ),
     },
     PersonenRaster: {
@@ -206,9 +264,16 @@ export const puckConfig: Config<Blocks> = {
             { label: "Halbe Breite", value: "halb" },
           ],
         },
+        ausrichtung: ausrichtungField,
       },
-      defaultProps: { bild: "", altText: "", bildunterschrift: "", breite: "voll" },
-      render: ({ bild, altText, bildunterschrift, breite, puck }) => {
+      defaultProps: {
+        bild: "",
+        altText: "",
+        bildunterschrift: "",
+        breite: "voll",
+        ausrichtung: "links",
+      },
+      render: ({ bild, altText, bildunterschrift, breite, ausrichtung, puck }) => {
         if (!bild) {
           return puck?.isEditing ? (
             <BlockPlatzhalter titel="Bild" hinweis="Noch kein Bild ausgewählt." />
@@ -217,14 +282,18 @@ export const puckConfig: Config<Blocks> = {
           );
         }
         return (
-          <figure className={breite === "halb" ? "sm:max-w-md" : "w-full"}>
-            <img src={bild} alt={altText} className="w-full rounded-bdas" />
-            {bildunterschrift ? (
-              <figcaption className="mt-2 text-sm text-bdas-ink-muted">
-                {bildunterschrift}
-              </figcaption>
-            ) : null}
-          </figure>
+          <div className={`flex ${ausrichtungFlex(ausrichtung)}`}>
+            <figure className={breite === "halb" ? "w-full sm:max-w-md" : "w-full"}>
+              <img src={bild} alt={altText} className="w-full rounded-bdas" />
+              {bildunterschrift ? (
+                <figcaption
+                  className={`mt-2 text-sm text-bdas-ink-muted ${ausrichtungText(ausrichtung)}`}
+                >
+                  {bildunterschrift}
+                </figcaption>
+              ) : null}
+            </figure>
+          </div>
         );
       },
     },
@@ -241,9 +310,10 @@ export const puckConfig: Config<Blocks> = {
             { label: "Sekundär", value: "sekundaer" },
           ],
         },
+        ausrichtung: ausrichtungField,
       },
-      defaultProps: { label: "Mehr erfahren", href: "", variante: "primaer" },
-      render: ({ label, href, variante, puck }) => {
+      defaultProps: { label: "Mehr erfahren", href: "", variante: "primaer", ausrichtung: "links" },
+      render: ({ label, href, variante, ausrichtung, puck }) => {
         const safe = safeHref(href);
         if (!safe) {
           return puck?.isEditing ? (
@@ -257,14 +327,18 @@ export const puckConfig: Config<Blocks> = {
           variante === "sekundaer"
             ? "inline-flex items-center rounded-bdas-sm border border-bdas-strong px-4 py-2 text-sm text-bdas-ink transition-colors duration-bdas-quick ease-bdas hover:bg-bdas-surface-hover"
             : "inline-flex items-center rounded-bdas-sm bg-bdas-red px-4 py-2 text-sm font-medium text-white transition-colors duration-bdas-quick ease-bdas hover:opacity-90";
-        return isExternalHref(safe) ? (
-          <a href={safe} rel="noopener noreferrer" target="_blank" className={cls}>
-            {label}
-          </a>
-        ) : (
-          <a href={safe} className={cls}>
-            {label}
-          </a>
+        return (
+          <div className={`flex ${ausrichtungFlex(ausrichtung)}`}>
+            {isExternalHref(safe) ? (
+              <a href={safe} rel="noopener noreferrer" target="_blank" className={cls}>
+                {label}
+              </a>
+            ) : (
+              <a href={safe} className={cls}>
+                {label}
+              </a>
+            )}
+          </div>
         );
       },
     },
@@ -273,10 +347,13 @@ export const puckConfig: Config<Blocks> = {
       fields: {
         text: { type: "textarea", label: "Text" },
         quelle: { type: "text", label: "Quelle (optional)" },
+        ausrichtung: ausrichtungField,
       },
-      defaultProps: { text: "", quelle: "" },
-      render: ({ text, quelle }) => (
-        <blockquote className="rounded-bdas border-l-4 border-bdas-red bg-bdas-overlay-hover px-4 py-3">
+      defaultProps: { text: "", quelle: "", ausrichtung: "links" },
+      render: ({ text, quelle, ausrichtung }) => (
+        <blockquote
+          className={`rounded-bdas border-l-4 border-bdas-red bg-bdas-overlay-hover px-4 py-3 ${ausrichtungText(ausrichtung)}`}
+        >
           <p className="whitespace-pre-line text-bdas-ink-body">{text}</p>
           {quelle ? <footer className="mt-2 text-sm text-bdas-ink-muted">— {quelle}</footer> : null}
         </blockquote>
