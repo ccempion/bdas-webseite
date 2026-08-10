@@ -209,3 +209,13 @@ export async function seedEvent(input: {
             ${input.visibility}, 'published', ${input.createdBy})`;
   return id;
 }
+
+/** Seed a Puck document for a content page (slug `gruppen/<slug>` for a group
+ *  page). Used to plant documents in shapes the editor no longer produces —
+ *  e.g. a `Bild` still carrying the pre-2026-08-11 `"voll" | "halb"` width. */
+export async function seedContentPage(slug: string, data: unknown): Promise<void> {
+  await sql`
+    INSERT INTO content_pages (slug, data, updated_by)
+    VALUES (${slug}, ${sql.json(data as never)}, 'e2e')
+    ON CONFLICT (slug) DO UPDATE SET data = EXCLUDED.data, updated_by = EXCLUDED.updated_by`;
+}
