@@ -399,5 +399,11 @@ describe("puckConfig", () => {
     expect(ausrichtungFlex(undefined)).toBe("justify-start");
     expect(ausrichtungText("quatsch" as never)).toBe("text-left");
     expect(ausrichtungFlex("quatsch" as never)).toBe("justify-start");
+    for (const boese of ["constructor", "toString", "hasOwnProperty", "valueOf", "__proto__"]) {
+      expect(ausrichtungText(boese as never)).toBe("text-left");
+      expect(ausrichtungFlex(boese as never)).toBe("justify-start");
+    }
+    expect(ausrichtungText(null as never)).toBe("text-left");
+    expect(ausrichtungFlex(null as never)).toBe("justify-start");
   });
 });

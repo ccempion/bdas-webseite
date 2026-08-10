@@ -80,10 +80,10 @@ const AUSRICHTUNG_FLEX: Record<Ausrichtung, string> = {
  *  and they must keep rendering exactly as they did. Class strings are
  *  literals — Tailwind's scanner never sees an interpolated class. */
 export const ausrichtungText = (a: Ausrichtung | undefined): string =>
-  AUSRICHTUNG_TEXT[a as Ausrichtung] ?? AUSRICHTUNG_TEXT.links;
+  a !== undefined && Object.hasOwn(AUSRICHTUNG_TEXT, a) ? AUSRICHTUNG_TEXT[a] : AUSRICHTUNG_TEXT.links;
 
 export const ausrichtungFlex = (a: Ausrichtung | undefined): string =>
-  AUSRICHTUNG_FLEX[a as Ausrichtung] ?? AUSRICHTUNG_FLEX.links;
+  a !== undefined && Object.hasOwn(AUSRICHTUNG_FLEX, a) ? AUSRICHTUNG_FLEX[a] : AUSRICHTUNG_FLEX.links;
 
 /** Ensure a document carries a `breite` before it reaches `<Puck>`/`<Render>`.
  *  Documents authored before the root existed have none; fall back per page so
