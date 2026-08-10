@@ -77,6 +77,14 @@ it("falls back to left for a missing or unknown Ausrichtung", () => {
   expect(ausrichtungFlex(undefined)).toBe("justify-start");
   expect(ausrichtungText("quatsch" as never)).toBe("text-left");
   expect(ausrichtungFlex("quatsch" as never)).toBe("justify-start");
+  expect(ausrichtungText(null as never)).toBe("text-left");
+  expect(ausrichtungFlex(null as never)).toBe("justify-start");
+  // A plain object literal inherits these; a `?? fallback` lookup would return
+  // the inherited function instead of a class string.
+  for (const boese of ["constructor", "toString", "hasOwnProperty", "valueOf", "__proto__"]) {
+    expect(ausrichtungText(boese as never)).toBe("text-left");
+    expect(ausrichtungFlex(boese as never)).toBe("justify-start");
+  }
 });
 ```
 
@@ -113,12 +121,23 @@ const AUSRICHTUNG_FLEX: Record<Ausrichtung, string> = {
 /** Both lookups fall back to the `links` classes for a missing or unrecognised
  *  value: documents saved before this field existed carry no `ausrichtung`,
  *  and they must keep rendering exactly as they did. Class strings are
- *  literals — Tailwind's scanner never sees an interpolated class. */
+ *  literals — Tailwind's scanner never sees an interpolated class.
+ *
+ *  `Object.hasOwn`, not `?? fallback`: these are plain object literals, so a
+ *  value naming an `Object.prototype` member ("constructor", "toString",
+ *  "__proto__") resolves through the prototype chain and is neither null nor
+ *  undefined — the `??` would not fire and the helper would return a function
+ *  where a class string is required. Stored props are `z.record(z.unknown())`,
+ *  so such a value is not prevented upstream. */
 export const ausrichtungText = (a: Ausrichtung | undefined): string =>
-  AUSRICHTUNG_TEXT[a as Ausrichtung] ?? AUSRICHTUNG_TEXT.links;
+  a !== undefined && Object.hasOwn(AUSRICHTUNG_TEXT, a)
+    ? AUSRICHTUNG_TEXT[a]
+    : AUSRICHTUNG_TEXT.links;
 
 export const ausrichtungFlex = (a: Ausrichtung | undefined): string =>
-  AUSRICHTUNG_FLEX[a as Ausrichtung] ?? AUSRICHTUNG_FLEX.links;
+  a !== undefined && Object.hasOwn(AUSRICHTUNG_FLEX, a)
+    ? AUSRICHTUNG_FLEX[a]
+    : AUSRICHTUNG_FLEX.links;
 ```
 
 Do **not** add `ausrichtungField` here — see the Interfaces note above.
