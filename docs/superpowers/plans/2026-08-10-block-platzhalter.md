@@ -54,6 +54,7 @@ Emptiness predicates stay inline in each `render` — they are one-liners, and e
 Create `apps/web/app/_content/BlockPlatzhalter.test.tsx`:
 
 ```tsx
+import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 
 import { describe, expect, it } from "vitest";
