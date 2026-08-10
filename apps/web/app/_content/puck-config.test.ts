@@ -485,4 +485,80 @@ describe("puckConfig", () => {
       expect(puckConfig.components[name]?.defaultProps?.ausrichtung).toBe("links");
     }
   });
+
+  it("Bild centres the figure and its caption", () => {
+    const render = puckConfig.components.Bild?.render;
+    if (!render) throw new Error("Bild render missing");
+    const out = renderToStaticMarkup(
+      render({
+        bild: "https://cdn.test/x.jpg",
+        altText: "Gruppenfoto",
+        bildunterschrift: "Unterschrift",
+        breite: "halb",
+        ausrichtung: "mittig",
+        puck: {},
+      } as never) as never,
+    );
+    expect(out).toContain("justify-center");
+    expect(out).toContain("text-center");
+    expect(out).toContain('alt="Gruppenfoto"');
+  });
+
+  it("Bild does not align its placeholder", () => {
+    const render = puckConfig.components.Bild?.render;
+    if (!render) throw new Error("Bild render missing");
+    const out = renderToStaticMarkup(
+      render({
+        bild: "",
+        altText: "",
+        bildunterschrift: "",
+        breite: "voll",
+        ausrichtung: "rechts",
+        puck: { isEditing: true },
+      } as never) as never,
+    );
+    expect(out).toContain("data-block-platzhalter");
+    expect(out).not.toContain("justify-end");
+  });
+
+  it("Button aligns without disturbing its href or rel", () => {
+    const render = puckConfig.components.Button?.render;
+    if (!render) throw new Error("Button render missing");
+    const out = renderToStaticMarkup(
+      render({
+        label: "BDAJ",
+        href: "https://bdaj.de",
+        variante: "primaer",
+        ausrichtung: "rechts",
+        puck: {},
+      } as never) as never,
+    );
+    expect(out).toContain("justify-end");
+    expect(out).toContain('href="https://bdaj.de"');
+    expect(out).toContain('rel="noopener noreferrer"');
+  });
+
+  it("Button still renders nothing publicly for an unsafe href, aligned or not", () => {
+    const render = puckConfig.components.Button?.render;
+    if (!render) throw new Error("Button render missing");
+    const out = renderToStaticMarkup(
+      render({
+        label: "x",
+        href: "javascript:alert(1)",
+        variante: "primaer",
+        ausrichtung: "mittig",
+        puck: { isEditing: false },
+      } as never) as never,
+    );
+    expect(out).toBe("");
+  });
+
+  it("Bild and Button expose an Ausrichtung select defaulting to links", () => {
+    for (const name of ["Bild", "Button"] as const) {
+      const field = puckConfig.components[name]?.fields?.ausrichtung;
+      if (field?.type !== "select") throw new Error(`${name} needs an ausrichtung select`);
+      expect(field.options?.map((o) => o.value)).toEqual(["links", "mittig", "rechts"]);
+      expect(puckConfig.components[name]?.defaultProps?.ausrichtung).toBe("links");
+    }
+  });
 });

@@ -32,11 +32,13 @@ type Blocks = {
     altText: string;
     bildunterschrift: string;
     breite: "voll" | "halb";
+    ausrichtung: Ausrichtung;
   };
   Button: {
     label: string;
     href: string;
     variante: "primaer" | "sekundaer";
+    ausrichtung: Ausrichtung;
   };
   Zitat: {
     text: string;
@@ -258,9 +260,16 @@ export const puckConfig: Config<Blocks> = {
             { label: "Halbe Breite", value: "halb" },
           ],
         },
+        ausrichtung: ausrichtungField,
       },
-      defaultProps: { bild: "", altText: "", bildunterschrift: "", breite: "voll" },
-      render: ({ bild, altText, bildunterschrift, breite, puck }) => {
+      defaultProps: {
+        bild: "",
+        altText: "",
+        bildunterschrift: "",
+        breite: "voll",
+        ausrichtung: "links",
+      },
+      render: ({ bild, altText, bildunterschrift, breite, ausrichtung, puck }) => {
         if (!bild) {
           return puck?.isEditing ? (
             <BlockPlatzhalter titel="Bild" hinweis="Noch kein Bild ausgewählt." />
@@ -269,14 +278,18 @@ export const puckConfig: Config<Blocks> = {
           );
         }
         return (
-          <figure className={breite === "halb" ? "sm:max-w-md" : "w-full"}>
-            <img src={bild} alt={altText} className="w-full rounded-bdas" />
-            {bildunterschrift ? (
-              <figcaption className="mt-2 text-sm text-bdas-ink-muted">
-                {bildunterschrift}
-              </figcaption>
-            ) : null}
-          </figure>
+          <div className={`flex ${ausrichtungFlex(ausrichtung)}`}>
+            <figure className={breite === "halb" ? "sm:max-w-md" : "w-full"}>
+              <img src={bild} alt={altText} className="w-full rounded-bdas" />
+              {bildunterschrift ? (
+                <figcaption
+                  className={`mt-2 text-sm text-bdas-ink-muted ${ausrichtungText(ausrichtung)}`}
+                >
+                  {bildunterschrift}
+                </figcaption>
+              ) : null}
+            </figure>
+          </div>
         );
       },
     },
@@ -293,9 +306,10 @@ export const puckConfig: Config<Blocks> = {
             { label: "Sekundär", value: "sekundaer" },
           ],
         },
+        ausrichtung: ausrichtungField,
       },
-      defaultProps: { label: "Mehr erfahren", href: "", variante: "primaer" },
-      render: ({ label, href, variante, puck }) => {
+      defaultProps: { label: "Mehr erfahren", href: "", variante: "primaer", ausrichtung: "links" },
+      render: ({ label, href, variante, ausrichtung, puck }) => {
         const safe = safeHref(href);
         if (!safe) {
           return puck?.isEditing ? (
@@ -309,14 +323,18 @@ export const puckConfig: Config<Blocks> = {
           variante === "sekundaer"
             ? "inline-flex items-center rounded-bdas-sm border border-bdas-strong px-4 py-2 text-sm text-bdas-ink transition-colors duration-bdas-quick ease-bdas hover:bg-bdas-surface-hover"
             : "inline-flex items-center rounded-bdas-sm bg-bdas-red px-4 py-2 text-sm font-medium text-white transition-colors duration-bdas-quick ease-bdas hover:opacity-90";
-        return isExternalHref(safe) ? (
-          <a href={safe} rel="noopener noreferrer" target="_blank" className={cls}>
-            {label}
-          </a>
-        ) : (
-          <a href={safe} className={cls}>
-            {label}
-          </a>
+        return (
+          <div className={`flex ${ausrichtungFlex(ausrichtung)}`}>
+            {isExternalHref(safe) ? (
+              <a href={safe} rel="noopener noreferrer" target="_blank" className={cls}>
+                {label}
+              </a>
+            ) : (
+              <a href={safe} className={cls}>
+                {label}
+              </a>
+            )}
+          </div>
         );
       },
     },
