@@ -139,8 +139,8 @@ importers:
         specifier: ^2.0.2
         version: 2.0.2
       '@puckeditor/core':
-        specifier: ^0.22.1
-        version: 0.22.2(@floating-ui/dom@1.8.0)(@types/react-dom@18.3.7(@types/react@18.3.28))(@types/react@18.3.28)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(use-sync-external-store@1.6.0(react@18.3.1))
+        specifier: ^0.23.0
+        version: 0.23.0(@floating-ui/dom@1.8.0)(@types/react-dom@18.3.7(@types/react@18.3.28))(@types/react@18.3.28)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(use-sync-external-store@1.6.0(react@18.3.1))
       '@tiptap/extension-file-handler':
         specifier: 3.27.4
         version: 3.27.4(@tiptap/core@3.27.4(@tiptap/pm@3.27.4))(@tiptap/extension-text-style@3.27.4(@tiptap/core@3.27.4(@tiptap/pm@3.27.4)))(@tiptap/pm@3.27.4)
@@ -1490,8 +1490,8 @@ packages:
   '@preact/signals-core@1.14.3':
     resolution: {integrity: sha512-m0K3vnbSLC5rHs2ZVfeAMvBtT1zIyq4mxx5OlNncSgMj5Iz6W5Rn3kPrDxAC+iIKmiVe0lSl6U37t5ZkEWoVAw==}
 
-  '@puckeditor/core@0.22.2':
-    resolution: {integrity: sha512-pFflZGoCGkULZtXo2JGReGxizAmJnPnjm1sUE0yCNQUMBfzPId8Oj2mmy5Mthw4DPFCjjXLeWjEvfgnoYgnjqQ==}
+  '@puckeditor/core@0.23.0':
+    resolution: {integrity: sha512-sBnch+YIE3C6Bq+Z100GJs2y0rykxjcYW04m5iGJjMcBSqxQSmA3VKtDe742uPmPqQRJnKRBPrPuaiBmR2a78g==}
     engines: {node: '>=20.0.0'}
     peerDependencies:
       react: ^18.0.0 || ^19.0.0
@@ -4563,7 +4563,7 @@ snapshots:
 
   '@preact/signals-core@1.14.3': {}
 
-  '@puckeditor/core@0.22.2(@floating-ui/dom@1.8.0)(@types/react-dom@18.3.7(@types/react@18.3.28))(@types/react@18.3.28)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(use-sync-external-store@1.6.0(react@18.3.1))':
+  '@puckeditor/core@0.23.0(@floating-ui/dom@1.8.0)(@types/react-dom@18.3.7(@types/react@18.3.28))(@types/react@18.3.28)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(use-sync-external-store@1.6.0(react@18.3.1))':
     dependencies:
       '@dnd-kit/abstract': 0.4.0
       '@dnd-kit/dom': 0.4.0
