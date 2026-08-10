@@ -406,4 +406,51 @@ describe("puckConfig", () => {
     expect(ausrichtungText(null as never)).toBe("text-left");
     expect(ausrichtungFlex(null as never)).toBe("justify-start");
   });
+
+  it("Ueberschrift aligns its heading", () => {
+    const render = puckConfig.components.Ueberschrift?.render;
+    if (!render) throw new Error("Ueberschrift render missing");
+    const out = renderToStaticMarkup(
+      render({ text: "Titel", ebene: "h2", ausrichtung: "mittig", puck: {} } as never) as never,
+    );
+    expect(out).toContain("text-center");
+    expect(out).toContain("Titel");
+  });
+
+  it("Ueberschrift renders left-aligned when the prop is absent", () => {
+    const render = puckConfig.components.Ueberschrift?.render;
+    if (!render) throw new Error("Ueberschrift render missing");
+    const out = renderToStaticMarkup(
+      render({ text: "Titel", ebene: "h3", puck: {} } as never) as never,
+    );
+    expect(out).toContain("text-left");
+  });
+
+  it("Absatz aligns its paragraph", () => {
+    const render = puckConfig.components.Absatz?.render;
+    if (!render) throw new Error("Absatz render missing");
+    const out = renderToStaticMarkup(
+      render({ text: "Ein Satz.", ausrichtung: "rechts", puck: {} } as never) as never,
+    );
+    expect(out).toContain("text-right");
+  });
+
+  it("Zitat aligns its text", () => {
+    const render = puckConfig.components.Zitat?.render;
+    if (!render) throw new Error("Zitat render missing");
+    const out = renderToStaticMarkup(
+      render({ text: "Ein Zitat", quelle: "BSR", ausrichtung: "mittig", puck: {} } as never) as never,
+    );
+    expect(out).toContain("text-center");
+    expect(out).toContain("<blockquote");
+  });
+
+  it("the three text blocks expose an Ausrichtung select", () => {
+    for (const name of ["Ueberschrift", "Absatz", "Zitat"] as const) {
+      const field = puckConfig.components[name]?.fields?.ausrichtung;
+      if (field?.type !== "select") throw new Error(`${name} needs an ausrichtung select`);
+      expect(field.options?.map((o) => o.value)).toEqual(["links", "mittig", "rechts"]);
+      expect(puckConfig.components[name]?.defaultProps?.ausrichtung).toBe("links");
+    }
+  });
 });
