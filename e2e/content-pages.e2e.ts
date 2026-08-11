@@ -103,6 +103,30 @@ test.describe("content pages", () => {
       await expect(link).toHaveAttribute("href", "https://bdaj.de");
       await expect(link).toHaveAttribute("rel", /noopener/);
     });
+
+    test("the canvas is framed in page chrome and the public page keeps one header", async ({
+      page,
+    }) => {
+      await deleteUserByEmail(FEDERAL_EMAIL);
+      await registerVerifyLogin(page, { email: FEDERAL_EMAIL, firstName: "Fed", lastName: "Eral" });
+
+      await page.goto("/ueber-uns/bdaj/bearbeiten");
+      const canvas = page.frameLocator("iframe");
+      // The chrome is decoration inside the canvas: it carries the visitor's
+      // entries, never the signed-in board member's account menu.
+      await expect(canvas.locator("header")).toHaveCount(1);
+      await expect(canvas.locator("footer")).toHaveCount(1);
+      await expect(canvas.getByText("Anmelden").first()).toBeVisible();
+      await expect(canvas.getByText("Mein Konto")).toHaveCount(0);
+
+      // The editor page itself still has exactly one header — the layout's. The
+      // canvas one lives in an iframe and cannot collide with it.
+      await expect(page.getByRole("banner")).toHaveCount(1);
+
+      await page.goto("/ueber-uns/bdaj");
+      await expect(page.getByRole("banner")).toHaveCount(1);
+      await expect(page.getByRole("contentinfo")).toHaveCount(1);
+    });
   });
 });
 
