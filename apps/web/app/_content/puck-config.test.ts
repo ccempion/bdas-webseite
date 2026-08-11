@@ -769,4 +769,31 @@ describe("puckConfig", () => {
     expect(out.root.props).toBeDefined();
     expect((out.root as { breite?: string }).breite).toBeUndefined();
   });
+  it("Fließtext wraps its content in a single element that can contain a float", () => {
+    const render = puckConfig.components.Fliesstext?.render;
+    if (!render) throw new Error("Fliesstext render missing");
+    const out = renderToStaticMarkup(
+      render({
+        inhalt: {
+          type: "doc",
+          content: [
+            {
+              type: "image",
+              attrs: { src: "https://cdn.test/a.jpg", alt: "x", breite: 50, umfluss: "links" },
+            },
+            { type: "paragraph", content: [{ type: "text", text: "Text daneben." }] },
+          ],
+        },
+        ausrichtung: "links",
+        puck: {},
+      } as never) as never,
+    );
+    // One wrapper around both the floated image and the text it wraps: they must
+    // share a formatting context for the wrap to happen at all, and that wrapper
+    // is what keeps the float from reaching the next Puck block.
+    expect(out).toMatch(/^<div class="text-left">/);
+    expect(out).toContain("sm:float-left");
+    expect(out).toContain("Text daneben.");
+    expect(out.endsWith("</div>")).toBe(true);
+  });
 });

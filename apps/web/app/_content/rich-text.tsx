@@ -1,5 +1,6 @@
 import React, { Fragment, type ReactNode } from "react";
 
+import { bildBreiteClass, normalizeBildBreite } from "./bild-breite";
 import { isExternalHref, safeHref } from "./href";
 
 type Mark = { type?: string; attrs?: Record<string, unknown> };
@@ -38,6 +39,30 @@ function applyMarks(value: string, marks: Mark[] | undefined): ReactNode {
   return node;
 }
 
+/** Whether body text flows past an inline image, and on which side.
+ *  `keine` is the default: an image that does not wrap sits on its own line.
+ *
+ *  Deliberately not called `Ausrichtung` — that is a different, shipped
+ *  concept on this surface (block-level `links | mittig | rechts`), and one
+ *  word for two things would be a trap. */
+export type Umfluss = "keine" | "links" | "rechts";
+
+/** Float only from `sm` up, with a gutter on the text side. A floated 25 %
+ *  image on a 380px phone would leave an unreadable ribbon of text beside it,
+ *  so below `sm` the image is full width and in flow — the same mobile rule
+ *  the `Bild` block takes. Literal strings; Tailwind never sees an
+ *  interpolated class. */
+const UMFLUSS_CLASS: Record<Umfluss, string> = {
+  keine: "",
+  links: "sm:float-left sm:mr-4 sm:mb-2",
+  rechts: "sm:float-right sm:ml-4 sm:mb-2",
+};
+
+export const umflussClass = (umfluss: Umfluss | undefined): string =>
+  umfluss !== undefined && Object.hasOwn(UMFLUSS_CLASS, umfluss)
+    ? UMFLUSS_CLASS[umfluss]
+    : UMFLUSS_CLASS.keine;
+
 function renderNode(node: Node): ReactNode {
   switch (node.type) {
     case "text":
@@ -54,6 +79,22 @@ function renderNode(node: Node): ReactNode {
       return <li>{renderChildren(node.content)}</li>;
     case "hardBreak":
       return <br />;
+    case "image": {
+      // Render-side allow-list on top of the editor side — defence in depth,
+      // the same reasoning as rich-text-config.ts. An unsafe or unparseable
+      // src renders nothing at all, exactly as an unsafe link href does.
+      const src = safeHref(String(node.attrs?.["src"] ?? ""));
+      if (!src) return null;
+      const breite = normalizeBildBreite(node.attrs?.["breite"]);
+      const umfluss = umflussClass(node.attrs?.["umfluss"] as Umfluss | undefined);
+      return (
+        <img
+          src={src}
+          alt={String(node.attrs?.["alt"] ?? "")}
+          className={`${bildBreiteClass(breite)} rounded-bdas${umfluss ? ` ${umfluss}` : ""}`}
+        />
+      );
+    }
     default:
       return <>{renderChildren(node.content)}</>;
   }

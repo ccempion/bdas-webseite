@@ -1,9 +1,37 @@
 "use client";
 
+import React from "react";
+
+import Image from "@tiptap/extension-image";
 import { EditorContent, useEditor, type Content } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 
+import { imageFileHandler } from "../_upload/editor-file-handler";
+import { BILD_BREITE_STUFEN } from "./bild-breite";
+import type { Umfluss } from "./rich-text";
 import { RICH_TEXT_STARTERKIT_CONFIG } from "./rich-text-config";
+
+/** Tiptap's Image, taught the three attributes `rich-text.tsx` renders from.
+ *  `breite` is a number on the shared scale — deliberately not the blog's
+ *  `"50%"` string, so both content-page surfaces read one lookup. */
+const InhaltsBild = Image.extend({
+  addAttributes() {
+    return {
+      ...this.parent?.(),
+      breite: { default: 100 },
+      umfluss: { default: "keine" },
+      alt: { default: "" },
+    };
+  },
+});
+
+const UMFLUSS_WAHL: ReadonlyArray<{ wert: Umfluss; label: string }> = [
+  { wert: "keine", label: "Kein Umfluss" },
+  // The label names where the *text* goes, which is what the author is
+  // choosing; `links` floats the image left and the text lands on its right.
+  { wert: "links", label: "Text rechts" },
+  { wert: "rechts", label: "Text links" },
+];
 
 // StarterKit v3 bundles Link and Underline; configure Link through it rather
 // than adding a second instance. Underline stays off — it was not available
@@ -13,6 +41,11 @@ const EXTENSIONS = [
     ...RICH_TEXT_STARTERKIT_CONFIG,
     underline: false,
     link: { openOnClick: false, autolink: false },
+  }),
+  InhaltsBild,
+  imageFileHandler({
+    endpoint: "/api/content/upload-url",
+    onError: (m) => window.alert(m),
   }),
 ];
 
@@ -100,6 +133,49 @@ export function RichTextField({
             else editor.chain().focus().extendMarkRange("link").setLink({ href: url }).run();
           }}
         />
+        <ToolbarButton
+          active={false}
+          label="Bild"
+          onClick={() => {
+            const url = window.prompt("Bild-URL (https://…)") ?? "";
+            if (url) editor.chain().focus().setImage({ src: url }).run();
+          }}
+        />
+        {editor.isActive("image") ? (
+          <>
+            <span className="self-center px-1 text-xs text-bdas-ink-muted">Bildbreite:</span>
+            {BILD_BREITE_STUFEN.map((stufe) => (
+              <ToolbarButton
+                key={stufe}
+                active={editor.getAttributes("image")["breite"] === stufe}
+                label={`${stufe} %`}
+                onClick={() =>
+                  editor.chain().focus().updateAttributes("image", { breite: stufe }).run()
+                }
+              />
+            ))}
+            <span className="self-center px-1 text-xs text-bdas-ink-muted">Textumfluss:</span>
+            {UMFLUSS_WAHL.map(({ wert, label }) => (
+              <ToolbarButton
+                key={wert}
+                active={editor.getAttributes("image")["umfluss"] === wert}
+                label={label}
+                onClick={() =>
+                  editor.chain().focus().updateAttributes("image", { umfluss: wert }).run()
+                }
+              />
+            ))}
+            <input
+              aria-label="Alt-Text (Barrierefreiheit)"
+              placeholder="Alt-Text (Barrierefreiheit)"
+              value={(editor.getAttributes("image")["alt"] as string | undefined) ?? ""}
+              onChange={(e) =>
+                editor.chain().focus().updateAttributes("image", { alt: e.target.value }).run()
+              }
+              className="rounded-bdas-sm border border-bdas-soft px-2 py-1 text-sm text-bdas-ink"
+            />
+          </>
+        ) : null}
       </div>
       <EditorContent editor={editor} />
     </div>
