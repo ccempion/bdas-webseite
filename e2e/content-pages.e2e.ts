@@ -119,9 +119,11 @@ test.describe("content pages", () => {
       await expect(canvas.getByText("Anmelden").first()).toBeVisible();
       await expect(canvas.getByText("Mein Konto")).toHaveCount(0);
 
-      // The editor page itself still has exactly one header — the layout's. The
-      // canvas one lives in an iframe and cannot collide with it.
-      await expect(page.getByRole("banner")).toHaveCount(1);
+      // The editor document carries two banner landmarks of its own — the
+      // layout's header and Puck's editor chrome — so counting them proves
+      // nothing. What matters is that the canvas chrome never escapes the
+      // iframe: only it carries the signed-out visitor's "Mitglied werden".
+      await expect(page.getByRole("banner").filter({ hasText: "Mitglied werden" })).toHaveCount(0);
 
       await page.goto("/ueber-uns/bdaj");
       await expect(page.getByRole("banner")).toHaveCount(1);
