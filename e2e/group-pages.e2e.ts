@@ -7,6 +7,7 @@ import { expect, test } from "@playwright/test";
 
 import {
   memberIdByEmail,
+  seedContentPage,
   seedEvent,
   seedGroup,
   seedRoleGrant,
@@ -137,4 +138,31 @@ test("the group page shows an upcoming published event under Kommende Events", a
   const eventLink = page.getByRole("link", { name: new RegExp(eventTitle) });
   await expect(eventLink).toBeVisible();
   await expect(eventLink).toHaveAttribute("href", `/events/${eventId}`);
+});
+
+test("a Bild saved at the old halbe Breite renders on the numeric scale", async ({ page }) => {
+  const slug = uniqueSlug("e2e-bildbreite");
+  await seedGroup({ slug, name: "E2E Bildgruppe", city: "Teststadt" });
+  // Written the way the editor wrote it before 2026-08-11: a string width, and
+  // a root with no `breite` at all.
+  await seedContentPage(`gruppen/${slug}`, {
+    root: {},
+    content: [
+      {
+        type: "Bild",
+        props: {
+          id: "Bild-legacy",
+          bild: "https://cdn.test/legacy.jpg",
+          altText: "Altes Bild",
+          bildunterschrift: "",
+          breite: "halb",
+        },
+      },
+    ],
+  });
+
+  await page.goto(`/gruppen/${slug}`);
+  const figure = page.locator("figure", { has: page.getByAltText("Altes Bild") });
+  await expect(figure).toHaveClass(/\bsm:w-1\/2\b/);
+  await expect(figure).not.toHaveClass(/\bsm:max-w-md\b/);
 });

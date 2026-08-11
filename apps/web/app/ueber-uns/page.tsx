@@ -8,7 +8,7 @@ import { getDb } from "@bdas/db";
 import { isFlagOn } from "@bdas/feature-flags";
 import { isFederalBoard } from "@bdas/members";
 
-import { puckConfig } from "../_content/puck-config";
+import { normalizeContent, puckConfig } from "../_content/puck-config";
 import { loadCurrentMember } from "../_dashboard/session";
 import { requirePublicShellFlag } from "../_public/flag";
 
@@ -44,7 +44,7 @@ export default async function KurzportraitPage() {
         ) : null}
       </div>
       {page ? (
-        <Render config={puckConfig} data={page.data as Data} />
+        <Render config={puckConfig} data={normalizeContent(page.data as Data, "schmal")} />
       ) : (
         <>
           {/* Platzhaltertext — bearbeitbar durch den Bundessprecher*innenrat (Spec §8). */}

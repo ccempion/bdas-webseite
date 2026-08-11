@@ -8,7 +8,7 @@ import { getDb } from "@bdas/db";
 import { isFlagOn } from "@bdas/feature-flags";
 import { isFederalBoard } from "@bdas/members";
 
-import { breiteClass, puckConfig, withBreite } from "../../_content/puck-config";
+import { breiteClass, normalizeContent, puckConfig } from "../../_content/puck-config";
 import { loadCurrentMember } from "../../_dashboard/session";
 import { requirePublicShellFlag } from "../../_public/flag";
 
@@ -50,7 +50,7 @@ export default async function VerbandsstrukturPage() {
       </div>
       {page ? (
         <div className="mt-6">
-          <Render config={puckConfig} data={withBreite(page.data as Data, "breit")} />
+          <Render config={puckConfig} data={normalizeContent(page.data as Data, "breit")} />
         </div>
       ) : null}
     </main>

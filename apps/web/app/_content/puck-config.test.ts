@@ -1,9 +1,10 @@
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 
+import type { Data } from "@puckeditor/core";
 import { describe, expect, it } from "vitest";
 
-import { ausrichtungFlex, ausrichtungText, puckConfig } from "./puck-config";
+import { ausrichtungFlex, ausrichtungText, normalizeContent, puckConfig } from "./puck-config";
 
 describe("puckConfig", () => {
   it("keeps the legacy Absatz and PersonenRaster blocks", () => {
@@ -499,7 +500,7 @@ describe("puckConfig", () => {
         bild: "https://cdn.test/x.jpg",
         altText: "Gruppenfoto",
         bildunterschrift: "Unterschrift",
-        breite: "halb",
+        breite: 50,
         ausrichtung: "mittig",
         puck: {},
       } as never) as never,
@@ -509,12 +510,88 @@ describe("puckConfig", () => {
     expect(out).toContain('alt="Gruppenfoto"');
     // Element-scoped: the wrapper must carry justify-center and only the
     // figcaption must carry text-center, so a swap between ausrichtungFlex
-    // and ausrichtungText on the wrong element would fail this.
-    expect(out).toMatch(/<div class="flex justify-center">/);
+    // and ausrichtungText on the wrong element would fail this. The class
+    // value is still pinned exactly; the element just carries attributes
+    // after it now (`data-bild-rahmen`).
+    expect(out).toMatch(/<div class="flex justify-center"[ >]/);
     expect(out).toMatch(/<figcaption class="[^"]*\btext-center\b[^"]*">/);
   });
 
-  it("Bild at halber Breite keeps an explicit width so it does not shrink-wrap", () => {
+  it("Bild below full width keeps an explicit width so it does not shrink-wrap", () => {
+    const render = puckConfig.components.Bild?.render;
+    if (!render) throw new Error("Bild render missing");
+    const out = renderToStaticMarkup(
+      render({
+        bild: "https://cdn.test/x.jpg",
+        altText: "a",
+        bildunterschrift: "",
+        breite: 50,
+        ausrichtung: "links",
+        puck: {},
+      } as never) as never,
+    );
+    // `w-full` under the alignment wrapper, narrowed from `sm` up. Without the
+    // explicit width the figure shrink-wraps to the image's intrinsic size.
+    expect(out).toMatch(/<figure class="[^"]*\bw-full\b[^"]*\bsm:w-1\/2\b/);
+  });
+
+  it("Bild offers the four width steps as numbers", () => {
+    const breite = puckConfig.components.Bild?.fields?.breite;
+    if (breite?.type !== "select") throw new Error("breite must be a select field");
+    expect(breite.options.map((o) => o.value)).toEqual([25, 50, 75, 100]);
+    expect(breite.options.map((o) => o.label)).toEqual(["25 %", "50 %", "75 %", "100 %"]);
+  });
+
+  it("a new Bild is full width", () => {
+    expect(puckConfig.components.Bild?.defaultProps?.breite).toBe(100);
+  });
+
+  it("Bild renders the width class for each step", () => {
+    const render = puckConfig.components.Bild?.render;
+    if (!render) throw new Error("Bild render missing");
+    const figureClass = (breite: number) => {
+      const out = renderToStaticMarkup(
+        render({
+          bild: "https://cdn.test/x.jpg",
+          altText: "a",
+          bildunterschrift: "",
+          breite,
+          ausrichtung: "links",
+          puck: {},
+        } as never) as never,
+      );
+      return out.match(/<figure class="([^"]*)"/)?.[1] ?? "";
+    };
+    // Matched by containment, not equality: Task 4 adds `relative` to this same
+    // element, and an exact-string assertion would break on a change that has
+    // nothing to do with width.
+    expect(figureClass(25)).toMatch(/\bw-full\b.*\bsm:w-1\/4\b/);
+    expect(figureClass(50)).toMatch(/\bw-full\b.*\bsm:w-1\/2\b/);
+    expect(figureClass(75)).toMatch(/\bw-full\b.*\bsm:w-3\/4\b/);
+    expect(figureClass(100)).toMatch(/\bw-full\b/);
+    expect(figureClass(100)).not.toMatch(/\bsm:w-/);
+  });
+
+  it("Bild ships no resize handle to the public page", () => {
+    const render = puckConfig.components.Bild?.render;
+    if (!render) throw new Error("Bild render missing");
+    const out = renderToStaticMarkup(
+      render({
+        id: "bild-1",
+        bild: "https://cdn.test/x.jpg",
+        altText: "a",
+        bildunterschrift: "",
+        breite: 50,
+        ausrichtung: "links",
+        puck: { isEditing: false },
+      } as never) as never,
+    );
+    expect(out).not.toContain("data-bild-groesse-griff");
+  });
+
+  it("a Bild saved before the numeric scale still renders full width", () => {
+    // The migration runs in normalizeContent, but the render must not blow up on
+    // an unmigrated prop bag either — the structural sweep passes none at all.
     const render = puckConfig.components.Bild?.render;
     if (!render) throw new Error("Bild render missing");
     const out = renderToStaticMarkup(
@@ -527,7 +604,8 @@ describe("puckConfig", () => {
         puck: {},
       } as never) as never,
     );
-    expect(out).toMatch(/<figure class="[^"]*\bw-full\b[^"]*\bsm:max-w-md\b/);
+    expect(out).toMatch(/<figure class="[^"]*\bw-full\b/);
+    expect(out).not.toMatch(/\bsm:w-/);
   });
 
   it("Bild does not align its placeholder", () => {
@@ -639,5 +717,56 @@ describe("puckConfig", () => {
         expect(out, `${name} must carry ${klasse} for a legacy document`).toContain(klasse);
       }
     }
+  });
+
+  it("normalizeContent seeds the root width when the document has none", () => {
+    const data = { content: [], root: {} } as unknown as Data;
+    const out = normalizeContent(data, "breit");
+    expect((out.root.props as { breite?: string }).breite).toBe("breit");
+  });
+
+  it("normalizeContent keeps a width the document already carries", () => {
+    const data = { content: [], root: { props: { breite: "schmal" } } } as unknown as Data;
+    const out = normalizeContent(data, "breit");
+    expect((out.root.props as { breite?: string }).breite).toBe("schmal");
+  });
+
+  it("normalizeContent migrates legacy Bild widths onto the numeric scale", () => {
+    const data = {
+      content: [
+        { type: "Bild", props: { id: "a", bild: "x.jpg", breite: "voll" } },
+        { type: "Bild", props: { id: "b", bild: "y.jpg", breite: "halb" } },
+        { type: "Bild", props: { id: "c", bild: "z.jpg" } },
+      ],
+      root: {},
+    } as unknown as Data;
+
+    const breiten = normalizeContent(data, "schmal").content.map(
+      (item) => (item.props as { breite?: unknown }).breite,
+    );
+    expect(breiten).toEqual([100, 50, 100]);
+  });
+
+  it("normalizeContent leaves a document's other blocks and ids alone", () => {
+    const data = {
+      content: [
+        { type: "Bild", props: { id: "a", bild: "x.jpg", altText: "Foto", breite: "halb" } },
+        { type: "Absatz", props: { id: "b", text: "Ein Satz." } },
+      ],
+      root: {},
+    } as unknown as Data;
+
+    const out = normalizeContent(data, "schmal");
+    expect(out.content[0]?.props).toMatchObject({ id: "a", altText: "Foto", breite: 50 });
+    expect(out.content[1]?.props).toEqual({ id: "b", text: "Ein Satz." });
+  });
+
+  it("normalizeContent keeps root under a props key, never the legacy flat shape", () => {
+    // transformProps unwraps root to root.props when the incoming root has no
+    // props key. Seeding the width first is what stops that from happening.
+    const data = { content: [], root: {} } as unknown as Data;
+    const out = normalizeContent(data, "schmal");
+    expect(out.root.props).toBeDefined();
+    expect((out.root as { breite?: string }).breite).toBeUndefined();
   });
 });

@@ -8,7 +8,7 @@ import { getDb } from "@bdas/db";
 import { isFlagOn } from "@bdas/feature-flags";
 import { isFederalBoard } from "@bdas/members";
 
-import { breiteClass, puckConfig, withBreite } from "../_content/puck-config";
+import { breiteClass, normalizeContent, puckConfig } from "../_content/puck-config";
 import { loadCurrentMember } from "../_dashboard/session";
 
 export const dynamic = "force-dynamic";
@@ -49,7 +49,7 @@ export default async function ImpressumPage() {
       </div>
       {page ? (
         <div className="mt-6">
-          <Render config={puckConfig} data={withBreite(page.data as Data, "schmal")} />
+          <Render config={puckConfig} data={normalizeContent(page.data as Data, "schmal")} />
         </div>
       ) : null}
     </main>
