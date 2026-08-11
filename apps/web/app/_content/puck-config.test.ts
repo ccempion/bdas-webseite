@@ -2,7 +2,15 @@ import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 
 import type { Data } from "@puckeditor/core";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+
+// The canvas chrome pulls in the footer view, which renders the logo through
+// next/image; Vite resolves that import to a URL string and next/image then
+// demands an explicit width. The logo is not what these tests are about.
+vi.mock("next/image", () => ({
+  default: ({ alt, className }: { alt: string; className?: string }) =>
+    React.createElement("img", { alt, className }),
+}));
 
 import { ausrichtungFlex, ausrichtungText, normalizeContent, puckConfig } from "./puck-config";
 
@@ -795,5 +803,83 @@ describe("puckConfig", () => {
     expect(out).toContain("sm:float-left");
     expect(out).toContain("Text daneben.");
     expect(out.endsWith("</div>")).toBe(true);
+  });
+  it("root renders no page chrome outside the editor", () => {
+    const render = puckConfig.root?.render;
+    if (!render) throw new Error("root render missing");
+    const out = renderToStaticMarkup(
+      render({
+        breite: "schmal",
+        children: React.createElement("p", null, "Inhalt"),
+        puck: { isEditing: false, metadata: { chrome: { events: true, groups: true } } },
+      } as never) as never,
+    );
+    expect(out).toContain("Inhalt");
+    // A visitor must never get a second header: the layout already renders one.
+    expect(out).not.toContain("<header");
+    expect(out).not.toContain("<footer");
+  });
+
+  it("root frames the column in visitor chrome inside the editor", () => {
+    const render = puckConfig.root?.render;
+    if (!render) throw new Error("root render missing");
+    const out = renderToStaticMarkup(
+      render({
+        breite: "schmal",
+        children: React.createElement("p", null, "Inhalt"),
+        puck: { isEditing: true, metadata: { chrome: { events: true, groups: true } } },
+      } as never) as never,
+    );
+    expect(out).toContain("<header");
+    expect(out).toContain("<footer");
+    expect(out).toContain("Inhalt");
+    // The visitor's header, not the board member's.
+    expect(out).toContain("Anmelden");
+    expect(out).not.toContain("Mein Konto");
+  });
+
+  it("the canvas chrome is inert and hidden from assistive tech", () => {
+    const render = puckConfig.root?.render;
+    if (!render) throw new Error("root render missing");
+    const out = renderToStaticMarkup(
+      render({
+        breite: "schmal",
+        children: React.createElement("p", null, "Inhalt"),
+        puck: { isEditing: true, metadata: { chrome: { events: false, groups: false } } },
+      } as never) as never,
+    );
+    // Without pointer-events-none a stray click on a nav link navigates the
+    // iframe away and the board loses the editor.
+    expect(out).toMatch(/pointer-events-none/);
+    expect(out).toMatch(/aria-hidden/);
+  });
+
+  it("the canvas footer honours the chrome flags it is given", () => {
+    const render = puckConfig.root?.render;
+    if (!render) throw new Error("root render missing");
+    const mit = renderToStaticMarkup(
+      render({
+        breite: "schmal",
+        children: null,
+        puck: { isEditing: true, metadata: { chrome: { events: true, groups: false } } },
+      } as never) as never,
+    );
+    expect(mit).toContain('href="/events"');
+    expect(mit).not.toContain('href="/gruppen"');
+  });
+
+  it("root survives an editor session with no chrome metadata", () => {
+    // Defensive: a route that forgot the prop must degrade to no chrome, not a
+    // crashed canvas.
+    const render = puckConfig.root?.render;
+    if (!render) throw new Error("root render missing");
+    const out = renderToStaticMarkup(
+      render({
+        breite: "schmal",
+        children: React.createElement("p", null, "Inhalt"),
+        puck: { isEditing: true, metadata: {} },
+      } as never) as never,
+    );
+    expect(out).toContain("Inhalt");
   });
 });
