@@ -9,6 +9,7 @@ import { isFlagOn } from "@bdas/feature-flags";
 import { getGroupBySlug } from "@bdas/groups";
 import { canEditGroupPage } from "@bdas/members";
 
+import { canvasChrome } from "../../../_content/canvas-chrome";
 import { PuckEditor } from "../../../_content/PuckEditor";
 import { loadCurrentMember } from "../../../_dashboard/session";
 
@@ -34,11 +35,5 @@ export default async function GruppeBearbeitenPage({ params }: { params: { slug:
   const page = await getPage(getDb(), slug);
   const initialData = (page?.data ?? { root: { props: {} }, content: [] }) as Data;
 
-  return (
-    <PuckEditor
-      slug={slug}
-      initialData={initialData}
-      chrome={{ events: isFlagOn("events"), groups: isFlagOn("groups") }}
-    />
-  );
+  return <PuckEditor slug={slug} initialData={initialData} chrome={canvasChrome()} />;
 }

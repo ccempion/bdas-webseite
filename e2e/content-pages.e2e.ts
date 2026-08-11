@@ -116,7 +116,10 @@ test.describe("content pages", () => {
       // entries, never the signed-in board member's account menu.
       await expect(canvas.locator("header")).toHaveCount(1);
       await expect(canvas.locator("footer")).toHaveCount(1);
-      await expect(canvas.getByText("Anmelden").first()).toBeVisible();
+      // Presence, not visibility: the desktop nav is `hidden md:flex` and the
+      // canvas is the viewport minus Puck's two user-resizable sidebars, so
+      // whether these are on screen is not something this test controls.
+      await expect(canvas.getByText("Anmelden").first()).toBeAttached();
       await expect(canvas.getByText("Mein Konto")).toHaveCount(0);
 
       // The editor document carries two banner landmarks of its own — the
