@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, type ReactNode } from "react";
+import React, { useEffect, useRef, type ReactNode } from "react";
 
 /**
  * Behavioural wrapper for the desktop nav's `<details>` dropdowns. Native

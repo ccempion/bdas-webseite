@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { useState, type ReactNode } from "react";
+import React, { useState, type ReactNode } from "react";
 
 /**
  * Behavioural wrapper for the mobile "Menü" disclosure: the menu closes when
