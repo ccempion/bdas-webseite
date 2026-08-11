@@ -8,6 +8,7 @@ import { getDb } from "@bdas/db";
 import { isFlagOn } from "@bdas/feature-flags";
 import { isFederalBoard } from "@bdas/members";
 
+import { canvasChrome } from "../../../_content/canvas-chrome";
 import { PuckEditor } from "../../../_content/PuckEditor";
 import { loadCurrentMember } from "../../../_dashboard/session";
 
@@ -35,7 +36,7 @@ export default async function BsrBearbeitenPage() {
       slug={SLUG}
       initialData={initialData}
       defaultBreite="breit"
-      chrome={{ events: isFlagOn("events"), groups: isFlagOn("groups") }}
+      chrome={canvasChrome()}
     />
   );
 }
