@@ -34,5 +34,11 @@ export default async function GruppeBearbeitenPage({ params }: { params: { slug:
   const page = await getPage(getDb(), slug);
   const initialData = (page?.data ?? { root: { props: {} }, content: [] }) as Data;
 
-  return <PuckEditor slug={slug} initialData={initialData} />;
+  return (
+    <PuckEditor
+      slug={slug}
+      initialData={initialData}
+      chrome={{ events: isFlagOn("events"), groups: isFlagOn("groups") }}
+    />
+  );
 }
