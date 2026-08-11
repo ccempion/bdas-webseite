@@ -17,10 +17,16 @@ export function PuckEditor({
   slug,
   initialData,
   defaultBreite = "schmal",
+  chrome,
 }: {
   slug: string;
   initialData: Data;
   defaultBreite?: Breite;
+  /** Flag values the canvas chrome's footer needs. Read on the server by each
+   *  /bearbeiten route — the canvas is a client tree and cannot read flags.
+   *  Required, so a route that forgets it is a typecheck failure rather than a
+   *  canvas footer with silently wrong links. */
+  chrome: { events: boolean; groups: boolean };
 }) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
@@ -39,6 +45,7 @@ export function PuckEditor({
       <Puck
         config={puckConfig}
         data={data}
+        metadata={{ chrome }}
         headerTitle="BDAS Editor"
         headerPath={`/${slug}`}
         onPublish={async (data: Data) => {

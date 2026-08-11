@@ -3,6 +3,9 @@ import React from "react";
 
 import { Card } from "@bdas/design-system";
 
+import { navItems } from "../_public/nav-items";
+import { PublicFooterView } from "../_public/PublicFooterView";
+import { PublicHeaderView } from "../_public/PublicHeaderView";
 import { type BildBreite, bildBreiteClass, normalizeBildBreite } from "./bild-breite";
 import { BildGroesseGriff } from "./BildGroesseGriff";
 import { FotoField } from "./FotoField";
@@ -144,9 +147,34 @@ export const puckConfig: Config<Blocks> = {
   root: {
     render: ({ children, ...props }) => {
       const breite = ((props as unknown as { breite?: Breite }).breite ?? "schmal") as Breite;
-      return (
+      const puck = (props as unknown as { puck?: { isEditing?: boolean; metadata?: unknown } })
+        .puck;
+      const spalte = (
         <div className={`mx-auto flex w-full flex-col gap-6 px-4 ${breiteClass(breite)}`}>
           {children}
+        </div>
+      );
+      if (!puck?.isEditing) return spalte;
+
+      // Editor only. `<Render>` never sets isEditing, so a visitor cannot get a
+      // second header — the layout already renders one.
+      const chrome = (puck.metadata as { chrome?: { events: boolean; groups: boolean } })?.chrome;
+      return (
+        <div className="flex min-h-full flex-col">
+          {/* Decoration, not navigation: a click on a nav link would navigate
+              the canvas iframe away and the board would lose the editor. */}
+          <div aria-hidden className="pointer-events-none">
+            <PublicHeaderView items={navItems({ isLoggedIn: false })} konto={null} />
+          </div>
+          <div className="flex-1 py-12">{spalte}</div>
+          <div aria-hidden className="pointer-events-none">
+            <PublicFooterView
+              privacyUrl="/datenschutz"
+              imprintUrl="/impressum"
+              showEvents={chrome?.events ?? false}
+              showGroups={chrome?.groups ?? false}
+            />
+          </div>
         </div>
       );
     },

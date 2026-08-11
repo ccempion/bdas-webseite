@@ -34,5 +34,11 @@ export default async function ImpressumBearbeitenPage() {
   const page = await getPage(getDb(), SLUG);
   const initialData = (page?.data ?? { root: { props: {} }, content: [] }) as Data;
 
-  return <PuckEditor slug={SLUG} initialData={initialData} />;
+  return (
+    <PuckEditor
+      slug={SLUG}
+      initialData={initialData}
+      chrome={{ events: isFlagOn("events"), groups: isFlagOn("groups") }}
+    />
+  );
 }
