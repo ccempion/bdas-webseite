@@ -1,6 +1,6 @@
 "use client";
 
-import { useContext, useRef, useState } from "react";
+import React, { useContext, useRef, useState } from "react";
 
 import { DropZone } from "../_upload/DropZone";
 import { CONTENT_IMAGE, IMAGE_ACCEPT } from "../_upload/accept";

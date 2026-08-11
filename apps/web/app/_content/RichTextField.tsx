@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useContext, useMemo } from "react";
 
 import Image from "@tiptap/extension-image";
 import { EditorContent, useEditor, type Content } from "@tiptap/react";
@@ -8,6 +8,7 @@ import StarterKit from "@tiptap/starter-kit";
 
 import { imageFileHandler } from "../_upload/editor-file-handler";
 import { BILD_BREITE_STUFEN } from "./bild-breite";
+import { ContentSlugContext } from "./content-slug-context";
 import type { Umfluss } from "./rich-text";
 import { RICH_TEXT_STARTERKIT_CONFIG } from "./rich-text-config";
 
@@ -36,18 +37,25 @@ const UMFLUSS_WAHL: ReadonlyArray<{ wert: Umfluss; label: string }> = [
 // StarterKit v3 bundles Link and Underline; configure Link through it rather
 // than adding a second instance. Underline stays off — it was not available
 // under v2 and the migration does not change what authors can produce.
-const EXTENSIONS = [
-  StarterKit.configure({
-    ...RICH_TEXT_STARTERKIT_CONFIG,
-    underline: false,
-    link: { openOnClick: false, autolink: false },
-  }),
-  InhaltsBild,
-  imageFileHandler({
-    endpoint: "/api/content/upload-url",
-    onError: (m) => window.alert(m),
-  }),
-];
+//
+// Built per-slug rather than once at module scope: the signing route reads the
+// content slug to authorize a group lead, so the file handler has to close over
+// it. See `content-slug-context.ts`.
+function extensionsFor(slug: string) {
+  return [
+    StarterKit.configure({
+      ...RICH_TEXT_STARTERKIT_CONFIG,
+      underline: false,
+      link: { openOnClick: false, autolink: false },
+    }),
+    InhaltsBild,
+    imageFileHandler({
+      endpoint: "/api/content/upload-url",
+      onError: (m) => window.alert(m),
+      extra: { slug },
+    }),
+  ];
+}
 
 const EMPTY_DOC = { type: "doc", content: [{ type: "paragraph" }] };
 
@@ -84,8 +92,11 @@ export function RichTextField({
   value: unknown;
   onChange: (doc: unknown) => void;
 }) {
+  const slug = useContext(ContentSlugContext);
+  // Memoized so a re-render does not hand useEditor a fresh extension array.
+  const extensions = useMemo(() => extensionsFor(slug), [slug]);
   const editor = useEditor({
-    extensions: EXTENSIONS,
+    extensions,
     content: (value as Content) ?? EMPTY_DOC,
     immediatelyRender: false,
     onUpdate: ({ editor }) => onChange(editor.getJSON()),

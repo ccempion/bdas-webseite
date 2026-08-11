@@ -23,10 +23,11 @@ async function insert(
   files: readonly File[],
   onError: (message: string) => void,
   pos: number | null,
+  extra?: Record<string, unknown>,
 ): Promise<void> {
   let at = pos;
   for (const file of files) {
-    const out = await uploadImage<{ uploadUrl: string; publicUrl: string }>(endpoint, file);
+    const out = await uploadImage<{ uploadUrl: string; publicUrl: string }>(endpoint, file, extra);
     if ("error" in out) {
       onError(out.error);
       continue;
@@ -42,6 +43,10 @@ async function insert(
 export function imageFileHandler(opts: {
   endpoint: string;
   onError: (message: string) => void;
+  /** Extra fields for the signing request. The content route authorizes a
+   *  group lead by the `slug` it finds here; without it the request reads as a
+   *  federal page and a lead is rejected. The blog route needs none. */
+  extra?: Record<string, unknown>;
 }): Extension {
   const take = (files: File[]): readonly File[] => {
     const { accepted, rejected } = intakeFiles(files, CONTENT_IMAGE);
@@ -55,11 +60,13 @@ export function imageFileHandler(opts: {
     consumePasteEvent: true,
     onDrop: (editor, files, pos) => {
       const accepted = take(files);
-      if (accepted.length > 0) void insert(editor, opts.endpoint, accepted, opts.onError, pos);
+      if (accepted.length > 0)
+        void insert(editor, opts.endpoint, accepted, opts.onError, pos, opts.extra);
     },
     onPaste: (editor, files) => {
       const accepted = take(files);
-      if (accepted.length > 0) void insert(editor, opts.endpoint, accepted, opts.onError, null);
+      if (accepted.length > 0)
+        void insert(editor, opts.endpoint, accepted, opts.onError, null, opts.extra);
     },
   });
 }

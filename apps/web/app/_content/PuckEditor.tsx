@@ -5,11 +5,12 @@ import "@puckeditor/core/puck.css";
 import { Puck, type Data } from "@puckeditor/core";
 import type { Route } from "next";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
 
 import { Alert } from "@bdas/design-system";
 
 import type { CanvasChrome } from "./canvas-chrome";
+import { ContentSlugContext } from "./content-slug-context";
 import { type Breite, normalizeContent, puckConfig } from "./puck-config";
 
 /** Full-page Puck editor. Publish = save-is-live (spec §1): PUT the document,
@@ -47,28 +48,34 @@ export function PuckEditor({
           {error}
         </Alert>
       ) : null}
-      <Puck
-        config={puckConfig}
-        data={data}
-        metadata={metadata}
-        headerTitle="BDAS Editor"
-        headerPath={`/${slug}`}
-        onPublish={async (data: Data) => {
-          setError(null);
-          const res = await fetch(`/api/content/pages/${slug}`, {
-            method: "PUT",
-            headers: { "content-type": "application/json" },
-            body: JSON.stringify({ data }),
-          });
-          if (!res.ok) {
-            const body = (await res.json().catch(() => ({}))) as { error?: string };
-            setError(body.error ?? "Speichern fehlgeschlagen.");
-            return;
-          }
-          router.push(`/${slug}` as Route);
-          router.refresh();
-        }}
-      />
+      {/* Every upload surface inside the editor sends this slug so the signing
+          route can authorize a group lead or page_editor: without it the route
+          sees no `gruppen/<slug>` scope, falls back to federal-board-only, and
+          answers a lead with "Keine Berechtigung." */}
+      <ContentSlugContext.Provider value={slug}>
+        <Puck
+          config={puckConfig}
+          data={data}
+          metadata={metadata}
+          headerTitle="BDAS Editor"
+          headerPath={`/${slug}`}
+          onPublish={async (data: Data) => {
+            setError(null);
+            const res = await fetch(`/api/content/pages/${slug}`, {
+              method: "PUT",
+              headers: { "content-type": "application/json" },
+              body: JSON.stringify({ data }),
+            });
+            if (!res.ok) {
+              const body = (await res.json().catch(() => ({}))) as { error?: string };
+              setError(body.error ?? "Speichern fehlgeschlagen.");
+              return;
+            }
+            router.push(`/${slug}` as Route);
+            router.refresh();
+          }}
+        />
+      </ContentSlugContext.Provider>
     </div>
   );
 }
