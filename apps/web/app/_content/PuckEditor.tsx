@@ -9,6 +9,7 @@ import { useMemo, useState } from "react";
 
 import { Alert } from "@bdas/design-system";
 
+import type { CanvasChrome } from "./canvas-chrome";
 import { type Breite, normalizeContent, puckConfig } from "./puck-config";
 
 /** Full-page Puck editor. Publish = save-is-live (spec §1): PUT the document,
@@ -22,11 +23,11 @@ export function PuckEditor({
   slug: string;
   initialData: Data;
   defaultBreite?: Breite;
-  /** Flag values the canvas chrome's footer needs. Read on the server by each
-   *  /bearbeiten route — the canvas is a client tree and cannot read flags.
-   *  Required, so a route that forgets it is a typecheck failure rather than a
-   *  canvas footer with silently wrong links. */
-  chrome: { events: boolean; groups: boolean };
+  /** Everything the canvas chrome needs, derived on the server by
+   *  `canvasChrome()` — the canvas is a client tree and cannot read flags.
+   *  Required, so a route that forgets it is a typecheck failure rather than
+   *  canvas chrome with silently wrong links. */
+  chrome: CanvasChrome;
 }) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
@@ -34,6 +35,10 @@ export function PuckEditor({
     () => normalizeContent(initialData, defaultBreite),
     [initialData, defaultBreite],
   );
+  // Puck treats a new `metadata` identity as a change signal and re-renders the
+  // whole canvas tree; `setError` in onPublish would otherwise do that on every
+  // failed save.
+  const metadata = useMemo(() => ({ chrome }), [chrome]);
 
   return (
     <div className="min-h-screen">
@@ -45,7 +50,7 @@ export function PuckEditor({
       <Puck
         config={puckConfig}
         data={data}
-        metadata={{ chrome }}
+        metadata={metadata}
         headerTitle="BDAS Editor"
         headerPath={`/${slug}`}
         onPublish={async (data: Data) => {

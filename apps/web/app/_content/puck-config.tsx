@@ -3,9 +3,10 @@ import React from "react";
 
 import { Card } from "@bdas/design-system";
 
-import { navItems } from "../_public/nav-items";
+import { legalUrls } from "../../lib/legal";
 import { PublicFooterView } from "../_public/PublicFooterView";
 import { PublicHeaderView } from "../_public/PublicHeaderView";
+import type { CanvasChrome } from "./canvas-chrome";
 import { type BildBreite, bildBreiteClass, normalizeBildBreite } from "./bild-breite";
 import { BildGroesseGriff } from "./BildGroesseGriff";
 import { FotoField } from "./FotoField";
@@ -98,6 +99,22 @@ export const ausrichtungFlex = (a: Ausrichtung | undefined): string =>
     ? AUSRICHTUNG_FLEX[a]
     : AUSRICHTUNG_FLEX.links;
 
+/** Marks the canvas chrome as decoration: not focusable, not in the
+ *  accessibility tree, not clickable.
+ *
+ *  The empty string is deliberate and the cast goes with it. `@types/react`
+ *  18.3 types `inert` as a boolean, but React 18's DOM renderer has no special
+ *  handling for it and *drops* `inert={true}` with "Received `true` for a
+ *  non-boolean attribute" — verified, it emits a bare `<div>`. `inert=""` is
+ *  the canonical HTML boolean attribute and is what actually reaches the DOM.
+ *  Revisit on the React 19 upgrade, which renders the boolean form properly.
+ *
+ *  `pointer-events-none` stays as the fallback for browsers without `inert`. */
+const INERT = {
+  inert: "",
+  className: "pointer-events-none",
+} as unknown as React.ComponentProps<"div">;
+
 const ausrichtungField = {
   type: "select" as const,
   label: "Ausrichtung",
@@ -158,19 +175,33 @@ export const puckConfig: Config<Blocks> = {
 
       // Editor only. `<Render>` never sets isEditing, so a visitor cannot get a
       // second header — the layout already renders one.
-      const chrome = (puck.metadata as { chrome?: { events: boolean; groups: boolean } })?.chrome;
+      //
+      // Everything here comes from metadata rather than being derived on the
+      // spot: this runs in the browser, where `isFlagOn` reads a computed
+      // `process.env` key that Next cannot inline, so every flag would read
+      // false. See `canvas-chrome.ts`.
+      const chrome = (puck.metadata as { chrome?: CanvasChrome })?.chrome;
+      const { privacy, imprint } = legalUrls();
       return (
-        <div className="flex min-h-full flex-col">
-          {/* Decoration, not navigation: a click on a nav link would navigate
-              the canvas iframe away and the board would lose the editor. */}
-          <div aria-hidden className="pointer-events-none">
-            <PublicHeaderView items={navItems({ isLoggedIn: false })} konto={null} />
+        // `min-h-screen`, not `min-h-full`: `min-height: 100%` needs a definite
+        // containing-block height, which the Puck iframe root does not set, so
+        // the footer would float under short pages instead of sitting at the
+        // bottom as it does on the real page.
+        <div className="flex min-h-screen flex-col">
+          {/* Decoration, not navigation. `inert` and not merely
+              `pointer-events-none`: that stops the mouse but not the keyboard,
+              and tabbing onto a nav link and pressing Enter would navigate the
+              canvas iframe away and the board would lose the editor. `inert`
+              also implies aria-hidden without leaving focusable controls behind
+              it, which is the `aria-hidden-focus` violation. */}
+          <div {...INERT}>
+            <PublicHeaderView items={chrome?.navItems ?? []} konto={null} />
           </div>
           <div className="flex-1 py-12">{spalte}</div>
-          <div aria-hidden className="pointer-events-none">
+          <div {...INERT}>
             <PublicFooterView
-              privacyUrl="/datenschutz"
-              imprintUrl="/impressum"
+              privacyUrl={privacy}
+              imprintUrl={imprint}
               showEvents={chrome?.events ?? false}
               showGroups={chrome?.groups ?? false}
             />

@@ -12,7 +12,18 @@ vi.mock("next/image", () => ({
     React.createElement("img", { alt, className }),
 }));
 
+import { legalUrls } from "../../lib/legal";
 import { ausrichtungFlex, ausrichtungText, normalizeContent, puckConfig } from "./puck-config";
+
+/** The nav the server derives and passes through metadata. Flags are off in the
+ *  test environment, so this is deliberately richer than anything `navItems()`
+ *  would produce here — which is the point: the canvas must render what it is
+ *  given, not re-derive it. */
+const CHROME_NAV = [
+  { label: "Unsere Arbeit", href: "/unsere-arbeit" },
+  { label: "Events", href: "/events" },
+  { label: "Blog", href: "/blog" },
+];
 
 describe("puckConfig", () => {
   it("keeps the legacy Absatz and PersonenRaster blocks", () => {
@@ -811,7 +822,10 @@ describe("puckConfig", () => {
       render({
         breite: "schmal",
         children: React.createElement("p", null, "Inhalt"),
-        puck: { isEditing: false, metadata: { chrome: { events: true, groups: true } } },
+        puck: {
+          isEditing: false,
+          metadata: { chrome: { navItems: CHROME_NAV, events: true, groups: true } },
+        },
       } as never) as never,
     );
     expect(out).toContain("Inhalt");
@@ -827,7 +841,10 @@ describe("puckConfig", () => {
       render({
         breite: "schmal",
         children: React.createElement("p", null, "Inhalt"),
-        puck: { isEditing: true, metadata: { chrome: { events: true, groups: true } } },
+        puck: {
+          isEditing: true,
+          metadata: { chrome: { navItems: CHROME_NAV, events: true, groups: true } },
+        },
       } as never) as never,
     );
     expect(out).toContain("<header");
@@ -838,6 +855,45 @@ describe("puckConfig", () => {
     expect(out).not.toContain("Mein Konto");
   });
 
+  it("the canvas header renders the nav the server derived, not its own", () => {
+    // root.render runs in the browser, where isFlagOn reads a computed
+    // process.env key that Next cannot inline — every flag would read false and
+    // the header would silently drop Events, Blog and Gruppen while the footer
+    // beside it showed them. The nav therefore arrives through metadata.
+    const render = puckConfig.root?.render;
+    if (!render) throw new Error("root render missing");
+    const out = renderToStaticMarkup(
+      render({
+        breite: "schmal",
+        children: null,
+        puck: {
+          isEditing: true,
+          metadata: { chrome: { navItems: CHROME_NAV, events: true, groups: true } },
+        },
+      } as never) as never,
+    );
+    expect(out).toContain('href="/events"');
+    expect(out).toContain('href="/blog"');
+    expect(out).toContain('href="/unsere-arbeit"');
+  });
+
+  it("the canvas footer links to the legal routes the app owns", () => {
+    const render = puckConfig.root?.render;
+    if (!render) throw new Error("root render missing");
+    const out = renderToStaticMarkup(
+      render({
+        breite: "schmal",
+        children: null,
+        puck: {
+          isEditing: true,
+          metadata: { chrome: { navItems: [], events: false, groups: false } },
+        },
+      } as never) as never,
+    );
+    expect(out).toContain(`href="${legalUrls().privacy}"`);
+    expect(out).toContain(`href="${legalUrls().imprint}"`);
+  });
+
   it("the canvas chrome is inert and hidden from assistive tech", () => {
     const render = puckConfig.root?.render;
     if (!render) throw new Error("root render missing");
@@ -845,13 +901,19 @@ describe("puckConfig", () => {
       render({
         breite: "schmal",
         children: React.createElement("p", null, "Inhalt"),
-        puck: { isEditing: true, metadata: { chrome: { events: false, groups: false } } },
+        puck: {
+          isEditing: true,
+          metadata: { chrome: { navItems: CHROME_NAV, events: false, groups: false } },
+        },
       } as never) as never,
     );
-    // Without pointer-events-none a stray click on a nav link navigates the
-    // iframe away and the board loses the editor.
+    // A stray click on a nav link navigates the canvas iframe away and the
+    // board loses the editor. `inert` covers the keyboard too, and takes the
+    // chrome out of the accessibility tree without leaving focusable controls
+    // behind an aria-hidden wrapper; pointer-events-none is the fallback for
+    // browsers without inert.
     expect(out).toMatch(/pointer-events-none/);
-    expect(out).toMatch(/aria-hidden/);
+    expect(out.match(/inert=""/g)?.length).toBe(2);
   });
 
   it("the canvas footer honours the chrome flags it is given", () => {
@@ -861,7 +923,10 @@ describe("puckConfig", () => {
       render({
         breite: "schmal",
         children: null,
-        puck: { isEditing: true, metadata: { chrome: { events: true, groups: false } } },
+        puck: {
+          isEditing: true,
+          metadata: { chrome: { navItems: CHROME_NAV, events: true, groups: false } },
+        },
       } as never) as never,
     );
     expect(mit).toContain('href="/events"');
