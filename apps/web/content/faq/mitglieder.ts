@@ -1,11 +1,16 @@
 import type { FaqSection } from "./types";
 
-/** Everyday member capabilities — the default section for members without a board role. */
+/**
+ * Everyday member capabilities — the default section for members without a
+ * board role. visibleTo is "all", not ["member", "alumnus"]: this is a help
+ * page, not a data-access surface, and a pending/inactive user needs exactly
+ * this content (profile, events, group change) most.
+ */
 export const mitglieder: FaqSection = {
   key: "mitglieder",
   title: "Mitglieder",
   intro: "Was du als Mitglied auf der Plattform tun kannst.",
-  visibleTo: ["member", "alumnus"],
+  visibleTo: "all",
   entries: [
     {
       id: "profil",

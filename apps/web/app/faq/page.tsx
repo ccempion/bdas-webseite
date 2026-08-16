@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { SECTIONS } from "../../content/faq";
 import { faqEnabled } from "../../lib/faq/enabled";
 import { highlightedVorstandSubgroups, orderSections } from "../../lib/faq/order";
+import { isVisibleTo, narrowSubgroups } from "../../lib/faq/visibility";
 import { loadCurrentMember } from "../_dashboard/session";
 import { FaqSectionView } from "./FaqSection";
 
@@ -18,7 +19,13 @@ export default async function FaqPage() {
   const me = await loadCurrentMember();
   if (!me) redirect("/anmelden");
 
-  const ordered = orderSections(me.grants);
+  // Only the sections/subgroups the viewer's own grants admit — see
+  // lib/faq/visibility.ts. Ordering (and which of the visible sections opens
+  // by default) is unaffected: orderSections still runs over all four keys,
+  // we just drop the ones visibility disallows before rendering.
+  const ordered = orderSections(me.grants).filter(({ key }) =>
+    isVisibleTo(SECTIONS[key].visibleTo, me.grants),
+  );
   const highlighted = highlightedVorstandSubgroups(me.grants);
 
   return (
@@ -35,7 +42,7 @@ export default async function FaqPage() {
         {ordered.map(({ key, defaultOpen }) => (
           <FaqSectionView
             key={key}
-            section={SECTIONS[key]}
+            section={narrowSubgroups(SECTIONS[key], me.grants)}
             defaultOpen={defaultOpen}
             highlightedSubgroups={highlighted}
           />

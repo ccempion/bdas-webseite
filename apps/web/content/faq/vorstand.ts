@@ -17,7 +17,12 @@ export const vorstand: FaqSection = {
     {
       id: "local_board",
       title: "Vorstand",
-      visibleTo: ["local_board"],
+      // LEAD is a functional superset of local_board (roles.ts: canManageGroup
+      // treats both identically) and a LEAD grant is often held on its own,
+      // without a separate plain local_board row — so the baseline how-to
+      // content stays visible to a LEAD too, not just the narrower LEAD-only
+      // extras below.
+      visibleTo: ["local_board", "local_board_lead"],
       entries: [
         {
           id: "lb-uebersicht-roster",
