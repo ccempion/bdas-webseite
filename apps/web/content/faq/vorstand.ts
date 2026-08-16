@@ -11,11 +11,13 @@ export const vorstand: FaqSection = {
   title: "Vorstand",
   intro:
     "Funktionen für den lokalen Vorstand, jeweils auf die eigene Gruppe begrenzt — getrennt nach den vier Vorstandsrollen.",
+  visibleTo: ["local_board", "local_board_lead", "event_organizer", "page_editor"],
   entries: [],
   subgroups: [
     {
       id: "local_board",
       title: "Vorstand",
+      visibleTo: ["local_board"],
       entries: [
         {
           id: "lb-uebersicht-roster",
@@ -23,14 +25,13 @@ export const vorstand: FaqSection = {
           body: [
             {
               kind: "p",
-              text: "Du siehst die Übersicht deiner Gruppe (Kennzahlen und Charts) und verwaltest den Mitgliederbestand: Beitrittsanfragen und eingehende Gruppenwechsel per Klick annehmen oder ablehnen.",
+              text: "Du siehst die Übersicht deiner Gruppe (Kennzahlen und Verlaufs-Chart) und verwaltest den Mitgliederbestand: Beitrittsanfragen und eingehende Gruppenwechsel per Klick annehmen oder ablehnen.",
             },
             {
               kind: "steps",
               items: [
                 "Im Dashboard in den Bereich deiner Gruppe wechseln.",
-                "„Mitglieder“ öffnen: ausstehende Mitglieder und Gruppenwechsel-Anträge entscheiden.",
-                "Re-Verifizierungsstatus der Mitglieder im Blick behalten.",
+                "„Mitglieder“ öffnen für den Bestand, „Bewerbungen“ für offene Anfragen.",
               ],
             },
             { kind: "link", href: "/dashboard", label: "Zum Gruppen-Dashboard" },
@@ -51,32 +52,22 @@ export const vorstand: FaqSection = {
           ],
         },
         {
-          id: "lb-join-policy",
-          question: "Wie stelle ich eine Beitrittsgebühr ein?",
+          id: "lb-profil-vs-seite",
+          question: "Wo bearbeite ich das Gruppenprofil — und wo die Gruppenseite?",
           body: [
             {
               kind: "p",
-              text: "Über die Beitritts-Richtlinie deiner Gruppe legst du fest, ob für den Beitritt eine Gebühr fällig ist und wie hoch sie ist.",
+              text: "Das sind zwei verschiedene Dinge. Das Gruppenprofil — Name, Stadt, Standort auf der Karte — bearbeitest du als jeder Vorstand unter „Profil“. Die öffentliche Gruppenseite (Inhalte, Text, Bilder) darf nur die LEAD-Person oder ein Seiten Editor bearbeiten.",
             },
           ],
         },
         {
-          id: "lb-broadcast",
-          question: "Wie schreibe ich meine Gruppe an?",
+          id: "lb-dateien",
+          question: "Wo finde ich meine Gruppendateien?",
           body: [
             {
               kind: "p",
-              text: "Der Gruppen-Broadcast verschickt eine E-Mail an alle Mitglieder deiner Gruppe, optional gefiltert (z. B. nur für ein bestimmtes Event angemeldete). Außerhalb der eigenen Gruppe kannst du nicht senden.",
-            },
-          ],
-        },
-        {
-          id: "lb-handover-projekte-dateien",
-          question: "Wo finde ich Übergabe, Projekte und Dateien?",
-          body: [
-            {
-              kind: "p",
-              text: "Der Übergabe-Bereich führt Checklisten und verknüpfte Dokumente für den Vorstandswechsel. Zusätzlich verwaltest du die Projekt-Showcases deiner Gruppe und hast Zugriff auf die Gruppen- und Vorstands-Ordner im Dateibereich.",
+              text: "Im Datei-Bereich deiner Gruppe hast du Zugriff auf den Mitglieder-Ordner und den Vorstands-Ordner deiner Gruppe.",
             },
           ],
         },
@@ -86,7 +77,7 @@ export const vorstand: FaqSection = {
           body: [
             {
               kind: "p",
-              text: "Ein einfacher Vorstand kann weder die öffentliche Gruppenseite bearbeiten noch Rollen vergeben. Beides ist der LEAD-Rolle vorbehalten (bzw. delegiert die LEAD-Rolle das an Seiten Editor / Event Organisator).",
+              text: "Ein einfacher Vorstand kann weder die öffentliche Gruppenseite bearbeiten noch Rollen vergeben. Beides ist der LEAD-Rolle vorbehalten — die es wiederum an Seiten Editor bzw. Event Organisator delegieren kann.",
             },
           ],
         },
@@ -95,6 +86,7 @@ export const vorstand: FaqSection = {
     {
       id: "local_board_lead",
       title: "LEAD",
+      visibleTo: ["local_board_lead"],
       entries: [
         {
           id: "lead-was-zusaetzlich",
@@ -102,13 +94,12 @@ export const vorstand: FaqSection = {
           body: [
             {
               kind: "p",
-              text: "LEAD ist die höchste Vertrauensrolle deiner Gruppe. Zusätzlich zu allen Vorstandsrechten darfst du Rollen innerhalb der Gruppe vergeben und die öffentliche Gruppenseite bearbeiten.",
+              text: "LEAD ist die höchste Vertrauensrolle deiner Gruppe. Zusätzlich zu allen Vorstandsrechten darfst du auf der Vorstandsseite deiner Gruppe Rollen vergeben und die öffentliche Gruppenseite bearbeiten.",
             },
             {
               kind: "steps",
               items: [
-                "„Lokaler Vorstand“ an Mitglieder deiner Gruppe vergeben oder entziehen.",
-                "Delegierte ernennen: Event Organisator (Events) und Seiten Editor (Gruppenseite).",
+                "„Vorstand“, „Event Organisator“ oder „Seiten-Editor“ an Mitglieder deiner Gruppe vergeben oder entziehen.",
                 "Die öffentliche Gruppenseite selbst bearbeiten.",
               ],
             },
@@ -120,7 +111,7 @@ export const vorstand: FaqSection = {
           body: [
             {
               kind: "p",
-              text: "Archivierte Gruppen kann auch ein LEAD nicht mehr verwalten — das übernimmt der Bundesvorstand. Bundesweite Rollen (Bundesvorstand) vergibt ebenfalls nur der Bundesvorstand.",
+              text: "Archivierte Gruppen kann auch ein LEAD nicht mehr verwalten — das übernimmt der Bundesvorstand. Eine weitere LEAD-Person oder die Bundesvorstands-Rolle vergibt ebenfalls nur der Bundesvorstand.",
             },
           ],
         },
@@ -129,6 +120,7 @@ export const vorstand: FaqSection = {
     {
       id: "event_organizer",
       title: "Event Organisator",
+      visibleTo: ["event_organizer"],
       entries: [
         {
           id: "eo-scope",
@@ -136,7 +128,7 @@ export const vorstand: FaqSection = {
           body: [
             {
               kind: "p",
-              text: "Du bist Delegierter für die Veranstaltungen deiner Gruppe: Events anlegen und verwalten — ohne den vollen Vorstandszugriff. Mitgliederverwaltung, Rollenvergabe und Beitritts-Richtlinie gehören nicht dazu.",
+              text: "Du bist Delegierter für die Veranstaltungen deiner Gruppe: Events anlegen, bearbeiten und absagen — ohne den vollen Vorstandszugriff. Mitgliederverwaltung und Rollenvergabe gehören nicht dazu.",
             },
           ],
         },
@@ -145,6 +137,7 @@ export const vorstand: FaqSection = {
     {
       id: "page_editor",
       title: "Seiten Editor",
+      visibleTo: ["page_editor"],
       entries: [
         {
           id: "pe-scope",
@@ -152,7 +145,7 @@ export const vorstand: FaqSection = {
           body: [
             {
               kind: "p",
-              text: "Du darfst ausschließlich die öffentliche Seite deiner Gruppe bearbeiten — Inhalte, Text und Darstellung. Weitere Vorstandsfunktionen sind mit dieser Rolle nicht verbunden.",
+              text: "Du darfst ausschließlich die öffentliche Seite deiner Gruppe bearbeiten — Inhalte, Text und Darstellung. Das Gruppenprofil (Name/Stadt/Standort) und weitere Vorstandsfunktionen sind mit dieser Rolle nicht verbunden.",
             },
           ],
         },

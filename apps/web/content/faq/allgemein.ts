@@ -6,6 +6,7 @@ export const allgemein: FaqSection = {
   title: "Allgemein",
   intro:
     "Grundlagen der Plattform: was sie ist, wie du dich anmeldest und wie das Rollensystem funktioniert.",
+  visibleTo: "all",
   entries: [
     {
       id: "was-ist-die-plattform",
@@ -13,7 +14,7 @@ export const allgemein: FaqSection = {
       body: [
         {
           kind: "p",
-          text: "Die Plattform ist das zentrale System des Bundes der Alevitischen Studierenden für Mitgliedschaft, Veranstaltungen und Vorstandsarbeit. Sie ersetzt die frühere Mischung aus WordPress, WhatsApp und Tabellen und ist das führende System für Mitglieder-, Event- und Gruppendaten.",
+          text: "Die Plattform ist das zentrale System des BDAS für Mitglieder-, Event- und Gruppendaten. Sie ersetzt die frühere Mischung aus WordPress, WhatsApp und Tabellen.",
         },
         {
           kind: "p",
@@ -64,7 +65,7 @@ export const allgemein: FaqSection = {
             "Event Organisator — darf Veranstaltungen der Gruppe verwalten.",
             "Seiten Editor — darf die öffentliche Gruppenseite bearbeiten.",
             "Bundesvorstand — föderationsweite Verwaltung über alle Gruppen.",
-            "Alumni — ausgeschiedenes Mitglied mit eingeschränktem Lesezugriff.",
+            "Alumni — ausgeschiedenes Mitglied; meldet sich nicht mehr für Veranstaltungen an, kann aber weiterhin Blog-Beiträge verfassen.",
           ],
         },
       ],

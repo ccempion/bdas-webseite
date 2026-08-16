@@ -6,6 +6,7 @@ export const bundesvorstand: FaqSection = {
   title: "Bundesvorstand",
   intro:
     "Föderationsweite Funktionen unter „Bundesverband“. Alle Zahlen und Tabellen umfassen sämtliche Gruppen.",
+  visibleTo: ["federal_board"],
   entries: [
     {
       id: "overview",
@@ -13,7 +14,7 @@ export const bundesvorstand: FaqSection = {
       body: [
         {
           kind: "p",
-          text: "Die Übersicht bündelt die föderationsweiten Kennzahlen: aktive und zahlende Mitglieder, Jahresbeiträge, Spenden im laufenden Jahr, Neuanmeldungen der letzten 7 und 30 Tage, kommende Veranstaltungen und Gruppen nach Status — dazu Verlaufs-Charts.",
+          text: "Die Übersicht zeigt die föderationsweiten Kennzahlen: aktive Mitglieder, Neuanmeldungen der letzten 30 Tage, Anzahl aktiver Gruppen und anstehende Veranstaltungen — dazu einen Verlaufs-Chart der Anmeldungen.",
         },
         { kind: "link", href: "/federal/overview", label: "Zur Übersicht" },
       ],
@@ -24,7 +25,7 @@ export const bundesvorstand: FaqSection = {
       body: [
         {
           kind: "p",
-          text: "Die Mitgliedertabelle listet alle Mitglieder der Föderation und lässt sich nach Gruppe, Status, Rolle und Zahlungsstatus filtern. Analog gibt es eine Tabelle aller Veranstaltungen und die Gruppen-Registry.",
+          text: "Die Mitgliedertabelle listet alle Mitglieder der Föderation, filterbar nach Gruppe und Status. Analog gibt es eine Tabelle aller Veranstaltungen und die Gruppen-Registry mit allen Status, inklusive ruhender und archivierter Gruppen.",
         },
         { kind: "link", href: "/federal/members", label: "Alle Mitglieder" },
         { kind: "link", href: "/federal/groups", label: "Gruppen verwalten" },
@@ -39,7 +40,7 @@ export const bundesvorstand: FaqSection = {
           items: [
             "„Gruppen“ im Bundesverband-Bereich öffnen.",
             "Neue Gruppe anlegen oder eine bestehende bearbeiten bzw. archivieren.",
-            "Archivierte Gruppen werden nur vom Bundesvorstand verwaltet — ein lokaler Vorstand kann sie nicht mehr bearbeiten.",
+            "Archivierte Gruppen verwaltet nur noch der Bundesvorstand — ein lokaler Vorstand kann sie nicht mehr bearbeiten.",
           ],
         },
         { kind: "link", href: "/federal/groups", label: "Zur Gruppen-Registry" },
@@ -47,16 +48,15 @@ export const bundesvorstand: FaqSection = {
     },
     {
       id: "rollenvergabe",
-      question: "Wie vergebe ich Vorstands- oder Bundesvorstandsrollen?",
+      question: "Wie vergebe ich Vorstandsrollen?",
       body: [
         {
-          kind: "steps",
-          items: [
-            "„Rollen“ im Bundesverband-Bereich öffnen.",
-            "Mitglied suchen.",
-            "Rolle „Lokaler Vorstand“ (für eine Gruppe) oder „Bundesvorstand“ vergeben bzw. entziehen.",
-            "Jede Vergabe und jeder Entzug erscheint im Audit-Log.",
-          ],
+          kind: "p",
+          text: "Unter „Rollen“ im Bundesverband-Bereich vergibst und entziehst du direkt zwei Rollen: Bundesvorstand und LEAD einer Gruppe. Die übrigen lokalen Rollen — Vorstand, Event Organisator, Seiten Editor — vergibt die LEAD-Person auf der Vorstandsseite der jeweiligen Gruppe; als Bundesvorstand kannst du das dort ebenfalls erledigen.",
+        },
+        {
+          kind: "p",
+          text: "Jede Vergabe und jeder Entzug erscheint im Audit-Log.",
         },
         { kind: "link", href: "/federal/roles", label: "Zur Rollenvergabe" },
       ],
@@ -67,32 +67,31 @@ export const bundesvorstand: FaqSection = {
       body: [
         {
           kind: "p",
-          text: "Hier siehst du Mitglieder ohne Gruppenzuordnung sowie offene Gruppenwechsel-Anträge und kannst sie einer Gruppe zuweisen.",
+          text: "Hier siehst du Mitglieder ohne Gruppenzuordnung sowie jede föderationsweit offene Bewerbung — auch für Gruppen ohne aktiven Vorstand, wo sonst niemand entscheiden könnte.",
         },
         { kind: "link", href: "/federal/pool", label: "Zum Pool" },
       ],
     },
     {
-      id: "broadcasts",
-      question: "Wie schreibe ich alle Mitglieder an?",
+      id: "dateien",
+      question: "Wo sehe ich alle Dateien?",
       body: [
         {
           kind: "p",
-          text: "Über die föderationsweiten Broadcasts verschickst du eine E-Mail an alle Mitglieder oder an eine gefilterte Teilmenge (nach Gruppe, Rolle oder Status).",
+          text: "Im Datei-Bereich hast du als einzige Rolle Zugriff auf die Ordner jeder Gruppe sowie auf den föderationsweiten Bundesvorstands-Ordner.",
         },
-        { kind: "link", href: "/federal/broadcasts", label: "Zu den Broadcasts" },
+        { kind: "link", href: "/federal/files", label: "Zu allen Dateien" },
       ],
     },
     {
-      id: "payments-files",
-      question: "Wo sehe ich Finanzen und alle Dateien?",
+      id: "blog-moderation",
+      question: "Wie moderiere ich gemeldete Blog-Beiträge?",
       body: [
         {
           kind: "p",
-          text: "Der Payments-Bereich zeigt Spenden im Jahresverlauf, Mitgliedsbeiträge und Beitrittsgebühren-Einnahmen. Im Datei-Bereich hast du Zugriff auf alle Ordner inklusive der Zugriffslogs.",
+          text: "Gemeldete Beiträge landen in der Meldungs-Queue — nur für den Bundesvorstand sichtbar. Du kannst dort einen Beitrag bearbeiten oder löschen, oder die Meldung verwerfen. Beiträge mit Sichtbarkeit „Nur Vorstände“ sind ebenfalls nur für den Bundesvorstand lesbar.",
         },
-        { kind: "link", href: "/federal/payments", label: "Zu den Finanzen" },
-        { kind: "link", href: "/federal/files", label: "Zu allen Dateien" },
+        { kind: "link", href: "/blog/meldungen", label: "Zur Meldungs-Queue" },
       ],
     },
   ],

@@ -1,3 +1,5 @@
+import type { Role } from "@bdas/auth";
+
 /**
  * Typed, static FAQ content model. The FAQ is editorial content no other module
  * reads or writes, so it lives here as data rather than as a DB-backed module
@@ -8,6 +10,15 @@
  */
 
 export type SectionKey = "allgemein" | "bundesvorstand" | "vorstand" | "mitglieder";
+
+/**
+ * Which roles a section/subgroup is meant for. Not yet enforced anywhere
+ * (issue #133: every signed-in viewer sees all four sections for now) — it
+ * exists so a future visibility filter is a lookup against this field rather
+ * than a content restructure. `"all"` means every signed-in viewer,
+ * regardless of role.
+ */
+export type FaqVisibility = "all" | readonly Role[];
 
 export type FaqBlock =
   | { readonly kind: "p"; readonly text: string }
@@ -29,6 +40,9 @@ export type FaqEntry = {
 export type FaqSubgroup = {
   readonly id: string;
   readonly title: string;
+  /** The role this subgroup is written for — always `id` as a singleton, kept
+   *  as an explicit field so a future filter reads intent, not the id string. */
+  readonly visibleTo: readonly Role[];
   readonly entries: readonly FaqEntry[];
 };
 
@@ -36,6 +50,7 @@ export type FaqSection = {
   readonly key: SectionKey;
   readonly title: string;
   readonly intro?: string;
+  readonly visibleTo: FaqVisibility;
   /** Entries shown directly under the section (sections without sub-roles). */
   readonly entries: readonly FaqEntry[];
   /** Sub-role groups (only `vorstand`). */

@@ -7,6 +7,7 @@ import { isFlagOn } from "@bdas/feature-flags";
 import { getGroup } from "@bdas/groups";
 
 import { BrandLink } from "../../components/BrandLink";
+import { faqEnabled } from "../../lib/faq/enabled";
 import { loadApprovalCounts } from "../_dashboard/approvals";
 import { loadCurrentMember } from "../_dashboard/session";
 import { MobileMenuAutoClose } from "./MobileMenuAutoClose";
@@ -76,6 +77,7 @@ export async function PublicHeader() {
     showFiles,
   });
   const displayName = me?.member?.firstName ?? "Konto";
+  const showFaq = Boolean(me) && faqEnabled();
 
   return (
     <header className="sticky top-0 z-bdas-header border-b border-bdas-soft bg-bdas-surface">
@@ -115,6 +117,13 @@ export async function PublicHeader() {
                           Mein Konto
                         </Link>
                       </li>
+                      {showFaq ? (
+                        <li>
+                          <Link href="/faq" className={DROPDOWN_LINK}>
+                            FAQ &amp; Hilfe
+                          </Link>
+                        </li>
+                      ) : null}
                       {isBoard ? (
                         <li>
                           <Link
@@ -210,6 +219,13 @@ export async function PublicHeader() {
                         Mein Konto
                       </Link>
                     </li>
+                    {showFaq ? (
+                      <li>
+                        <Link href="/faq" className={DROPDOWN_LINK}>
+                          FAQ &amp; Hilfe
+                        </Link>
+                      </li>
+                    ) : null}
                     {isBoard ? (
                       <li>
                         <Link

@@ -5,6 +5,7 @@ export const mitglieder: FaqSection = {
   key: "mitglieder",
   title: "Mitglieder",
   intro: "Was du als Mitglied auf der Plattform tun kannst.",
+  visibleTo: ["member", "alumnus"],
   entries: [
     {
       id: "profil",
@@ -33,13 +34,14 @@ export const mitglieder: FaqSection = {
       ],
     },
     {
-      id: "verzeichnis-ankuendigungen",
-      question: "Sehe ich die anderen Mitglieder und interne Infos?",
+      id: "interne-infos",
+      question: "Wo bekomme ich interne Infos, die nicht öffentlich sind?",
       body: [
         {
           kind: "p",
-          text: "Du siehst das Mitgliederverzeichnis deiner eigenen Gruppe sowie die internen Ankündigungen für Mitglieder.",
+          text: "Über den Blog: Beiträge mit Sichtbarkeit „Nur Mitglieder“ sind ausschließlich für angemeldete, aktive Mitglieder lesbar. Ein separates Mitgliederverzeichnis gibt es nicht — die eigene Gruppe erreichst du über deren öffentliche Gruppenseite.",
         },
+        { kind: "link", href: "/blog", label: "Zum Blog" },
       ],
     },
     {
@@ -58,29 +60,18 @@ export const mitglieder: FaqSection = {
       body: [
         {
           kind: "p",
-          text: "Als Mitglied hast du Zugriff auf den Mitglieder-Ordner im Dateibereich mit Dokumenten und Vorlagen.",
+          text: "Als Mitglied hast du Zugriff auf den Mitglieder-Ordner im Dateibereich mit Dokumenten und Vorlagen sowie auf den Ordner deiner eigenen Gruppe.",
         },
       ],
     },
     {
-      id: "beitraege",
-      question: "Was hat es mit Beiträgen und Beitrittsgebühren auf sich?",
+      id: "blog-schreiben",
+      question: "Kann ich selbst Blog-Beiträge schreiben?",
       body: [
         {
           kind: "p",
-          text: "Du kannst freiwillige Mitgliedsbeiträge zahlen und giltst dann als zahlendes Mitglied. Verlangt deine Gruppe eine Beitrittsgebühr, wird diese beim Beitritt fällig.",
+          text: "Ja, wenn du als aktives Mitglied geführt wirst. Du kannst eigene Beiträge jederzeit bearbeiten oder löschen und fremde Beiträge melden, wenn sie gegen die Regeln verstoßen.",
         },
-      ],
-    },
-    {
-      id: "blog-projekte",
-      question: "Kann ich Beiträge lesen und Projekte entdecken?",
-      body: [
-        {
-          kind: "p",
-          text: "Du kannst Blog-Beiträge lesen (je nach Sichtbarkeit) und die Projekte aller Gruppen durchstöbern, um Ideen zu entdecken und wiederzuverwenden.",
-        },
-        { kind: "link", href: "/projekte", label: "Zu den Projekten" },
       ],
     },
     {
@@ -89,7 +80,7 @@ export const mitglieder: FaqSection = {
       body: [
         {
           kind: "p",
-          text: "Als Alumni hast du weiterhin Lesezugriff auf das Netzwerk und kannst den Newsletter abonnieren. Für Veranstaltungen kannst du dich erst wieder anmelden, wenn du erneut als aktiv geführt wirst.",
+          text: "Als Alumni giltst du nicht mehr als aktives Mitglied. Du kannst weiterhin Blog-Beiträge verfassen. Für Veranstaltungen kannst du dich erst wieder anmelden, sobald du erneut als aktiv geführt wirst.",
         },
       ],
     },
