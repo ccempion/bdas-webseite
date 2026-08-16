@@ -19,6 +19,7 @@ const view = (props: Partial<Parameters<typeof PublicFooterView>[0]> = {}) =>
       imprintUrl="/impressum"
       showEvents={false}
       showGroups={false}
+      showFaq={false}
       {...props}
     />,
   );
@@ -51,5 +52,10 @@ describe("PublicFooterView", () => {
 
   it("renders one contentinfo landmark", () => {
     expect(view().match(/<footer/g)?.length).toBe(1);
+  });
+
+  it("shows the FAQ link only when showFaq is true", () => {
+    expect(view()).not.toContain('href="/faq"');
+    expect(view({ showFaq: true })).toContain('href="/faq"');
   });
 });

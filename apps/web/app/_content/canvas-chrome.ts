@@ -1,11 +1,13 @@
 import { isFlagOn } from "@bdas/feature-flags";
 
+import { faqEnabled } from "../../lib/faq/enabled";
 import { navItems, type NavItem } from "../_public/nav-items";
 
 export type CanvasChrome = {
   navItems: NavItem[];
   events: boolean;
   groups: boolean;
+  faq: boolean;
 };
 
 /**
@@ -28,5 +30,6 @@ export function canvasChrome(): CanvasChrome {
     navItems: navItems({ isLoggedIn: false }),
     events: isFlagOn("events"),
     groups: isFlagOn("groups"),
+    faq: faqEnabled(),
   };
 }

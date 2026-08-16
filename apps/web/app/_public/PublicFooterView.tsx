@@ -13,11 +13,13 @@ export function PublicFooterView({
   imprintUrl,
   showEvents,
   showGroups,
+  showFaq,
 }: {
   privacyUrl: string;
   imprintUrl: string;
   showEvents: boolean;
   showGroups: boolean;
+  showFaq: boolean;
 }) {
   const year = new Date().getFullYear();
   return (
@@ -49,6 +51,11 @@ export function PublicFooterView({
           {showGroups && (
             <Link href="/gruppen" className={LINK}>
               Gruppen
+            </Link>
+          )}
+          {showFaq && (
+            <Link href="/faq" className={LINK}>
+              FAQ &amp; Hilfe
             </Link>
           )}
         </nav>

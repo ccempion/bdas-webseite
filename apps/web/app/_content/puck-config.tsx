@@ -204,6 +204,7 @@ export const puckConfig: Config<Blocks> = {
               imprintUrl={imprint}
               showEvents={chrome?.events ?? false}
               showGroups={chrome?.groups ?? false}
+              showFaq={chrome?.faq ?? false}
             />
           </div>
         </div>

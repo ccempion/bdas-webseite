@@ -2,6 +2,7 @@ import React from "react";
 
 import { isFlagOn } from "@bdas/feature-flags";
 
+import { faqEnabled } from "../../lib/faq/enabled";
 import { PublicFooterView } from "./PublicFooterView";
 
 /** Public-site footer: contact, quick links, partner orgs, legal, socials.
@@ -22,6 +23,7 @@ export function PublicFooter({
       imprintUrl={imprintUrl}
       showEvents={isFlagOn("events")}
       showGroups={isFlagOn("groups")}
+      showFaq={faqEnabled()}
     />
   );
 }

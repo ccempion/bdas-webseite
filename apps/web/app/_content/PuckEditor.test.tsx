@@ -51,7 +51,7 @@ describe("PuckEditor", () => {
         <PuckEditor
           slug="gruppen/berlin"
           initialData={{ root: { props: {} }, content: [] } as never}
-          chrome={{ navItems: [], events: false, groups: false }}
+          chrome={{ navItems: [], events: false, groups: false, faq: false }}
         />,
       );
     });
@@ -66,7 +66,7 @@ describe("PuckEditor", () => {
         <PuckEditor
           slug="ueber-uns/bdaj"
           initialData={{ root: { props: {} }, content: [] } as never}
-          chrome={{ navItems: [], events: false, groups: false }}
+          chrome={{ navItems: [], events: false, groups: false, faq: false }}
         />,
       );
     });
