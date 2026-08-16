@@ -42,4 +42,36 @@ describe("auth createResendNotifier", () => {
     // it must not hand them a link that does anything.
     expect(arg.html).not.toContain("<a ");
   });
+
+  it("renders the email-change-verify mail with the confirm link", async () => {
+    sendMock.mockResolvedValue({ data: { id: "re_123" }, error: null });
+    const notifier = createResendNotifier({ apiKey: "re_x", from: "bdas@example.org" });
+
+    await notifier.send({
+      kind: "email-change-verify",
+      to: "neu@example.org",
+      confirmUrl: "https://e/c",
+    });
+
+    const arg = sendMock.mock.calls[0]?.[0];
+    expect(arg.subject).toBe("BDAS — Neue E-Mail-Adresse bestätigen");
+    expect(arg.html).toContain("https://e/c");
+  });
+
+  it("renders the email-change-notice mail with no link in it", async () => {
+    sendMock.mockResolvedValue({ data: { id: "re_123" }, error: null });
+    const notifier = createResendNotifier({ apiKey: "re_x", from: "bdas@example.org" });
+
+    await notifier.send({
+      kind: "email-change-notice",
+      to: "alt@example.org",
+      newEmail: "neu@example.org",
+    });
+
+    const arg = sendMock.mock.calls[0]?.[0];
+    expect(arg.subject).toBe("BDAS — Änderung der Login-E-Mail angefordert");
+    expect(arg.text).toContain("neu@example.org");
+    // Same tripwire reasoning as the password-changed mail.
+    expect(arg.html).not.toContain("<a ");
+  });
 });

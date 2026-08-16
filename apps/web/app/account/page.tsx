@@ -14,6 +14,7 @@ import { requireMembersFlag } from "../_members/flag";
 import { AccountAvatar } from "./AccountAvatar";
 import { ApprovalsAlert } from "./ApprovalsAlert";
 import { ChangePasswordCard } from "./ChangePasswordCard";
+import { EmailChangeCard } from "./EmailChangeCard";
 import { isProfileComplete } from "../_profile/complete";
 import { signedProfilePhotoUrl } from "../_profile/photo-url";
 import { SUBMITTED_PARAM, SUBMITTED_VALUE } from "../_profile/submitted";
@@ -154,6 +155,8 @@ export default async function AccountPage({
           extendedForm={profileFlagOn && me.member ? { initial: extendedInitial } : null}
         />
       </Card>
+
+      <EmailChangeCard currentEmail={me.user.email} />
 
       <ChangePasswordCard passwordHint={PASSWORD_RULE_HINT} />
 

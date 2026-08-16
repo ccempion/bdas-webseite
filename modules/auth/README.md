@@ -12,10 +12,12 @@ tables and other modules talk to it only through this README's listed surface.
 | `auth_sessions`            | Server-side sessions; `id` is the JWT `jti` (ADR 0002)               |
 | `auth_email_verifications` | Single-use verification tokens (24 h)                                |
 | `auth_password_resets`     | Single-use reset tokens (1 h)                                        |
+| `auth_email_changes`       | Single-use login-email-change tokens (1 h)                           |
 | `auth_rate_limits`         | Fixed-window counters per key                                        |
 
-Migrations: `migrations/0001_init.sql`. Discovered by `infra/migrations` per
-the manifest order (auth runs first; everything FKs into `auth_users`).
+Migrations: `migrations/0001_init.sql`, `0002_consent.sql`, `0003_email_change.sql`.
+Discovered by `infra/migrations` per the manifest order (auth runs first;
+everything FKs into `auth_users`).
 
 ## Public surface
 
@@ -33,12 +35,16 @@ import {
   completePasswordReset,
   changePassword,
   ChangePasswordInput,
+  requestEmailChange,
+  confirmEmailChange,
+  RequestEmailChangeInput,
   // SSO cookie
   COOKIE_NAME,
   COOKIE_MAX_AGE_SECONDS,
   // URL builders for the Notifier
   buildVerifyUrl,
   buildResetUrl,
+  buildEmailChangeUrl,
   // Composition
   setNotifier,
   createResendNotifier,
@@ -62,6 +68,7 @@ The module publishes typed events through `core/events`:
 - `auth.user.logged_out`
 - `auth.password.reset`
 - `auth.password.changed`
+- `auth.email.changed`
 
 Subscribers should depend on `AuthEvent` (or its arms) and not on any auth
 service directly.
@@ -101,6 +108,7 @@ container in CI).
 | `login` (per email)    | `login:email:<email>`           | 5     | 15 min |
 | `requestPasswordReset` | `reset-request:ip:<ip>`         | 5     | 1 hour |
 | `changePassword`       | `password-change:user:<userId>` | 5     | 1 hour |
+| `requestEmailChange`   | `email-change:user:<userId>`    | 5     | 1 hour |
 
 Replace with Redis-backed sliding window if scale demands it.
 

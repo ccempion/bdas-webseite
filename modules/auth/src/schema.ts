@@ -68,6 +68,25 @@ export const authPasswordResets = pgTable(
   (t) => ({ userIdx: index("auth_password_resets_user_idx").on(t.userId) }),
 );
 
+export const authEmailChanges = pgTable(
+  "auth_email_changes",
+  {
+    token: text("token").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => authUsers.id, { onDelete: "cascade" }),
+    newEmailNormalized: text("new_email_normalized").notNull(),
+    newEmailDisplay: text("new_email_display").notNull(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    usedAt: timestamp("used_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    userIdx: index("auth_email_changes_user_idx").on(t.userId),
+    newEmailIdx: index("auth_email_changes_new_email_idx").on(t.newEmailNormalized),
+  }),
+);
+
 export const authRateLimits = pgTable("auth_rate_limits", {
   key: text("key").primaryKey(),
   count: integer("count").notNull().default(0),

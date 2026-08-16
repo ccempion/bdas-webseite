@@ -23,6 +23,15 @@ export {
   type ChangePasswordContext,
   type ChangePasswordResult,
 } from "./services/password-change";
+export {
+  requestEmailChange,
+  confirmEmailChange,
+  buildEmailChangeUrl,
+  RequestEmailChangeInput,
+  type RequestEmailChangeContext,
+  type RequestEmailChangeResult,
+  type ConfirmEmailChangeResult,
+} from "./services/email-change";
 export { getCurrentUser, requireRole, type CurrentUser } from "./services/me";
 export { resendVerification, type ResendResult } from "./services/resend-verification";
 
@@ -61,4 +70,5 @@ export type {
   UserLoggedOut,
   PasswordReset,
   PasswordChanged,
+  EmailChanged,
 } from "./events";
