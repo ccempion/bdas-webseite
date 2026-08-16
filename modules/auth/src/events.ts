@@ -47,10 +47,24 @@ export type PasswordChanged = {
   readonly at: Date;
 };
 
+/**
+ * A signed-in user's login email was confirmed via the link mailed to the
+ * new address. `oldEmail` lets subscribers (e.g. members) keep their own
+ * denormalized copies in sync.
+ */
+export type EmailChanged = {
+  readonly type: "auth.email.changed";
+  readonly userId: string;
+  readonly oldEmail: string;
+  readonly newEmail: string;
+  readonly at: Date;
+};
+
 export type AuthEvent =
   | UserRegistered
   | UserVerified
   | UserLoggedIn
   | UserLoggedOut
   | PasswordReset
-  | PasswordChanged;
+  | PasswordChanged
+  | EmailChanged;
