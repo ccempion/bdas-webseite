@@ -67,8 +67,13 @@ function renderNode(node: Node): ReactNode {
   switch (node.type) {
     case "text":
       return applyMarks(node.text ?? "", node.marks);
-    case "paragraph":
-      return <p className="text-bdas-ink-body">{renderChildren(node.content)}</p>;
+    case "paragraph": {
+      // An author's blank line is one empty paragraph. Without a break it has
+      // no line box, its margins collapse into the neighbours', and the line
+      // the author put there disappears — Tiptap draws the same break.
+      const kinder = renderChildren(node.content);
+      return <p className="text-bdas-ink-body">{kinder.length > 0 ? kinder : <br />}</p>;
+    }
     case "bulletList":
       return <ul className="list-disc pl-6 text-bdas-ink-body">{renderChildren(node.content)}</ul>;
     case "orderedList":
