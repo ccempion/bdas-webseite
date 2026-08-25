@@ -21,15 +21,15 @@ Screenshots, ein UI-Editor für die Inhalte. Diese kommen als Folge-Ticket.
 
 Die im Ticket genannten Vorstand-Unterrollen bilden reale Role-Grants ab:
 
-| Ticket-Begriff     | Role-Grant (`@bdas/auth` `Role`) | Quelle    |
-| ------------------ | -------------------------------- | --------- |
-| LEAD               | `local_board_lead`               | ADR 0013  |
-| Vorstand           | `local_board`                    | Spec §4   |
-| Event Organisator  | `event_organizer`                | ADR 0017  |
-| Seiten Editor      | `page_editor`                    | ADR 0026  |
-| Bundesvorstand     | `federal_board`                  | Spec §4   |
-| Mitglied           | `member`                         | Spec §4   |
-| Alumni             | `alumnus`                        | Spec §4   |
+| Ticket-Begriff    | Role-Grant (`@bdas/auth` `Role`) | Quelle   |
+| ----------------- | -------------------------------- | -------- |
+| LEAD              | `local_board_lead`               | ADR 0013 |
+| Vorstand          | `local_board`                    | Spec §4  |
+| Event Organisator | `event_organizer`                | ADR 0017 |
+| Seiten Editor     | `page_editor`                    | ADR 0026 |
+| Bundesvorstand    | `federal_board`                  | Spec §4  |
+| Mitglied          | `member`                         | Spec §4  |
+| Alumni            | `alumnus`                        | Spec §4  |
 
 ## 3. Architektur-Entscheidung: kein neues Modul
 
@@ -104,8 +104,8 @@ type FaqSection = {
   key: SectionKey;
   title: string;
   intro?: string;
-  entries: FaqEntry[];        // für Bereiche ohne Unterrollen
-  subgroups?: FaqSubgroup[];  // nur „vorstand"
+  entries: FaqEntry[]; // für Bereiche ohne Unterrollen
+  subgroups?: FaqSubgroup[]; // nur „vorstand"
 };
 ```
 

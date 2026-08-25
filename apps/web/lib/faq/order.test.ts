@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import { highlightedVorstandSubgroups, orderSections, primarySection, type FaqGrant } from "./order";
+import {
+  highlightedVorstandSubgroups,
+  orderSections,
+  primarySection,
+  type FaqGrant,
+} from "./order";
 
 const grant = (role: FaqGrant["role"], groupId: string | null = null): FaqGrant => ({
   role,

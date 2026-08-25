@@ -16,7 +16,9 @@ test("a guest visiting /faq is redirected to login", async ({ page }) => {
   expect(page.url()).toContain("/anmelden");
 });
 
-test("a signed-in member opens the FAQ from the footer, role section expanded", async ({ page }) => {
+test("a signed-in member opens the FAQ from the footer, role section expanded", async ({
+  page,
+}) => {
   const email = "faq-member@e2e.bdas.test";
   await deleteUserByEmail(email);
   await registerVerifyLogin(page, { email, firstName: "Faq", lastName: "Mitglied" });
