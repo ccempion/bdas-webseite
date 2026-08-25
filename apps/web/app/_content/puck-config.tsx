@@ -181,7 +181,7 @@ export const puckConfig: Config<Blocks> = {
       // `process.env` key that Next cannot inline, so every flag would read
       // false. See `canvas-chrome.ts`.
       const chrome = (puck.metadata as { chrome?: CanvasChrome })?.chrome;
-      const { privacy, imprint } = legalUrls();
+      const { privacy, imprint, terms } = legalUrls();
       return (
         // `min-h-screen`, not `min-h-full`: `min-height: 100%` needs a definite
         // containing-block height, which the Puck iframe root does not set, so
@@ -202,6 +202,7 @@ export const puckConfig: Config<Blocks> = {
             <PublicFooterView
               privacyUrl={privacy}
               imprintUrl={imprint}
+              termsUrl={terms}
               showEvents={chrome?.events ?? false}
               showGroups={chrome?.groups ?? false}
               showFaq={chrome?.faq ?? false}

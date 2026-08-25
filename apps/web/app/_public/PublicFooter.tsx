@@ -13,14 +13,17 @@ import { PublicFooterView } from "./PublicFooterView";
 export function PublicFooter({
   privacyUrl,
   imprintUrl,
+  termsUrl,
 }: {
   privacyUrl: string;
   imprintUrl: string;
+  termsUrl: string;
 }) {
   return (
     <PublicFooterView
       privacyUrl={privacyUrl}
       imprintUrl={imprintUrl}
+      termsUrl={termsUrl}
       showEvents={isFlagOn("events")}
       showGroups={isFlagOn("groups")}
       showFaq={faqEnabled()}

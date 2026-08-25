@@ -9,11 +9,7 @@ import { requireAuthFlag } from "../../_auth/flag";
 
 export const metadata = { title: "E-Mail-Adresse bestätigen" };
 
-export default async function EmailBestaetigenTokenPage({
-  params,
-}: {
-  params: { token: string };
-}) {
+export default async function EmailBestaetigenTokenPage({ params }: { params: { token: string } }) {
   requireAuthFlag();
 
   let result: { newEmail: string; alreadyConfirmed: boolean } | null = null;

@@ -1,11 +1,6 @@
 "use server";
 
-import {
-  buildEmailChangeUrl,
-  getCurrentUser,
-  getNotifier,
-  requestEmailChange,
-} from "@bdas/auth";
+import { buildEmailChangeUrl, getCurrentUser, getNotifier, requestEmailChange } from "@bdas/auth";
 import { getDb } from "@bdas/db";
 import { isAppError } from "@bdas/errors";
 import { requireFlag } from "@bdas/feature-flags";
@@ -50,7 +45,11 @@ export async function requestEmailChangeAction(
   // the pending change already exists and the confirm link is the one that
   // matters. Log and continue, same pattern as register/changePassword.
   try {
-    await getNotifier().send({ kind: "email-change-verify", to: result.newEmailDisplay, confirmUrl });
+    await getNotifier().send({
+      kind: "email-change-verify",
+      to: result.newEmailDisplay,
+      confirmUrl,
+    });
   } catch (err) {
     console.error("[auth] email-change verify send failed:", err);
   }

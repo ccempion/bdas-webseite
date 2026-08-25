@@ -64,9 +64,14 @@ export function EmailChangeCard({ currentEmail }: { currentEmail: string }) {
                 onChange={(e) => setNewEmail(e.target.value)}
               />
             </Field>
-            <Field label="Aktuelles Passwort" htmlFor="currentPassword">
+            {/* `name` stays `currentPassword` — the action reads it from this
+                form — but the DOM id must not collide with ChangePasswordCard's
+                field, which renders on this same page. A duplicate id sends
+                every `label[for]` and getElementById to whichever comes first,
+                stripping the other control of its accessible name. */}
+            <Field label="Aktuelles Passwort" htmlFor="emailChangeCurrentPassword">
               <PasswordInput
-                id="currentPassword"
+                id="emailChangeCurrentPassword"
                 name="currentPassword"
                 autoComplete="current-password"
                 required
