@@ -17,6 +17,7 @@ const view = (props: Partial<Parameters<typeof PublicFooterView>[0]> = {}) =>
     <PublicFooterView
       privacyUrl="/datenschutz"
       imprintUrl="/impressum"
+      termsUrl="/nutzungsbedingungen"
       showEvents={false}
       showGroups={false}
       showFaq={false}
@@ -29,12 +30,18 @@ describe("PublicFooterView", () => {
     const out = view();
     expect(out).toContain('href="/datenschutz"');
     expect(out).toContain('href="/impressum"');
+    expect(out).toContain('href="/nutzungsbedingungen"');
   });
 
-  it("respects a custom legal URL pair", () => {
-    const out = view({ privacyUrl: "/legal/privacy", imprintUrl: "/legal/imprint" });
+  it("respects a custom legal URL set", () => {
+    const out = view({
+      privacyUrl: "/legal/privacy",
+      imprintUrl: "/legal/imprint",
+      termsUrl: "/legal/terms",
+    });
     expect(out).toContain('href="/legal/privacy"');
     expect(out).toContain('href="/legal/imprint"');
+    expect(out).toContain('href="/legal/terms"');
   });
 
   it("hides Events and Gruppen when both flags are off", () => {

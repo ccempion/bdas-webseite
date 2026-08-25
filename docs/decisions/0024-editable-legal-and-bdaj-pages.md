@@ -69,3 +69,18 @@ render (always reachable, no `notFound()`). The trade-off changes — while the
 flag is off in production these legal pages show only their heading, so the
 `content` flag must be turned on and the board must author the reviewed legal
 wording (§ 5 DDG / § 18 MStV; DSGVO) before production launch.
+
+## Amendment (2026-08-25) — Nutzungsbedingungen
+
+A fourth editable page joins the set: **Nutzungsbedingungen** (`/nutzungsbedingungen`),
+linked from both footers next to Impressum and Datenschutz.
+
+It follows the legal-page half of this ADR, not the BSR half: the render route is
+**not** flag-gated (the footer links to it unconditionally, and a 404 from a
+footer link on a terms page is the same exposure this ADR already rejected),
+while the `/bearbeiten` editor route stays gated on `content` and
+federal-board-only. Header-only until the board authors the document — no seed,
+no static fallback, consistent with the 2026-07-18 amendment above.
+
+`legalUrls()` now returns a third route, `terms`, so the footers and the Puck
+canvas chrome keep taking their legal hrefs from one place.

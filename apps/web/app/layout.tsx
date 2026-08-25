@@ -29,7 +29,7 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
-  const { privacy, imprint } = legalUrls();
+  const { privacy, imprint, terms } = legalUrls();
   return (
     <html lang="de">
       <body className="flex min-h-screen flex-col antialiased">
@@ -45,9 +45,9 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           {children}
         </div>
         {isFlagOn("public_shell") ? (
-          <PublicFooter privacyUrl={privacy} imprintUrl={imprint} />
+          <PublicFooter privacyUrl={privacy} imprintUrl={imprint} termsUrl={terms} />
         ) : (
-          <SiteFooter privacyUrl={privacy} imprintUrl={imprint} />
+          <SiteFooter privacyUrl={privacy} imprintUrl={imprint} termsUrl={terms} />
         )}
         <CookieNotice privacyUrl={privacy} />
       </body>

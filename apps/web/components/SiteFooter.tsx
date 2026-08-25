@@ -5,10 +5,18 @@ import { faqEnabled } from "../lib/faq/enabled";
 import logo from "../public/bdas-logo.png";
 
 /**
- * Site footer landmark. Carries the legal links (Datenschutzerklärung +
- * Impressum), which are in-app routes (ADR 0009).
+ * Site footer landmark. Carries the legal links (Datenschutzerklärung,
+ * Impressum + Nutzungsbedingungen), which are in-app routes (ADR 0009).
  */
-export function SiteFooter({ privacyUrl, imprintUrl }: { privacyUrl: string; imprintUrl: string }) {
+export function SiteFooter({
+  privacyUrl,
+  imprintUrl,
+  termsUrl,
+}: {
+  privacyUrl: string;
+  imprintUrl: string;
+  termsUrl: string;
+}) {
   const year = new Date().getFullYear();
   return (
     <footer className="mt-16 border-t border-bdas-soft bg-bdas-surface">
@@ -28,6 +36,9 @@ export function SiteFooter({ privacyUrl, imprintUrl }: { privacyUrl: string; imp
           </Link>
           <Link href={imprintUrl} className="hover:text-bdas-red hover:underline">
             Impressum
+          </Link>
+          <Link href={termsUrl} className="hover:text-bdas-red hover:underline">
+            Nutzungsbedingungen
           </Link>
         </nav>
       </div>

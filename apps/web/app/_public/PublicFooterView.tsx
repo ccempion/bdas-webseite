@@ -11,12 +11,14 @@ const LINK = "hover:text-bdas-red hover:underline";
 export function PublicFooterView({
   privacyUrl,
   imprintUrl,
+  termsUrl,
   showEvents,
   showGroups,
   showFaq,
 }: {
   privacyUrl: string;
   imprintUrl: string;
+  termsUrl: string;
   showEvents: boolean;
   showGroups: boolean;
   showFaq: boolean;
@@ -75,6 +77,9 @@ export function PublicFooterView({
           </Link>
           <Link href={imprintUrl} className={LINK}>
             Impressum
+          </Link>
+          <Link href={termsUrl} className={LINK}>
+            Nutzungsbedingungen
           </Link>
           <a
             href="https://www.instagram.com/"

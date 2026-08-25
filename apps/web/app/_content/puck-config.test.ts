@@ -892,6 +892,7 @@ describe("puckConfig", () => {
     );
     expect(out).toContain(`href="${legalUrls().privacy}"`);
     expect(out).toContain(`href="${legalUrls().imprint}"`);
+    expect(out).toContain(`href="${legalUrls().terms}"`);
   });
 
   it("the canvas chrome is inert and hidden from assistive tech", () => {

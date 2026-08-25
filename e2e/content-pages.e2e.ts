@@ -1,8 +1,9 @@
 /**
  * Editable content pages (spec 2026-07-14, extended 2026-07-18): the public
- * BSR / BDAJ / Impressum / Datenschutz pages + editor gating. Requires
- * BDAS_FLAG_CONTENT=true and BDAS_FLAG_PUBLIC_SHELL=true in the e2e env, plus
- * federal@e2e.bdas.test on BDAS_FEDERAL_BOARD_EMAILS (CI has both).
+ * BSR / BDAJ / Impressum / Datenschutz / Nutzungsbedingungen pages + editor
+ * gating. Requires BDAS_FLAG_CONTENT=true and BDAS_FLAG_PUBLIC_SHELL=true in
+ * the e2e env, plus federal@e2e.bdas.test on BDAS_FEDERAL_BOARD_EMAILS (CI has
+ * both).
  */
 import { expect, test, type Locator, type Page } from "@playwright/test";
 
@@ -30,6 +31,11 @@ const EDITABLE_PAGES = [
   },
   { name: "Impressum", path: "/impressum", heading: "Impressum" },
   { name: "Datenschutz", path: "/datenschutz", heading: "Datenschutzerklärung" },
+  {
+    name: "Nutzungsbedingungen",
+    path: "/nutzungsbedingungen",
+    heading: "Nutzungsbedingungen",
+  },
 ] as const;
 
 test.describe("content pages", () => {
