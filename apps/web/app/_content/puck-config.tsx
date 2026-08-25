@@ -268,11 +268,20 @@ export const puckConfig: Config<Blocks> = {
         inhalt: { type: "doc", content: [{ type: "paragraph" }] },
         ausrichtung: "links",
       },
+      // `prose` is what the Tiptap field itself renders in, and what every
+      // other rich-text surface (Blog, Events) publishes in: without it
+      // preflight's `p { margin: 0 }` runs the author's paragraphs together.
       render: ({ inhalt, ausrichtung, puck }) =>
-        istLeererRichText(inhalt) && puck?.isEditing ? (
-          <BlockPlatzhalter titel="Fließtext" hinweis="Noch kein Text erfasst." />
+        istLeererRichText(inhalt) ? (
+          puck?.isEditing ? (
+            <BlockPlatzhalter titel="Fließtext" hinweis="Noch kein Text erfasst." />
+          ) : (
+            <></>
+          )
         ) : (
-          <div className={ausrichtungText(ausrichtung)}>{renderRichText(inhalt)}</div>
+          <div className={`prose max-w-none text-bdas-ink-body ${ausrichtungText(ausrichtung)}`}>
+            {renderRichText(inhalt)}
+          </div>
         ),
     },
     PersonenRaster: {

@@ -106,6 +106,25 @@ describe("puckConfig", () => {
     expect(out).toContain("<strong>Hi</strong>");
   });
 
+  it("Fließtext renders through the typography scale so paragraphs keep their spacing", () => {
+    const render = puckConfig.components.Fliesstext?.render;
+    if (!render) throw new Error("Fliesstext render missing");
+    const out = renderToStaticMarkup(
+      render({
+        inhalt: {
+          type: "doc",
+          content: [
+            { type: "paragraph", content: [{ type: "text", text: "eins" }] },
+            { type: "paragraph", content: [{ type: "text", text: "zwei" }] },
+          ],
+        },
+        puck: { isEditing: false },
+      } as never) as never,
+    );
+    expect(out).toContain("prose");
+    expect(out).toContain("max-w-none");
+  });
+
   it("Bild renders an accessible image and hides when empty", () => {
     const render = puckConfig.components.Bild?.render;
     if (!render) throw new Error("Bild render missing");
@@ -344,6 +363,7 @@ describe("puckConfig", () => {
       render({ inhalt: leer, puck: { isEditing: false } } as never) as never,
     );
     expect(publicOut).not.toContain("data-block-platzhalter");
+    expect(publicOut).toBe("");
   });
 
   it("PersonenRaster shows a placeholder in the editor while it holds nobody", () => {
@@ -810,7 +830,7 @@ describe("puckConfig", () => {
     // One wrapper around both the floated image and the text it wraps: they must
     // share a formatting context for the wrap to happen at all, and that wrapper
     // is what keeps the float from reaching the next Puck block.
-    expect(out).toMatch(/^<div class="text-left">/);
+    expect(out).toMatch(/^<div class="[^"]*\btext-left\b[^"]*">/);
     expect(out).toContain("sm:float-left");
     expect(out).toContain("Text daneben.");
     expect(out.endsWith("</div>")).toBe(true);

@@ -61,6 +61,11 @@ describe("renderRichText", () => {
     expect(out).toContain("eins");
   });
 
+  it("keeps a deliberately empty paragraph as a visible blank line", () => {
+    const out = html(doc([para([text("eins")]), { type: "paragraph" }, para([text("zwei")])]));
+    expect(out).toContain("<br/>");
+  });
+
   it("drops unknown nodes but keeps their text", () => {
     const out = html(doc([{ type: "codeBlock", content: [text("x = 1")] }]));
     expect(out).toContain("x = 1");
