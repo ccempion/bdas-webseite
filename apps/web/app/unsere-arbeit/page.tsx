@@ -3,7 +3,8 @@ import type { Metadata } from "next";
 import { Card } from "@bdas/design-system";
 
 import { AGS } from "../_public/ags";
-import { requirePublicShellFlag } from "../_public/flag";
+import { podcastEnabled, requirePublicShellFlag } from "../_public/flag";
+import { PodcastEmbed } from "../_public/PodcastEmbed";
 
 export const metadata: Metadata = {
   title: "Unsere Arbeit",
@@ -30,6 +31,7 @@ export default function UnsereArbeitPage() {
           </li>
         ))}
       </ul>
+      {podcastEnabled() && <PodcastEmbed />}
     </main>
   );
 }

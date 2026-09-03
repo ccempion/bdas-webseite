@@ -6,3 +6,12 @@ import { isFlagOn } from "@bdas/feature-flags";
 export function requirePublicShellFlag(): void {
   if (!isFlagOn("public_shell")) notFound();
 }
+
+/**
+ * Podcast embed rides an existing public-shell page but ships behind its own
+ * flag. Unlike `requirePublicShellFlag`, this returns a boolean — the page
+ * still renders fine with the embed region absent.
+ */
+export function podcastEnabled(): boolean {
+  return isFlagOn("public_shell") && isFlagOn("podcast");
+}
