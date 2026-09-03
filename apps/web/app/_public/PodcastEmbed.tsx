@@ -1,6 +1,7 @@
 import React from "react";
 
-const SPOTIFY_SHOW_URL = "https://open.spotify.com/embed/show/58ch4A571IGfllcdIvv9Tb?utm_source=generator";
+const SPOTIFY_SHOW_URL =
+  "https://open.spotify.com/embed/show/58ch4A571IGfllcdIvv9Tb?utm_source=generator";
 
 export function PodcastEmbed() {
   return (
