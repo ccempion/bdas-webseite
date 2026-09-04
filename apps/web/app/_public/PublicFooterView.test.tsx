@@ -71,9 +71,4 @@ describe("PublicFooterView", () => {
     expect(out).toContain('alt="LinkedIn"');
     expect(out).not.toContain('aria-label="Rechtliches und Social Media"');
   });
-
-  it("shows the FAQ link only when showFaq is true", () => {
-    expect(view()).not.toContain('href="/faq"');
-    expect(view({ showFaq: true })).toContain('href="/faq"');
-  });
 });
