@@ -13,13 +13,18 @@ import { loadCurrentMember } from "../_dashboard/session";
  * The board's to-do line on /account. Renders only when something actually
  * waits — a permanent "you have board rights" banner reads as a task and is
  * one most of the time it is shown.
+ *
+ * Open applications are deliberately absent here: they stay in the header badge
+ * and in each group's queue rather than on the viewer's personal account page.
  */
 export async function ApprovalsAlert({ groupSlug }: { groupSlug: string | null }) {
   const me = await loadCurrentMember();
   if (!me) return null;
 
   const counts = await loadApprovalCounts();
-  if (counts.total === 0) return null;
+  // Gate on what this alert still lists — `total` includes applications, so an
+  // open application on its own would render the banner with an empty body.
+  if (counts.groupTransfers + counts.openReports === 0) return null;
 
   const federal = isFederalBoard(me.grants);
 
@@ -28,23 +33,14 @@ export async function ApprovalsAlert({ groupSlug }: { groupSlug: string | null }
   // them, so a local board member whose own application is still open has no
   // primaryGroupId to derive a queue from. Fall back to the group they actually
   // hold the grant for, or the alert becomes a to-do line with nowhere to go.
-  // Federal is resolved first and never falls through here — boardScopes hands
-  // federal every active group, so picking one would misroute them away from
-  // the pool.
+  // Federal short-circuits: it links to its own federation-wide queue, so
+  // resolving a group here would cost a query nothing reads.
   const localSlug =
     federal || groupSlug
       ? groupSlug
       : (boardScopes(me.grants, await listGroups(getDb())).find((s) => s.kind === "group")?.slug ??
         null);
 
-  // Applications live in the destination group's queue. Federal has no queue of
-  // its own — the pool page lists every open application across the federation
-  // and links into each group's queue from there (ADR 0031).
-  const applicationsHref = federal
-    ? "/federal/pool"
-    : localSlug
-      ? `/gruppe/${localSlug}/bewerbungen`
-      : null;
   const membersHref = federal
     ? "/federal/members"
     : localSlug
@@ -54,11 +50,6 @@ export async function ApprovalsAlert({ groupSlug }: { groupSlug: string | null }
   return (
     <Alert variant="info" title="Es wartet etwas auf dich">
       <span className="flex flex-col gap-1">
-        {counts.applications > 0 && applicationsHref ? (
-          <Link href={applicationsHref} className="text-bdas-red hover:underline">
-            {counts.applications} Bewerbung(en) entscheiden →
-          </Link>
-        ) : null}
         {counts.groupTransfers > 0 && membersHref ? (
           <Link href={membersHref} className="text-bdas-red hover:underline">
             {counts.groupTransfers} Gruppenwechsel entscheiden →
