@@ -135,7 +135,13 @@ export function FaqExplorer({
           placeholder='Frage durchsuchen ("/" drücken zum Fokussieren)'
           aria-label="FAQ durchsuchen"
         />
-        <div className="mt-3 flex gap-2 overflow-x-auto lg:hidden">{chips}</div>
+        <div
+          role="group"
+          aria-label="Nach Thema filtern"
+          className="mt-3 flex gap-2 overflow-x-auto lg:hidden"
+        >
+          {chips}
+        </div>
       </div>
 
       <div className="lg:grid lg:grid-cols-[16rem_1fr] lg:gap-10">
@@ -159,7 +165,9 @@ export function FaqExplorer({
               </li>
             ))}
           </ul>
-          <div className="mt-6 flex flex-col gap-2">{chips}</div>
+          <div role="group" aria-label="Nach Thema filtern" className="mt-6 flex flex-col gap-2">
+            {chips}
+          </div>
         </nav>
 
         <div>
