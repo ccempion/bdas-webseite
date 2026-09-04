@@ -48,9 +48,11 @@ export async function reorderTopics(
   db: Db,
   input: { orderedIds: readonly string[] },
 ): Promise<void> {
-  for (const [i, id] of input.orderedIds.entries()) {
-    await db.update(faqTopics).set({ position: i }).where(eq(faqTopics.id, id));
-  }
+  await db.transaction(async (tx) => {
+    for (const [i, id] of input.orderedIds.entries()) {
+      await tx.update(faqTopics).set({ position: i }).where(eq(faqTopics.id, id));
+    }
+  });
 }
 
 export async function deleteTopic(db: Db, input: { id: string }): Promise<void> {
