@@ -13,7 +13,7 @@ import {
   unpublishEntry,
   updateEntry,
 } from "./entries";
-import { createSubmission, listSubmissions } from "./submissions";
+import { createSubmission, discardSubmission, listSubmissions } from "./submissions";
 
 const reachable = await dbReachable();
 const doc = { type: "doc", content: [] };
@@ -127,6 +127,24 @@ describe.skipIf(!reachable)("entries service", () => {
     const [s] = await listSubmissions(t.db);
     expect(s!.status).toBe("answered");
     expect(s!.entryId).toBe(a.id);
+
+    // decided_by/decided_at aren't on the FaqSubmission DTO — read them raw.
+    const [raw] = await t.client`
+      SELECT decided_by, decided_at FROM faq_submissions WHERE id = ${sub.id}
+    `;
+    expect(raw?.["decided_by"]).toBe("board1");
+    expect(raw?.["decided_at"]).not.toBeNull();
+  });
+
+  it("rejects an unusable submissionId — unknown, or not open", async () => {
+    await expect(createEntry(t.db, { ...base, submissionId: "nope" })).rejects.toThrow();
+
+    const sub = await createSubmission(t.db, { question: "Wo?", submittedBy: "m1" });
+    await discardSubmission(t.db, { id: sub.id, decidedBy: "board1" });
+    await expect(createEntry(t.db, { ...base, submissionId: sub.id })).rejects.toThrow();
+
+    // The failed link must not have silently created an orphan entry.
+    expect(await listEntries(t.db)).toEqual([]);
   });
 
   it("unpublish returns a published entry to draft", async () => {

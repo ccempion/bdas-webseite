@@ -155,10 +155,14 @@ export async function createEntry(
         .values(contexts.map((context) => ({ entryId: id, context })));
     }
     if (input.submissionId) {
-      await tx
+      const linked = await tx
         .update(faqSubmissions)
         .set({ entryId: id })
-        .where(and(eq(faqSubmissions.id, input.submissionId), eq(faqSubmissions.status, "open")));
+        .where(and(eq(faqSubmissions.id, input.submissionId), eq(faqSubmissions.status, "open")))
+        .returning({ id: faqSubmissions.id });
+      if (linked.length === 0) {
+        throw new NotFoundError("Offene Anfrage nicht gefunden.");
+      }
     }
     return inserted!;
   });
