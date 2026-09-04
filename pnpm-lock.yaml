@@ -114,6 +114,9 @@ importers:
       '@bdas/events-module':
         specifier: workspace:*
         version: link:../../modules/events
+      '@bdas/faq':
+        specifier: workspace:*
+        version: link:../../modules/faq
       '@bdas/feature-flags':
         specifier: workspace:*
         version: link:../../core/feature-flags
