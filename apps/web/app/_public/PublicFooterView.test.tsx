@@ -61,6 +61,17 @@ describe("PublicFooterView", () => {
     expect(view().match(/<footer/g)?.length).toBe(1);
   });
 
+  it("links Instagram and LinkedIn as labelled icons, not as legal links", () => {
+    const out = view();
+    expect(out).toContain('href="https://www.instagram.com/bdas_deutschland/"');
+    expect(out).toContain(
+      'href="https://www.linkedin.com/showcase/bund-der-alevitischen-studierenden-in-deutschland/about/"',
+    );
+    expect(out).toContain('alt="Instagram"');
+    expect(out).toContain('alt="LinkedIn"');
+    expect(out).not.toContain('aria-label="Rechtliches und Social Media"');
+  });
+
   it("shows the FAQ link only when showFaq is true", () => {
     expect(view()).not.toContain('href="/faq"');
     expect(view({ showFaq: true })).toContain('href="/faq"');
