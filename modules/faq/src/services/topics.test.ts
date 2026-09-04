@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
+import { NotFoundError } from "@bdas/errors";
 import type { TestDb } from "@bdas/db/test";
 
 import { dbReachable, setupFaqDb } from "../test-db";
@@ -49,5 +50,16 @@ describe.skipIf(!reachable)("topics service", () => {
     expect(await listTopics(t.db)).toEqual([]);
     const rows = await t.client`SELECT topic_id FROM faq_entries WHERE id = 'entry_1'`;
     expect(rows[0]?.["topic_id"]).toBeNull();
+  });
+
+  it("delete throws NotFound on an unknown id, but reorder stays tolerant", async () => {
+    // The board expects the row it clicked to exist, so the delete throws.
+    await expect(deleteTopic(t.db, { id: "nope" })).rejects.toThrow(NotFoundError);
+
+    // A reorder racing a delete must not blow up: unknown ids are skipped and
+    // the surviving ids still get their index as position.
+    const a = await createTopic(t.db, { name: "Events" });
+    await expect(reorderTopics(t.db, { orderedIds: ["geloescht", a.id] })).resolves.toBeUndefined();
+    expect((await listTopics(t.db))[0]!.position).toBe(1);
   });
 });

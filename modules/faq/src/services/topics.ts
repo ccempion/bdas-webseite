@@ -48,6 +48,8 @@ export async function reorderTopics(
   db: Db,
   input: { orderedIds: readonly string[] },
 ): Promise<void> {
+  // Deliberately tolerant of ids that no longer exist: a reorder racing a
+  // delete must not blow up. Unlike deleteTopic, which throws.
   await db.transaction(async (tx) => {
     for (const [i, id] of input.orderedIds.entries()) {
       await tx.update(faqTopics).set({ position: i }).where(eq(faqTopics.id, id));
@@ -56,5 +58,9 @@ export async function reorderTopics(
 }
 
 export async function deleteTopic(db: Db, input: { id: string }): Promise<void> {
-  await db.delete(faqTopics).where(eq(faqTopics.id, input.id));
+  const [row] = await db
+    .delete(faqTopics)
+    .where(eq(faqTopics.id, input.id))
+    .returning({ id: faqTopics.id });
+  if (!row) throw new NotFoundError("Thema nicht gefunden.");
 }

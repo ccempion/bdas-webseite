@@ -1,4 +1,4 @@
-import { desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq, sql } from "drizzle-orm";
 
 import { NotFoundError, ValidationError } from "@bdas/errors";
 
@@ -8,6 +8,8 @@ import type { Db } from "./topics";
 
 const MAX_QUESTION = 300;
 const MAX_DETAILS = 2000;
+/** A context is a route key like "dateien" — 200 chars is ample. */
+const MAX_CONTEXT = 200;
 
 function checkQuestion(question: string): string {
   const q = question.trim();
@@ -24,6 +26,15 @@ function checkDetails(details: string | undefined): string | null {
     throw new ValidationError("Details zu lang.");
   }
   return d.length === 0 ? null : d;
+}
+
+function checkContext(context: string | undefined): string | null {
+  if (context === undefined) return null;
+  const c = context.trim();
+  if (c.length > MAX_CONTEXT) {
+    throw new ValidationError("Kontext zu lang.");
+  }
+  return c.length === 0 ? null : c;
 }
 
 function rowToSubmission(r: typeof faqSubmissions.$inferSelect): FaqSubmission {
@@ -45,18 +56,25 @@ export async function createSubmission(
 ): Promise<FaqSubmission> {
   const question = checkQuestion(input.question);
   const details = checkDetails(input.details);
+  const context = checkContext(input.context);
   const [row] = await db
     .insert(faqSubmissions)
     .values({
       id: newId(),
       question,
       details,
-      context: input.context ?? null,
+      context,
       submittedBy: input.submittedBy,
     })
     .returning();
   return rowToSubmission(row!);
 }
+
+/**
+ * Newest first, with `id` as a tie-breaker so two submissions written inside
+ * the same clock tick still come back in a stable order.
+ */
+const SUBMISSION_ORDER = [desc(faqSubmissions.createdAt), desc(faqSubmissions.id)];
 
 export async function listSubmissions(
   db: Db,
@@ -67,8 +85,11 @@ export async function listSubmissions(
         .select()
         .from(faqSubmissions)
         .where(eq(faqSubmissions.status, opts.status))
-        .orderBy(desc(faqSubmissions.createdAt))
-    : await db.select().from(faqSubmissions).orderBy(desc(faqSubmissions.createdAt));
+        .orderBy(...SUBMISSION_ORDER)
+    : await db
+        .select()
+        .from(faqSubmissions)
+        .orderBy(...SUBMISSION_ORDER);
   return rows.map(rowToSubmission);
 }
 
@@ -84,10 +105,13 @@ export async function discardSubmission(
   db: Db,
   input: { id: string; decidedBy: string },
 ): Promise<void> {
+  // Guarded on `open`, like createEntry's submission link: discarding an
+  // already-answered submission would clobber decided_by/decided_at while
+  // entry_id still points at a live published entry.
   const [row] = await db
     .update(faqSubmissions)
     .set({ status: "discarded", decidedBy: input.decidedBy, decidedAt: new Date() })
-    .where(eq(faqSubmissions.id, input.id))
+    .where(and(eq(faqSubmissions.id, input.id), eq(faqSubmissions.status, "open")))
     .returning({ id: faqSubmissions.id });
-  if (!row) throw new NotFoundError("Anfrage nicht gefunden.");
+  if (!row) throw new NotFoundError("Offene Anfrage nicht gefunden.");
 }

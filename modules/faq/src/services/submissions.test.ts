@@ -1,8 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
+import { NotFoundError, ValidationError } from "@bdas/errors";
 import type { TestDb } from "@bdas/db/test";
 
 import { dbReachable, setupFaqDb } from "../test-db";
+import { createEntry, publishEntry } from "./entries";
 import {
   createSubmission,
   discardSubmission,
@@ -78,6 +80,68 @@ describe.skipIf(!reachable)("submissions service", () => {
     expect(raw?.["decided_by"]).toBe("board1");
     expect(raw?.["decided_at"]).not.toBeNull();
 
-    await expect(discardSubmission(t.db, { id: "nope", decidedBy: "b" })).rejects.toThrow();
+    await expect(discardSubmission(t.db, { id: "nope", decidedBy: "b" })).rejects.toThrow(
+      NotFoundError,
+    );
+  });
+
+  it("breaks created_at ties by id, newest id first", async () => {
+    // Two submissions written in the same clock tick would otherwise come back
+    // in an arbitrary order. Inserted ascending so heap order alone would fail.
+    for (const id of ["sub1", "sub2"]) {
+      await t.client`
+        INSERT INTO faq_submissions (id, question, submitted_by, created_at)
+        VALUES (${id}, 'Gleiche Zeit?', 'm1', timestamptz '2026-09-04 10:00:00+00')
+      `;
+    }
+    expect((await listSubmissions(t.db)).map((s) => s.id)).toEqual(["sub2", "sub1"]);
+  });
+
+  it("trims context and rejects one over 200 characters", async () => {
+    const s = await createSubmission(t.db, {
+      question: "Wo?",
+      submittedBy: "m1",
+      context: "  dateien  ",
+    });
+    expect(s.context).toBe("dateien");
+    const blank = await createSubmission(t.db, {
+      question: "Wo?",
+      submittedBy: "m1",
+      context: "   ",
+    });
+    expect(blank.context).toBeNull();
+    const max = await createSubmission(t.db, {
+      question: "Wo?",
+      submittedBy: "m1",
+      context: "x".repeat(200),
+    });
+    expect(max.context).toHaveLength(200);
+    await expect(
+      createSubmission(t.db, { question: "Wo?", submittedBy: "m1", context: "x".repeat(201) }),
+    ).rejects.toThrow(ValidationError);
+  });
+
+  it("discard refuses an already-answered submission", async () => {
+    const sub = await createSubmission(t.db, { question: "Wo?", submittedBy: "m1" });
+    const entry = await createEntry(t.db, {
+      section: "mitglieder",
+      question: "Wo?",
+      body: { type: "doc", content: [] },
+      updatedBy: "board1",
+      submissionId: sub.id,
+    });
+    await publishEntry(t.db, { id: entry.id, updatedBy: "board1" });
+
+    // Discarding now would clobber decided_by/decided_at while entry_id still
+    // points at a live published entry.
+    await expect(discardSubmission(t.db, { id: sub.id, decidedBy: "board2" })).rejects.toThrow(
+      NotFoundError,
+    );
+    const [raw] = await t.client`
+      SELECT status, decided_by, entry_id FROM faq_submissions WHERE id = ${sub.id}
+    `;
+    expect(raw?.["status"]).toBe("answered");
+    expect(raw?.["decided_by"]).toBe("board1");
+    expect(raw?.["entry_id"]).toBe(entry.id);
   });
 });
