@@ -27,4 +27,6 @@ export const MIGRATION_MANIFEST: ReadonlyArray<string> = [
   // Phase 3 onward — append as modules land.
   "content",
   "profile",
+  // FAQ suite v2 (spec 2026-09-04): faq_* tables, no cross-module FK.
+  "faq",
 ];
