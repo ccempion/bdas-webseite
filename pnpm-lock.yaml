@@ -434,6 +434,9 @@ importers:
       '@bdas/errors':
         specifier: workspace:*
         version: link:../../core/errors
+      '@bdas/id':
+        specifier: workspace:*
+        version: link:../../core/id
       drizzle-orm:
         specifier: ^0.36.0
         version: 0.36.4(@types/react@18.3.28)(postgres@3.4.9)(react@18.3.1)

@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { createId } from "@bdas/id";
+
 export const FAQ_SECTIONS = ["allgemein", "bundesvorstand", "vorstand", "mitglieder"] as const;
 export type FaqSectionKey = (typeof FAQ_SECTIONS)[number];
 
@@ -51,4 +53,9 @@ export type FaqSubmission = {
   createdAt: Date;
 };
 
-export const newId = (): string => crypto.randomUUID();
+/**
+ * IDs come from `core/` (CLAUDE.md §1 rule 4), like every other module.
+ * The 30 seeded entries in `migrations/0002_seed.sql` keep their readable
+ * slug ids — the prefix is not a format the module validates.
+ */
+export const newId = (): string => createId("faq");
