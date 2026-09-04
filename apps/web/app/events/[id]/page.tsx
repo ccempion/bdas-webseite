@@ -16,8 +16,7 @@ import { RegisterControls } from "./RegisterControls";
 
 export const metadata = { title: "Veranstaltung" };
 
-function renderSlot(heading: string, doc: Parameters<typeof renderEventContentHtml>[0]) {
-  const html = renderEventContentHtml(doc);
+function renderSlot(heading: string, html: string) {
   if (!html) return null;
   return (
     <Card flat className="p-6">
@@ -39,6 +38,16 @@ export default async function EventDetailPage({ params }: { params: { id: string
   if (!event) notFound();
 
   const myReg = me?.member ? await getMyRegistration(db, event.id, me.member.id) : null;
+
+  const slots = {
+    body: renderEventContentHtml(event.content?.body),
+    agenda: renderEventContentHtml(event.content?.agenda),
+    directions: renderEventContentHtml(event.content?.directions),
+    bring: renderEventContentHtml(event.content?.bring),
+  };
+  // Only worth a jump link when something actually sits between the header and
+  // the registration card.
+  const showJumpToRegistration = Object.values(slots).some(Boolean);
 
   // Non-members may sign up only on published, public events that opted in.
   const guestRegistrationOpen =
@@ -82,12 +91,34 @@ export default async function EventDetailPage({ params }: { params: { id: string
         ) : null}
       </header>
 
-      {renderSlot("Beschreibung", event.content?.body)}
-      {renderSlot("Ablauf", event.content?.agenda)}
-      {renderSlot("Anfahrt", event.content?.directions)}
-      {renderSlot("Mitbringen", event.content?.bring)}
+      {showJumpToRegistration ? (
+        <a
+          href="#anmeldung"
+          className="group inline-flex w-fit items-center gap-2 rounded-bdas border border-bdas-soft bg-bdas-surface px-3 py-1.5 text-sm font-medium text-bdas-ink transition-colors duration-bdas-quick ease-bdas hover:bg-bdas-overlay-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-bdas-soft"
+        >
+          Direkt zur Anmeldung
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+            className="h-4 w-4 text-bdas-red transition-transform duration-bdas-soft ease-bdas group-hover:translate-y-0.5 group-focus-visible:translate-y-0.5"
+          >
+            <path d="M12 5v14" />
+            <path d="m19 12-7 7-7-7" />
+          </svg>
+        </a>
+      ) : null}
 
-      <Card flat className="p-6">
+      {renderSlot("Beschreibung", slots.body)}
+      {renderSlot("Ablauf", slots.agenda)}
+      {renderSlot("Anfahrt", slots.directions)}
+      {renderSlot("Mitbringen", slots.bring)}
+
+      <Card id="anmeldung" flat className="scroll-mt-6 p-6">
         <p className="mb-4 text-sm text-bdas-ink-muted">
           {event.capacity === null
             ? `${event.confirmedCount} angemeldet`
