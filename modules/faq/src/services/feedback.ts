@@ -2,20 +2,11 @@ import { inArray, sql } from "drizzle-orm";
 
 import { NotFoundError } from "@bdas/errors";
 
+import { isForeignKeyViolation } from "../pg-errors";
 import { faqFeedback } from "../schema";
 import type { Db } from "./topics";
 
 export type FeedbackCounts = { up: number; down: number };
-
-/**
- * postgres-js puts the SQLSTATE in `code`; `23503` is foreign_key_violation —
- * the entry the vote points at does not exist.
- */
-function isForeignKeyViolation(err: unknown): boolean {
-  if (typeof err !== "object" || err === null) return false;
-  const e = err as { code?: string };
-  return e.code === "23503";
-}
 
 /**
  * One vote per member per entry, changeable: the composite primary key on

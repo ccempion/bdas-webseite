@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
+import { NotFoundError } from "@bdas/errors";
 import type { TestDb } from "@bdas/db/test";
 
 import { dbReachable, setupFaqDb } from "../test-db";
@@ -53,6 +54,23 @@ describe.skipIf(!reachable)("entries service", () => {
   it("rejects subgroup outside vorstand and a bad youtube id", async () => {
     await expect(createEntry(t.db, { ...base, subgroup: "local_board" })).rejects.toThrow();
     await expect(createEntry(t.db, { ...base, youtubeId: "kurz" })).rejects.toThrow();
+  });
+
+  it("the database rejects a subgroup outside vorstand even on a raw insert", async () => {
+    // 0001_init.sql constrains the pairing, not just the value set, so the
+    // invariant validate() enforces cannot be bypassed around the service.
+    await expect(
+      t.client`
+        INSERT INTO faq_entries (id, section, subgroup, question, body)
+        VALUES ('raw_1', 'mitglieder', 'local_board', 'Frage?', '{"type":"doc"}'::jsonb)
+      `,
+    ).rejects.toThrow();
+    await expect(
+      t.client`
+        INSERT INTO faq_entries (id, section, subgroup, question, body)
+        VALUES ('raw_2', 'vorstand', 'local_board', 'Frage?', '{"type":"doc"}'::jsonb)
+      `,
+    ).resolves.toBeDefined();
   });
 
   it("rejects a blank question and an over-long question", async () => {
@@ -175,9 +193,122 @@ describe.skipIf(!reachable)("entries service", () => {
     expect(ids).toEqual([b.id, a.id]);
   });
 
-  it("unknown id throws NotFound for update, publish, and unpublish", async () => {
-    await expect(updateEntry(t.db, { id: "nope", ...base, updatedBy: "u1" })).rejects.toThrow();
-    await expect(publishEntry(t.db, { id: "nope", updatedBy: "u1" })).rejects.toThrow();
-    await expect(unpublishEntry(t.db, { id: "nope", updatedBy: "u1" })).rejects.toThrow();
+  it("unknown id throws NotFound for update, publish, unpublish, and delete", async () => {
+    await expect(updateEntry(t.db, { id: "nope", ...base, updatedBy: "u1" })).rejects.toThrow(
+      NotFoundError,
+    );
+    await expect(publishEntry(t.db, { id: "nope", updatedBy: "u1" })).rejects.toThrow(
+      NotFoundError,
+    );
+    await expect(unpublishEntry(t.db, { id: "nope", updatedBy: "u1" })).rejects.toThrow(
+      NotFoundError,
+    );
+    // The board expects the row it clicked to exist — deletes throw, unlike
+    // reorderEntries, which stays tolerant on purpose.
+    await expect(deleteEntry(t.db, { id: "nope" })).rejects.toThrow(NotFoundError);
+  });
+
+  it("reorder tolerates ids that no longer exist", async () => {
+    const a = await createEntry(t.db, { ...base });
+    await expect(
+      reorderEntries(t.db, {
+        section: "mitglieder",
+        subgroup: null,
+        orderedIds: ["geloescht", a.id],
+      }),
+    ).resolves.toBeUndefined();
+    expect((await listEntries(t.db))[0]!.position).toBe(1);
+  });
+
+  it("a stale relatedId or unknown topicId surfaces as NotFound, not a raw pg error", async () => {
+    await expect(createEntry(t.db, { ...base, relatedIds: ["weg"] })).rejects.toThrow(
+      NotFoundError,
+    );
+    await expect(createEntry(t.db, { ...base, topicId: "kein-thema" })).rejects.toThrow(
+      NotFoundError,
+    );
+    // Nothing partially committed: the failed insert must leave no entry.
+    expect(await listEntries(t.db)).toEqual([]);
+
+    const a = await createEntry(t.db, { ...base });
+    await expect(
+      updateEntry(t.db, { id: a.id, ...base, relatedIds: ["weg"], updatedBy: "u2" }),
+    ).rejects.toThrow(NotFoundError);
+    await expect(
+      updateEntry(t.db, { id: a.id, ...base, topicId: "kein-thema", updatedBy: "u2" }),
+    ).rejects.toThrow(NotFoundError);
+  });
+
+  it("update re-allocates position when the entry moves to another scope", async () => {
+    // Two entries already sit in the destination scope, so carrying the old
+    // position (0) over would collide with `dest0`.
+    const dest0 = await createEntry(t.db, { ...base, section: "allgemein", question: "A?" });
+    const dest1 = await createEntry(t.db, { ...base, section: "allgemein", question: "B?" });
+    const moving = await createEntry(t.db, { ...base, question: "Wandert?" });
+    expect(moving.position).toBe(0);
+
+    const moved = await updateEntry(t.db, {
+      ...base,
+      id: moving.id,
+      section: "allgemein",
+      question: "Wandert?",
+      updatedBy: "u2",
+    });
+    expect(moved.position).toBe(2);
+    expect([dest0.position, dest1.position]).toEqual([0, 1]);
+
+    // Staying in the same scope must NOT renumber the entry.
+    const again = await updateEntry(t.db, {
+      ...base,
+      id: moved.id,
+      section: "allgemein",
+      question: "Wandert immer noch?",
+      updatedBy: "u2",
+    });
+    expect(again.position).toBe(2);
+  });
+
+  it("orders by declaration order of sections and subgroups, not alphabetically", async () => {
+    // Alphabetically this would be allgemein → bundesvorstand → mitglieder →
+    // vorstand, and event_organizer → local_board → local_board_lead →
+    // page_editor. Neither is an order anyone chose.
+    await createEntry(t.db, { ...base, section: "mitglieder", question: "m" });
+    await createEntry(t.db, {
+      ...base,
+      section: "vorstand",
+      subgroup: "page_editor",
+      question: "v-pe",
+    });
+    await createEntry(t.db, { ...base, section: "allgemein", question: "a" });
+    await createEntry(t.db, {
+      ...base,
+      section: "vorstand",
+      subgroup: "local_board_lead",
+      question: "v-lead",
+    });
+    await createEntry(t.db, { ...base, section: "bundesvorstand", question: "b" });
+    await createEntry(t.db, { ...base, section: "vorstand", question: "v-null" });
+
+    expect((await listEntries(t.db)).map((e) => e.question)).toEqual([
+      "a",
+      "b",
+      "v-null",
+      "v-lead",
+      "v-pe",
+      "m",
+    ]);
+  });
+
+  it("breaks position ties by id", async () => {
+    // createEntry allocates distinct positions, so the tie is written raw —
+    // with ids chosen so the expected order is collation-independent, and
+    // inserted in reverse so heap order alone would fail this.
+    for (const id of ["entry2", "entry1"]) {
+      await t.client`
+        INSERT INTO faq_entries (id, section, question, body, position)
+        VALUES (${id}, 'mitglieder', 'Gleiche Position?', '{"type":"doc"}'::jsonb, 0)
+      `;
+    }
+    expect((await listEntries(t.db)).map((e) => e.id)).toEqual(["entry1", "entry2"]);
   });
 });
