@@ -40,4 +40,5 @@ export type {
   TiptapDoc,
 } from "./types";
 export type { EntryInput } from "./services/entries";
+export type { FeedbackCounts } from "./services/feedback";
 export type { Db as FaqDb } from "./services/topics";
