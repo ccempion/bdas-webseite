@@ -9,10 +9,15 @@
 import { cache } from "react";
 
 import { countOpenReports } from "@bdas/blog";
-import { canAdministerBoard } from "@bdas/dashboard-shell";
+import { canAdministerBoard, type Scope } from "@bdas/dashboard-shell";
 import { getDb } from "@bdas/db";
 import { isFlagOn } from "@bdas/feature-flags";
-import { countPendingApprovals, isFederalBoard } from "@bdas/members";
+import {
+  countPendingApplicationsByGroup,
+  countPendingApprovals,
+  isFederalBoard,
+  type Actor,
+} from "@bdas/members";
 
 import { loadCurrentMember } from "./session";
 
@@ -51,3 +56,39 @@ export const loadApprovalCounts = cache(async (): Promise<ApprovalSummary> => {
     total: members.applications + members.groupTransfers + openReports,
   };
 });
+
+export type SidebarBadgeCounts = {
+  /** Federation-wide open applications, shown next to "Ohne Gruppe". */
+  readonly federal: number;
+  /** Open applications per group scope, shown next to that group's "Bewerbungen". */
+  readonly byGroupId: ReadonlyMap<string, number>;
+};
+
+const NO_BADGES: SidebarBadgeCounts = { federal: 0, byGroupId: new Map() };
+
+/**
+ * Nav-badge counts for the board sidebar, one per scope the viewer can switch
+ * to. Reuses `countPendingApprovals`/`countPendingApplicationsByGroup` — the
+ * same decidable-applications gate the header/account alert already uses —
+ * so the sidebar badge never disagrees with those about what counts as
+ * "yours to decide". `actor`/`scopes` come from the board layout, which has
+ * already resolved both; this does not re-fetch the session.
+ */
+export async function loadSidebarBadgeCounts(
+  actor: Actor,
+  scopes: ReadonlyArray<Scope>,
+): Promise<SidebarBadgeCounts> {
+  if (!isFlagOn("members")) return NO_BADGES;
+
+  const db = getDb();
+  const groupIds = scopes.flatMap((s) => (s.kind === "group" ? [s.groupId] : []));
+
+  const [federalCounts, byGroupId] = await Promise.all([
+    isFederalBoard(actor.grants) ? countPendingApprovals(db, actor) : null,
+    groupIds.length > 0
+      ? countPendingApplicationsByGroup(db, actor, groupIds)
+      : new Map<string, number>(),
+  ]);
+
+  return { federal: federalCounts?.applications ?? 0, byGroupId };
+}

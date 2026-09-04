@@ -1,6 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import type { Grant } from "@bdas/members";
+
 const countPendingApprovals = vi.fn();
+const countPendingApplicationsByGroup = vi.fn();
 const countOpenReports = vi.fn();
 const loadCurrentMember = vi.fn();
 const isFlagOn = vi.fn();
@@ -15,6 +18,7 @@ vi.mock("@bdas/dashboard-shell", () => ({
 }));
 vi.mock("@bdas/members", () => ({
   countPendingApprovals: (...a: unknown[]) => countPendingApprovals(...a),
+  countPendingApplicationsByGroup: (...a: unknown[]) => countPendingApplicationsByGroup(...a),
   isFederalBoard: (grants: ReadonlyArray<{ role: string }>) =>
     grants.some((g) => g.role === "federal_board"),
 }));
@@ -23,7 +27,7 @@ vi.mock("@bdas/blog", () => ({
 }));
 vi.mock("./session", () => ({ loadCurrentMember: () => loadCurrentMember() }));
 
-import { loadApprovalCounts } from "./approvals";
+import { loadApprovalCounts, loadSidebarBadgeCounts } from "./approvals";
 
 const meWith = (roles: string[]) => ({
   user: { id: "usr_1" },
@@ -106,5 +110,75 @@ describe("loadApprovalCounts", () => {
     expect(out.applications).toBe(0);
     expect(out.groupTransfers).toBe(0);
     expect(countPendingApprovals).not.toHaveBeenCalled();
+  });
+});
+
+describe("loadSidebarBadgeCounts", () => {
+  const federalScope = { kind: "federal" as const };
+  const groupScope = (groupId: string) => ({
+    kind: "group" as const,
+    groupId,
+    slug: groupId,
+    name: groupId,
+  });
+  const actorWith = (roles: string[]) => ({
+    userId: "usr_1",
+    grants: roles.map((role) => ({ role, groupId: null })) as ReadonlyArray<Grant>,
+  });
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    isFlagOn.mockReturnValue(true);
+  });
+
+  it("gibt Nullen bei ausgeschaltetem members-Flag, ohne Abfragen", async () => {
+    isFlagOn.mockReturnValue(false);
+
+    const out = await loadSidebarBadgeCounts(actorWith(["federal_board"]), [
+      federalScope,
+      groupScope("grp_a"),
+    ]);
+
+    expect(out.federal).toBe(0);
+    expect(out.byGroupId.size).toBe(0);
+    expect(countPendingApprovals).not.toHaveBeenCalled();
+    expect(countPendingApplicationsByGroup).not.toHaveBeenCalled();
+  });
+
+  it("fragt für einen lokalen Vorstand nur die Gruppen-Aufschlüsselung ab", async () => {
+    countPendingApplicationsByGroup.mockResolvedValue(new Map([["grp_a", 3]]));
+
+    const out = await loadSidebarBadgeCounts(actorWith(["local_board"]), [groupScope("grp_a")]);
+
+    expect(out.federal).toBe(0);
+    expect(out.byGroupId.get("grp_a")).toBe(3);
+    expect(countPendingApprovals).not.toHaveBeenCalled();
+    expect(countPendingApplicationsByGroup).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.anything(),
+      ["grp_a"],
+    );
+  });
+
+  it("füllt für den Bundesvorstand beide Zahlen", async () => {
+    countPendingApprovals.mockResolvedValue({ applications: 5, groupTransfers: 1 });
+    countPendingApplicationsByGroup.mockResolvedValue(new Map([["grp_a", 2]]));
+
+    const out = await loadSidebarBadgeCounts(actorWith(["federal_board"]), [
+      federalScope,
+      groupScope("grp_a"),
+    ]);
+
+    expect(out.federal).toBe(5);
+    expect(out.byGroupId.get("grp_a")).toBe(2);
+  });
+
+  it("lässt die Gruppen-Abfrage aus, wenn keine Gruppen-Scopes vorliegen", async () => {
+    countPendingApprovals.mockResolvedValue({ applications: 1, groupTransfers: 0 });
+
+    const out = await loadSidebarBadgeCounts(actorWith(["federal_board"]), [federalScope]);
+
+    expect(out.byGroupId.size).toBe(0);
+    expect(countPendingApplicationsByGroup).not.toHaveBeenCalled();
   });
 });
