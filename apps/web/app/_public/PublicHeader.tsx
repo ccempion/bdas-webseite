@@ -3,7 +3,6 @@ import { getDb } from "@bdas/db";
 import { isFlagOn } from "@bdas/feature-flags";
 import { getGroup } from "@bdas/groups";
 
-import { faqEnabled } from "../../lib/faq/enabled";
 import { loadApprovalCounts } from "../_dashboard/approvals";
 import { loadCurrentMember } from "../_dashboard/session";
 import { navItems } from "./nav-items";
@@ -45,7 +44,6 @@ export async function PublicHeader() {
               displayName: me.member?.firstName ?? "Konto",
               isBoard,
               openCount,
-              showFaq: faqEnabled(),
             }
           : null
       }

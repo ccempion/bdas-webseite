@@ -58,7 +58,7 @@ export function PublicHeaderView({
   konto,
 }: {
   items: NavItem[];
-  konto: { displayName: string; isBoard: boolean; openCount: number; showFaq: boolean } | null;
+  konto: { displayName: string; isBoard: boolean; openCount: number } | null;
 }) {
   const openCount = konto?.openCount ?? 0;
   return (
@@ -99,13 +99,6 @@ export function PublicHeaderView({
                           Mein Konto
                         </Link>
                       </li>
-                      {konto.showFaq ? (
-                        <li>
-                          <Link href="/faq" className={DROPDOWN_LINK}>
-                            FAQ &amp; Hilfe
-                          </Link>
-                        </li>
-                      ) : null}
                       {konto.isBoard ? (
                         <li>
                           <Link
@@ -201,13 +194,6 @@ export function PublicHeaderView({
                         Mein Konto
                       </Link>
                     </li>
-                    {konto.showFaq ? (
-                      <li>
-                        <Link href="/faq" className={DROPDOWN_LINK}>
-                          FAQ &amp; Hilfe
-                        </Link>
-                      </li>
-                    ) : null}
                     {konto.isBoard ? (
                       <li>
                         <Link

@@ -46,10 +46,7 @@ describe("PublicHeaderView", () => {
 
   it("shows the account menu and approvals count for a signed-in board member", () => {
     const out = renderToStaticMarkup(
-      <PublicHeaderView
-        items={[]}
-        konto={{ displayName: "Aylin", isBoard: true, openCount: 3, showFaq: false }}
-      />,
+      <PublicHeaderView items={[]} konto={{ displayName: "Aylin", isBoard: true, openCount: 3 }} />,
     );
     expect(out).toContain("Aylin");
     expect(out).toContain("Mein Konto");
@@ -62,27 +59,10 @@ describe("PublicHeaderView", () => {
     const out = renderToStaticMarkup(
       <PublicHeaderView
         items={[]}
-        konto={{ displayName: "Deniz", isBoard: false, openCount: 0, showFaq: false }}
+        konto={{ displayName: "Deniz", isBoard: false, openCount: 0 }}
       />,
     );
     expect(out).toContain("Mein Konto");
     expect(out).not.toContain("Board-Bereich");
-  });
-
-  it("shows the FAQ link only when konto.showFaq is true", () => {
-    const withFaq = renderToStaticMarkup(
-      <PublicHeaderView
-        items={[]}
-        konto={{ displayName: "Aylin", isBoard: false, openCount: 0, showFaq: true }}
-      />,
-    );
-    const withoutFaq = renderToStaticMarkup(
-      <PublicHeaderView
-        items={[]}
-        konto={{ displayName: "Aylin", isBoard: false, openCount: 0, showFaq: false }}
-      />,
-    );
-    expect(withFaq).toContain('href="/faq"');
-    expect(withoutFaq).not.toContain('href="/faq"');
   });
 });
