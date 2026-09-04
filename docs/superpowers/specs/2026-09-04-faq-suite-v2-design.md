@@ -35,13 +35,14 @@ DB-Overrides (zwei Wahrheitsquellen, Einreichungen passen nicht ins Modell).
 
 ## 3. Datenmodell
 
-| Tabelle           | Spalten (Kern)                                                                                                      | Zweck                                                                                                 |
-| ----------------- | ------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
-| `faq_topics`      | `id, name, position`                                                                                                | Themen-Labels (Events, Dateien, Administration, …), vom Board verwaltbar; keine Sichtbarkeitssemantik |
-| `faq_entries`     | `id, section, subgroup, topic_id, question, body, youtube_id, status, position, created_at, updated_at, updated_by` | Ein FAQ-Eintrag                                                                                       |
-| `faq_entry_links` | `(entry_id, related_entry_id)`                                                                                      | „Verwandte Fragen"-Chips, FK-Integrität beim Löschen                                                  |
-| `faq_feedback`    | `(entry_id, user_id) PK, helpful, updated_at`                                                                       | Eine Stimme pro Mitglied pro Eintrag, änderbar; nur Aggregate verlassen das Modul                     |
-| `faq_submissions` | `id, question, details, submitted_by, status, entry_id, created_at, decided_by, decided_at`                         | Eingereichte Fragen                                                                                   |
+| Tabelle              | Spalten (Kern)                                                                                                      | Zweck                                                                                                 |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| `faq_topics`         | `id, name, position`                                                                                                | Themen-Labels (Events, Dateien, Administration, …), vom Board verwaltbar; keine Sichtbarkeitssemantik |
+| `faq_entries`        | `id, section, subgroup, topic_id, question, body, youtube_id, status, position, created_at, updated_at, updated_by` | Ein FAQ-Eintrag                                                                                       |
+| `faq_entry_links`    | `(entry_id, related_entry_id)`                                                                                      | „Verwandte Fragen"-Chips, FK-Integrität beim Löschen                                                  |
+| `faq_feedback`       | `(entry_id, user_id) PK, helpful, updated_at`                                                                       | Eine Stimme pro Mitglied pro Eintrag, änderbar; nur Aggregate verlassen das Modul                     |
+| `faq_submissions`    | `id, question, details, context, submitted_by, status, entry_id, created_at, decided_by, decided_at`                | Eingereichte Fragen                                                                                   |
+| `faq_entry_contexts` | `(entry_id, context)`                                                                                               | Kontext-Schlüssel: wo auf der Plattform der Eintrag als kontextuelle Hilfe erscheint                  |
 
 - `section`: Enum `allgemein | bundesvorstand | vorstand | mitglieder`.
   `subgroup`: nullable Rollen-Enum (nur Vorstand-Unterrollen). **Sichtbarkeit
@@ -57,12 +58,18 @@ DB-Overrides (zwei Wahrheitsquellen, Einreichungen passen nicht ins Modell).
 - `faq_submissions.status`: `open | answered | discarded`. „Antwort verfassen"
   erzeugt einen **Entwurfs-Eintrag** (verknüpft via `entry_id`); dessen
   Veröffentlichung setzt die Submission auf `answered`.
+- `context`: stabiler String-Schlüssel aus einem **im Code definierten
+  Register** (`apps/web/lib/faq/contexts.ts`: Schlüssel + Label +
+  Routen-Muster, z. B. `events.erstellen`, `dateien`, `board.mitglieder`).
+  Das Modul speichert Strings; welche gültig sind und welcher Route sie
+  entsprechen, bleibt Code. Bei Submissions hält `context` (nullable) fest,
+  auf welcher Seite die Frage entstand.
 
 ## 4. Modul-Services & Autorisierung
 
 `modules/faq/index.ts` exportiert: Entry-/Topic-CRUD, `listEntries`,
 `upsertFeedback`, `createSubmission`, `listSubmissions`,
-`openSubmissionCount`. **Services sind auth-agnostisch; die App-Schicht
+`openSubmissionCount`, `listEntriesByContext`. **Services sind auth-agnostisch; die App-Schicht
 autorisiert** (Events-Lektion): Jede Schreib-Action prüft `isFederalBoard`,
 außer `createSubmission` (jedes angemeldete Mitglied) und `upsertFeedback`
 (jedes angemeldete Mitglied, nur eigene Stimme). Die Sichtbarkeitsfilterung
@@ -111,8 +118,9 @@ Neuer `FEDERAL_NAV`-Eintrag „FAQ", Zugriff wie der übrige Federal-Bereich
 anlegen, Verwerfen-Bestätigung öffnen ein Dialog-Fenster über abgedunkeltem
 Backdrop; die Seite dahinter bleibt stehen. Formular: Frage, Bereich +
 Untergruppe, Thema, Tiptap-Body, YouTube-URL (ID wird geparst,
-Thumbnail-Vorschau), Verwandte-Einträge-Picker, „Speichern" (Entwurf) /
-„Veröffentlichen".
+Thumbnail-Vorschau), Verwandte-Einträge-Picker, Multi-Select
+**„Anzeigen bei: …“** (Kontext-Schlüssel aus dem Register), „Speichern" (Entwurf) /
+„Veröffentlichen". Bei Submissions zeigt die Karte den Herkunfts-Kontext.
 
 ### Neue Design-System-Primitive: `Dialog`
 
@@ -123,7 +131,30 @@ Klick-außerhalb schließen (Nachfrage bei ungespeicherten Änderungen),
 `prefers-reduced-motion` respektiert. Der Einreichen-Dialog der Leseseite nutzt
 dieselbe Primitive.
 
-## 7. Migration & Seed
+## 7. Kontextuelle Hilfe („Oktopus“)
+
+Die FAQ erscheint überall dort auf den eingeloggten Flächen, wo sie relevant
+ist — über einen Mechanismus, nicht über manuell gepflegte Blöcke pro Seite:
+
+- **Globales Hilfe-Panel:** ein schwebender „?“-Button (unten rechts), einmal
+  im eingeloggten Layout montiert. Öffnen → Panel über abgedunkeltem
+  Hintergrund (gleiche `Dialog`/Sheet-Primitive) mit den veröffentlichten
+  Einträgen, deren Kontext zur aktuellen Route passt (Match über das
+  Register), gefiltert durch dieselbe Sichtbarkeitslogik wie `/faq`.
+  Darunter Mini-Suche über alle sichtbaren Einträge, „Alle FAQ ansehen“-Link
+  und „Frage einreichen“ mit vorbefülltem Kontext.
+- **Lazy geladen:** Einträge kommen erst beim Öffnen über einen Route-Handler
+  (serverseitig nach Session + Kontext gefiltert) — kein Payload auf jeder
+  Seite. Ohne passende Einträge zeigt das Panel „Beliebte Fragen“ (Bereich
+  des Viewers); der Button erscheint nie vor leerem Panel.
+- **Gezielte Einbettung:** `<FaqHinweis context="…" />` für Stellen, wo
+  bestimmte Fragen direkt neben einem Formular stehen sollen (kompaktes
+  Accordion, max. 2–3 Einträge, „Mehr im FAQ“-Link). Sparsam einsetzen; das
+  Panel ist der Standardweg.
+- **Abgrenzung:** nur eingeloggte Flächen — das FAQ ist login-pflichtig,
+  öffentliche Seiten bleiben außen vor.
+
+## 8. Migration & Seed
 
 - Einmaliges Konvertierungsskript: `apps/web/content/faq/*.ts` (30 Einträge) →
   Tiptap-JSON → **Seed-Migration** in `modules/faq/migrations/`. Eintrags-IDs
@@ -134,7 +165,7 @@ dieselbe Primitive.
 - Statische Content-Dateien bleiben als Fallback liegen; Entfernung in einem
   Aufräum-PR nach stabilem Betrieb.
 
-## 8. Feature-Flag & Rollout
+## 9. Feature-Flag & Rollout
 
 Neues Flag **`faq_suite`**. Aus → `/faq` rendert die heutige statische Seite
 (nichts Halbfertiges sichtbar, obwohl `faq` in Prod an ist). An → neue Seite,
@@ -145,12 +176,15 @@ PR-Schnitt (Files-Muster, ein PR pro Schritt):
 1. Modul `modules/faq` — Schema, Migrationen, Services, Integrationstests, Seed.
 2. Lese-Erlebnis — neues `/faq`-Layout aus der DB (Rail, Suche, Videos,
    Deep-Links) + `Dialog`-Primitive.
-3. Board-Oberfläche `/federal/faq` — Verwaltung, Entwurf/Veröffentlichen, Themen.
+3. Board-Oberfläche `/federal/faq` — Verwaltung, Entwurf/Veröffentlichen,
+   Themen, Kontext-Zuordnung („Anzeigen bei“).
 4. Einreichungen + Feedback — Dialog, Offene-Fragen-Tab, Übersichtskarte, Daumen.
+5. Kontextuelle Hilfe — Hilfe-Panel, Kontext-Register, Route-Handler,
+   `<FaqHinweis>`.
 
-`/review` auf jeden PR; PR 3 und 4 berühren Berechtigungen → `/security-review`.
+`/review` auf jeden PR; PR 3–5 berühren Berechtigungen → `/security-review`.
 
-## 9. Tests
+## 10. Tests
 
 - **Modul (Docker-Postgres):** CRUD, Statusübergänge Submission → Entwurf →
   veröffentlicht, Feedback-Upsert, Link-Integrität beim Löschen, Sortierung.
@@ -159,4 +193,7 @@ PR-Schnitt (Files-Muster, ein PR pro Schritt):
 - **E2E (`e2e/faq.e2e.ts` erweitert):** Gast → Login-Redirect; Mitglied sieht
   neues Layout, sucht, öffnet Treffer; Mitglied reicht Frage ein →
   Bundesvorstand sieht Zähler, verfasst Antwort im Modal, veröffentlicht →
-  Eintrag erscheint; Nicht-Board-Mitglied bekommt auf `/federal/faq` 404.
+  Eintrag erscheint; Nicht-Board-Mitglied bekommt auf `/federal/faq` 404;
+  Hilfe-Panel auf einer Kontext-Route zeigt die zugeordneten Einträge.
+- **Kontext-Register:** Unit-Tests, dass jedes Register-Muster auf reale
+  Routen matcht und der Route-Handler nur sichtbare Einträge liefert.
