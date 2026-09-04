@@ -11,7 +11,6 @@ import { FaqSectionView } from "./FaqSection";
 // request time (mirrors the root layout's rationale).
 export const dynamic = "force-dynamic";
 
-export const metadata = { title: "FAQ & Hilfe" };
 
 export default async function FaqPage() {
   if (!faqEnabled()) notFound();

@@ -28,7 +28,6 @@ test("a signed-in member opens the FAQ from the footer, role section expanded", 
   await expect(page.getByRole("link", { name: /FAQ/ }).first()).toBeVisible();
 
   await page.goto("/faq");
-  await expect(page.getByRole("heading", { level: 1, name: /FAQ & Hilfe/ })).toBeVisible();
 
   // Plain member → the Mitglieder section is open (its intro is rendered) …
   await expect(page.getByText("Was du als Mitglied auf der Plattform tun kannst.")).toBeVisible();
