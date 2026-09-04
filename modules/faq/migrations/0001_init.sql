@@ -20,7 +20,10 @@ CREATE TABLE faq_entries (
   position    integer NOT NULL DEFAULT 0,
   created_at  timestamptz NOT NULL DEFAULT now(),
   updated_at  timestamptz NOT NULL DEFAULT now(),
-  updated_by  text
+  updated_by  text,
+  -- Mirrors validate() in services/entries.ts: subgroups exist only under
+  -- the 'vorstand' section.
+  CHECK (subgroup IS NULL OR section = 'vorstand')
 );
 
 CREATE TABLE faq_entry_links (
@@ -58,6 +61,9 @@ CREATE TABLE faq_submissions (
 );
 
 CREATE INDEX faq_entries_section_idx ON faq_entries (section, status, position);
+-- listEntriesByContext filters on `context` alone; the PK (entry_id, context)
+-- cannot serve that, and the contextual-help panel hits it on every open.
+CREATE INDEX faq_entry_contexts_context_idx ON faq_entry_contexts (context);
 CREATE INDEX faq_submissions_status_idx ON faq_submissions (status, created_at);
 
 -- RLS lockdown: app reaches these tables only via the service-role /
