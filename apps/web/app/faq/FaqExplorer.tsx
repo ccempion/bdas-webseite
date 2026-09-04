@@ -132,8 +132,8 @@ export function FaqExplorer({
           type="search"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder='Frage durchsuchen ("/" drücken zum Fokussieren)'
-          aria-label="FAQ durchsuchen"
+          placeholder="Suche"
+          aria-label='FAQ durchsuchen ("/" drücken zum Fokussieren)'
         />
         <div
           role="group"

@@ -1,9 +1,12 @@
 /**
- * FAQ suite (#133): the role-aware /faq page and its footer entry point.
+ * FAQ suite (#133, extended by FAQ-Suite v2 PR 2): the role-aware /faq page.
  *  - A guest is bounced to the login page.
- *  - A signed-in member reaches the FAQ from the footer link, and the section
- *    matching their role (Mitglieder) is expanded while a board-only section
- *    (Bundesvorstand) stays collapsed.
+ *  - A signed-in member reaches /faq directly (no footer/header entry point
+ *    while the feature is still incomplete — see commit 683bb70), and the
+ *    section matching their role (Mitglieder) is expanded while a board-only
+ *    section (Bundesvorstand) stays collapsed.
+ *  - Behind `faq_suite`, the DB-backed docs layout (rail + search with
+ *    `<mark>` highlighting) is reachable and usable.
  */
 import { expect, test } from "@playwright/test";
 
@@ -16,16 +19,10 @@ test("a guest visiting /faq is redirected to login", async ({ page }) => {
   expect(page.url()).toContain("/anmelden");
 });
 
-test("a signed-in member opens the FAQ from the footer, role section expanded", async ({
-  page,
-}) => {
+test("a signed-in member opens the FAQ, role section expanded", async ({ page }) => {
   const email = "faq-member@e2e.bdas.test";
   await deleteUserByEmail(email);
   await registerVerifyLogin(page, { email, firstName: "Faq", lastName: "Mitglied" });
-
-  // The footer link is present and clearly reachable.
-  await page.goto("/");
-  await expect(page.getByRole("link", { name: /FAQ/ }).first()).toBeVisible();
 
   await page.goto("/faq");
 
@@ -35,4 +32,26 @@ test("a signed-in member opens the FAQ from the footer, role section expanded", 
   await expect(
     page.getByText("Föderationsweite Funktionen unter „Bundesverband“.", { exact: false }),
   ).toBeHidden();
+});
+
+// The rail only renders at the `lg` breakpoint (`FaqExplorer.tsx`); the
+// suite's default project is a mobile viewport (Pixel 7), same reasoning as
+// the Puck-authoring block in content-pages.e2e.ts.
+test.describe("docs layout (desktop)", () => {
+  test.use({ viewport: { width: 1280, height: 900 }, isMobile: false, hasTouch: false });
+
+  test("a signed-in member sees the docs layout and searches", async ({ page }) => {
+    const email = "faq-suche@e2e.bdas.test";
+    await deleteUserByEmail(email);
+    await registerVerifyLogin(page, { email, firstName: "Faq", lastName: "Sucher" });
+
+    await page.goto("/faq");
+    await expect(page.getByRole("heading", { level: 1, name: /FAQ & Hilfe/ })).toBeVisible();
+    // Rail (Desktop-Viewport der Suite): Bereichs-Anker des Mitglieds sichtbar.
+    await expect(page.getByRole("link", { name: "Mitglieder" })).toBeVisible();
+
+    // Suche filtert und hebt hervor: eine Frage aus dem Seed ansuchen.
+    await page.getByPlaceholder("Suche").fill("Gruppe");
+    await expect(page.locator("mark").first()).toBeVisible();
+  });
 });

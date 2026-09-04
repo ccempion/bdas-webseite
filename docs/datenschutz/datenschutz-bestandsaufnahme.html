@@ -872,6 +872,20 @@
           </td>
         </tr>
         <tr>
+          <td><strong>YouTube (Google)</strong><br />FAQ-Fassade</td>
+          <td>
+            Optionale Video-Tutorials in FAQ-Einträgen (<code>apps/web/app/faq/YouTubeFacade.tsx</code>)
+          </td>
+          <td>
+            <span class="tag tag-ok">Zwei-Klick-Lösung umgesetzt</span> Anders als die
+            Rich-Text-Einbettung oben: Das Video ist als Vorschau-Kachel mit Klick-Button gebaut,
+            eingebunden über <code>youtube-nocookie.com</code>. Vor dem Klick lädt die Seite
+            <strong>keinerlei Inhalt von Google</strong> — kein Thumbnail-Request, kein Cookie,
+            keine lokale Speicherung. Erst der aktive Klick auf „Video-Tutorial laden“ setzt das
+            <code>&lt;iframe&gt;</code>, das dann die nocookie-Domain anfragt
+          </td>
+        </tr>
+        <tr>
           <td><strong>Google Maps</strong></td>
           <td>Veranstaltungsseite (<code>apps/web/app/events/[id]/page.tsx</code>)</td>
           <td>
