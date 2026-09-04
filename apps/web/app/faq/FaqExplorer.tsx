@@ -33,9 +33,14 @@ export function FaqExplorer({
   const searchRef = useRef<HTMLInputElement>(null);
   const sectionEls = useRef(new Map<string, HTMLElement>());
 
+  // Normalized once so `filterSections`, `highlightMatches`, and the
+  // `forceOpen` check all agree on what counts as "searching" — a
+  // whitespace-only or trailing-space query must not disagree between them.
+  const normalizedQuery = query.trim().toLowerCase();
+
   const filtered = useMemo(
-    () => filterSections(sections, { query, topicId }),
-    [sections, query, topicId],
+    () => filterSections(sections, { query: normalizedQuery, topicId }),
+    [sections, normalizedQuery, topicId],
   );
 
   // id -> question across every entry (unfiltered), so a related-question
@@ -199,8 +204,8 @@ export function FaqExplorer({
                       <FaqEntryCard
                         key={entry.id}
                         entry={entry}
-                        query={query}
-                        forceOpen={query.length > 0 || entry.id === hashTarget}
+                        query={normalizedQuery}
+                        forceOpen={normalizedQuery.length > 0 || entry.id === hashTarget}
                         defaultOpen={section.defaultOpen}
                         onCopyLink={onCopyLink}
                         relatedQuestions={relatedFor(entry)}
@@ -224,8 +229,8 @@ export function FaqExplorer({
                         <FaqEntryCard
                           key={entry.id}
                           entry={entry}
-                          query={query}
-                          forceOpen={query.length > 0 || entry.id === hashTarget}
+                          query={normalizedQuery}
+                          forceOpen={normalizedQuery.length > 0 || entry.id === hashTarget}
                           defaultOpen={sub.highlighted}
                           onCopyLink={onCopyLink}
                           relatedQuestions={relatedFor(entry)}

@@ -2,9 +2,10 @@
  * FAQ suite (#133, extended by FAQ-Suite v2 PR 2): the role-aware /faq page.
  *  - A guest is bounced to the login page.
  *  - A signed-in member reaches /faq directly (no footer/header entry point
- *    while the feature is still incomplete — see commit 683bb70), and the
- *    section matching their role (Mitglieder) is expanded while a board-only
- *    section (Bundesvorstand) stays collapsed.
+ *    while the feature is still incomplete — see commit 683bb70). The section
+ *    matching their role (Mitglieder) is visible and its entries render
+ *    expanded, while a board-only section (Bundesvorstand) isn't rendered at
+ *    all (no grant admits it).
  *  - Behind `faq_suite`, the DB-backed docs layout (rail + search with
  *    `<mark>` highlighting) is reachable and usable.
  */
@@ -19,19 +20,26 @@ test("a guest visiting /faq is redirected to login", async ({ page }) => {
   expect(page.url()).toContain("/anmelden");
 });
 
-test("a signed-in member opens the FAQ, role section expanded", async ({ page }) => {
+test("a signed-in member opens the FAQ, role section visible and expanded", async ({ page }) => {
   const email = "faq-member@e2e.bdas.test";
   await deleteUserByEmail(email);
   await registerVerifyLogin(page, { email, firstName: "Faq", lastName: "Mitglied" });
 
   await page.goto("/faq");
 
-  // Plain member → the Mitglieder section is open (its intro is rendered) …
+  // Plain member → the Mitglieder section is rendered (its intro shows) …
   await expect(page.getByText("Was du als Mitglied auf der Plattform tun kannst.")).toBeVisible();
-  // … while the board-only section stays collapsed (its intro is not rendered).
+  // … while the board-only section isn't rendered at all (no grant admits it).
   await expect(
     page.getByText("Föderationsweite Funktionen unter „Bundesverband“.", { exact: false }),
   ).toBeHidden();
+
+  // Visibility alone doesn't prove expansion — every visible section's intro
+  // renders unconditionally (FaqExplorer.tsx). The actual open/closed state
+  // lives on each entry's own <details>, so assert that directly: a plain
+  // member's primary section is `defaultOpen` (order.ts), so its first entry
+  // renders already expanded.
+  await expect(page.locator("#bereich-mitglieder details").first()).toHaveAttribute("open", "");
 });
 
 // The rail only renders at the `lg` breakpoint (`FaqExplorer.tsx`); the

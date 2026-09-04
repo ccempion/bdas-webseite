@@ -64,7 +64,10 @@ export function FaqEntryCard({
         ) : null}
         <footer className="mt-3 flex flex-wrap items-center gap-3 border-t border-bdas-soft pt-3 text-xs text-bdas-ink-muted">
           <span>
-            Zuletzt aktualisiert: {new Date(entry.updatedAtIso).toLocaleDateString("de-DE")}
+            Zuletzt aktualisiert:{" "}
+            {new Date(entry.updatedAtIso).toLocaleDateString("de-DE", {
+              timeZone: "Europe/Berlin",
+            })}
           </span>
           <button
             type="button"

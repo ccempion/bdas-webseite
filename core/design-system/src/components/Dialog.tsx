@@ -58,7 +58,7 @@ export function Dialog({ open, onClose, title, children, wide }: DialogProps) {
         "rounded-bdas bg-bdas-surface p-6 shadow-bdas-dropdown backdrop:bg-black/50",
         "motion-safe:animate-bdas-fade-slide-down",
         wide ? "max-w-2xl" : "max-w-lg",
-        "w-full",
+        "w-full max-h-[calc(100vh-4rem)] overflow-y-auto",
       )}
     >
       <button
