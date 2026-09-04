@@ -33,7 +33,11 @@ export type FaqSectionView = {
 };
 
 /** One subgroup slot inside a section, as rendered — only `vorstand` has any. */
-type SubgroupMeta = { readonly key: string; readonly title: string; readonly visibleTo: readonly Role[] };
+type SubgroupMeta = {
+  readonly key: string;
+  readonly title: string;
+  readonly visibleTo: readonly Role[];
+};
 
 type SectionMeta = {
   readonly title: string;
