@@ -80,7 +80,7 @@ describe.skipIf(!reachable)("feedback service", () => {
     expect(counts.get(b.id)).toEqual({ up: 0, down: 1 });
   });
 
-  it("an entry with no votes is absent from the map", async () => {
+  it("an entry with no votes defaults to zero counts rather than being absent", async () => {
     const e = await createEntry(t.db, {
       section: "mitglieder",
       question: "F?",
@@ -88,7 +88,8 @@ describe.skipIf(!reachable)("feedback service", () => {
       updatedBy: "u",
     });
     const counts = await feedbackCounts(t.db, [e.id]);
-    expect(counts.has(e.id)).toBe(false);
+    expect(counts.has(e.id)).toBe(true);
+    expect(counts.get(e.id)).toEqual({ up: 0, down: 0 });
   });
 
   it("empty entryIds returns an empty map", async () => {

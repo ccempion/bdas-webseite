@@ -42,8 +42,10 @@ export async function upsertFeedback(
 }
 
 /**
- * Aggregate counts only — who voted never leaves the module. Entries with no
- * votes are absent from the map rather than present with {up: 0, down: 0}.
+ * Aggregate counts only — who voted never leaves the module. Every requested
+ * id is present in the result, defaulting to {up: 0, down: 0} when nobody has
+ * voted, so callers never need to null-check a lookup (matches `withCounts`
+ * in modules/events/src/services/list.ts).
  */
 export async function feedbackCounts(
   db: Db,
@@ -59,5 +61,6 @@ export async function feedbackCounts(
     .from(faqFeedback)
     .where(inArray(faqFeedback.entryId, [...entryIds]))
     .groupBy(faqFeedback.entryId);
-  return new Map(rows.map((r) => [r.entryId, { up: Number(r.up), down: Number(r.down) }]));
+  const byId = new Map(rows.map((r) => [r.entryId, { up: Number(r.up), down: Number(r.down) }]));
+  return new Map(entryIds.map((id) => [id, byId.get(id) ?? { up: 0, down: 0 }]));
 }
