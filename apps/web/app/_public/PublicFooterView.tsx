@@ -32,7 +32,7 @@ export function PublicFooterView({
   termsUrl,
   showEvents,
   showGroups,
-  showFaq,
+  showFaq: _showFaq,
 }: {
   privacyUrl: string;
   imprintUrl: string;
