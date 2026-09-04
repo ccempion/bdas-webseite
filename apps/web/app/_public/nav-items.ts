@@ -28,7 +28,6 @@ export function navItems({
         { label: "Bund der Alevitischen Jugendlichen (BDAJ)", href: "/ueber-uns/bdaj" },
       ],
     },
-    { label: "Unsere Arbeit", href: "/unsere-arbeit" },
   ];
   if (isFlagOn("events")) {
     items.push({ label: "Events", href: "/events" });
