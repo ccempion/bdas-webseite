@@ -12,6 +12,13 @@
     color: theme("colors.bdas.ink");
   }
 
+  /* In-page anchor jumps (e.g. "Direkt zur Anmeldung") glide instead of teleport. */
+  @media (prefers-reduced-motion: no-preference) {
+    html {
+      scroll-behavior: smooth;
+    }
+  }
+
   body {
     background: #fafafa;
   }
