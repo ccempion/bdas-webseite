@@ -71,7 +71,7 @@ export function PublicFooterView({
           </a>
         </nav>
         <nav aria-label="Rechtliches und Social Media" className="flex flex-col gap-2">
-          <h2 className="font-semibold text-bdas-ink">Rechtliches</h2>
+          <h2 className="font-semibold text-bdas-ink">Rechtliches und Social Media</h2>
           <Link href={privacyUrl} className={LINK}>
             Datenschutz
           </Link>
