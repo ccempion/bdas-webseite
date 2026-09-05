@@ -10,6 +10,7 @@ import {
   createTopic,
   deleteEntry,
   deleteTopic,
+  discardSubmission,
   publishEntry,
   renameTopic,
   reorderEntries,
@@ -172,6 +173,17 @@ export async function reorderTopicsAction(orderedIds: string[]): Promise<ActionR
   try {
     await assertFederal();
     await reorderTopics(getDb(), { orderedIds });
+    revalidateFaq();
+    return { ok: true };
+  } catch (err) {
+    return errorResult(err);
+  }
+}
+
+export async function discardSubmissionAction(id: string): Promise<ActionResult> {
+  try {
+    const me = await assertFederal();
+    await discardSubmission(getDb(), { id, decidedBy: me.user.id });
     revalidateFaq();
     return { ok: true };
   } catch (err) {

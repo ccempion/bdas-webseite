@@ -2,11 +2,13 @@
 
 import { useState, useTransition } from "react";
 
+import { Dialog } from "@bdas/design-system";
 import type { FaqEntry, FaqTopic, FeedbackCounts } from "@bdas/faq";
 
 import { SECTION_LABELS, VORSTAND_SUBGROUP_LABELS } from "../../../../lib/faq/assemble";
 import {
   deleteEntryAction,
+  discardSubmissionAction,
   publishEntryAction,
   reorderEntriesAction,
   unpublishEntryAction,
@@ -60,6 +62,7 @@ export function FaqAdminBoard({
     currentStatus: "draft" | "published" | null;
   } | null>(null);
   const [tab, setTab] = useState<"entries" | "submissions">("entries");
+  const [discarding, setDiscarding] = useState<SubmissionCardView | null>(null);
 
   const allEntries = entries.map((e) => ({ id: e.id, question: e.question }));
   const groups = groupByScope(entries);
@@ -231,9 +234,7 @@ export function FaqAdminBoard({
               currentStatus: null,
             })
           }
-          onDiscard={() => {
-            /* Task 5 */
-          }}
+          onDiscard={(card) => setDiscarding(card)}
           pending={pending}
         />
       )}
@@ -246,6 +247,40 @@ export function FaqAdminBoard({
           topics={topics}
           currentStatus={dialog.currentStatus}
         />
+      )}
+      {discarding && (
+        <Dialog open onClose={() => setDiscarding(null)} title="Frage verwerfen">
+          <div className="flex flex-col gap-4">
+            <p className="text-bdas-ink-body">
+              „{discarding.question}“ wird verworfen und verschwindet aus der Liste. Das lässt sich
+              nicht rückgängig machen.
+            </p>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                disabled={pending}
+                onClick={() => {
+                  const id = discarding.id;
+                  setDiscarding(null);
+                  start(async () => {
+                    const res = await discardSubmissionAction(id);
+                    if (!res.ok) setError(res.error);
+                  });
+                }}
+                className="rounded-bdas-sm bg-bdas-red px-3 py-1.5 text-sm font-semibold text-bdas-surface disabled:opacity-40"
+              >
+                Verwerfen
+              </button>
+              <button
+                type="button"
+                onClick={() => setDiscarding(null)}
+                className="rounded-bdas-sm border border-bdas-soft px-3 py-1.5 text-sm text-bdas-ink-body hover:bg-bdas-overlay-hover"
+              >
+                Abbrechen
+              </button>
+            </div>
+          </div>
+        </Dialog>
       )}
     </div>
   );

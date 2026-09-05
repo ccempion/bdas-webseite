@@ -216,6 +216,48 @@ test.describe("Board-Verwaltung /federal/faq", () => {
     await page.getByPlaceholder("Suche").fill(question);
     await expect(page.locator("mark").first()).toBeVisible();
   });
+
+  test("the board discards a submission after confirming", async ({ page }) => {
+    const question = `E2E-Verwerfen ${uniqueSlug("v")}?`;
+
+    const memberEmail = "faq-verwerf-einreicher@e2e.bdas.test";
+    await deleteUserByEmail(memberEmail);
+    await registerVerifyLogin(page, { email: memberEmail, firstName: "Faq", lastName: "Verwerf" });
+    await page.goto("/faq");
+    await page.getByRole("button", { name: "Frage einreichen" }).first().click();
+    await page.getByRole("dialog").getByLabel("Deine Frage").fill(question);
+    await page.getByRole("dialog").getByRole("button", { name: "Absenden" }).click();
+    await expect(page.getByRole("dialog").getByText("Danke!", { exact: false })).toBeVisible();
+    // The confirmation dialog stays open after submitting — its backdrop
+    // blocks the header, so dismiss it before logging out (see also line 159
+    // above). The × close button also carries aria-label="Schließen", so
+    // scope to the visible text, not the role, to avoid a strict-mode match
+    // on both.
+    await page.getByText("Schließen", { exact: true }).click();
+    await logout(page);
+
+    await deleteUserByEmail(FEDERAL_EMAIL);
+    await registerVerifyLogin(page, {
+      email: FEDERAL_EMAIL,
+      firstName: "Bundes",
+      lastName: "Vorstand",
+    });
+    await page.goto("/federal/faq");
+    await page.getByRole("tab", { name: /Offene Fragen/ }).click();
+
+    const card = page.getByRole("article").filter({ hasText: question });
+    await expect(card).toBeVisible();
+
+    await card.getByRole("button", { name: "Verwerfen" }).click();
+    // The confirmation is a modal (Spec §6), not window.confirm: scope to
+    // the dialog, since the card's own "Verwerfen" button is still in the
+    // DOM at this point too (a plain getByRole match would be ambiguous,
+    // and would also find nothing — timing out rather than silently
+    // passing — if this were a native confirm() instead of a real dialog).
+    await page.getByRole("dialog").getByRole("button", { name: "Verwerfen" }).click();
+
+    await expect(card).toHaveCount(0);
+  });
 });
 
 test.describe("Einreichungen", () => {
