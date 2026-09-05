@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 
 import type { FaqEntryView } from "../../lib/faq/assemble";
 import { FaqRichText } from "./FaqRichText";
+import { FeedbackButtons } from "./FeedbackButtons";
 import { highlightMatches } from "./highlight";
 import { YouTubeFacade } from "./YouTubeFacade";
 
@@ -90,6 +91,7 @@ export function FaqEntryCard({
               ))}
             </span>
           ) : null}
+          <FeedbackButtons entryId={entry.id} />
         </footer>
       </div>
     </details>

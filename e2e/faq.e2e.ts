@@ -174,4 +174,17 @@ test.describe("Einreichungen", () => {
       "zzzz-gibt-es-nicht-zzzz",
     );
   });
+
+  test("a member rates an entry and the thumb stays pressed", async ({ page }) => {
+    const email = "faq-daumen@e2e.bdas.test";
+    await deleteUserByEmail(email);
+    await registerVerifyLogin(page, { email, firstName: "Faq", lastName: "Daumen" });
+
+    await page.goto("/faq");
+    // A plain member's primary section is open by default (order.ts), so the
+    // first entry's footer — and its thumbs — are already in the DOM.
+    const thumbUp = page.getByRole("button", { name: "Hilfreich", exact: true }).first();
+    await thumbUp.click();
+    await expect(thumbUp).toHaveAttribute("aria-pressed", "true");
+  });
 });
