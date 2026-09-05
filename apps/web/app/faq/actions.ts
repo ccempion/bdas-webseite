@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import { getDb } from "@bdas/db";
-import { isAppError } from "@bdas/errors";
+import { isAppError, UnauthorizedError } from "@bdas/errors";
 import { requireFlag } from "@bdas/feature-flags";
 import { createSubmission, upsertFeedback } from "@bdas/faq";
 import { getCurrentMember, type CurrentMember } from "@bdas/members";
@@ -20,14 +20,11 @@ export type FaqActionResult = { ok: true } | { ok: false; error: string };
 async function requireSignedIn(): Promise<CurrentMember> {
   requireFlag("faq_suite");
   const me = await getCurrentMember(getDb(), readSessionCookie());
-  if (!me) throw new Error("UNAUTHENTICATED");
+  if (!me) throw new UnauthorizedError("Bitte melde dich an.");
   return me;
 }
 
 function errorResult(err: unknown): FaqActionResult {
-  if (err instanceof Error && err.message === "UNAUTHENTICATED") {
-    return { ok: false, error: "Bitte melde dich an." };
-  }
   if (isAppError(err)) return { ok: false, error: err.message };
   throw err;
 }
