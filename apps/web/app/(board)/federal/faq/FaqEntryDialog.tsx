@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 
-import { Alert, Dialog, FilterChip, Input } from "@bdas/design-system";
+import { Alert, Dialog, Field, FilterChip, Input } from "@bdas/design-system";
 import {
   FAQ_SECTIONS,
   FAQ_SUBGROUPS,
@@ -38,12 +38,14 @@ function EntryForm({
   topics,
   currentStatus,
   onClose,
+  onDirty,
 }: {
   initial: FaqEntryDialogInitial;
   allEntries: ReadonlyArray<{ id: string; question: string }>;
   topics: readonly FaqTopic[];
   currentStatus: "draft" | "published" | null;
   onClose: () => void;
+  onDirty: () => void;
 }) {
   const [section, setSection] = useState(initial.section);
   const [subgroup, setSubgroup] = useState(initial.subgroup);
@@ -84,56 +86,89 @@ function EntryForm({
       {error && <Alert variant="error">{error}</Alert>}
       <Input
         value={question}
-        onChange={(e) => setQuestion(e.target.value)}
+        onChange={(e) => {
+          setQuestion(e.target.value);
+          onDirty();
+        }}
         placeholder="Frage"
         aria-label="Frage"
       />
       <div className="flex gap-3">
-        <select
-          value={section}
-          onChange={(e) => setSection(e.target.value as FaqSectionKey)}
-          className="rounded-bdas border border-bdas-soft px-3 py-2 text-bdas-ink-body"
-        >
-          {FAQ_SECTIONS.map((s) => (
-            <option key={s} value={s}>
-              {SECTION_LABELS[s]}
-            </option>
-          ))}
-        </select>
-        {section === "vorstand" && (
+        <Field label="Bereich" htmlFor="faq-entry-section">
           <select
-            value={subgroup ?? ""}
-            onChange={(e) => setSubgroup((e.target.value || null) as FaqSubgroupKey | null)}
+            id="faq-entry-section"
+            value={section}
+            onChange={(e) => {
+              setSection(e.target.value as FaqSectionKey);
+              onDirty();
+            }}
             className="rounded-bdas border border-bdas-soft px-3 py-2 text-bdas-ink-body"
           >
-            <option value="">— keine —</option>
-            {FAQ_SUBGROUPS.map((s) => (
+            {FAQ_SECTIONS.map((s) => (
               <option key={s} value={s}>
-                {VORSTAND_SUBGROUP_LABELS[s]}
+                {SECTION_LABELS[s]}
               </option>
             ))}
           </select>
+        </Field>
+        {section === "vorstand" && (
+          <Field label="Untergruppe" htmlFor="faq-entry-subgroup">
+            <select
+              id="faq-entry-subgroup"
+              value={subgroup ?? ""}
+              onChange={(e) => {
+                setSubgroup((e.target.value || null) as FaqSubgroupKey | null);
+                onDirty();
+              }}
+              className="rounded-bdas border border-bdas-soft px-3 py-2 text-bdas-ink-body"
+            >
+              <option value="">— keine —</option>
+              {FAQ_SUBGROUPS.map((s) => (
+                <option key={s} value={s}>
+                  {VORSTAND_SUBGROUP_LABELS[s]}
+                </option>
+              ))}
+            </select>
+          </Field>
         )}
-        <select
-          value={topicId ?? ""}
-          onChange={(e) => setTopicId(e.target.value || null)}
-          className="rounded-bdas border border-bdas-soft px-3 py-2 text-bdas-ink-body"
-        >
-          <option value="">— kein Thema —</option>
-          {topics.map((t) => (
-            <option key={t.id} value={t.id}>
-              {t.name}
-            </option>
-          ))}
-        </select>
+        <Field label="Thema" htmlFor="faq-entry-topic">
+          <select
+            id="faq-entry-topic"
+            value={topicId ?? ""}
+            onChange={(e) => {
+              setTopicId(e.target.value || null);
+              onDirty();
+            }}
+            className="rounded-bdas border border-bdas-soft px-3 py-2 text-bdas-ink-body"
+          >
+            <option value="">— kein Thema —</option>
+            {topics.map((t) => (
+              <option key={t.id} value={t.id}>
+                {t.name}
+              </option>
+            ))}
+          </select>
+        </Field>
       </div>
-      <FaqAnswerEditor value={body} onChange={setBody} />
+      <FaqAnswerEditor
+        value={body}
+        onChange={(v) => {
+          setBody(v);
+          onDirty();
+        }}
+      />
       <div className="flex flex-col gap-2">
-        <Input
-          value={youtubeInput}
-          onChange={(e) => setYoutubeInput(e.target.value)}
-          placeholder="YouTube-URL oder Video-ID (optional)"
-        />
+        <Field label="YouTube-URL oder Video-ID" htmlFor="faq-entry-youtube">
+          <Input
+            id="faq-entry-youtube"
+            value={youtubeInput}
+            onChange={(e) => {
+              setYoutubeInput(e.target.value);
+              onDirty();
+            }}
+            placeholder="YouTube-URL oder Video-ID (optional)"
+          />
+        </Field>
         {youtubeInput.trim() !== "" && !youtubeId && (
           <p className="text-sm text-bdas-red">Keine gültige YouTube-URL/ID erkannt.</p>
         )}
@@ -150,18 +185,22 @@ function EntryForm({
         allEntries={allEntries}
         selfId={initial.id ?? null}
         selectedIds={relatedIds}
-        onChange={setRelatedIds}
+        onChange={(ids) => {
+          setRelatedIds(ids);
+          onDirty();
+        }}
       />
       <div className="flex flex-wrap gap-2">
         {FAQ_CONTEXTS.map((c) => (
           <FilterChip
             key={c.key}
             active={contexts.includes(c.key)}
-            onClick={() =>
+            onClick={() => {
               setContexts((cur) =>
                 cur.includes(c.key) ? cur.filter((k) => k !== c.key) : [...cur, c.key],
-              )
-            }
+              );
+              onDirty();
+            }}
           >
             {c.label}
           </FilterChip>
@@ -206,10 +245,18 @@ export function FaqEntryDialog({
   topics: readonly FaqTopic[];
   currentStatus: "draft" | "published" | null;
 }) {
+  const dirtyRef = useRef(false);
+
+  function handleClose() {
+    if (dirtyRef.current && !window.confirm("Ungespeicherte Änderungen verwerfen?")) return;
+    dirtyRef.current = false;
+    onClose();
+  }
+
   return (
     <Dialog
       open={open}
-      onClose={onClose}
+      onClose={handleClose}
       title={initial.id ? "Eintrag bearbeiten" : "Eintrag anlegen"}
       wide
     >
@@ -221,6 +268,9 @@ export function FaqEntryDialog({
           topics={topics}
           currentStatus={currentStatus}
           onClose={onClose}
+          onDirty={() => {
+            dirtyRef.current = true;
+          }}
         />
       )}
     </Dialog>

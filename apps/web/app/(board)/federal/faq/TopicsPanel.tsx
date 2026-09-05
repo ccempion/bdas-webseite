@@ -27,7 +27,8 @@ export function TopicsPanel({ topics }: { topics: readonly FaqTopic[] }) {
     [orderedIds[index], orderedIds[target]] = [orderedIds[target]!, orderedIds[index]!];
     start(async () => {
       const res = await reorderTopicsAction(orderedIds);
-      if (!res.ok) setError(res.error);
+      if (res.ok) setError(null);
+      else setError(res.error);
     });
   }
 
@@ -60,11 +61,13 @@ export function TopicsPanel({ topics }: { topics: readonly FaqTopic[] }) {
                   onClick={() =>
                     start(async () => {
                       const res = await renameTopicAction(t.id, renameValue);
-                      if (res.ok) setRenamingId(null);
-                      else setError(res.error);
+                      if (res.ok) {
+                        setRenamingId(null);
+                        setError(null);
+                      } else setError(res.error);
                     })
                   }
-                  className="text-sm font-semibold text-bdas-red"
+                  className="text-sm font-semibold text-bdas-ink-body"
                 >
                   Speichern
                 </button>
@@ -118,7 +121,8 @@ export function TopicsPanel({ topics }: { topics: readonly FaqTopic[] }) {
                       return;
                     start(async () => {
                       const res = await deleteTopicAction(t.id);
-                      if (!res.ok) setError(res.error);
+                      if (res.ok) setError(null);
+                      else setError(res.error);
                     });
                   }}
                   className="text-xs text-bdas-ink-muted hover:text-bdas-red"
@@ -149,6 +153,7 @@ export function TopicsPanel({ topics }: { topics: readonly FaqTopic[] }) {
                   if (res.ok) {
                     setNewName("");
                     setCreateOpen(false);
+                    setError(null);
                   } else setError(res.error);
                 })
               }

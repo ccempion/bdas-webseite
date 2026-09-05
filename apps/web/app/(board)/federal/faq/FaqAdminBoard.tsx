@@ -109,7 +109,11 @@ export function FaqAdminBoard({
                   {entry.status === "published" ? "Veröffentlicht" : "Entwurf"}
                 </span>
                 <span className="flex-1 text-sm text-bdas-ink">{entry.question}</span>
-                <span className="text-xs text-bdas-ink-muted">
+                <span
+                  className="text-xs text-bdas-ink-muted"
+                  title={`${counts.up} hilfreich, ${counts.down} nicht hilfreich`}
+                  aria-label={`${counts.up} hilfreich, ${counts.down} nicht hilfreich`}
+                >
                   👍 {counts.up} 👎 {counts.down}
                 </span>
                 <button

@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 
 import { getDb } from "@bdas/db";
 import { isAppError } from "@bdas/errors";
+import { requireFlag } from "@bdas/feature-flags";
 import {
   createEntry,
   createTopic,
@@ -27,6 +28,7 @@ export type ActionResult = { ok: true; id?: string } | { ok: false; error: strin
 /** Every write here is federal-board only (Spec §4) — no group scope exists
  *  for the FAQ, so there is nothing weaker to fall back to. */
 async function assertFederal(): Promise<CurrentMember> {
+  requireFlag("faq_suite");
   const me = await getCurrentMember(getDb(), readSessionCookie());
   requireFederalBoard(me);
   return me;

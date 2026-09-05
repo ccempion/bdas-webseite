@@ -11,7 +11,7 @@
  */
 import { expect, test } from "@playwright/test";
 
-import { deleteUserByEmail, uniqueSlug } from "./helpers/db";
+import { deleteUserByEmail, grantLocalBoard, seedGroup, uniqueSlug } from "./helpers/db";
 import { registerVerifyLogin } from "./helpers/flows";
 
 // Must match BDAS_FEDERAL_BOARD_EMAILS in the CI e2e job (see e2e/board.e2e.ts:
@@ -81,6 +81,29 @@ test.describe("Board-Verwaltung /federal/faq", () => {
     await page.waitForURL("**/account**");
   });
 
+  // Global Constraints (FAQ-Suite v2 plan): "kein local_board/local_board_lead
+  // darf hier schreiben, auch nicht für die eigene Gruppe" — a local_board
+  // member passes the outer (board)-layout gate (requireBoardAccess), so this
+  // exercises requireFederalScope's federal-specific check, unlike the plain-
+  // member test above which is rejected earlier and never reaches it.
+  test("a local board member cannot reach /federal/faq", async ({ page }) => {
+    const groupSlug = uniqueSlug("e2e-faq-local");
+    const groupId = await seedGroup({
+      slug: groupSlug,
+      name: "E2E FAQ Local Gruppe",
+      city: "Lokalstadt",
+      status: "active",
+    });
+
+    const email = "faq-local-board@e2e.bdas.test";
+    await deleteUserByEmail(email);
+    await registerVerifyLogin(page, { email, firstName: "Faq", lastName: "Lokal" });
+    await grantLocalBoard(email, groupId); // takes effect on next request (DB-read grants)
+
+    await page.goto("/federal/faq");
+    await page.waitForURL("**/account**");
+  });
+
   test("a federal board member creates, publishes and reorders an entry", async ({ page }) => {
     // Idempotent across retries (fixed email in a shared DB) — same pattern as
     // e2e/board.e2e.ts: federal access comes from the JWT at login, not a
@@ -103,8 +126,9 @@ test.describe("Board-Verwaltung /federal/faq", () => {
     const question = `E2E-Testfrage ${uniqueSlug("x")}?`;
 
     await page.getByRole("button", { name: "+ Eintrag" }).click();
-    await page.getByPlaceholder("Frage").fill(question);
-    await page.getByRole("button", { name: "Veröffentlichen" }).click();
+    const dialog = page.getByRole("dialog");
+    await dialog.getByPlaceholder("Frage").fill(question);
+    await dialog.getByRole("button", { name: "Veröffentlichen" }).click();
     // The board lists every entry (seed data ships ~30 published rows), so
     // "Veröffentlicht" alone is not unique — scope the status badge to this
     // entry's own row (its status span is a sibling of the question span).
