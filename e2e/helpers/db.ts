@@ -179,6 +179,26 @@ export async function activateMemberByEmail(email: string): Promise<string> {
   return memberId;
 }
 
+/**
+ * Turn a member's pending group-change request (created by `createProfile`'s
+ * application, `NULL → toGroupId`) into a transfer between the two given
+ * groups — the destination-board decision path, per ADR 0022/0031. Rewrites
+ * the same row rather than inserting a second one: only one `pending` request
+ * per member is allowed (`member_group_change_requests_open_uq`).
+ */
+export async function seedGroupTransferRequest(
+  email: string,
+  fromGroupId: string,
+  toGroupId: string,
+): Promise<void> {
+  const memberId = await memberIdByEmail(email);
+  if (!memberId) throw new Error(`seedGroupTransferRequest: no member for ${email}`);
+  await sql`
+    UPDATE member_group_change_requests
+    SET from_group_id = ${fromGroupId}, to_group_id = ${toGroupId}
+    WHERE member_id = ${memberId} AND status = 'pending'`;
+}
+
 /** Insert an active role grant for a member directly (bypasses the UI). */
 export async function seedRoleGrant(
   memberId: string,
