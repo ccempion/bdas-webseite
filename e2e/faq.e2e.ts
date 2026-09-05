@@ -11,7 +11,7 @@
  */
 import { expect, test } from "@playwright/test";
 
-import { deleteUserByEmail, grantLocalBoard, seedGroup, uniqueSlug } from "./helpers/db";
+import { deleteUserByEmail, faqFeedbackByUserAndEntry, grantLocalBoard, seedGroup, uniqueSlug } from "./helpers/db";
 import { registerVerifyLogin } from "./helpers/flows";
 
 // Must match BDAS_FEDERAL_BOARD_EMAILS in the CI e2e job (see e2e/board.e2e.ts:
@@ -175,16 +175,32 @@ test.describe("Einreichungen", () => {
     );
   });
 
-  test("a member rates an entry and the thumb stays pressed", async ({ page }) => {
-    const email = "faq-daumen@e2e.bdas.test";
-    await deleteUserByEmail(email);
-    await registerVerifyLogin(page, { email, firstName: "Faq", lastName: "Daumen" });
+  test("a member rates an entry and the thumb stays pressed, vote persists to server", async ({
+    page,
+  }) => {
+    const memberEmail = "faq-voter@e2e.bdas.test";
+    await deleteUserByEmail(memberEmail);
+    await registerVerifyLogin(page, { email: memberEmail, firstName: "Faq", lastName: "Wähler" });
 
     await page.goto("/faq");
     // A plain member's primary section is open by default (order.ts), so the
-    // first entry's footer — and its thumbs — are already in the DOM.
-    const thumbUp = page.getByRole("button", { name: "Hilfreich", exact: true }).first();
+    // first entry's footer — and its thumbs — are already in the DOM. Grab
+    // the entry ID from the details element to verify it later.
+    const firstEntry = page.locator("details").first();
+    const entryId = await firstEntry.getAttribute("id");
+
+    // Click thumbs up and verify optimistic state (renders immediately before
+    // the Server Action resolves).
+    const thumbUp = firstEntry.getByRole("button", { name: "Hilfreich", exact: true });
     await thumbUp.click();
     await expect(thumbUp).toHaveAttribute("aria-pressed", "true");
+    // Wait for the vote to reach the server (useTransition pending → false).
+    await page.waitForLoadState("networkidle");
+
+    // Verify persistence: query the database for this member's vote on this entry.
+    // If the Server Action didn't actually run (or didn't call upsertFeedback), this will be null.
+    const feedback = await faqFeedbackByUserAndEntry(memberEmail, entryId!);
+    expect(feedback).toBeDefined();
+    expect(feedback?.helpful).toBe(true);
   });
 });

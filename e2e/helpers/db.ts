@@ -239,3 +239,16 @@ export async function seedContentPage(slug: string, data: unknown): Promise<void
     VALUES (${slug}, ${sql.json(data as never)}, 'e2e')
     ON CONFLICT (slug) DO UPDATE SET data = EXCLUDED.data, updated_by = EXCLUDED.updated_by`;
 }
+
+/** Query whether a member voted on an FAQ entry and whether they found it helpful. */
+export async function faqFeedbackByUserAndEntry(
+  userEmail: string,
+  entryId: string,
+): Promise<{ helpful: boolean } | null> {
+  const rows = await sql<{ helpful: boolean }[]>`
+    SELECT helpful
+    FROM faq_feedback f
+    JOIN auth_users u ON u.id = f.user_id
+    WHERE u.email_normalized = lower(${userEmail}) AND f.entry_id = ${entryId}`;
+  return rows[0] ?? null;
+}
