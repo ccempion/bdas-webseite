@@ -837,7 +837,12 @@ import { useState, useTransition } from "react";
 import { Dialog, Input } from "@bdas/design-system";
 import type { FaqTopic } from "@bdas/faq";
 
-import { createTopicAction, deleteTopicAction, renameTopicAction, reorderTopicsAction } from "./actions";
+import {
+  createTopicAction,
+  deleteTopicAction,
+  renameTopicAction,
+  reorderTopicsAction,
+} from "./actions";
 
 export function TopicsPanel({ topics }: { topics: readonly FaqTopic[] }) {
   const [pending, start] = useTransition();
@@ -937,7 +942,11 @@ export function TopicsPanel({ topics }: { topics: readonly FaqTopic[] }) {
                 <button
                   type="button"
                   onClick={() => {
-                    if (!window.confirm(`„${t.name}" löschen? Zugeordnete Einträge verlieren nur das Thema.`))
+                    if (
+                      !window.confirm(
+                        `„${t.name}" löschen? Zugeordnete Einträge verlieren nur das Thema.`,
+                      )
+                    )
                       return;
                     start(async () => {
                       const res = await deleteTopicAction(t.id);
@@ -1205,7 +1214,9 @@ function EntryForm({
             key={c.key}
             active={contexts.includes(c.key)}
             onClick={() =>
-              setContexts((cur) => (cur.includes(c.key) ? cur.filter((k) => k !== c.key) : [...cur, c.key]))
+              setContexts((cur) =>
+                cur.includes(c.key) ? cur.filter((k) => k !== c.key) : [...cur, c.key],
+              )
             }
           >
             {c.label}
@@ -1252,7 +1263,12 @@ export function FaqEntryDialog({
   currentStatus: "draft" | "published" | null;
 }) {
   return (
-    <Dialog open={open} onClose={onClose} title={initial.id ? "Eintrag bearbeiten" : "Eintrag anlegen"} wide>
+    <Dialog
+      open={open}
+      onClose={onClose}
+      title={initial.id ? "Eintrag bearbeiten" : "Eintrag anlegen"}
+      wide
+    >
       {open && (
         <EntryForm
           key={initial.id ?? "new"}
@@ -1310,7 +1326,12 @@ import { useState, useTransition } from "react";
 import type { FaqEntry, FaqTopic, FeedbackCounts } from "@bdas/faq";
 
 import { SECTION_LABELS, VORSTAND_SUBGROUP_LABELS } from "../../../lib/faq/assemble";
-import { deleteEntryAction, publishEntryAction, reorderEntriesAction, unpublishEntryAction } from "./actions";
+import {
+  deleteEntryAction,
+  publishEntryAction,
+  reorderEntriesAction,
+  unpublishEntryAction,
+} from "./actions";
 import { FaqEntryDialog, type FaqEntryDialogInitial } from "./FaqEntryDialog";
 import { groupByScope } from "./group-entries";
 import { TopicsPanel } from "./TopicsPanel";
@@ -1432,7 +1453,9 @@ export function FaqAdminBoard({
                 </button>
                 <button
                   type="button"
-                  onClick={() => setDialog({ initial: toInitial(entry), currentStatus: entry.status })}
+                  onClick={() =>
+                    setDialog({ initial: toInitial(entry), currentStatus: entry.status })
+                  }
                   className="rounded-bdas-sm border border-bdas-soft px-2 py-1 text-xs text-bdas-ink-body hover:bg-bdas-overlay-hover"
                 >
                   Bearbeiten
@@ -1525,8 +1548,8 @@ git commit -m "feat(faq): Board-Liste mit Auf/Ab, Status-Pills und Feedback-Zäh
 - [ ] **Step 2: `nav.test.ts` Assertion ergänzen** — neben der bestehenden `/federal/pool`-Assertion:
 
 ```ts
-    expect(FEDERAL_NAV.map((i) => i.href)).toContain("/federal/pool");
-    expect(FEDERAL_NAV.map((i) => i.href)).toContain("/federal/faq");
+expect(FEDERAL_NAV.map((i) => i.href)).toContain("/federal/pool");
+expect(FEDERAL_NAV.map((i) => i.href)).toContain("/federal/faq");
 ```
 
 - [ ] **Step 3: `page.tsx` schreiben.**
@@ -1550,7 +1573,10 @@ export default async function FederalFaqPage() {
 
   const db = getDb();
   const [entries, topics] = await Promise.all([listEntries(db), listTopics(db)]);
-  const counts = await feedbackCounts(db, entries.map((e) => e.id));
+  const counts = await feedbackCounts(
+    db,
+    entries.map((e) => e.id),
+  );
   const feedbackByEntry = Object.fromEntries(counts);
 
   return (
