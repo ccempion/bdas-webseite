@@ -173,7 +173,6 @@ function EntryForm({
           <p className="text-sm text-bdas-red">Keine gültige YouTube-URL/ID erkannt.</p>
         )}
         {youtubeId && (
-          // eslint-disable-next-line @next/next/no-img-element -- explizite Board-Eingabe, keine Fassade nötig (siehe Interfaces oben)
           <img
             src={youtubeThumbnailUrl(youtubeId)}
             alt="Video-Vorschau"

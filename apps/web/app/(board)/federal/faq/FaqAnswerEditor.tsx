@@ -40,7 +40,6 @@ export function FaqAnswerEditor({
     if (editor && JSON.stringify(editor.getJSON()) !== JSON.stringify(value)) {
       editor.commands.setContent(value as Content, { emitUpdate: false });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- only on identity change of the doc, not every keystroke
   }, [editor, value]);
 
   if (!editor) return null;
