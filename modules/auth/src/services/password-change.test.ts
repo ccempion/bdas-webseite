@@ -125,7 +125,7 @@ describeIfDb("changePassword", () => {
     const u = await signedInUser();
     await expect(
       changePassword(t.db, { currentPassword: OLD, newPassword: "kurz" }, { userId: u.userId }),
-    ).rejects.toThrow(/mindestens 10 Zeichen/);
+    ).rejects.toThrow(/mindestens 8 Zeichen/);
   });
 
   it("rejects a new password identical to the current one", async () => {
