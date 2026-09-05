@@ -12,9 +12,10 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import type { TestDb } from "@bdas/db/test";
 import { resetEventBus } from "@bdas/events";
 
-import { countPendingApprovals } from "./services/approval-counts";
+import { countPendingApplicationsByGroup, countPendingApprovals } from "./services/approval-counts";
 import { changePrimaryGroup } from "./services/group-change";
 import { createProfile } from "./services/profile";
+import { grantRole } from "./services/roles";
 import { approveMember } from "./services/status";
 import { createGroup, createUser, dbReachable, setupMembersDb } from "./test-db";
 import type { Grant } from "./types";
@@ -119,5 +120,77 @@ describeIfDb("countPendingApprovals", () => {
 
     expect(counts.applications).toBe(1);
     expect(counts.groupTransfers).toBe(1);
+  });
+});
+
+describeIfDb("countPendingApplicationsByGroup", () => {
+  let t: TestDb;
+
+  beforeEach(async () => {
+    t = await setupMembersDb();
+    resetEventBus();
+    await createGroup(t, "grp_a", "aachen");
+    await createGroup(t, "grp_b", "bonn");
+  });
+
+  afterEach(async () => {
+    await t.cleanup();
+  });
+
+  async function applicant(userId: string, groupId: string): Promise<string> {
+    await createUser(t, userId, `${userId}@example.de`);
+    const m = await createProfile(t.db, { userId, firstName: "Test", lastName: "Person" });
+    await changePrimaryGroup(t.db, m.id, groupId, self(userId));
+    return m.id;
+  }
+
+  it("gibt dem lokalen Vorstand die Zahl der eigenen Gruppe, 0 für andere", async () => {
+    await applicant("usr_1", "grp_a");
+    await applicant("usr_2", "grp_a");
+    await applicant("usr_3", "grp_b");
+
+    const counts = await countPendingApplicationsByGroup(t.db, boardOf("usr_board_a", "grp_a"), [
+      "grp_a",
+      "grp_b",
+    ]);
+
+    expect(counts.get("grp_a")).toBe(2);
+    expect(counts.get("grp_b")).toBe(0);
+  });
+
+  it("gibt dem Bundesvorstand pro Gruppe die föderationsweite Aufschlüsselung", async () => {
+    await applicant("usr_1", "grp_a");
+    await applicant("usr_2", "grp_b");
+    await applicant("usr_3", "grp_b");
+
+    const counts = await countPendingApplicationsByGroup(t.db, FEDERAL, ["grp_a", "grp_b"]);
+
+    expect(counts.get("grp_a")).toBe(1);
+    expect(counts.get("grp_b")).toBe(2);
+  });
+
+  it("gibt 0 für eine Gruppe mit aktivem eigenen Vorstand, die der Bundesvorstand nur einsehen kann", async () => {
+    await applicant("usr_1", "grp_a");
+    // grp_a has its own active local board — federal is not the decider there
+    // (ADR 0021), so the badge must not claim it as federal's to-do.
+    await createUser(t, "usr_board_a", "usr_board_a@example.de");
+    const board = await createProfile(t.db, {
+      userId: "usr_board_a",
+      firstName: "B",
+      lastName: "A",
+    });
+    await grantRole(t.db, board.id, "local_board", FEDERAL, "grp_a");
+
+    const counts = await countPendingApplicationsByGroup(t.db, FEDERAL, ["grp_a"]);
+
+    expect(counts.get("grp_a")).toBe(0);
+  });
+
+  it("liefert 0 für eine angefragte Gruppe ohne offene Bewerbungen", async () => {
+    const counts = await countPendingApplicationsByGroup(t.db, boardOf("usr_board_a", "grp_a"), [
+      "grp_a",
+    ]);
+
+    expect(counts.get("grp_a")).toBe(0);
   });
 });

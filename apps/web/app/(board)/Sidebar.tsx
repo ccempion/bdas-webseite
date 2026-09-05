@@ -4,9 +4,18 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 import type { Scope } from "@bdas/dashboard-shell";
+import { Badge } from "@bdas/design-system";
 
+import type { SidebarBadgeCounts } from "../_dashboard/approvals";
 import { ScopeSwitcher } from "./ScopeSwitcher";
-import { activeScope, FEDERAL_NAV, groupNav, isNavItemActive, type NavItem } from "./nav";
+import {
+  activeScope,
+  badgeCountFor,
+  FEDERAL_NAV,
+  groupNav,
+  isNavItemActive,
+  type NavItem,
+} from "./nav";
 
 function navFor(active: Scope): ReadonlyArray<NavItem> {
   return active.kind === "federal" ? FEDERAL_NAV : groupNav(active.slug);
@@ -18,7 +27,13 @@ function labelFor(active: Scope): string {
 /** Sidebar: scope switcher on top, then the active scope's nav. Active state is
  *  derived client-side from `usePathname()` so the highlight follows soft
  *  navigations — a server-rendered layout would freeze it at first paint. */
-export function Sidebar({ scopes }: { scopes: Scope[] }) {
+export function Sidebar({
+  scopes,
+  badgeCounts,
+}: {
+  scopes: Scope[];
+  badgeCounts: SidebarBadgeCounts;
+}) {
   const pathname = usePathname();
   const active = activeScope(scopes, pathname);
   if (!active) return null;
@@ -33,6 +48,7 @@ export function Sidebar({ scopes }: { scopes: Scope[] }) {
       <div className="flex flex-row gap-1 overflow-x-auto md:flex-col md:overflow-x-visible">
         {items.map((item) => {
           const isActive = isNavItemActive(pathname, item.href);
+          const count = badgeCountFor(item, active, badgeCounts);
           return (
             <Link
               key={item.href}
@@ -40,11 +56,12 @@ export function Sidebar({ scopes }: { scopes: Scope[] }) {
               aria-current={isActive ? "page" : undefined}
               className={
                 isActive
-                  ? "whitespace-nowrap rounded-bdas-sm bg-bdas-surface-hover px-3 py-2 font-semibold text-bdas-red shadow-[inset_2px_0_0_var(--bdas-accent,#d12020)]"
-                  : "whitespace-nowrap rounded-bdas-sm px-3 py-2 text-bdas-ink-body transition-colors hover:bg-bdas-surface-hover"
+                  ? "flex items-center gap-2 whitespace-nowrap rounded-bdas-sm bg-bdas-surface-hover px-3 py-2 font-semibold text-bdas-red shadow-[inset_2px_0_0_var(--bdas-accent,#d12020)]"
+                  : "flex items-center gap-2 whitespace-nowrap rounded-bdas-sm px-3 py-2 text-bdas-ink-body transition-colors hover:bg-bdas-surface-hover"
               }
             >
               {item.label}
+              <Badge count={count} label="offene Bewerbungen" />
             </Link>
           );
         })}

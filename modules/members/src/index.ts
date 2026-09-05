@@ -16,7 +16,11 @@ export { grantRole, revokeRole } from "./services/roles";
 export { getMember, getMemberByUserId } from "./services/get";
 export { listBoardRecipientsForGroup } from "./services/board-recipients";
 export { listGrouplessMembers, type GrouplessMember } from "./services/pool";
-export { countPendingApprovals, type ApprovalCounts } from "./services/approval-counts";
+export {
+  countPendingApprovals,
+  countPendingApplicationsByGroup,
+  type ApprovalCounts,
+} from "./services/approval-counts";
 export { getCurrentMember, requireFederalBoard, type CurrentMember } from "./services/me";
 export { registerMembersSubscribers } from "./subscribers";
 

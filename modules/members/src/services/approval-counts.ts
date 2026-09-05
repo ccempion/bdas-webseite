@@ -28,10 +28,19 @@ export type ApprovalCounts = {
 
 const ZERO: ApprovalCounts = { applications: 0, groupTransfers: 0 };
 
-export async function countPendingApprovals(db: Db, actor: Actor): Promise<ApprovalCounts> {
+type GroupTally = { applications: number; groupTransfers: number };
+
+/**
+ * Per-destination-group tally of pending requests this actor may decide.
+ * Shared by `countPendingApprovals` (summed across every group) and
+ * `countPendingApplicationsByGroup` (kept apart, for the board nav badges) —
+ * same query, same `canDecideJoinRequest` gate, so both stay consistent with
+ * each other without a second source of truth for "can this actor decide it".
+ */
+async function tallyDecidableByGroup(db: Db, actor: Actor): Promise<Map<string, GroupTally>> {
   const federal = isFederalBoard(actor.grants);
   const scoped = scopedGroupIds(actor);
-  if (!federal && scoped.length === 0) return ZERO;
+  if (!federal && scoped.length === 0) return new Map();
 
   const rows = await db
     .select({
@@ -48,7 +57,7 @@ export async function countPendingApprovals(db: Db, actor: Actor): Promise<Appro
 
   // Tally per destination first, so the board probe below runs once per group
   // rather than once per (group, kind) pair.
-  const byGroup = new Map<string, { applications: number; groupTransfers: number }>();
+  const byGroup = new Map<string, GroupTally>();
   for (const row of rows) {
     if (row.toGroupId === null) continue; // an exit needs no decision
     if (!federal && !scoped.includes(row.toGroupId)) continue;
@@ -60,14 +69,46 @@ export async function countPendingApprovals(db: Db, actor: Actor): Promise<Appro
 
   // canDecide needs to know whether each destination group has a board of its
   // own (the federal fallback in ADR 0021), same shape as listOpenGroupChanges.
-  let applications = 0;
-  let groupTransfers = 0;
+  const decidable = new Map<string, GroupTally>();
   for (const [groupId, tally] of byGroup) {
     const hasBoard = await groupHasActiveLocalBoard(db, groupId);
     if (!canDecideJoinRequest(actor.grants, groupId, hasBoard)) continue;
+    decidable.set(groupId, tally);
+  }
+  return decidable;
+}
+
+export async function countPendingApprovals(db: Db, actor: Actor): Promise<ApprovalCounts> {
+  const byGroup = await tallyDecidableByGroup(db, actor);
+  if (byGroup.size === 0) return ZERO;
+
+  let applications = 0;
+  let groupTransfers = 0;
+  for (const tally of byGroup.values()) {
     applications += tally.applications;
     groupTransfers += tally.groupTransfers;
   }
-
   return { applications, groupTransfers };
+}
+
+/**
+ * Open applications into each of the given groups that the actor may decide,
+ * keyed by group id — 0 for a group with nothing open or absent from
+ * `groupIds`. Powers the board nav badges: the sidebar renders one nav item
+ * per scope, so it needs a count per group rather than
+ * `countPendingApprovals`'s single federation-wide sum. A federal board
+ * viewing a group that already has its own active local board correctly
+ * gets 0 here — same "nothing for you to do" gate as the header badge.
+ */
+export async function countPendingApplicationsByGroup(
+  db: Db,
+  actor: Actor,
+  groupIds: ReadonlyArray<string>,
+): Promise<ReadonlyMap<string, number>> {
+  const byGroup = await tallyDecidableByGroup(db, actor);
+  const out = new Map<string, number>();
+  for (const groupId of groupIds) {
+    out.set(groupId, byGroup.get(groupId)?.applications ?? 0);
+  }
+  return out;
 }

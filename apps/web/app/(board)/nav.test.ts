@@ -2,7 +2,8 @@ import { describe, expect, it } from "vitest";
 
 import type { Scope } from "@bdas/dashboard-shell";
 
-import { activeScope, FEDERAL_NAV, groupNav, isNavItemActive } from "./nav";
+import type { SidebarBadgeCounts } from "../_dashboard/approvals";
+import { activeScope, badgeCountFor, FEDERAL_NAV, groupNav, isNavItemActive } from "./nav";
 
 const FEDERAL: Scope = { kind: "federal" };
 const AACHEN: Scope = { kind: "group", groupId: "grp_ac", slug: "aachen", name: "HG Aachen" };
@@ -75,5 +76,32 @@ describe("isNavItemActive", () => {
   it("keeps Bewerbungen active on nested routes", () => {
     expect(isNavItemActive("/gruppe/berlin/bewerbungen", "/gruppe/berlin/bewerbungen")).toBe(true);
     expect(isNavItemActive("/gruppe/berlin/members", "/gruppe/berlin/bewerbungen")).toBe(false);
+  });
+});
+
+describe("badgeCountFor", () => {
+  const bewerbungenItem = groupNav("berlin").find((i) => i.href.endsWith("/bewerbungen"))!;
+  const ohneGruppeItem = FEDERAL_NAV.find((i) => i.href === "/federal/pool")!;
+  const plainItem = FEDERAL_NAV.find((i) => i.href === "/federal/members")!;
+
+  const counts = (
+    federal: number,
+    byGroupId: ReadonlyArray<readonly [string, number]> = [],
+  ): SidebarBadgeCounts => ({ federal, byGroupId: new Map(byGroupId) });
+
+  it("shows the group's own count next to Bewerbungen", () => {
+    expect(badgeCountFor(bewerbungenItem, AACHEN, counts(0, [["grp_ac", 3]]))).toBe(3);
+  });
+
+  it("shows 0 for a group with nothing open", () => {
+    expect(badgeCountFor(bewerbungenItem, AACHEN, counts(0, [["grp_mg", 5]]))).toBe(0);
+  });
+
+  it("shows the federation-wide count next to Ohne Gruppe", () => {
+    expect(badgeCountFor(ohneGruppeItem, FEDERAL, counts(7))).toBe(7);
+  });
+
+  it("never attaches a count to an item without the applications marker", () => {
+    expect(badgeCountFor(plainItem, FEDERAL, counts(7, [["grp_ac", 3]]))).toBe(0);
   });
 });
