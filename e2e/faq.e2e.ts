@@ -170,6 +170,52 @@ test.describe("Board-Verwaltung /federal/faq", () => {
     await expect(page.getByText(question, { exact: true })).toBeVisible();
     await expect(page.getByText("Faq Boardfrage")).toBeVisible();
   });
+
+  test("the board answers a submission and it leaves the open queue", async ({ page }) => {
+    const question = `E2E-Antwortfrage ${uniqueSlug("a")}?`;
+
+    const memberEmail = "faq-antwort-einreicher@e2e.bdas.test";
+    await deleteUserByEmail(memberEmail);
+    await registerVerifyLogin(page, { email: memberEmail, firstName: "Faq", lastName: "Antwort" });
+    await page.goto("/faq");
+    await page.getByRole("button", { name: "Frage einreichen" }).first().click();
+    await page.getByRole("dialog").getByLabel("Deine Frage").fill(question);
+    await page.getByRole("dialog").getByRole("button", { name: "Absenden" }).click();
+    await expect(page.getByRole("dialog").getByText("Danke!", { exact: false })).toBeVisible();
+    await page.getByRole("dialog").getByText("Schließen", { exact: true }).click();
+    await logout(page);
+
+    await deleteUserByEmail(FEDERAL_EMAIL);
+    await registerVerifyLogin(page, {
+      email: FEDERAL_EMAIL,
+      firstName: "Bundes",
+      lastName: "Vorstand",
+    });
+    await page.goto("/federal/faq");
+    await page.getByRole("tab", { name: /Offene Fragen/ }).click();
+
+    const card = page.getByRole("article").filter({ hasText: question });
+    await card.getByRole("button", { name: "Antwort verfassen" }).click();
+
+    const dialog = page.getByRole("dialog");
+    // The entry form opens prefilled with the submitted question.
+    await expect(dialog.getByPlaceholder("Frage")).toHaveValue(question);
+    await dialog.getByRole("button", { name: "Veröffentlichen" }).click();
+    // saveEntryAction runs inside a transition; wait for it to resolve and
+    // close the dialog before navigating away, or the navigation can cancel
+    // the in-flight Server Action request.
+    await expect(dialog).toBeHidden();
+
+    // Publishing the linked draft answers the submission: the open tab empties.
+    await page.goto("/federal/faq");
+    await page.getByRole("tab", { name: /Offene Fragen/ }).click();
+    await expect(page.getByRole("article").filter({ hasText: question })).toHaveCount(0);
+
+    // …and the answer is live on /faq.
+    await page.goto("/faq");
+    await page.getByPlaceholder("Suche").fill(question);
+    await expect(page.locator("mark").first()).toBeVisible();
+  });
 });
 
 test.describe("Einreichungen", () => {

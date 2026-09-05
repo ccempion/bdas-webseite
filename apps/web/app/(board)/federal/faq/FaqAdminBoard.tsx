@@ -219,9 +219,18 @@ export function FaqAdminBoard({
       {tab === "submissions" && (
         <SubmissionsPanel
           submissions={submissions}
-          onAnswer={() => {
-            /* Task 4 */
-          }}
+          onAnswer={(card) =>
+            setDialog({
+              initial: {
+                ...EMPTY_ENTRY,
+                question: card.question,
+                // Links the draft to the submission; publishing it flips the
+                // submission to `answered` inside publishEntry's transaction.
+                submissionId: card.id,
+              },
+              currentStatus: null,
+            })
+          }
           onDiscard={() => {
             /* Task 5 */
           }}
