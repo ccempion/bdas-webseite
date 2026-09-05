@@ -12,7 +12,7 @@
 import { expect, test } from "@playwright/test";
 
 import { deleteUserByEmail, faqFeedbackByUserAndEntry, grantLocalBoard, seedGroup, uniqueSlug } from "./helpers/db";
-import { registerVerifyLogin } from "./helpers/flows";
+import { logout, registerVerifyLogin } from "./helpers/flows";
 
 // Must match BDAS_FEDERAL_BOARD_EMAILS in the CI e2e job (see e2e/board.e2e.ts:
 // federal access comes from the JWT, granted at login when the email matches
@@ -139,6 +139,36 @@ test.describe("Board-Verwaltung /federal/faq", () => {
     await page.goto("/faq");
     await page.getByPlaceholder("Suche").fill(question);
     await expect(page.locator("mark").first()).toBeVisible();
+  });
+
+  test("the board sees an open submission in the Offene Fragen tab", async ({ page }) => {
+    const question = `E2E-Frage-Board ${uniqueSlug("s")}?`;
+
+    const memberEmail = "faq-board-einreicher@e2e.bdas.test";
+    await deleteUserByEmail(memberEmail);
+    await registerVerifyLogin(page, {
+      email: memberEmail,
+      firstName: "Faq",
+      lastName: "Boardfrage",
+    });
+    await page.goto("/faq");
+    await page.getByRole("button", { name: "Frage einreichen" }).first().click();
+    await page.getByRole("dialog").getByLabel("Deine Frage").fill(question);
+    await page.getByRole("dialog").getByRole("button", { name: "Absenden" }).click();
+    await expect(page.getByRole("dialog").getByText("Danke!", { exact: false })).toBeVisible();
+    await page.getByRole("dialog").getByText("Schließen", { exact: true }).click();
+    await logout(page);
+
+    await deleteUserByEmail(FEDERAL_EMAIL);
+    await registerVerifyLogin(page, {
+      email: FEDERAL_EMAIL,
+      firstName: "Bundes",
+      lastName: "Vorstand",
+    });
+    await page.goto("/federal/faq");
+    await page.getByRole("tab", { name: /Offene Fragen/ }).click();
+    await expect(page.getByText(question, { exact: true })).toBeVisible();
+    await expect(page.getByText("Faq Boardfrage")).toBeVisible();
   });
 });
 
