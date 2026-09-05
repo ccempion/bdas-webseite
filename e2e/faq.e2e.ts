@@ -141,3 +141,37 @@ test.describe("Board-Verwaltung /federal/faq", () => {
     await expect(page.locator("mark").first()).toBeVisible();
   });
 });
+
+test.describe("Einreichungen", () => {
+  test.use({ viewport: { width: 1280, height: 900 }, isMobile: false, hasTouch: false });
+
+  test("a member submits a question and sees the confirmation", async ({ page }) => {
+    const email = "faq-einreicher@e2e.bdas.test";
+    await deleteUserByEmail(email);
+    await registerVerifyLogin(page, { email, firstName: "Faq", lastName: "Einreicher" });
+
+    await page.goto("/faq");
+    await page.getByRole("button", { name: "Frage einreichen" }).first().click();
+
+    const dialog = page.getByRole("dialog");
+    await dialog.getByLabel("Deine Frage").fill(`E2E-Einreichung ${uniqueSlug("q")}?`);
+    await dialog.getByRole("button", { name: "Absenden" }).click();
+
+    await expect(dialog.getByText("Danke!", { exact: false })).toBeVisible();
+  });
+
+  test("no search hit offers the query as a prefilled submission", async ({ page }) => {
+    const email = "faq-nohit@e2e.bdas.test";
+    await deleteUserByEmail(email);
+    await registerVerifyLogin(page, { email, firstName: "Faq", lastName: "Nohit" });
+
+    await page.goto("/faq");
+    await page.getByPlaceholder("Suche").fill("zzzz-gibt-es-nicht-zzzz");
+    await expect(page.getByText("Keine Antwort gefunden.")).toBeVisible();
+
+    await page.getByRole("button", { name: "Frage einreichen" }).last().click();
+    await expect(page.getByRole("dialog").getByLabel("Deine Frage")).toHaveValue(
+      "zzzz-gibt-es-nicht-zzzz",
+    );
+  });
+});
