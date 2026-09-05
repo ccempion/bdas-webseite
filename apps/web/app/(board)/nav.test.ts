@@ -49,6 +49,7 @@ describe("groupNav", () => {
 describe("FEDERAL_NAV", () => {
   it("gives the federal scope the groupless pool", () => {
     expect(FEDERAL_NAV.map((i) => i.href)).toContain("/federal/pool");
+    expect(FEDERAL_NAV.map((i) => i.href)).toContain("/federal/faq");
   });
 });
 

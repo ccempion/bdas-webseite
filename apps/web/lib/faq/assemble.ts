@@ -1,5 +1,5 @@
 import type { Role } from "@bdas/auth";
-import type { FaqEntry as FaqEntryRow, FaqSectionKey, FaqTopic } from "@bdas/faq";
+import type { FaqEntry as FaqEntryRow, FaqSectionKey, FaqSubgroupKey, FaqTopic } from "@bdas/faq";
 
 import { highlightedVorstandSubgroups, orderSections, type FaqGrant } from "./order";
 import { hasAny } from "./visibility";
@@ -82,6 +82,20 @@ const SECTION_META: Record<FaqSectionKey, SectionMeta> = {
     intro: "Was du als Mitglied auf der Plattform tun kannst.",
     visibleTo: "all",
   },
+};
+
+export const SECTION_LABELS: Record<FaqSectionKey, string> = {
+  allgemein: SECTION_META.allgemein.title,
+  bundesvorstand: SECTION_META.bundesvorstand.title,
+  vorstand: SECTION_META.vorstand.title,
+  mitglieder: SECTION_META.mitglieder.title,
+};
+
+export const VORSTAND_SUBGROUP_LABELS: Record<FaqSubgroupKey, string> = {
+  local_board: "Vorstand",
+  local_board_lead: "LEAD",
+  event_organizer: "Event Organisator",
+  page_editor: "Seiten Editor",
 };
 
 function toEntryView(row: FaqEntryRow, topicById: ReadonlyMap<string, FaqTopic>): FaqEntryView {

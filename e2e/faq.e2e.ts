@@ -11,8 +11,13 @@
  */
 import { expect, test } from "@playwright/test";
 
-import { deleteUserByEmail } from "./helpers/db";
+import { deleteUserByEmail, grantLocalBoard, seedGroup, uniqueSlug } from "./helpers/db";
 import { registerVerifyLogin } from "./helpers/flows";
+
+// Must match BDAS_FEDERAL_BOARD_EMAILS in the CI e2e job (see e2e/board.e2e.ts:
+// federal access comes from the JWT, granted at login when the email matches
+// this env var — there is no per-test DB grant helper for it).
+const FEDERAL_EMAIL = "federal@e2e.bdas.test";
 
 test("a guest visiting /faq is redirected to login", async ({ page }) => {
   await page.goto("/faq");
@@ -60,6 +65,79 @@ test.describe("docs layout (desktop)", () => {
 
     // Suche filtert und hebt hervor: eine Frage aus dem Seed ansuchen.
     await page.getByPlaceholder("Suche").fill("Gruppe");
+    await expect(page.locator("mark").first()).toBeVisible();
+  });
+});
+
+test.describe("Board-Verwaltung /federal/faq", () => {
+  test.use({ viewport: { width: 1280, height: 900 }, isMobile: false, hasTouch: false });
+
+  test("a plain member cannot reach /federal/faq", async ({ page }) => {
+    const email = "faq-plain@e2e.bdas.test";
+    await deleteUserByEmail(email);
+    await registerVerifyLogin(page, { email, firstName: "Faq", lastName: "Plain" });
+
+    await page.goto("/federal/faq");
+    await page.waitForURL("**/account**");
+  });
+
+  // Global Constraints (FAQ-Suite v2 plan): "kein local_board/local_board_lead
+  // darf hier schreiben, auch nicht für die eigene Gruppe" — a local_board
+  // member passes the outer (board)-layout gate (requireBoardAccess), so this
+  // exercises requireFederalScope's federal-specific check, unlike the plain-
+  // member test above which is rejected earlier and never reaches it.
+  test("a local board member cannot reach /federal/faq", async ({ page }) => {
+    const groupSlug = uniqueSlug("e2e-faq-local");
+    const groupId = await seedGroup({
+      slug: groupSlug,
+      name: "E2E FAQ Local Gruppe",
+      city: "Lokalstadt",
+      status: "active",
+    });
+
+    const email = "faq-local-board@e2e.bdas.test";
+    await deleteUserByEmail(email);
+    await registerVerifyLogin(page, { email, firstName: "Faq", lastName: "Lokal" });
+    await grantLocalBoard(email, groupId); // takes effect on next request (DB-read grants)
+
+    await page.goto("/federal/faq");
+    await page.waitForURL("**/account**");
+  });
+
+  test("a federal board member creates, publishes and reorders an entry", async ({ page }) => {
+    // Idempotent across retries (fixed email in a shared DB) — same pattern as
+    // e2e/board.e2e.ts: federal access comes from the JWT at login, not a
+    // per-test grant helper.
+    await deleteUserByEmail(FEDERAL_EMAIL);
+    await registerVerifyLogin(page, {
+      email: FEDERAL_EMAIL,
+      firstName: "Bundes",
+      lastName: "Vorstand",
+    });
+
+    await page.goto("/federal/faq");
+    await expect(page.getByRole("heading", { name: "FAQ" })).toBeVisible();
+
+    // Unique per run: `deleteUserByEmail` above removes the fixed board user
+    // but not any FAQ entries it previously created (no FK ties an entry to
+    // its author), so a static question string collides with leftovers from
+    // an earlier run/retry against the same DB. Same idempotency concern the
+    // `uniqueSlug`/`uniqueEmail` helpers exist for elsewhere in this suite.
+    const question = `E2E-Testfrage ${uniqueSlug("x")}?`;
+
+    await page.getByRole("button", { name: "+ Eintrag" }).click();
+    const dialog = page.getByRole("dialog");
+    await dialog.getByPlaceholder("Frage").fill(question);
+    await dialog.getByRole("button", { name: "Veröffentlichen" }).click();
+    // The board lists every entry (seed data ships ~30 published rows), so
+    // "Veröffentlicht" alone is not unique — scope the status badge to this
+    // entry's own row (its status span is a sibling of the question span).
+    const row = page.getByText(question, { exact: true }).locator("..");
+    await expect(row).toBeVisible();
+    await expect(row.getByText("Veröffentlicht")).toBeVisible();
+
+    await page.goto("/faq");
+    await page.getByPlaceholder("Suche").fill(question);
     await expect(page.locator("mark").first()).toBeVisible();
   });
 });
