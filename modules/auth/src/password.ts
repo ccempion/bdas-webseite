@@ -14,7 +14,7 @@ const PARAMS = {
 
 export const PASSWORD_ALGORITHM = "argon2id";
 
-export const PASSWORD_MIN_LENGTH = 10;
+export const PASSWORD_MIN_LENGTH = 8;
 
 /**
  * Single source of truth for the password policy: length + one upper,
@@ -31,7 +31,7 @@ export const passwordSchema = z
 
 /** Human-readable rule, shown as the form hint (kept in sync with the schema). */
 export const PASSWORD_RULE_HINT =
-  "Mindestens 10 Zeichen, davon ein Großbuchstabe, ein Kleinbuchstabe und ein Sonderzeichen.";
+  "Mindestens 8 Zeichen, davon ein Großbuchstabe, ein Kleinbuchstabe und ein Sonderzeichen.";
 
 export async function hashPassword(plain: string): Promise<string> {
   return hash(plain, PARAMS);

@@ -34,12 +34,12 @@ import { authEmailVerifications } from "./schema";
 
 describe("password policy", () => {
   it("enforces min length + upper + lower + special, no digit required", () => {
-    expect(PASSWORD_MIN_LENGTH).toBe(10);
-    expect(passwordSchema.safeParse("Abc!45678").success).toBe(false); // 9 chars
-    expect(passwordSchema.safeParse("abcdefghij!").success).toBe(false); // no upper
-    expect(passwordSchema.safeParse("ABCDEFGHIJ!").success).toBe(false); // no lower
-    expect(passwordSchema.safeParse("Abcdefghij1").success).toBe(false); // no special
-    expect(passwordSchema.safeParse("Abcdefgh!j").success).toBe(true); // 10, upper+lower+special
+    expect(PASSWORD_MIN_LENGTH).toBe(8);
+    expect(passwordSchema.safeParse("Abc!456").success).toBe(false); // 7 chars
+    expect(passwordSchema.safeParse("abcdefg!").success).toBe(false); // no upper
+    expect(passwordSchema.safeParse("ABCDEFG!").success).toBe(false); // no lower
+    expect(passwordSchema.safeParse("Abcdefg1").success).toBe(false); // no special
+    expect(passwordSchema.safeParse("Abcdefg!").success).toBe(true); // 8, upper+lower+special
   });
 });
 
