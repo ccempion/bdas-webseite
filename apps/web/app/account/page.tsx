@@ -10,14 +10,15 @@ import { getProfile } from "@bdas/profile";
 
 import { requireAuthFlag } from "../_auth/flag";
 import { requireMembersFlag } from "../_members/flag";
-import { AccountAvatar } from "./AccountAvatar";
 import { ApprovalsAlert } from "./ApprovalsAlert";
 import { isProfileComplete } from "../_profile/complete";
 import { signedProfilePhotoUrl } from "../_profile/photo-url";
 import { SUBMITTED_PARAM, SUBMITTED_VALUE } from "../_profile/submitted";
 import { readSessionCookie } from "../../lib/auth-cookie";
 import { EditableProfile } from "./EditableProfile";
+import { IdentityColumn } from "./IdentityColumn";
 import { buildProfileSummary } from "./profile-summary";
+import { buildIdentityRows, layoutMode, roleChips } from "./view-model";
 import { WithdrawChangeButton } from "./WithdrawChangeButton";
 
 export const metadata = { title: "Mein Konto" };
@@ -85,18 +86,19 @@ export default async function AccountPage({
   // to infer it from a status line that also shows on every later visit.
   const justSubmitted = searchParams?.[SUBMITTED_PARAM] === SUBMITTED_VALUE;
 
-  return (
-    <main className="mx-auto flex max-w-3xl flex-col gap-6 px-4 py-12">
-      <header className="flex items-center gap-5">
-        {profileFlagOn && me.member ? (
-          <AccountAvatar photoUrl={photoUrl} initials={initials} />
-        ) : null}
-        <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-semibold text-bdas-ink">Mein Konto</h1>
-          <p className="text-bdas-ink-body">{me.user.email}</p>
-        </div>
-      </header>
+  const mode = layoutMode(me.member?.status ?? null);
+  const identityRows = buildIdentityRows({
+    status: me.member?.status ?? null,
+    groupName: currentGroupName,
+    joinedAt: me.member?.joinedAt ?? null,
+  });
+  const chips = roleChips(me.grants);
+  const fullName = me.member
+    ? `${me.member.firstName} ${me.member.lastName}`.trim()
+    : me.user.email;
 
+  const statusAlerts = (
+    <>
       {justSubmitted && status === "pending" ? (
         <Alert variant="success" title="Bewerbung abgeschickt">
           Deine Bewerbung ist eingegangen und liegt jetzt beim lokalen Vorstand zur Entscheidung.
@@ -104,12 +106,6 @@ export default async function AccountPage({
       ) : status === "pending" ? (
         <Alert variant="info" title="Profil eingereicht">
           {STATUS_LABEL["pending"]}
-        </Alert>
-      ) : null}
-
-      {status === "active" ? (
-        <Alert variant="success" title="Mitgliedschaft aktiv">
-          {STATUS_LABEL["active"]}
         </Alert>
       ) : null}
 
@@ -129,40 +125,73 @@ export default async function AccountPage({
       ) : null}
 
       <ApprovalsAlert groupSlug={currentGroupSlug} />
+    </>
+  );
 
-      <Card flat className="p-6">
-        <h2 className="mb-4 text-lg font-semibold text-bdas-ink">
-          {complete ? "Meine Daten" : me.member ? "Profil bearbeiten" : "Profil vervollständigen"}
-        </h2>
-        <EditableProfile
-          complete={complete}
-          rows={buildProfileSummary({
-            firstName: me.member?.firstName ?? "",
-            lastName: me.member?.lastName ?? "",
-            groupName: currentGroupName,
-            studiengang: profile?.studiengang ?? "",
-            abschlussart: profile?.abschlussart ?? "",
-            uni: profile?.uni ?? "",
-            geburtsdatum: profile?.geburtsdatum ?? "",
-            gefundenDurch: profile?.gefundenDurch ?? "",
-            empfehlerName: profile?.empfehlerName ?? null,
-            vorstellung: profile?.vorstellung ?? null,
-          })}
-          profileForm={{ ...membersFormProps, isNew: !me.member }}
-          extendedForm={profileFlagOn && me.member ? { initial: extendedInitial } : null}
-        />
-      </Card>
+  const profileCard = (
+    <Card flat className="p-6">
+      <h2 className="mb-4 text-lg font-semibold text-bdas-ink">
+        {complete ? "Meine Daten" : me.member ? "Profil bearbeiten" : "Profil vervollständigen"}
+      </h2>
+      <EditableProfile
+        complete={complete}
+        rows={buildProfileSummary({
+          firstName: me.member?.firstName ?? "",
+          lastName: me.member?.lastName ?? "",
+          groupName: currentGroupName,
+          studiengang: profile?.studiengang ?? "",
+          abschlussart: profile?.abschlussart ?? "",
+          uni: profile?.uni ?? "",
+          geburtsdatum: profile?.geburtsdatum ?? "",
+          gefundenDurch: profile?.gefundenDurch ?? "",
+          empfehlerName: profile?.empfehlerName ?? null,
+          vorstellung: profile?.vorstellung ?? null,
+        })}
+        profileForm={{ ...membersFormProps, isNew: !me.member }}
+        extendedForm={profileFlagOn && me.member ? { initial: extendedInitial } : null}
+      />
+    </Card>
+  );
 
-      <div className="flex flex-wrap items-center gap-3">
-        <Link href="/account/einstellungen">
-          <Button variant="secondary">Kontoeinstellungen</Button>
-        </Link>
-        <form action="/abmelden" method="post">
-          <Button type="submit" variant="secondary">
-            Abmelden
-          </Button>
-        </form>
-      </div>
+  const settingsLink = (
+    <div className="flex flex-wrap items-center gap-3">
+      <Link href="/account/einstellungen">
+        <Button variant="secondary">Kontoeinstellungen</Button>
+      </Link>
+      <form action="/abmelden" method="post">
+        <Button type="submit" variant="secondary">
+          Abmelden
+        </Button>
+      </form>
+    </div>
+  );
+
+  return (
+    <main className="mx-auto flex max-w-5xl flex-col gap-6 px-4 py-12">
+      <h1 className="text-2xl font-semibold text-bdas-ink">Mein Konto</h1>
+
+      {mode === "plain" ? (
+        <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
+          {statusAlerts}
+          {profileCard}
+          {settingsLink}
+        </div>
+      ) : (
+        <div className="grid gap-7 md:grid-cols-[minmax(0,19rem)_minmax(0,1fr)] md:items-start">
+          <IdentityColumn
+            photoUrl={photoUrl}
+            initials={initials}
+            name={fullName}
+            email={me.user.email}
+            rows={identityRows}
+            chips={chips}
+          />
+          <div className="flex flex-col gap-6">
+            {statusAlerts}
+            {profileCard}
+          </div>
+        </div>
+      )}
     </main>
   );
 }
