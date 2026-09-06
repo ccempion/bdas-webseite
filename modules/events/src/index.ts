@@ -32,7 +32,7 @@ export {
   getMyRegistration,
   listRegistrations,
 } from "./services/registration";
-export { listMyUpcomingRegistrations } from "./services/mine";
+export { countAttendedEvents, listMyUpcomingRegistrations } from "./services/mine";
 
 export { eventToIcs } from "./ics";
 export { renderEventContentHtml, plainTextToDoc } from "./content";

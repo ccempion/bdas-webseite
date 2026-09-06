@@ -6,10 +6,10 @@
  * sign up for", where the registration itself is the authorisation — a member
  * holding a registration may always see that event on their own account page.
  */
-import { and, asc, eq, gte, isNull } from "drizzle-orm";
+import { and, asc, count, eq, gte, isNull } from "drizzle-orm";
 import type { PostgresJsDatabase } from "drizzle-orm/postgres-js";
 
-import { eventRegistrations, events } from "../schema";
+import { eventAttendance, eventRegistrations, events } from "../schema";
 import type { MyRegistration } from "../types";
 
 export type Db = PostgresJsDatabase<Record<string, never>>;
@@ -64,4 +64,17 @@ export async function listMyUpcomingRegistrations(
     groupId: r.groupId,
     waitlistPosition: r.waitlistPosition,
   }));
+}
+
+/**
+ * How many events the member actually attended. `event_attendance` also holds
+ * rows for people who were expected and did not show, so the `attended` flag —
+ * not the row's existence — is the count.
+ */
+export async function countAttendedEvents(db: Db, memberId: string): Promise<number> {
+  const rows = await db
+    .select({ n: count() })
+    .from(eventAttendance)
+    .where(and(eq(eventAttendance.memberId, memberId), eq(eventAttendance.attended, true)));
+  return Number(rows[0]?.n ?? 0);
 }

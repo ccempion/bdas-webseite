@@ -12,9 +12,9 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { createTestDb, type TestDb } from "@bdas/db/test";
 import { resetEventBus } from "@bdas/events";
 
-import { events } from "../schema";
+import { eventAttendance, events } from "../schema";
 
-import { listMyUpcomingRegistrations } from "./mine";
+import { countAttendedEvents, listMyUpcomingRegistrations } from "./mine";
 import { createEvent, publishEvent } from "./manage";
 import { cancelRegistration, registerMember } from "./registration";
 
@@ -148,5 +148,74 @@ describeIfDb("listMyUpcomingRegistrations", () => {
     const rows = await listMyUpcomingRegistrations(t.db, MEMBER, 2);
     expect(rows).toHaveLength(2);
     expect(rows.map((r) => r.title)).toEqual(["Termin 2", "Termin 4"]);
+  });
+});
+
+describeIfDb("countAttendedEvents", () => {
+  let t: TestDb;
+
+  beforeEach(async () => {
+    t = await createTestDb();
+    for (const file of [
+      ["..", "..", "auth", "migrations", "0001_init.sql"],
+      ["..", "..", "groups", "migrations", "0001_init.sql"],
+      ["..", "..", "members", "migrations", "0001_init.sql"],
+      ["..", "..", "members", "migrations", "0002_role_grants.sql"],
+      ["..", "migrations", "0001_init.sql"],
+      ["..", "migrations", "0002_event_pages.sql"],
+      ["..", "migrations", "0003_guest_registration.sql"],
+    ]) {
+      const sql = await fs.readFile(path.join(__dirname, "..", ...file), "utf8");
+      await t.client.unsafe(sql);
+    }
+    resetEventBus();
+
+    // Both event_attendance.event_id and .member_id are NOT NULL foreign keys,
+    // so attendance rows need a real event AND a real member behind them.
+    for (const id of [MEMBER, "mbr_someone_else"]) {
+      await t.client`
+        INSERT INTO auth_users (id, email_normalized, email_display, status)
+        VALUES (${"usr_" + id}, ${id + "@e2e.test"}, ${id + "@e2e.test"}, 'active')`;
+      await t.client`
+        INSERT INTO members (id, user_id, first_name, last_name, primary_group_id, status)
+        VALUES (${id}, ${"usr_" + id}, 'Test', ${id}, NULL, 'active')`;
+    }
+  });
+
+  afterEach(async () => {
+    await t.cleanup();
+  });
+
+  /** Creates a real event, then an attendance row pointing at it. */
+  async function attendance(rowId: string, memberId: string, attended: boolean): Promise<void> {
+    const ev = await createEvent(
+      t.db,
+      { title: `Termin ${rowId}`, startsAt: days(-3), visibility: "public" },
+      "usr_creator",
+    );
+    await t.db.insert(eventAttendance).values({
+      id: rowId,
+      eventId: ev.id,
+      memberId,
+      attended,
+    });
+  }
+
+  it("counts only rows marked attended", async () => {
+    await attendance("a1", MEMBER, true);
+    await attendance("a2", MEMBER, true);
+    await attendance("a3", MEMBER, false);
+
+    expect(await countAttendedEvents(t.db, MEMBER)).toBe(2);
+  });
+
+  it("ignores other members", async () => {
+    await attendance("b1", "mbr_someone_else", true);
+
+    expect(await countAttendedEvents(t.db, MEMBER)).toBe(0);
+  });
+
+  it("returns zero when the member has no attendance rows", async () => {
+    expect(await countAttendedEvents(t.db, MEMBER)).toBe(0);
   });
 });
