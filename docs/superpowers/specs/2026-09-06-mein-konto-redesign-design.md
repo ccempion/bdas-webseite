@@ -51,10 +51,17 @@ notification preferences later without another restructuring.
 - Overview and settings surfaces as described in §3.
 - Two new content blocks: **Events & Teilnahme**, **Mitgliedschaft & Rollen**.
 
-### Out of scope (deliberate — see §8)
+### Out of scope
 
-- Active session list and revocation.
-- E-Mail notification preferences.
+- **Active sessions — decided against, not deferred.** Changing the password is
+  the accepted remedy for a lost or stolen device. The platform will not offer a
+  session list or per-session revocation. `auth_sessions` keeps recording `ip`
+  and `user_agent`; nothing surfaces them. The settings page reserves no space
+  for it.
+- **E-Mail notification preferences — later, but designed for now.** The
+  settings page fixes the section's name and position today (§3.2) and the
+  layout is drawn as though it were already there, so landing the feature is an
+  insert rather than a restructuring.
 - A "Meine Dateien" block.
 - Any change to the profile wizard at `/profil`.
 
@@ -101,6 +108,20 @@ per CLAUDE.md §7.
 in behaviour, re-presented as `<details>` accordions — the canonical disclosure
 pattern (CLAUDE.md §7). A back link returns to `/account`.
 
+Section order is fixed now and does not change when the deferred feature lands:
+
+1. **E-Mail-Adresse** — existing `EmailChangeCard`.
+2. **Passwort** — existing `ChangePasswordCard`. Its copy also carries the
+   remedy for a lost device, since no session management exists: changing the
+   password ends every other sign-in.
+3. **E-Mail-Benachrichtigungen** — reserved. Ships later; the accordion is drawn
+   in place and disabled, labelled "Kommt bald", so its arrival is an insert
+   into a settled layout rather than a change to it.
+4. **Deine Daten** — the GDPR export.
+
+The disabled third accordion is not clickable and is marked `aria-disabled`, so
+it announces itself as unavailable rather than as a broken control.
+
 `/account` keeps a link to this page; no redirect and no route rename, so
 existing links and the E2E selectors that target `/account` still resolve.
 
@@ -145,19 +166,23 @@ data intended for the notifier; the group page already presents its board.
 
 ## 5. States
 
-The page serves the whole membership lifecycle. Each state is a distinct
-rendering, not an accident of empty blocks.
+**`active` is the design target.** In practice the platform has active members
+and essentially nobody else, so the two-column layout is drawn for that case and
+the remaining states get a correct but plain fallback. Designing them properly
+is deferred.
 
-| State | Identity column | Content column |
-| --- | --- | --- |
-| No member row | Avatar placeholder, e-mail only | "Profil vervollständigen" form, nothing else |
-| `pending` | Status "Bewerbung eingereicht", Gruppe, no roles | Submitted notice, then the profile record. Events and Teilnahme hidden. |
-| `active` | Full column | Full column |
-| `inactive` / `alumnus` | Status row reflects it | Events hidden; profile record and group remain |
+| State | Treatment |
+| --- | --- |
+| `active` | The full design, as specified in §3.1. |
+| everything else | Single column at every width: status line, then the profile record. No identity sidebar, no events, no attendance. |
 
-The `pending` and no-member-row cases are the ones where a two-column layout can
-look broken. Both render single-column at every width rather than showing a
-near-empty sidebar.
+One caveat worth stating rather than discovering later: registration still walks
+a new applicant through *no member row* → `pending` before they ever become
+active, so the fallback is on the live path for every new member, not a dead
+branch. It has to be correct and unembarrassing — it does not have to be
+designed. The fallback is close to today's page, which is why it is cheap.
+
+`inactive` and `alumnus` take the same fallback until someone asks for more.
 
 ## 6. Visual
 
@@ -194,16 +219,17 @@ Per CLAUDE.md §4, tests ship in the same PR as the code.
 
 ## 8. Follow-ups, not built here
 
-Recorded so they do not disappear silently.
+1. **E-Mail notification preferences.** Needs a table in the notifications
+   module and a check in the send path. Its place in the settings page is
+   already fixed (§3.2 item 3), so the follow-up adds the form and the storage,
+   nothing else.
+2. **The FAQ currently overpromises.** `apps/web/content/faq/allgemein.ts:99`
+   tells members they manage E-Mail-Präferenzen under "Mein Konto". That stays
+   untrue until follow-up 1 ships. Either soften the sentence in PR 3 or accept
+   that it is wrong in the meantime — worth a decision, not a silent carry.
+3. **States other than `active`** (§5) get a plain fallback for now.
 
-1. **Active sessions.** `auth_sessions` already stores `ip`, `user_agent`,
-   `created_at` and `revoked_at`. Members cannot see or revoke a session; a lost
-   laptop has no remedy beyond a password change. A read-only list plus revoke
-   would close it. Settings page leaves a slot for it.
-2. **E-Mail notification preferences.** Needs a new table in the notifications
-   module and a check in the send path. Until it exists,
-   `apps/web/content/faq/allgemein.ts:99` is wrong and should be corrected —
-   either build the feature or fix the sentence.
+Not a follow-up: **active sessions**, decided against in §2.
 
 ## 9. Delivery
 
