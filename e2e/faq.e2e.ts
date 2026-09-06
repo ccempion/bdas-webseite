@@ -18,7 +18,23 @@ import {
   seedGroup,
   uniqueSlug,
 } from "./helpers/db";
-import { logout, registerVerifyLogin } from "./helpers/flows";
+import { registerVerifyLogin } from "./helpers/flows";
+
+/**
+ * Ends the session so the next `registerVerifyLogin` starts clean.
+ *
+ * Deliberately not `logout()` from `./helpers/flows`: that helper opens the
+ * `md:hidden` hamburger disclosure (`summary[aria-label="Menü öffnen"]`) to
+ * reach the header's "Abmelden", so it only works at the suite's default
+ * mobile viewport. The specs below run at 1280×900, where the hamburger is
+ * not rendered and the account menu is a separate desktop `<details>`
+ * dropdown that nothing opens — the click would wait out the timeout.
+ * Dropping the session cookie is viewport-independent and is all these specs
+ * need; the logout UI itself is covered by auth.e2e.ts.
+ */
+async function endSession(page: Page): Promise<void> {
+  await page.context().clearCookies();
+}
 
 /**
  * Reads the "Offene FAQ-Fragen" badge count from /federal/overview.
@@ -175,7 +191,7 @@ test.describe("Board-Verwaltung /federal/faq", () => {
     await page.getByRole("dialog").getByRole("button", { name: "Absenden" }).click();
     await expect(page.getByRole("dialog").getByText("Danke!", { exact: false })).toBeVisible();
     await page.getByRole("dialog").getByText("Schließen", { exact: true }).click();
-    await logout(page);
+    await endSession(page);
 
     await deleteUserByEmail(FEDERAL_EMAIL);
     await registerVerifyLogin(page, {
@@ -201,7 +217,7 @@ test.describe("Board-Verwaltung /federal/faq", () => {
     await page.getByRole("dialog").getByRole("button", { name: "Absenden" }).click();
     await expect(page.getByRole("dialog").getByText("Danke!", { exact: false })).toBeVisible();
     await page.getByRole("dialog").getByText("Schließen", { exact: true }).click();
-    await logout(page);
+    await endSession(page);
 
     await deleteUserByEmail(FEDERAL_EMAIL);
     await registerVerifyLogin(page, {
@@ -252,7 +268,7 @@ test.describe("Board-Verwaltung /federal/faq", () => {
     // scope to the visible text, not the role, to avoid a strict-mode match
     // on both.
     await page.getByText("Schließen", { exact: true }).click();
-    await logout(page);
+    await endSession(page);
 
     await deleteUserByEmail(FEDERAL_EMAIL);
     await registerVerifyLogin(page, {
@@ -288,7 +304,7 @@ test.describe("Board-Verwaltung /federal/faq", () => {
     });
     await page.goto("/federal/overview");
     const before = await readFaqOpenCount(page);
-    await logout(page);
+    await endSession(page);
 
     const memberEmail = "faq-zaehler-einreicher@e2e.bdas.test";
     await deleteUserByEmail(memberEmail);
@@ -301,7 +317,7 @@ test.describe("Board-Verwaltung /federal/faq", () => {
     // The confirmation dialog stays open after submitting; dismiss it before
     // logging out, same as the "discards a submission" test above.
     await page.getByText("Schließen", { exact: true }).click();
-    await logout(page);
+    await endSession(page);
 
     await deleteUserByEmail(FEDERAL_EMAIL);
     await registerVerifyLogin(page, {
@@ -357,10 +373,16 @@ test.describe("Einreichungen", () => {
     await registerVerifyLogin(page, { email: memberEmail, firstName: "Faq", lastName: "Wähler" });
 
     await page.goto("/faq");
-    // A plain member's primary section is open by default (order.ts), so the
-    // first entry's footer — and its thumbs — are already in the DOM. Grab
-    // the entry ID from the details element to verify it later.
-    const firstEntry = page.locator("details").first();
+    // A plain member's primary section is `mitglieder` and opens by default
+    // (order.ts), so the first entry's footer — and its thumbs — are already
+    // in the DOM. Grab the entry ID from the details element to verify it later.
+    //
+    // Scoped to the section, not `page.locator("details")`: the production
+    // header renders its own `<details>` dropdowns ("Über uns", "Faq", the
+    // mobile hamburger), so an unscoped `.first()` resolves to a nav dropdown
+    // instead of an entry. The dev server renders none of those, which is why
+    // the unscoped version passed locally and failed in CI.
+    const firstEntry = page.locator("#bereich-mitglieder details").first();
     const entryId = await firstEntry.getAttribute("id");
 
     // Click thumbs up and verify optimistic state (renders immediately before
@@ -368,13 +390,15 @@ test.describe("Einreichungen", () => {
     const thumbUp = firstEntry.getByRole("button", { name: "Hilfreich", exact: true });
     await thumbUp.click();
     await expect(thumbUp).toHaveAttribute("aria-pressed", "true");
-    // Wait for the vote to reach the server (useTransition pending → false).
-    await page.waitForLoadState("networkidle");
 
-    // Verify persistence: query the database for this member's vote on this entry.
-    // If the Server Action didn't actually run (or didn't call upsertFeedback), this will be null.
-    const feedback = await faqFeedbackByUserAndEntry(memberEmail, entryId!);
-    expect(feedback).not.toBeNull();
-    expect(feedback?.helpful).toBe(true);
+    // Verify persistence: poll the DB for this member's vote on this entry.
+    // Polling rather than a one-shot read after `waitForLoadState`, because
+    // the pressed state above is optimistic — it flips before the Server
+    // Action resolves, so a single read races the commit. This still fails if
+    // the action never runs or never calls upsertFeedback; it just waits for
+    // the round trip instead of assuming it already happened.
+    await expect
+      .poll(async () => (await faqFeedbackByUserAndEntry(memberEmail, entryId!))?.helpful ?? null)
+      .toBe(true);
   });
 });
