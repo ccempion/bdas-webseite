@@ -18,7 +18,6 @@ const sections: FaqSectionView[] = [
     key: "mitglieder",
     title: "Mitglieder",
     intro: null,
-    defaultOpen: true,
     entries: [entry("a", { topic: { id: "t1", name: "Events" } }), entry("b")],
     subgroups: [],
   },

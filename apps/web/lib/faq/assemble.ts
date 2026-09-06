@@ -27,7 +27,6 @@ export type FaqSectionView = {
   key: FaqSectionKey;
   title: string;
   intro: string | null;
-  defaultOpen: boolean;
   entries: FaqEntryView[];
   subgroups: FaqSubgroupView[];
 };
@@ -115,7 +114,7 @@ function toEntryView(row: FaqEntryRow, topicById: ReadonlyMap<string, FaqTopic>)
 /**
  * Turns published DB rows into the plain-object shape a client component
  * renders — section/subgroup grouping, visibility per {@link hasAny}, order
- * and `defaultOpen` via {@link orderSections}, empty sections dropped.
+ * via {@link orderSections}, empty sections dropped.
  */
 export function assembleFaq(input: {
   entries: readonly FaqEntryRow[]; // bereits nur published
@@ -128,7 +127,7 @@ export function assembleFaq(input: {
 
   const sections: FaqSectionView[] = [];
 
-  for (const { key, defaultOpen } of orderSections(grants)) {
+  for (const { key } of orderSections(grants)) {
     const meta = SECTION_META[key];
     if (meta.visibleTo !== "all" && !hasAny(grants, meta.visibleTo)) continue;
 
@@ -166,7 +165,6 @@ export function assembleFaq(input: {
       key,
       title: meta.title,
       intro: meta.intro,
-      defaultOpen,
       entries: topLevel,
       subgroups,
     });

@@ -27,17 +27,10 @@ function Block({ block }: { block: FaqBlock }) {
   }
 }
 
-/** One FAQ entry as the design-system disclosure accordion. `defaultOpen` lets a
- *  highlighted sub-role's entries start expanded. */
-export function FaqAccordion({
-  entry,
-  defaultOpen = false,
-}: {
-  entry: FaqEntry;
-  defaultOpen?: boolean;
-}) {
+/** One FAQ entry as the design-system disclosure accordion. Always starts collapsed. */
+export function FaqAccordion({ entry }: { entry: FaqEntry }) {
   return (
-    <details className="bdas-accordion" open={defaultOpen}>
+    <details className="bdas-accordion">
       <summary>{entry.question}</summary>
       <div>
         {entry.body.map((block, i) => (

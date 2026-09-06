@@ -5,7 +5,7 @@ import { FaqAccordion } from "./FaqAccordion";
  * A FAQ section rendered as a collapsible block. The viewer's primary section
  * arrives with `defaultOpen`. The `vorstand` section fans out into per-sub-role
  * subgroups; the subgroup matching the viewer's own grant (in
- * `highlightedSubgroups`) is badged and its entries start expanded.
+ * `highlightedSubgroups`) is badged. Entries themselves always start collapsed.
  */
 export function FaqSectionView({
   section,
@@ -40,7 +40,7 @@ export function FaqSectionView({
                   </div>
                   <div className="flex flex-col gap-2">
                     {sub.entries.map((entry) => (
-                      <FaqAccordion key={entry.id} entry={entry} defaultOpen={highlighted} />
+                      <FaqAccordion key={entry.id} entry={entry} />
                     ))}
                   </div>
                 </div>

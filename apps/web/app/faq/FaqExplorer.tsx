@@ -227,7 +227,6 @@ export function FaqExplorer({
                         entry={entry}
                         query={normalizedQuery}
                         forceOpen={normalizedQuery.length > 0 || entry.id === hashTarget}
-                        defaultOpen={section.defaultOpen}
                         onCopyLink={onCopyLink}
                         relatedQuestions={relatedFor(entry)}
                       />
@@ -252,7 +251,6 @@ export function FaqExplorer({
                           entry={entry}
                           query={normalizedQuery}
                           forceOpen={normalizedQuery.length > 0 || entry.id === hashTarget}
-                          defaultOpen={sub.highlighted}
                           onCopyLink={onCopyLink}
                           relatedQuestions={relatedFor(entry)}
                         />

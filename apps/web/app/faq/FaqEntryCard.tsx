@@ -20,14 +20,12 @@ export function FaqEntryCard({
   entry,
   query,
   forceOpen,
-  defaultOpen,
   onCopyLink,
   relatedQuestions,
 }: {
   entry: FaqEntryView;
   query: string;
   forceOpen: boolean;
-  defaultOpen: boolean;
   onCopyLink: (id: string) => void;
   relatedQuestions: ReadonlyArray<{ id: string; question: string }>;
 }): ReactNode {
@@ -41,7 +39,7 @@ export function FaqEntryCard({
       key={entry.id + (forceOpen ? "-f" : "")}
       id={entry.id}
       className="bdas-accordion"
-      open={forceOpen || defaultOpen}
+      open={forceOpen}
     >
       <summary className="flex items-center justify-between gap-3">
         <span>{highlightMatches(entry.question, query)}</span>

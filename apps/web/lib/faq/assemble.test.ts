@@ -40,7 +40,6 @@ describe("assembleFaq", () => {
       grants: [{ role: "local_board_lead", groupId: "g1" }],
     });
     expect(sections[0]!.key).toBe("vorstand");
-    expect(sections[0]!.defaultOpen).toBe(true);
     expect(sections[0]!.subgroups[0]!.highlighted).toBe(true);
   });
 

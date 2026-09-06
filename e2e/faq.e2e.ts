@@ -59,7 +59,7 @@ test("a guest visiting /faq is redirected to login", async ({ page }) => {
   expect(page.url()).toContain("/anmelden");
 });
 
-test("a signed-in member opens the FAQ, role section visible and expanded", async ({ page }) => {
+test("a signed-in member opens the FAQ, role section visible and collapsed", async ({ page }) => {
   const email = "faq-member@e2e.bdas.test";
   await deleteUserByEmail(email);
   await registerVerifyLogin(page, { email, firstName: "Faq", lastName: "Mitglied" });
@@ -73,12 +73,10 @@ test("a signed-in member opens the FAQ, role section visible and expanded", asyn
     page.getByText("Föderationsweite Funktionen unter „Bundesverband“.", { exact: false }),
   ).toBeHidden();
 
-  // Visibility alone doesn't prove expansion — every visible section's intro
-  // renders unconditionally (FaqExplorer.tsx). The actual open/closed state
-  // lives on each entry's own <details>, so assert that directly: a plain
-  // member's primary section is `defaultOpen` (order.ts), so its first entry
-  // renders already expanded.
-  await expect(page.locator("#bereich-mitglieder details").first()).toHaveAttribute("open", "");
+  // Every entry starts collapsed, the viewer's own section included — only a
+  // search hit or a deep link (`forceOpen` in FaqEntryCard.tsx) opens one. The
+  // open/closed state lives on each entry's own <details>, so assert it there.
+  await expect(page.locator("#bereich-mitglieder details").first()).not.toHaveAttribute("open", "");
 });
 
 // The rail only renders at the `lg` breakpoint (`FaqExplorer.tsx`); the
@@ -431,9 +429,8 @@ test.describe("Einreichungen", () => {
     await registerVerifyLogin(page, { email: memberEmail, firstName: "Faq", lastName: "Wähler" });
 
     await page.goto("/faq");
-    // A plain member's primary section is `mitglieder` and opens by default
-    // (order.ts), so the first entry's footer — and its thumbs — are already
-    // in the DOM. Grab the entry ID from the details element to verify it later.
+    // Entries start collapsed, so open the first one before reaching for its
+    // footer — the thumbs are inside the collapsed body and not clickable.
     //
     // Scoped to the section, not `page.locator("details")`: the production
     // header renders its own `<details>` dropdowns ("Über uns", "Faq", the
@@ -442,6 +439,7 @@ test.describe("Einreichungen", () => {
     // the unscoped version passed locally and failed in CI.
     const firstEntry = page.locator("#bereich-mitglieder details").first();
     const entryId = await firstEntry.getAttribute("id");
+    await firstEntry.locator("summary").click();
 
     // Click thumbs up and verify optimistic state (renders immediately before
     // the Server Action resolves).
