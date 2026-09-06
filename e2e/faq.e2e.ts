@@ -251,6 +251,64 @@ test.describe("Board-Verwaltung /federal/faq", () => {
     await expect(page.locator("mark").first()).toBeVisible();
   });
 
+  test("a saved draft is resumed, not forked into a second entry", async ({ page }) => {
+    const question = `E2E-Fortsetzen ${uniqueSlug("f")}?`;
+    const edited = `${question} (überarbeitet)`;
+
+    const memberEmail = "faq-fortsetzen-einreicher@e2e.bdas.test";
+    await deleteUserByEmail(memberEmail);
+    await registerVerifyLogin(page, { email: memberEmail, firstName: "Faq", lastName: "Fortsetz" });
+    await page.goto("/faq");
+    await page.getByRole("button", { name: "Frage einreichen" }).first().click();
+    await page.getByRole("dialog").getByLabel("Deine Frage").fill(question);
+    await page.getByRole("dialog").getByRole("button", { name: "Absenden" }).click();
+    await expect(page.getByRole("dialog").getByText("Danke!", { exact: false })).toBeVisible();
+    await page.getByRole("dialog").getByText("Schließen", { exact: true }).click();
+    await endSession(page);
+
+    await deleteUserByEmail(FEDERAL_EMAIL);
+    await registerVerifyLogin(page, {
+      email: FEDERAL_EMAIL,
+      firstName: "Bundes",
+      lastName: "Vorstand",
+    });
+    await page.goto("/federal/faq");
+    await page.getByRole("tab", { name: /Offene Fragen/ }).click();
+
+    // First pass: start the answer and park it as a draft. Renaming the
+    // question is what makes the second pass provable — a fresh entry would
+    // come back prefilled with the submission's original wording.
+    const card = page.getByRole("article").filter({ hasText: question });
+    await card.getByRole("button", { name: "Antwort verfassen" }).click();
+    const dialog = page.getByRole("dialog");
+    await dialog.getByPlaceholder("Frage").fill(edited);
+    await dialog.getByRole("button", { name: "Speichern" }).click();
+    await expect(dialog).toBeHidden();
+
+    // The submission stays open, now flagged, and the button changes verb.
+    await page.goto("/federal/faq");
+    await page.getByRole("tab", { name: /Offene Fragen/ }).click();
+    const flagged = page.getByRole("article").filter({ hasText: question });
+    await expect(flagged.getByText("Entwurf angelegt")).toBeVisible();
+    await expect(flagged.getByRole("button", { name: "Antwort verfassen" })).toHaveCount(0);
+
+    // Second pass: the dialog reopens the parked draft, not an empty form.
+    await flagged.getByRole("button", { name: "Entwurf fortsetzen" }).click();
+    await expect(dialog.getByPlaceholder("Frage")).toHaveValue(edited);
+    await dialog.getByRole("button", { name: "Veröffentlichen" }).click();
+    await expect(dialog).toBeHidden();
+
+    await page.goto("/federal/faq");
+    await page.getByRole("tab", { name: /Offene Fragen/ }).click();
+    await expect(page.getByRole("article").filter({ hasText: question })).toHaveCount(0);
+
+    // Exactly one entry came out of the two passes — the resumed draft. A
+    // fork would leave the original wording behind as a stranded draft.
+    await page.getByRole("tab", { name: "Fragen & Antworten" }).click();
+    await expect(page.getByText(edited, { exact: true })).toHaveCount(1);
+    await expect(page.getByText(question, { exact: true })).toHaveCount(0);
+  });
+
   test("the board discards a submission after confirming", async ({ page }) => {
     const question = `E2E-Verwerfen ${uniqueSlug("v")}?`;
 

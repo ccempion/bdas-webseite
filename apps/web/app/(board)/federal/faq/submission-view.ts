@@ -1,4 +1,4 @@
-import type { FaqSubmission } from "@bdas/faq";
+import type { FaqEntry, FaqSubmission } from "@bdas/faq";
 
 import { FAQ_CONTEXTS } from "../../../../lib/faq/contexts";
 
@@ -10,13 +10,12 @@ export type SubmissionCardView = {
   submitterName: string;
   submittedAtIso: string;
   /**
-   * True when a draft entry already exists for this submission (its
-   * `entry_id` is set). The raw entry id itself is deliberately not exposed
-   * here — this view model reaches the client and ships no raw ids — but the
-   * board needs to know a draft exists so it publishes it instead of
-   * creating a second, orphaned one (see the review note this fixes).
+   * The draft entry already linked to this submission (`entry_id`), or null
+   * while nobody has started answering. The board resolves it against the
+   * entries it already renders so „Antwort verfassen" resumes that draft
+   * instead of creating a second, orphaned one.
    */
-  hasDraft: boolean;
+  draftEntryId: string | null;
 };
 
 /**
@@ -41,6 +40,20 @@ export function toSubmissionCards(input: {
     contextLabel: labelFor(s.context),
     submitterName: input.namesByUserId.get(s.submittedBy) ?? "Unbekanntes Mitglied",
     submittedAtIso: s.createdAt.toISOString(),
-    hasDraft: s.entryId !== null,
+    draftEntryId: s.entryId,
   }));
+}
+
+/**
+ * The draft to reopen when the board acts on a submission, or null when it
+ * should start a fresh one. A linked id that matches no rendered entry means
+ * the draft was deleted since the page rendered (`entry_id` is ON DELETE SET
+ * NULL) — starting over beats opening an empty dialog.
+ */
+export function resumableDraft(
+  card: SubmissionCardView,
+  entries: readonly FaqEntry[],
+): FaqEntry | null {
+  if (card.draftEntryId === null) return null;
+  return entries.find((e) => e.id === card.draftEntryId) ?? null;
 }
