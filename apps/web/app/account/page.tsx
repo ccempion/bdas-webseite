@@ -172,6 +172,7 @@ export default async function AccountPage({
 
       {mode === "plain" ? (
         <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
+          <p className="text-bdas-ink-body">{me.user.email}</p>
           {statusAlerts}
           {profileCard}
           {settingsLink}
