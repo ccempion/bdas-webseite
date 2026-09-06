@@ -9,10 +9,22 @@
  *  - Behind `faq_suite`, the DB-backed docs layout (rail + search with
  *    `<mark>` highlighting) is reachable and usable.
  */
-import { expect, test } from "@playwright/test";
+import { expect, type Page, test } from "@playwright/test";
 
 import { deleteUserByEmail, faqFeedbackByUserAndEntry, grantLocalBoard, seedGroup, uniqueSlug } from "./helpers/db";
 import { logout, registerVerifyLogin } from "./helpers/flows";
+
+/**
+ * Reads the "Offene FAQ-Fragen" badge count from /federal/overview.
+ * ActionStrip omits the link entirely at count 0 (spec §6), so an absent
+ * link means 0 rather than a missing element to wait out.
+ */
+async function readFaqOpenCount(page: Page): Promise<number> {
+  const link = page.getByRole("link", { name: /Offene FAQ-Fragen/ });
+  if ((await link.count()) === 0) return 0;
+  const badge = await link.locator("span").first().innerText();
+  return Number(badge.trim());
+}
 
 // Must match BDAS_FEDERAL_BOARD_EMAILS in the CI e2e job (see e2e/board.e2e.ts:
 // federal access comes from the JWT, granted at login when the email matches
@@ -257,6 +269,44 @@ test.describe("Board-Verwaltung /federal/faq", () => {
     await page.getByRole("dialog").getByRole("button", { name: "Verwerfen" }).click();
 
     await expect(card).toHaveCount(0);
+  });
+
+  test("an open submission surfaces on the federal overview", async ({ page }) => {
+    const question = `E2E-Zaehler ${uniqueSlug("z")}?`;
+
+    await deleteUserByEmail(FEDERAL_EMAIL);
+    await registerVerifyLogin(page, {
+      email: FEDERAL_EMAIL,
+      firstName: "Bundes",
+      lastName: "Vorstand",
+    });
+    await page.goto("/federal/overview");
+    const before = await readFaqOpenCount(page);
+    await logout(page);
+
+    const memberEmail = "faq-zaehler-einreicher@e2e.bdas.test";
+    await deleteUserByEmail(memberEmail);
+    await registerVerifyLogin(page, { email: memberEmail, firstName: "Faq", lastName: "Zaehler" });
+    await page.goto("/faq");
+    await page.getByRole("button", { name: "Frage einreichen" }).first().click();
+    await page.getByRole("dialog").getByLabel("Deine Frage").fill(question);
+    await page.getByRole("dialog").getByRole("button", { name: "Absenden" }).click();
+    await expect(page.getByRole("dialog").getByText("Danke!", { exact: false })).toBeVisible();
+    // The confirmation dialog stays open after submitting; dismiss it before
+    // logging out, same as the "discards a submission" test above.
+    await page.getByText("Schließen", { exact: true }).click();
+    await logout(page);
+
+    await deleteUserByEmail(FEDERAL_EMAIL);
+    await registerVerifyLogin(page, {
+      email: FEDERAL_EMAIL,
+      firstName: "Bundes",
+      lastName: "Vorstand",
+    });
+    await page.goto("/federal/overview");
+    await expect(page.getByRole("link", { name: /Offene FAQ-Fragen/ })).toBeVisible();
+    const after = await readFaqOpenCount(page);
+    expect(after).toBe(before + 1);
   });
 });
 

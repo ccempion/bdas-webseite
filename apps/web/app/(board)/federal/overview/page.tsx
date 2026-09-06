@@ -1,11 +1,13 @@
 import { getDb } from "@bdas/db";
 import { listManagedEvents } from "@bdas/events-module";
+import { openSubmissionCount } from "@bdas/faq";
+import { isFlagOn } from "@bdas/feature-flags";
 import { listGroups } from "@bdas/groups";
 import { countMembersByStatus, signupsOverTime } from "@bdas/members";
 
 import { viewerFrom } from "../../../../lib/event-viewer";
 import { loadCurrentMember } from "../../../_dashboard/session";
-import { ActionStrip } from "../../_components/ActionStrip";
+import { ActionStrip, type ActionItem } from "../../_components/ActionStrip";
 import { Sparkline } from "../../_components/Sparkline";
 import { Tile } from "../../_components/Tile";
 
@@ -21,6 +23,7 @@ export default async function FederalOverviewPage() {
     listGroups(db, { status: "active" }),
     listManagedEvents(db, viewerFrom(me)),
   ]);
+  const faqOpen = isFlagOn("faq_suite") ? await openSubmissionCount(db) : 0;
   const newSignups = signups.reduce((n, p) => n + p.count, 0);
   const upcoming = events.filter((e) => e.status === "published" && e.startsAt > new Date()).length;
 
@@ -28,7 +31,14 @@ export default async function FederalOverviewPage() {
     <section className="flex flex-col gap-5">
       <h1 className="text-2xl font-semibold text-bdas-ink">Übersicht · Bundesverband</h1>
       <ActionStrip
-        items={[{ count: counts.pending, label: "Freigaben", href: "/federal/members" }]}
+        items={[
+          { count: counts.pending, label: "Freigaben", href: "/federal/members" },
+          // Spec §6: this one appears only when there is work — unlike
+          // "Freigaben", which renders calm at zero.
+          ...(faqOpen > 0
+            ? [{ count: faqOpen, label: "Offene FAQ-Fragen", href: "/federal/faq" }]
+            : []),
+        ] satisfies ActionItem[]}
       />
       <div className="flex flex-wrap gap-3">
         <Tile value={String(counts.active)} label="Aktive Mitglieder" />
