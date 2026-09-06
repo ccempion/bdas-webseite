@@ -1,3 +1,4 @@
+import type { Role } from "@bdas/auth";
 import type { Grant, MemberStatus } from "@bdas/members";
 import { ROLE_LABELS } from "@bdas/members";
 
@@ -29,7 +30,7 @@ const STATUS_TEXT: Record<MemberStatus, string> = {
 
 /** Roles a member always has by virtue of their status. A chip saying
  *  "Mitglied" tells them nothing they did not already know. */
-const IMPLICIT_ROLES = new Set(["member", "alumnus"]);
+const IMPLICIT_ROLES: ReadonlySet<Role> = new Set<Role>(["member", "alumnus"]);
 
 export function layoutMode(status: MemberStatus | null): AccountLayoutMode {
   return status === "active" ? "full" : "plain";
