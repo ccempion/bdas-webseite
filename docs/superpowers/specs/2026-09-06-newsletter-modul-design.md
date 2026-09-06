@@ -401,7 +401,7 @@ mit den echten Token gezeichnet waren. Der Musterbogen liegt als Artifact unter
 | Registrierung      | **E2** — abgesetzter Kasten mit Nutzenzeile und Datenschutz-Verweis, Checkbox ungehakt |
 | Tonalität          | **F2** — einladend, „wir", Duzen. Gilt einheitlich auf allen Flächen                   |
 | Zustände           | **G** — wie im Musterbogen, siehe §13.2                                                |
-| Blickfang in A3/C1 | **H2** — rotes Feld mit Marken-Sweep, ohne Motiv. Siehe §13.3                          |
+| Blickfang in A3/C1 | **H1** — rotes Feld, ohne Sweep und ohne Motiv. Siehe §13.3                            |
 
 ### 13.1 Was das an der Bildsprache kostet
 
@@ -432,29 +432,38 @@ eine Person dem alevitischen Studierendenverband nahesteht. Das ist
 Zugehörigkeit im Sinne von Art. 9 DSGVO. Auch die **Antwortzeit** muss in allen
 drei Fällen ähnlich sein, sonst verrät die Dauer, was der Text verschweigt.
 
-### 13.3 Blickfang: H2 — rotes Feld mit Marken-Sweep
+### 13.3 Blickfang: H1 — rotes Feld
 
-Ersetzt den roten Balken in A3 und C1. Gewählt ist **H2**, ohne Bildmotiv: Die
-Fläche wird selbst zum Akzent — volles Markenrot, weiße Schrift, weißer Knopf —
-und beim Erscheinen zieht das Lichtband des Marken-Laders einmal quer darüber.
-Der Verlauf ist `colors.surface.overlay.loaderShine`, unverändert übernommen,
-Richtung wie beim Logo von unten-links nach oben-rechts, Dauer
-`motion.durationLoop` (1600 ms). Einmal beim Hereinscrollen, erneut beim
-Überfahren, gar nicht bei `prefers-reduced-motion`.
+Ersetzt den roten Balken in A3 und C1. Gewählt ist **H1**, ohne Bildmotiv und
+ohne Sweep: Die Fläche wird selbst zum Akzent — volles Markenrot, weiße Schrift,
+weißer Knopf auf rotem Grund. Sie fällt allein durch den Farbwechsel auf, auf
+einer sonst durchgehend weißen Seite.
 
-Der Vorzug gegenüber einer frei erfundenen Bewegung: Es ist bereits eure Geste.
-Die Fläche wirkt auffällig, ohne fremd zu wirken, und es entsteht kein neuer
-Wert in `tokens.ts` — nur eine neue Verwendung eines vorhandenen.
+**Bewegung.** Beim Erscheinen steigt die Fläche auf und blendet ein, 400 ms
+(`motion.durationSlow`). Beim Überfahren der übliche Kartenhub: `-2px` und
+`shadows.cardLiftMd` über 300 ms. Nichts davon bei `prefers-reduced-motion` —
+dann steht die Fläche einfach da, was ihrer Wirkung nichts nimmt, weil die
+Wirkung aus der Farbe kommt und nicht aus der Bewegung.
 
-**Was H2 an neuen Token braucht:** Rot als Flächenfarbe und Weiß als Schrift
-darauf. Beides steht so noch nicht in `tokens.ts`; vorgesehen sind
-`colors.ink.onBrand` und eine Knopf-Variante `on-brand`. Dazu die Zeile im
-Design-System-README nach §13.1.
+**Was H1 an neuen Token braucht:**
 
-**Ein Bildmotiv im Feld ist vertagt** (§14), nicht verworfen. Erwogen wurden ein
-Saz und ein Hirsch als einfarbige weiße Strichzeichnung, die das Lichtband beim
-Vorbeiziehen kurz hervorhebt. Das ist rein additiv: Es legt sich später in
-dieselbe Fläche, ohne H2 zu verändern.
+- Rot als **Flächenfarbe** und Weiß als Schrift darauf. Beides steht so noch
+  nicht in `tokens.ts`; vorgesehen sind `colors.ink.onBrand` und eine
+  Knopf-Variante `on-brand` in `Button.tsx`.
+- Ein Keyframe `fadeSlideUp` als Spiegelung des vorhandenen `fadeSlideDown`.
+  Letzteres kommt von `translateY(-5px)` nach unten; die Fläche soll aber von
+  unten aufsteigen. Der Block `keyframes` in `tokens.ts` existiert bereits, die
+  Ergänzung bleibt also in der Sprache.
+
+Dazu die Zeile im Design-System-README nach §13.1.
+
+**Ein Bildmotiv im Feld ist vertagt** (§14), nicht verworfen. Ein Punkt dazu ist
+mit dieser Wahl aber zu beachten: Der ursprünglich angedachte Effekt — eine
+Strichzeichnung liegt fast unsichtbar im Feld und wird vom vorbeiziehenden
+Lichtband kurz hervorgehoben — setzt genau den Sweep voraus, der in H1 nicht
+vorkommt. Wer das Motiv später will, entscheidet sich damit zugleich für den
+Sweep und landet bei H4 beziehungsweise H6. Das Motiv allein, ohne Sweep, wäre
+ein statisches Wasserzeichen und damit eine andere Gestaltung.
 
 ### 13.4 Noch nicht festgelegt
 
