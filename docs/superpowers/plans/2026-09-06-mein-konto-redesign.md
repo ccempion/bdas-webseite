@@ -40,7 +40,10 @@
   - `type MyRegistration = { readonly eventId: string; readonly title: string; readonly startsAt: Date; readonly location: string | null; readonly groupId: string | null; readonly waitlistPosition: number | null }`
   - `listMyUpcomingRegistrations(db: Db, memberId: string, limit?: number): Promise<ReadonlyArray<MyRegistration>>` — default `limit` is 3.
 
-Background you need: `event_registrations.member_id` is a plain `text` column with **no** foreign key, so a test may use any invented id like `"mbr_lena"`. `registerMember` refuses to register for an event that has already started, so a test that needs a *past* registration must register for a future event and then move the event backwards with a direct `update`.
+Two things you must know before writing the test:
+
+1. **`event_registrations.member_id` is `NOT NULL REFERENCES members(id)`** (`modules/events/migrations/0001_init.sql:32`), and `members.user_id` in turn references `auth_users`. An invented member id fails with a foreign-key violation. Seed real rows first, using the helper pattern already in this module at `modules/events/src/index.test.ts:112-123` — it is reproduced in the test below.
+2. **`registerMember` refuses an event that has already started**, so a test needing a *past* registration must register for a future event and then move the event backwards with a direct `update`.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -109,6 +112,18 @@ describeIfDb("listMyUpcomingRegistrations", () => {
       await t.client.unsafe(sql);
     }
     resetEventBus();
+
+    // event_registrations.member_id is NOT NULL REFERENCES members(id), and
+    // members.user_id references auth_users — so every member id a test uses
+    // has to exist for real. Same helper shape as index.test.ts:112-123.
+    for (const id of [MEMBER, "mbr_someone_else", "mbr_first"]) {
+      await t.client`
+        INSERT INTO auth_users (id, email_normalized, email_display, status)
+        VALUES (${"usr_" + id}, ${id + "@e2e.test"}, ${id + "@e2e.test"}, 'active')`;
+      await t.client`
+        INSERT INTO members (id, user_id, first_name, last_name, primary_group_id, status)
+        VALUES (${id}, ${"usr_" + id}, 'Test', ${id}, NULL, 'active')`;
+    }
   });
 
   afterEach(async () => {
@@ -375,16 +390,33 @@ describeIfDb("countAttendedEvents", () => {
       await t.client.unsafe(sql);
     }
     resetEventBus();
+
+    // Both event_attendance.event_id and .member_id are NOT NULL foreign keys,
+    // so attendance rows need a real event AND a real member behind them.
+    for (const id of [MEMBER, "mbr_someone_else"]) {
+      await t.client`
+        INSERT INTO auth_users (id, email_normalized, email_display, status)
+        VALUES (${"usr_" + id}, ${id + "@e2e.test"}, ${id + "@e2e.test"}, 'active')`;
+      await t.client`
+        INSERT INTO members (id, user_id, first_name, last_name, primary_group_id, status)
+        VALUES (${id}, ${"usr_" + id}, 'Test', ${id}, NULL, 'active')`;
+    }
   });
 
   afterEach(async () => {
     await t.cleanup();
   });
 
-  async function attendance(id: string, memberId: string, attended: boolean): Promise<void> {
+  /** Creates a real event, then an attendance row pointing at it. */
+  async function attendance(rowId: string, memberId: string, attended: boolean): Promise<void> {
+    const ev = await createEvent(
+      t.db,
+      { title: `Termin ${rowId}`, startsAt: days(-3), visibility: "public" },
+      "usr_creator",
+    );
     await t.db.insert(eventAttendance).values({
-      id,
-      eventId: `evt_${id}`,
+      id: rowId,
+      eventId: ev.id,
       memberId,
       attended,
     });
