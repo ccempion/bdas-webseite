@@ -2,17 +2,21 @@
 
 import { useState, useTransition } from "react";
 
+import { Dialog } from "@bdas/design-system";
 import type { FaqEntry, FaqTopic, FeedbackCounts } from "@bdas/faq";
 
 import { SECTION_LABELS, VORSTAND_SUBGROUP_LABELS } from "../../../../lib/faq/assemble";
 import {
   deleteEntryAction,
+  discardSubmissionAction,
   publishEntryAction,
   reorderEntriesAction,
   unpublishEntryAction,
 } from "./actions";
 import { FaqEntryDialog, type FaqEntryDialogInitial } from "./FaqEntryDialog";
 import { groupByScope } from "./group-entries";
+import { SubmissionsPanel } from "./SubmissionsPanel";
+import type { SubmissionCardView } from "./submission-view";
 import { TopicsPanel } from "./TopicsPanel";
 
 const EMPTY_ENTRY: FaqEntryDialogInitial = {
@@ -44,10 +48,12 @@ export function FaqAdminBoard({
   entries,
   topics,
   feedbackByEntry,
+  submissions,
 }: {
   entries: readonly FaqEntry[];
   topics: readonly FaqTopic[];
   feedbackByEntry: Record<string, FeedbackCounts>;
+  submissions: readonly SubmissionCardView[];
 }) {
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -55,6 +61,8 @@ export function FaqAdminBoard({
     initial: FaqEntryDialogInitial;
     currentStatus: "draft" | "published" | null;
   } | null>(null);
+  const [tab, setTab] = useState<"entries" | "submissions">("entries");
+  const [discarding, setDiscarding] = useState<SubmissionCardView | null>(null);
 
   const allEntries = entries.map((e) => ({ id: e.id, question: e.question }));
   const groups = groupByScope(entries);
@@ -72,114 +80,163 @@ export function FaqAdminBoard({
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-between">
-        <TopicsPanel topics={topics} />
-        <button
-          type="button"
-          onClick={() => setDialog({ initial: EMPTY_ENTRY, currentStatus: null })}
-          className="self-start rounded-bdas-sm bg-bdas-red px-3 py-2 text-sm font-semibold text-bdas-surface"
-        >
-          + Eintrag
-        </button>
+      <div role="tablist" aria-label="FAQ-Verwaltung" className="flex gap-2">
+        {(
+          [
+            ["entries", "Fragen & Antworten"],
+            [
+              "submissions",
+              `Offene Fragen${submissions.length > 0 ? ` (${submissions.length})` : ""}`,
+            ],
+          ] as const
+        ).map(([key, label]) => (
+          <button
+            key={key}
+            type="button"
+            role="tab"
+            aria-selected={tab === key}
+            onClick={() => setTab(key)}
+            className={
+              tab === key
+                ? "rounded-bdas-sm border border-bdas-red px-3 py-1.5 text-sm font-semibold text-bdas-red"
+                : "rounded-bdas-sm border border-bdas-soft px-3 py-1.5 text-sm text-bdas-ink-body hover:bg-bdas-overlay-hover"
+            }
+          >
+            {label}
+          </button>
+        ))}
       </div>
       {error && <p className="text-sm text-bdas-red">{error}</p>}
-      {groups.map((group) => (
-        <div
-          key={`${group.section}:${group.subgroup ?? ""}`}
-          className="overflow-hidden rounded-bdas border border-bdas-soft bg-bdas-surface shadow-bdas-card"
-        >
-          <h3 className="border-b border-bdas-soft px-4 py-2 text-sm font-bold text-bdas-ink">
-            {SECTION_LABELS[group.section]}
-            {group.subgroup ? ` · ${VORSTAND_SUBGROUP_LABELS[group.subgroup]}` : ""}
-          </h3>
-          {group.entries.map((entry, i) => {
-            const counts = feedbackByEntry[entry.id] ?? { up: 0, down: 0 };
-            return (
-              <div
-                key={entry.id}
-                className="flex flex-wrap items-center gap-3 border-b border-bdas-soft px-4 py-2 last:border-b-0"
-              >
-                <span
-                  className={
-                    entry.status === "published"
-                      ? "rounded-bdas-pill bg-bdas-surface-hover px-2 py-0.5 text-xs font-semibold text-bdas-ink-muted"
-                      : "rounded-bdas-pill border border-bdas-red px-2 py-0.5 text-xs font-semibold text-bdas-red"
-                  }
-                >
-                  {entry.status === "published" ? "Veröffentlicht" : "Entwurf"}
-                </span>
-                <span className="flex-1 text-sm text-bdas-ink">{entry.question}</span>
-                <span
-                  className="text-xs text-bdas-ink-muted"
-                  title={`${counts.up} hilfreich, ${counts.down} nicht hilfreich`}
-                  aria-label={`${counts.up} hilfreich, ${counts.down} nicht hilfreich`}
-                >
-                  👍 {counts.up} 👎 {counts.down}
-                </span>
-                <button
-                  type="button"
-                  disabled={i === 0 || pending}
-                  onClick={() => move(group, i, -1)}
-                  className="text-bdas-ink-muted disabled:opacity-30"
-                  aria-label={`„${entry.question}" nach oben`}
-                >
-                  ↑
-                </button>
-                <button
-                  type="button"
-                  disabled={i === group.entries.length - 1 || pending}
-                  onClick={() => move(group, i, 1)}
-                  className="text-bdas-ink-muted disabled:opacity-30"
-                  aria-label={`„${entry.question}" nach unten`}
-                >
-                  ↓
-                </button>
-                <button
-                  type="button"
-                  onClick={() =>
-                    setDialog({ initial: toInitial(entry), currentStatus: entry.status })
-                  }
-                  className="rounded-bdas-sm border border-bdas-soft px-2 py-1 text-xs text-bdas-ink-body hover:bg-bdas-overlay-hover"
-                >
-                  Bearbeiten
-                </button>
-                <button
-                  type="button"
-                  disabled={pending}
-                  onClick={() =>
-                    start(async () => {
-                      const res =
+      {tab === "entries" && (
+        <>
+          <div className="flex items-center justify-between">
+            <TopicsPanel topics={topics} />
+            <button
+              type="button"
+              onClick={() => setDialog({ initial: EMPTY_ENTRY, currentStatus: null })}
+              className="self-start rounded-bdas-sm bg-bdas-red px-3 py-2 text-sm font-semibold text-bdas-surface"
+            >
+              + Eintrag
+            </button>
+          </div>
+          {groups.map((group) => (
+            <div
+              key={`${group.section}:${group.subgroup ?? ""}`}
+              className="overflow-hidden rounded-bdas border border-bdas-soft bg-bdas-surface shadow-bdas-card"
+            >
+              <h3 className="border-b border-bdas-soft px-4 py-2 text-sm font-bold text-bdas-ink">
+                {SECTION_LABELS[group.section]}
+                {group.subgroup ? ` · ${VORSTAND_SUBGROUP_LABELS[group.subgroup]}` : ""}
+              </h3>
+              {group.entries.map((entry, i) => {
+                const counts = feedbackByEntry[entry.id] ?? { up: 0, down: 0 };
+                return (
+                  <div
+                    key={entry.id}
+                    className="flex flex-wrap items-center gap-3 border-b border-bdas-soft px-4 py-2 last:border-b-0"
+                  >
+                    <span
+                      className={
                         entry.status === "published"
-                          ? await unpublishEntryAction(entry.id)
-                          : await publishEntryAction(entry.id);
-                      if (!res.ok) setError(res.error);
-                    })
-                  }
-                  className="rounded-bdas-sm border border-bdas-soft px-2 py-1 text-xs text-bdas-ink-body hover:bg-bdas-overlay-hover"
-                >
-                  {entry.status === "published" ? "Zurückziehen" : "Veröffentlichen"}
-                </button>
-                <button
-                  type="button"
-                  disabled={pending}
-                  onClick={() => {
-                    if (!window.confirm(`„${entry.question}" endgültig löschen?`)) return;
-                    start(async () => {
-                      const res = await deleteEntryAction(entry.id);
-                      if (!res.ok) setError(res.error);
-                    });
-                  }}
-                  className="rounded-bdas-sm border border-bdas-soft px-2 py-1 text-xs text-bdas-ink-body hover:bg-bdas-red hover:text-bdas-surface"
-                >
-                  Löschen
-                </button>
-              </div>
-            );
-          })}
-        </div>
-      ))}
-      {groups.length === 0 && (
-        <p className="text-sm text-bdas-ink-muted">Noch keine Einträge — leg den ersten an.</p>
+                          ? "rounded-bdas-pill bg-bdas-surface-hover px-2 py-0.5 text-xs font-semibold text-bdas-ink-muted"
+                          : "rounded-bdas-pill border border-bdas-red px-2 py-0.5 text-xs font-semibold text-bdas-red"
+                      }
+                    >
+                      {entry.status === "published" ? "Veröffentlicht" : "Entwurf"}
+                    </span>
+                    <span className="flex-1 text-sm text-bdas-ink">{entry.question}</span>
+                    <span
+                      className="text-xs text-bdas-ink-muted"
+                      title={`${counts.up} hilfreich, ${counts.down} nicht hilfreich`}
+                      aria-label={`${counts.up} hilfreich, ${counts.down} nicht hilfreich`}
+                    >
+                      👍 {counts.up} 👎 {counts.down}
+                    </span>
+                    <button
+                      type="button"
+                      disabled={i === 0 || pending}
+                      onClick={() => move(group, i, -1)}
+                      className="text-bdas-ink-muted disabled:opacity-30"
+                      aria-label={`„${entry.question}" nach oben`}
+                    >
+                      ↑
+                    </button>
+                    <button
+                      type="button"
+                      disabled={i === group.entries.length - 1 || pending}
+                      onClick={() => move(group, i, 1)}
+                      className="text-bdas-ink-muted disabled:opacity-30"
+                      aria-label={`„${entry.question}" nach unten`}
+                    >
+                      ↓
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setDialog({ initial: toInitial(entry), currentStatus: entry.status })
+                      }
+                      className="rounded-bdas-sm border border-bdas-soft px-2 py-1 text-xs text-bdas-ink-body hover:bg-bdas-overlay-hover"
+                    >
+                      Bearbeiten
+                    </button>
+                    <button
+                      type="button"
+                      disabled={pending}
+                      onClick={() =>
+                        start(async () => {
+                          const res =
+                            entry.status === "published"
+                              ? await unpublishEntryAction(entry.id)
+                              : await publishEntryAction(entry.id);
+                          if (!res.ok) setError(res.error);
+                        })
+                      }
+                      className="rounded-bdas-sm border border-bdas-soft px-2 py-1 text-xs text-bdas-ink-body hover:bg-bdas-overlay-hover"
+                    >
+                      {entry.status === "published" ? "Zurückziehen" : "Veröffentlichen"}
+                    </button>
+                    <button
+                      type="button"
+                      disabled={pending}
+                      onClick={() => {
+                        if (!window.confirm(`„${entry.question}" endgültig löschen?`)) return;
+                        start(async () => {
+                          const res = await deleteEntryAction(entry.id);
+                          if (!res.ok) setError(res.error);
+                        });
+                      }}
+                      className="rounded-bdas-sm border border-bdas-soft px-2 py-1 text-xs text-bdas-ink-body hover:bg-bdas-red hover:text-bdas-surface"
+                    >
+                      Löschen
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          ))}
+          {groups.length === 0 && (
+            <p className="text-sm text-bdas-ink-muted">Noch keine Einträge — leg den ersten an.</p>
+          )}
+        </>
+      )}
+      {tab === "submissions" && (
+        <SubmissionsPanel
+          submissions={submissions}
+          onAnswer={(card) =>
+            setDialog({
+              initial: {
+                ...EMPTY_ENTRY,
+                question: card.question,
+                // Links the draft to the submission; publishing it flips the
+                // submission to `answered` inside publishEntry's transaction.
+                submissionId: card.id,
+              },
+              currentStatus: null,
+            })
+          }
+          onDiscard={(card) => setDiscarding(card)}
+          pending={pending}
+        />
       )}
       {dialog && (
         <FaqEntryDialog
@@ -190,6 +247,40 @@ export function FaqAdminBoard({
           topics={topics}
           currentStatus={dialog.currentStatus}
         />
+      )}
+      {discarding && (
+        <Dialog open onClose={() => setDiscarding(null)} title="Frage verwerfen">
+          <div className="flex flex-col gap-4">
+            <p className="text-bdas-ink-body">
+              „{discarding.question}“ wird verworfen und verschwindet aus der Liste. Das lässt sich
+              nicht rückgängig machen.
+            </p>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                disabled={pending}
+                onClick={() => {
+                  const id = discarding.id;
+                  setDiscarding(null);
+                  start(async () => {
+                    const res = await discardSubmissionAction(id);
+                    if (!res.ok) setError(res.error);
+                  });
+                }}
+                className="rounded-bdas-sm bg-bdas-red px-3 py-1.5 text-sm font-semibold text-bdas-surface disabled:opacity-40"
+              >
+                Verwerfen
+              </button>
+              <button
+                type="button"
+                onClick={() => setDiscarding(null)}
+                className="rounded-bdas-sm border border-bdas-soft px-3 py-1.5 text-sm text-bdas-ink-body hover:bg-bdas-overlay-hover"
+              >
+                Abbrechen
+              </button>
+            </div>
+          </div>
+        </Dialog>
       )}
     </div>
   );

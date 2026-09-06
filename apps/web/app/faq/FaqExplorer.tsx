@@ -7,6 +7,7 @@ import { FilterChip, Input } from "@bdas/design-system";
 import type { FaqEntryView, FaqSectionView } from "../../lib/faq/assemble";
 import { filterSections } from "./explorer-filter";
 import { FaqEntryCard } from "./FaqEntryCard";
+import { SubmitQuestionDialog } from "./SubmitQuestionDialog";
 
 type Topic = { id: string; name: string };
 
@@ -29,6 +30,9 @@ export function FaqExplorer({
   const [topicId, setTopicId] = useState<string | null>(null);
   const [activeKey, setActiveKey] = useState<string | null>(sections[0]?.key ?? null);
   const [hashTarget, setHashTarget] = useState<string | null>(null);
+  // `null` = closed. A string is the question the dialog opens prefilled with,
+  // so the no-results CTA can hand over whatever the member just searched for.
+  const [submitPrefill, setSubmitPrefill] = useState<string | null>(null);
 
   const searchRef = useRef<HTMLInputElement>(null);
   const sectionEls = useRef(new Map<string, HTMLElement>());
@@ -132,14 +136,25 @@ export function FaqExplorer({
   return (
     <div>
       <div className="mb-8">
-        <Input
-          ref={searchRef}
-          type="search"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Suche"
-          aria-label='FAQ durchsuchen ("/" drücken zum Fokussieren)'
-        />
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="min-w-[16rem] flex-1">
+            <Input
+              ref={searchRef}
+              type="search"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Suche"
+              aria-label='FAQ durchsuchen ("/" drücken zum Fokussieren)'
+            />
+          </div>
+          <button
+            type="button"
+            onClick={() => setSubmitPrefill("")}
+            className="rounded-bdas-sm bg-bdas-red px-3 py-2 text-sm font-semibold text-bdas-surface"
+          >
+            Frage einreichen
+          </button>
+        </div>
         <div
           role="group"
           aria-label="Nach Thema filtern"
@@ -182,7 +197,13 @@ export function FaqExplorer({
               <p className="mt-2 text-bdas-ink-muted">
                 Stell deine Frage über „Frage einreichen“ — wir beantworten sie dann hier.
               </p>
-              {/* PR 4: Submission-Dialog */}
+              <button
+                type="button"
+                onClick={() => setSubmitPrefill(query.trim())}
+                className="mt-4 rounded-bdas-sm bg-bdas-red px-3 py-2 text-sm font-semibold text-bdas-surface"
+              >
+                Frage einreichen
+              </button>
             </div>
           ) : (
             filtered.map((section) => (
@@ -244,6 +265,19 @@ export function FaqExplorer({
           )}
         </div>
       </div>
+
+      {submitPrefill !== null && (
+        <SubmitQuestionDialog
+          // Conditionally rendered, not just hidden: closing sets
+          // submitPrefill back to null and unmounts this, so a later open
+          // (e.g. from the no-results CTA with a different query) always
+          // mounts fresh with the new initial state — no key needed for that.
+          open
+          onClose={() => setSubmitPrefill(null)}
+          initialQuestion={submitPrefill}
+          context={null}
+        />
+      )}
     </div>
   );
 }

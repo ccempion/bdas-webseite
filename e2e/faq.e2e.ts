@@ -9,10 +9,44 @@
  *  - Behind `faq_suite`, the DB-backed docs layout (rail + search with
  *    `<mark>` highlighting) is reachable and usable.
  */
-import { expect, test } from "@playwright/test";
+import { expect, type Page, test } from "@playwright/test";
 
-import { deleteUserByEmail, grantLocalBoard, seedGroup, uniqueSlug } from "./helpers/db";
+import {
+  deleteUserByEmail,
+  faqFeedbackByUserAndEntry,
+  grantLocalBoard,
+  seedGroup,
+  uniqueSlug,
+} from "./helpers/db";
 import { registerVerifyLogin } from "./helpers/flows";
+
+/**
+ * Ends the session so the next `registerVerifyLogin` starts clean.
+ *
+ * Deliberately not `logout()` from `./helpers/flows`: that helper opens the
+ * `md:hidden` hamburger disclosure (`summary[aria-label="Menü öffnen"]`) to
+ * reach the header's "Abmelden", so it only works at the suite's default
+ * mobile viewport. The specs below run at 1280×900, where the hamburger is
+ * not rendered and the account menu is a separate desktop `<details>`
+ * dropdown that nothing opens — the click would wait out the timeout.
+ * Dropping the session cookie is viewport-independent and is all these specs
+ * need; the logout UI itself is covered by auth.e2e.ts.
+ */
+async function endSession(page: Page): Promise<void> {
+  await page.context().clearCookies();
+}
+
+/**
+ * Reads the "Offene FAQ-Fragen" badge count from /federal/overview.
+ * ActionStrip omits the link entirely at count 0 (spec §6), so an absent
+ * link means 0 rather than a missing element to wait out.
+ */
+async function readFaqOpenCount(page: Page): Promise<number> {
+  const link = page.getByRole("link", { name: /Offene FAQ-Fragen/ });
+  if ((await link.count()) === 0) return 0;
+  const badge = await link.locator("span").first().innerText();
+  return Number(badge.trim());
+}
 
 // Must match BDAS_FEDERAL_BOARD_EMAILS in the CI e2e job (see e2e/board.e2e.ts:
 // federal access comes from the JWT, granted at login when the email matches
@@ -139,5 +173,232 @@ test.describe("Board-Verwaltung /federal/faq", () => {
     await page.goto("/faq");
     await page.getByPlaceholder("Suche").fill(question);
     await expect(page.locator("mark").first()).toBeVisible();
+  });
+
+  test("the board sees an open submission in the Offene Fragen tab", async ({ page }) => {
+    const question = `E2E-Frage-Board ${uniqueSlug("s")}?`;
+
+    const memberEmail = "faq-board-einreicher@e2e.bdas.test";
+    await deleteUserByEmail(memberEmail);
+    await registerVerifyLogin(page, {
+      email: memberEmail,
+      firstName: "Faq",
+      lastName: "Boardfrage",
+    });
+    await page.goto("/faq");
+    await page.getByRole("button", { name: "Frage einreichen" }).first().click();
+    await page.getByRole("dialog").getByLabel("Deine Frage").fill(question);
+    await page.getByRole("dialog").getByRole("button", { name: "Absenden" }).click();
+    await expect(page.getByRole("dialog").getByText("Danke!", { exact: false })).toBeVisible();
+    await page.getByRole("dialog").getByText("Schließen", { exact: true }).click();
+    await endSession(page);
+
+    await deleteUserByEmail(FEDERAL_EMAIL);
+    await registerVerifyLogin(page, {
+      email: FEDERAL_EMAIL,
+      firstName: "Bundes",
+      lastName: "Vorstand",
+    });
+    await page.goto("/federal/faq");
+    await page.getByRole("tab", { name: /Offene Fragen/ }).click();
+    await expect(page.getByText(question, { exact: true })).toBeVisible();
+    await expect(page.getByText("Faq Boardfrage")).toBeVisible();
+  });
+
+  test("the board answers a submission and it leaves the open queue", async ({ page }) => {
+    const question = `E2E-Antwortfrage ${uniqueSlug("a")}?`;
+
+    const memberEmail = "faq-antwort-einreicher@e2e.bdas.test";
+    await deleteUserByEmail(memberEmail);
+    await registerVerifyLogin(page, { email: memberEmail, firstName: "Faq", lastName: "Antwort" });
+    await page.goto("/faq");
+    await page.getByRole("button", { name: "Frage einreichen" }).first().click();
+    await page.getByRole("dialog").getByLabel("Deine Frage").fill(question);
+    await page.getByRole("dialog").getByRole("button", { name: "Absenden" }).click();
+    await expect(page.getByRole("dialog").getByText("Danke!", { exact: false })).toBeVisible();
+    await page.getByRole("dialog").getByText("Schließen", { exact: true }).click();
+    await endSession(page);
+
+    await deleteUserByEmail(FEDERAL_EMAIL);
+    await registerVerifyLogin(page, {
+      email: FEDERAL_EMAIL,
+      firstName: "Bundes",
+      lastName: "Vorstand",
+    });
+    await page.goto("/federal/faq");
+    await page.getByRole("tab", { name: /Offene Fragen/ }).click();
+
+    const card = page.getByRole("article").filter({ hasText: question });
+    await card.getByRole("button", { name: "Antwort verfassen" }).click();
+
+    const dialog = page.getByRole("dialog");
+    // The entry form opens prefilled with the submitted question.
+    await expect(dialog.getByPlaceholder("Frage")).toHaveValue(question);
+    await dialog.getByRole("button", { name: "Veröffentlichen" }).click();
+    // saveEntryAction runs inside a transition; wait for it to resolve and
+    // close the dialog before navigating away, or the navigation can cancel
+    // the in-flight Server Action request.
+    await expect(dialog).toBeHidden();
+
+    // Publishing the linked draft answers the submission: the open tab empties.
+    await page.goto("/federal/faq");
+    await page.getByRole("tab", { name: /Offene Fragen/ }).click();
+    await expect(page.getByRole("article").filter({ hasText: question })).toHaveCount(0);
+
+    // …and the answer is live on /faq.
+    await page.goto("/faq");
+    await page.getByPlaceholder("Suche").fill(question);
+    await expect(page.locator("mark").first()).toBeVisible();
+  });
+
+  test("the board discards a submission after confirming", async ({ page }) => {
+    const question = `E2E-Verwerfen ${uniqueSlug("v")}?`;
+
+    const memberEmail = "faq-verwerf-einreicher@e2e.bdas.test";
+    await deleteUserByEmail(memberEmail);
+    await registerVerifyLogin(page, { email: memberEmail, firstName: "Faq", lastName: "Verwerf" });
+    await page.goto("/faq");
+    await page.getByRole("button", { name: "Frage einreichen" }).first().click();
+    await page.getByRole("dialog").getByLabel("Deine Frage").fill(question);
+    await page.getByRole("dialog").getByRole("button", { name: "Absenden" }).click();
+    await expect(page.getByRole("dialog").getByText("Danke!", { exact: false })).toBeVisible();
+    // The confirmation dialog stays open after submitting — its backdrop
+    // blocks the header, so dismiss it before logging out (see also line 159
+    // above). The × close button also carries aria-label="Schließen", so
+    // scope to the visible text, not the role, to avoid a strict-mode match
+    // on both.
+    await page.getByText("Schließen", { exact: true }).click();
+    await endSession(page);
+
+    await deleteUserByEmail(FEDERAL_EMAIL);
+    await registerVerifyLogin(page, {
+      email: FEDERAL_EMAIL,
+      firstName: "Bundes",
+      lastName: "Vorstand",
+    });
+    await page.goto("/federal/faq");
+    await page.getByRole("tab", { name: /Offene Fragen/ }).click();
+
+    const card = page.getByRole("article").filter({ hasText: question });
+    await expect(card).toBeVisible();
+
+    await card.getByRole("button", { name: "Verwerfen" }).click();
+    // The confirmation is a modal (Spec §6), not window.confirm: scope to
+    // the dialog, since the card's own "Verwerfen" button is still in the
+    // DOM at this point too (a plain getByRole match would be ambiguous,
+    // and would also find nothing — timing out rather than silently
+    // passing — if this were a native confirm() instead of a real dialog).
+    await page.getByRole("dialog").getByRole("button", { name: "Verwerfen" }).click();
+
+    await expect(card).toHaveCount(0);
+  });
+
+  test("an open submission surfaces on the federal overview", async ({ page }) => {
+    const question = `E2E-Zaehler ${uniqueSlug("z")}?`;
+
+    await deleteUserByEmail(FEDERAL_EMAIL);
+    await registerVerifyLogin(page, {
+      email: FEDERAL_EMAIL,
+      firstName: "Bundes",
+      lastName: "Vorstand",
+    });
+    await page.goto("/federal/overview");
+    const before = await readFaqOpenCount(page);
+    await endSession(page);
+
+    const memberEmail = "faq-zaehler-einreicher@e2e.bdas.test";
+    await deleteUserByEmail(memberEmail);
+    await registerVerifyLogin(page, { email: memberEmail, firstName: "Faq", lastName: "Zaehler" });
+    await page.goto("/faq");
+    await page.getByRole("button", { name: "Frage einreichen" }).first().click();
+    await page.getByRole("dialog").getByLabel("Deine Frage").fill(question);
+    await page.getByRole("dialog").getByRole("button", { name: "Absenden" }).click();
+    await expect(page.getByRole("dialog").getByText("Danke!", { exact: false })).toBeVisible();
+    // The confirmation dialog stays open after submitting; dismiss it before
+    // logging out, same as the "discards a submission" test above.
+    await page.getByText("Schließen", { exact: true }).click();
+    await endSession(page);
+
+    await deleteUserByEmail(FEDERAL_EMAIL);
+    await registerVerifyLogin(page, {
+      email: FEDERAL_EMAIL,
+      firstName: "Bundes",
+      lastName: "Vorstand",
+    });
+    await page.goto("/federal/overview");
+    await expect(page.getByRole("link", { name: /Offene FAQ-Fragen/ })).toBeVisible();
+    const after = await readFaqOpenCount(page);
+    expect(after).toBe(before + 1);
+  });
+});
+
+test.describe("Einreichungen", () => {
+  test.use({ viewport: { width: 1280, height: 900 }, isMobile: false, hasTouch: false });
+
+  test("a member submits a question and sees the confirmation", async ({ page }) => {
+    const email = "faq-einreicher@e2e.bdas.test";
+    await deleteUserByEmail(email);
+    await registerVerifyLogin(page, { email, firstName: "Faq", lastName: "Einreicher" });
+
+    await page.goto("/faq");
+    await page.getByRole("button", { name: "Frage einreichen" }).first().click();
+
+    const dialog = page.getByRole("dialog");
+    await dialog.getByLabel("Deine Frage").fill(`E2E-Einreichung ${uniqueSlug("q")}?`);
+    await dialog.getByRole("button", { name: "Absenden" }).click();
+
+    await expect(dialog.getByText("Danke!", { exact: false })).toBeVisible();
+  });
+
+  test("no search hit offers the query as a prefilled submission", async ({ page }) => {
+    const email = "faq-nohit@e2e.bdas.test";
+    await deleteUserByEmail(email);
+    await registerVerifyLogin(page, { email, firstName: "Faq", lastName: "Nohit" });
+
+    await page.goto("/faq");
+    await page.getByPlaceholder("Suche").fill("zzzz-gibt-es-nicht-zzzz");
+    await expect(page.getByText("Keine Antwort gefunden.")).toBeVisible();
+
+    await page.getByRole("button", { name: "Frage einreichen" }).last().click();
+    await expect(page.getByRole("dialog").getByLabel("Deine Frage")).toHaveValue(
+      "zzzz-gibt-es-nicht-zzzz",
+    );
+  });
+
+  test("a member rates an entry and the thumb stays pressed, vote persists to server", async ({
+    page,
+  }) => {
+    const memberEmail = "faq-voter@e2e.bdas.test";
+    await deleteUserByEmail(memberEmail);
+    await registerVerifyLogin(page, { email: memberEmail, firstName: "Faq", lastName: "Wähler" });
+
+    await page.goto("/faq");
+    // A plain member's primary section is `mitglieder` and opens by default
+    // (order.ts), so the first entry's footer — and its thumbs — are already
+    // in the DOM. Grab the entry ID from the details element to verify it later.
+    //
+    // Scoped to the section, not `page.locator("details")`: the production
+    // header renders its own `<details>` dropdowns ("Über uns", "Faq", the
+    // mobile hamburger), so an unscoped `.first()` resolves to a nav dropdown
+    // instead of an entry. The dev server renders none of those, which is why
+    // the unscoped version passed locally and failed in CI.
+    const firstEntry = page.locator("#bereich-mitglieder details").first();
+    const entryId = await firstEntry.getAttribute("id");
+
+    // Click thumbs up and verify optimistic state (renders immediately before
+    // the Server Action resolves).
+    const thumbUp = firstEntry.getByRole("button", { name: "Hilfreich", exact: true });
+    await thumbUp.click();
+    await expect(thumbUp).toHaveAttribute("aria-pressed", "true");
+
+    // Verify persistence: poll the DB for this member's vote on this entry.
+    // Polling rather than a one-shot read after `waitForLoadState`, because
+    // the pressed state above is optimistic — it flips before the Server
+    // Action resolves, so a single read races the commit. This still fails if
+    // the action never runs or never calls upsertFeedback; it just waits for
+    // the round trip instead of assuming it already happened.
+    await expect
+      .poll(async () => (await faqFeedbackByUserAndEntry(memberEmail, entryId!))?.helpful ?? null)
+      .toBe(true);
   });
 });
