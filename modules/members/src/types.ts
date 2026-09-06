@@ -48,6 +48,25 @@ export const REJECTION_CATEGORY_LABELS: Record<RejectionCategory, string> = {
 };
 
 /**
+ * German names for the roles. They live here, in the module that owns
+ * `member_role_grants`, because the board's roster, the audit log and the
+ * member's own account page all render them — and none of those may import
+ * another's internals. Same reasoning as REJECTION_CATEGORY_LABELS above.
+ *
+ * Typed as a total Record: a new role in @bdas/auth fails this build until it
+ * has a German name, rather than leaking a raw key into the UI.
+ */
+export const ROLE_LABELS: Record<Role, string> = {
+  member: "Mitglied",
+  alumnus: "Alumnus",
+  local_board: "Vorstand",
+  local_board_lead: "Lead",
+  federal_board: "Bundesvorstand",
+  event_organizer: "Organisator",
+  page_editor: "Seiten-Editor",
+};
+
+/**
  * One recorded group movement (ADR 0022). `fromGroupId` null ⇔ the member had no
  * group; `toGroupId` null ⇔ the member left the group structure (always
  * `approved` on write — an exit needs no decision).
