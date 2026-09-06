@@ -32,6 +32,7 @@ export {
   getMyRegistration,
   listRegistrations,
 } from "./services/registration";
+export { listMyUpcomingRegistrations } from "./services/mine";
 
 export { eventToIcs } from "./ics";
 export { renderEventContentHtml, plainTextToDoc } from "./content";
@@ -42,6 +43,7 @@ export type {
   EventRegistration,
   EventStatus,
   EventVisibility,
+  MyRegistration,
   RegistrationResult,
   EventWithCounts,
   RosterRow,
