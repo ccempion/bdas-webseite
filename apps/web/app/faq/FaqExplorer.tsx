@@ -268,9 +268,10 @@ export function FaqExplorer({
 
       {submitPrefill !== null && (
         <SubmitQuestionDialog
-          // Remount per prefill so a second open (e.g. from the no-results CTA
-          // with a different query) resets the form's initial state.
-          key={submitPrefill}
+          // Conditionally rendered, not just hidden: closing sets
+          // submitPrefill back to null and unmounts this, so a later open
+          // (e.g. from the no-results CTA with a different query) always
+          // mounts fresh with the new initial state — no key needed for that.
           open
           onClose={() => setSubmitPrefill(null)}
           initialQuestion={submitPrefill}

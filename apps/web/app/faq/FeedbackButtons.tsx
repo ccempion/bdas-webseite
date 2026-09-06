@@ -7,8 +7,10 @@ import { voteEntryAction } from "./actions";
 /**
  * One vote per member per entry, changeable (Spec §3). The module exports
  * aggregates only (`feedbackCounts`) and no per-user read service, so the pressed
- * state here is deliberately session-local: after a reload both thumbs render
- * unpressed. Voting again simply upserts the same row.
+ * state here is deliberately session-local: it resets not only on a reload but
+ * on any remount, e.g. the very first keystroke into the search field, which
+ * varies the entry's `<details>` key (FaqEntryCard.tsx via
+ * FaqExplorer.tsx's `forceOpen`). Voting again simply upserts the same row.
  */
 export function FeedbackButtons({ entryId }: { entryId: string }) {
   const [vote, setVote] = useState<boolean | null>(null);
@@ -56,7 +58,11 @@ export function FeedbackButtons({ entryId }: { entryId: string }) {
       >
         👎
       </button>
-      {failed && <span className="text-bdas-red">Konnte nicht gespeichert werden.</span>}
+      {failed && (
+        <span role="alert" className="text-bdas-red">
+          Konnte nicht gespeichert werden.
+        </span>
+      )}
     </span>
   );
 }

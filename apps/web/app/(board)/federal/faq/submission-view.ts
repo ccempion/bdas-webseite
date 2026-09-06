@@ -9,6 +9,14 @@ export type SubmissionCardView = {
   contextLabel: string | null;
   submitterName: string;
   submittedAtIso: string;
+  /**
+   * True when a draft entry already exists for this submission (its
+   * `entry_id` is set). The raw entry id itself is deliberately not exposed
+   * here — this view model reaches the client and ships no raw ids — but the
+   * board needs to know a draft exists so it publishes it instead of
+   * creating a second, orphaned one (see the review note this fixes).
+   */
+  hasDraft: boolean;
 };
 
 /**
@@ -33,5 +41,6 @@ export function toSubmissionCards(input: {
     contextLabel: labelFor(s.context),
     submitterName: input.namesByUserId.get(s.submittedBy) ?? "Unbekanntes Mitglied",
     submittedAtIso: s.createdAt.toISOString(),
+    hasDraft: s.entryId !== null,
   }));
 }

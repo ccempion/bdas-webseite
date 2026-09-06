@@ -11,7 +11,13 @@
  */
 import { expect, type Page, test } from "@playwright/test";
 
-import { deleteUserByEmail, faqFeedbackByUserAndEntry, grantLocalBoard, seedGroup, uniqueSlug } from "./helpers/db";
+import {
+  deleteUserByEmail,
+  faqFeedbackByUserAndEntry,
+  grantLocalBoard,
+  seedGroup,
+  uniqueSlug,
+} from "./helpers/db";
 import { logout, registerVerifyLogin } from "./helpers/flows";
 
 /**
@@ -368,7 +374,7 @@ test.describe("Einreichungen", () => {
     // Verify persistence: query the database for this member's vote on this entry.
     // If the Server Action didn't actually run (or didn't call upsertFeedback), this will be null.
     const feedback = await faqFeedbackByUserAndEntry(memberEmail, entryId!);
-    expect(feedback).toBeDefined();
+    expect(feedback).not.toBeNull();
     expect(feedback?.helpful).toBe(true);
   });
 });

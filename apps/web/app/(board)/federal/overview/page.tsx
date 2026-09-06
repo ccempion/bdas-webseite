@@ -31,14 +31,16 @@ export default async function FederalOverviewPage() {
     <section className="flex flex-col gap-5">
       <h1 className="text-2xl font-semibold text-bdas-ink">Übersicht · Bundesverband</h1>
       <ActionStrip
-        items={[
-          { count: counts.pending, label: "Freigaben", href: "/federal/members" },
-          // Spec §6: this one appears only when there is work — unlike
-          // "Freigaben", which renders calm at zero.
-          ...(faqOpen > 0
-            ? [{ count: faqOpen, label: "Offene FAQ-Fragen", href: "/federal/faq" }]
-            : []),
-        ] satisfies ActionItem[]}
+        items={
+          [
+            { count: counts.pending, label: "Freigaben", href: "/federal/members" },
+            // Spec §6: this one appears only when there is work — unlike
+            // "Freigaben", which renders calm at zero.
+            ...(faqOpen > 0
+              ? [{ count: faqOpen, label: "Offene FAQ-Fragen", href: "/federal/faq" }]
+              : []),
+          ] satisfies ActionItem[]
+        }
       />
       <div className="flex flex-wrap gap-3">
         <Tile value={String(counts.active)} label="Aktive Mitglieder" />

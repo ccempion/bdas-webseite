@@ -52,4 +52,20 @@ describe("toSubmissionCards", () => {
     const [card] = toSubmissionCards({ submissions: [submission()], namesByUserId: new Map() });
     expect(card!.contextLabel).toBeNull();
   });
+
+  it("flags hasDraft when a draft entry is already linked", () => {
+    const [card] = toSubmissionCards({
+      submissions: [submission({ entryId: "e1" })],
+      namesByUserId: new Map(),
+    });
+    expect(card!.hasDraft).toBe(true);
+  });
+
+  it("leaves hasDraft false when no entry is linked yet", () => {
+    const [card] = toSubmissionCards({
+      submissions: [submission({ entryId: null })],
+      namesByUserId: new Map(),
+    });
+    expect(card!.hasDraft).toBe(false);
+  });
 });

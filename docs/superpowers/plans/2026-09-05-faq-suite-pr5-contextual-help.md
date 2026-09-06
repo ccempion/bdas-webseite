@@ -37,26 +37,26 @@ Every task's requirements implicitly include this section.
 
 **Created**
 
-| File | Responsibility |
-| --- | --- |
-| `apps/web/lib/faq/help.ts` | Pure. Flattens `assembleFaq` sections, partitions by context key, picks the popular fallback, filters by a mini-search query. |
-| `apps/web/lib/faq/help.test.ts` | Unit tests for the above. |
-| `apps/web/app/api/faq/help/route.ts` | Authenticated GET returning the visible entries for a context, lazily. |
-| `apps/web/app/_faq/FaqHelpMount.tsx` | Server. Flag + session gate; renders the launcher. |
-| `apps/web/app/_faq/FaqHelpLauncher.tsx` | Client. Route gate via `usePathname`, floating "?" button, lazy fetch, owns panel state. |
-| `apps/web/app/_faq/FaqHelpPanel.tsx` | Client. Panel body: context entries, mini-search, "Alle FAQ ansehen", "Frage einreichen". |
-| `apps/web/app/_faq/FaqHinweis.tsx` | Server. Targeted inline embed for one context (max 3 entries). |
+| File                                    | Responsibility                                                                                                                |
+| --------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `apps/web/lib/faq/help.ts`              | Pure. Flattens `assembleFaq` sections, partitions by context key, picks the popular fallback, filters by a mini-search query. |
+| `apps/web/lib/faq/help.test.ts`         | Unit tests for the above.                                                                                                     |
+| `apps/web/app/api/faq/help/route.ts`    | Authenticated GET returning the visible entries for a context, lazily.                                                        |
+| `apps/web/app/_faq/FaqHelpMount.tsx`    | Server. Flag + session gate; renders the launcher.                                                                            |
+| `apps/web/app/_faq/FaqHelpLauncher.tsx` | Client. Route gate via `usePathname`, floating "?" button, lazy fetch, owns panel state.                                      |
+| `apps/web/app/_faq/FaqHelpPanel.tsx`    | Client. Panel body: context entries, mini-search, "Alle FAQ ansehen", "Frage einreichen".                                     |
+| `apps/web/app/_faq/FaqHinweis.tsx`      | Server. Targeted inline embed for one context (max 3 entries).                                                                |
 
 **Modified**
 
-| File | Change |
-| --- | --- |
-| `apps/web/lib/faq/contexts.ts` | Each entry gains `routes: readonly RegExp[]`; add `matchContext` and `isSignedInSurface`. |
-| `apps/web/lib/faq/contexts.test.ts` | Extend for the new matchers. |
-| `apps/web/lib/faq/assemble.ts` | `FaqEntryView` gains `contexts: readonly string[]`. |
-| `apps/web/app/layout.tsx` | Mount `<FaqHelpMount />`. |
-| `apps/web/app/dateien/page.tsx` | One real `<FaqHinweis context="dateien" />` placement. |
-| `e2e/faq.e2e.ts` | Help-panel coverage on a context route. |
+| File                                | Change                                                                                    |
+| ----------------------------------- | ----------------------------------------------------------------------------------------- |
+| `apps/web/lib/faq/contexts.ts`      | Each entry gains `routes: readonly RegExp[]`; add `matchContext` and `isSignedInSurface`. |
+| `apps/web/lib/faq/contexts.test.ts` | Extend for the new matchers.                                                              |
+| `apps/web/lib/faq/assemble.ts`      | `FaqEntryView` gains `contexts: readonly string[]`.                                       |
+| `apps/web/app/layout.tsx`           | Mount `<FaqHelpMount />`.                                                                 |
+| `apps/web/app/dateien/page.tsx`     | One real `<FaqHinweis context="dateien" />` placement.                                    |
+| `e2e/faq.e2e.ts`                    | Help-panel coverage on a context route.                                                   |
 
 **Untouched on purpose:** `modules/faq/**` — `listEntries` and `listEntriesByContext` are already exported and integration-tested by PR 1.
 
@@ -136,7 +136,15 @@ describe("matchContext", () => {
 
 describe("isSignedInSurface", () => {
   it("admits the signed-in areas", () => {
-    for (const p of ["/account", "/profil", "/dateien", "/faq", "/federal/faq", "/gruppe/berlin/members", "/admin/events"]) {
+    for (const p of [
+      "/account",
+      "/profil",
+      "/dateien",
+      "/faq",
+      "/federal/faq",
+      "/gruppe/berlin/members",
+      "/admin/events",
+    ]) {
       expect(isSignedInSurface(p)).toBe(true);
     }
   });
@@ -292,7 +300,11 @@ function entry(id: string, over: Partial<FaqEntryView> = {}): FaqEntryView {
   };
 }
 
-function section(key: FaqSectionView["key"], entries: FaqEntryView[], subEntries: FaqEntryView[] = []): FaqSectionView {
+function section(
+  key: FaqSectionView["key"],
+  entries: FaqEntryView[],
+  subEntries: FaqEntryView[] = [],
+): FaqSectionView {
   return {
     key,
     title: key,
@@ -322,7 +334,11 @@ describe("flattenSections", () => {
 
 describe("partitionByContext", () => {
   it("splits on the context key", () => {
-    const entries = [entry("a", { contexts: ["dateien"] }), entry("b"), entry("c", { contexts: ["profil", "dateien"] })];
+    const entries = [
+      entry("a", { contexts: ["dateien"] }),
+      entry("b"),
+      entry("c", { contexts: ["profil", "dateien"] }),
+    ];
     const { inContext, rest } = partitionByContext(entries, "dateien");
     expect(inContext.map((e) => e.id)).toEqual(["a", "c"]);
     expect(rest.map((e) => e.id)).toEqual(["b"]);
@@ -339,7 +355,10 @@ describe("partitionByContext", () => {
 describe("popularFrom", () => {
   it("takes from the viewer's primary section first and caps at the limit", () => {
     // assembleFaq already hoists the primary section to index 0 (order.ts).
-    const sections = [section("bundesvorstand", [entry("a"), entry("b"), entry("c")]), section("allgemein", [entry("d")])];
+    const sections = [
+      section("bundesvorstand", [entry("a"), entry("b"), entry("c")]),
+      section("allgemein", [entry("d")]),
+    ];
     expect(popularFrom(sections, 2).map((e) => e.id)).toEqual(["a", "b"]);
   });
 
@@ -351,7 +370,10 @@ describe("popularFrom", () => {
 
 describe("searchEntries", () => {
   it("matches searchText case-insensitively", () => {
-    const entries = [entry("a", { searchText: "wie lege ich ein event an" }), entry("b", { searchText: "dateien hochladen" })];
+    const entries = [
+      entry("a", { searchText: "wie lege ich ein event an" }),
+      entry("b", { searchText: "dateien hochladen" }),
+    ];
     expect(searchEntries(entries, "EVENT").map((e) => e.id)).toEqual(["a"]);
   });
 
@@ -761,7 +783,9 @@ export function FaqHelpLauncher() {
     if (payload) return;
     setLoading(true);
     try {
-      const url = context ? `/api/faq/help?context=${encodeURIComponent(context)}` : "/api/faq/help";
+      const url = context
+        ? `/api/faq/help?context=${encodeURIComponent(context)}`
+        : "/api/faq/help";
       const res = await fetch(url);
       const next: Payload = res.ok ? ((await res.json()) as Payload) : EMPTY;
       setPayload(next);
@@ -847,7 +871,7 @@ import { FaqHelpMount } from "./_faq/FaqHelpMount";
 …and render it just before `<CookieNotice … />`:
 
 ```tsx
-        <FaqHelpMount />
+<FaqHelpMount />
 ```
 
 - [ ] **Step 5: Write the failing e2e test**
@@ -855,43 +879,43 @@ import { FaqHelpMount } from "./_faq/FaqHelpMount";
 Append inside `test.describe("Kontextuelle Hilfe", …)` in `e2e/faq.e2e.ts`:
 
 ```ts
-  test("the help panel shows the entries assigned to the route", async ({ page }) => {
-    // Nothing in the seed is pinned to a context (migrations/0002_seed.sql
-    // writes no faq_entry_contexts rows), so the board creates one first.
-    const question = `E2E-Kontexthilfe ${uniqueSlug("k")}?`;
+test("the help panel shows the entries assigned to the route", async ({ page }) => {
+  // Nothing in the seed is pinned to a context (migrations/0002_seed.sql
+  // writes no faq_entry_contexts rows), so the board creates one first.
+  const question = `E2E-Kontexthilfe ${uniqueSlug("k")}?`;
 
-    await deleteUserByEmail(FEDERAL_EMAIL);
-    await registerVerifyLogin(page, {
-      email: FEDERAL_EMAIL,
-      firstName: "Bundes",
-      lastName: "Vorstand",
-    });
-
-    await page.goto("/federal/faq");
-    await page.getByRole("button", { name: "+ Eintrag" }).click();
-    const entryDialog = page.getByRole("dialog");
-    await entryDialog.getByPlaceholder("Frage").fill(question);
-    // "Anzeigen bei: Dateien" — the FilterChip for the `dateien` registry key.
-    await entryDialog.getByRole("button", { name: "Dateien", exact: true }).click();
-    await entryDialog.getByRole("button", { name: "Veröffentlichen" }).click();
-    await expect(page.getByText(question, { exact: true })).toBeVisible();
-
-    // /dateien maps to the `dateien` context (contexts.ts).
-    await page.goto("/dateien");
-    await page.getByRole("button", { name: "Hilfe öffnen" }).click();
-    const panel = page.getByRole("dialog");
-    await expect(panel.getByText("Passend zu dieser Seite")).toBeVisible();
-    await expect(panel.getByText(question, { exact: true })).toBeVisible();
+  await deleteUserByEmail(FEDERAL_EMAIL);
+  await registerVerifyLogin(page, {
+    email: FEDERAL_EMAIL,
+    firstName: "Bundes",
+    lastName: "Vorstand",
   });
 
-  test("the launcher stays off public pages", async ({ page }) => {
-    const email = "faq-hilfe-public@e2e.bdas.test";
-    await deleteUserByEmail(email);
-    await registerVerifyLogin(page, { email, firstName: "Faq", lastName: "Public" });
+  await page.goto("/federal/faq");
+  await page.getByRole("button", { name: "+ Eintrag" }).click();
+  const entryDialog = page.getByRole("dialog");
+  await entryDialog.getByPlaceholder("Frage").fill(question);
+  // "Anzeigen bei: Dateien" — the FilterChip for the `dateien` registry key.
+  await entryDialog.getByRole("button", { name: "Dateien", exact: true }).click();
+  await entryDialog.getByRole("button", { name: "Veröffentlichen" }).click();
+  await expect(page.getByText(question, { exact: true })).toBeVisible();
 
-    await page.goto("/gruppen");
-    await expect(page.getByRole("button", { name: "Hilfe öffnen" })).toHaveCount(0);
-  });
+  // /dateien maps to the `dateien` context (contexts.ts).
+  await page.goto("/dateien");
+  await page.getByRole("button", { name: "Hilfe öffnen" }).click();
+  const panel = page.getByRole("dialog");
+  await expect(panel.getByText("Passend zu dieser Seite")).toBeVisible();
+  await expect(panel.getByText(question, { exact: true })).toBeVisible();
+});
+
+test("the launcher stays off public pages", async ({ page }) => {
+  const email = "faq-hilfe-public@e2e.bdas.test";
+  await deleteUserByEmail(email);
+  await registerVerifyLogin(page, { email, firstName: "Faq", lastName: "Public" });
+
+  await page.goto("/gruppen");
+  await expect(page.getByRole("button", { name: "Hilfe öffnen" })).toHaveCount(0);
+});
 ```
 
 - [ ] **Step 6: Run the e2e tests**
@@ -1011,29 +1035,29 @@ The three branches stay untouched: `FaqHinweis` resolves the session itself and 
 Append inside `test.describe("Kontextuelle Hilfe", …)` in `e2e/faq.e2e.ts`:
 
 ```ts
-  test("FaqHinweis renders the pinned entry inline on /dateien", async ({ page }) => {
-    const question = `E2E-Hinweis ${uniqueSlug("h")}?`;
+test("FaqHinweis renders the pinned entry inline on /dateien", async ({ page }) => {
+  const question = `E2E-Hinweis ${uniqueSlug("h")}?`;
 
-    await deleteUserByEmail(FEDERAL_EMAIL);
-    await registerVerifyLogin(page, {
-      email: FEDERAL_EMAIL,
-      firstName: "Bundes",
-      lastName: "Vorstand",
-    });
-
-    await page.goto("/federal/faq");
-    await page.getByRole("button", { name: "+ Eintrag" }).click();
-    const entryDialog = page.getByRole("dialog");
-    await entryDialog.getByPlaceholder("Frage").fill(question);
-    await entryDialog.getByRole("button", { name: "Dateien", exact: true }).click();
-    await entryDialog.getByRole("button", { name: "Veröffentlichen" }).click();
-    await expect(page.getByText(question, { exact: true })).toBeVisible();
-
-    await page.goto("/dateien");
-    const hinweis = page.getByRole("complementary").filter({ hasText: "Hilfe zu dieser Seite" });
-    await expect(hinweis).toBeVisible();
-    await expect(hinweis.getByText(question, { exact: true })).toBeVisible();
+  await deleteUserByEmail(FEDERAL_EMAIL);
+  await registerVerifyLogin(page, {
+    email: FEDERAL_EMAIL,
+    firstName: "Bundes",
+    lastName: "Vorstand",
   });
+
+  await page.goto("/federal/faq");
+  await page.getByRole("button", { name: "+ Eintrag" }).click();
+  const entryDialog = page.getByRole("dialog");
+  await entryDialog.getByPlaceholder("Frage").fill(question);
+  await entryDialog.getByRole("button", { name: "Dateien", exact: true }).click();
+  await entryDialog.getByRole("button", { name: "Veröffentlichen" }).click();
+  await expect(page.getByText(question, { exact: true })).toBeVisible();
+
+  await page.goto("/dateien");
+  const hinweis = page.getByRole("complementary").filter({ hasText: "Hilfe zu dieser Seite" });
+  await expect(hinweis).toBeVisible();
+  await expect(hinweis.getByText(question, { exact: true })).toBeVisible();
+});
 ```
 
 - [ ] **Step 4: Run the e2e test**

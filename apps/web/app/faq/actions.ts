@@ -9,6 +9,7 @@ import { createSubmission, upsertFeedback } from "@bdas/faq";
 import { getCurrentMember, type CurrentMember } from "@bdas/members";
 
 import { readSessionCookie } from "../../lib/auth-cookie";
+import { FAQ_CONTEXTS } from "../../lib/faq/contexts";
 
 export type FaqActionResult = { ok: true } | { ok: false; error: string };
 
@@ -36,6 +37,14 @@ export async function submitQuestionAction(input: {
 }): Promise<FaqActionResult> {
   try {
     const me = await requireSignedIn();
+    // The module caps `context` at 200 characters but otherwise trusts the
+    // caller; the write side additionally requires a known registry key so a
+    // client can't persist an arbitrary string that later renders as a pill
+    // on the board's triage page. The read side stays tolerant of unknown
+    // keys (submission-view.ts) for rows written before a key is retired.
+    if (input.context && !FAQ_CONTEXTS.some((c) => c.key === input.context)) {
+      return { ok: false, error: "Unbekannter Kontext." };
+    }
     await createSubmission(getDb(), {
       question: input.question,
       ...(input.details ? { details: input.details } : {}),
@@ -52,10 +61,7 @@ export async function submitQuestionAction(input: {
   }
 }
 
-export async function voteEntryAction(
-  entryId: string,
-  helpful: boolean,
-): Promise<FaqActionResult> {
+export async function voteEntryAction(entryId: string, helpful: boolean): Promise<FaqActionResult> {
   try {
     const me = await requireSignedIn();
     // userId is the session's, never the client's — one vote per member per

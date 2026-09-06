@@ -40,26 +40,26 @@ Implement it that way; do **not** add a `myFeedback` read service to satisfy the
 
 **Created**
 
-| File | Responsibility |
-| --- | --- |
-| `apps/web/app/faq/actions.ts` | The two member-facing Server Actions: `submitQuestionAction`, `voteEntryAction`. Signed-in gate only. |
-| `apps/web/app/faq/SubmitQuestionDialog.tsx` | Client. Question + optional details form in a `Dialog`, with a confirmation state. Reused by PR 5's help panel — keep the `context` prop. |
-| `apps/web/app/faq/FeedbackButtons.tsx` | Client. 👍/👎 pair for one entry, own-vote state held locally. |
-| `apps/web/app/(board)/federal/faq/submission-view.ts` | Pure. Maps `FaqSubmission[]` + a user-id→name map into render-ready card view models. |
-| `apps/web/app/(board)/federal/faq/submission-view.test.ts` | Unit tests for the above. |
-| `apps/web/app/(board)/federal/faq/SubmissionsPanel.tsx` | Client. The "Offene Fragen" tab body: cards + "Antwort verfassen" / "Verwerfen". |
+| File                                                       | Responsibility                                                                                                                            |
+| ---------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| `apps/web/app/faq/actions.ts`                              | The two member-facing Server Actions: `submitQuestionAction`, `voteEntryAction`. Signed-in gate only.                                     |
+| `apps/web/app/faq/SubmitQuestionDialog.tsx`                | Client. Question + optional details form in a `Dialog`, with a confirmation state. Reused by PR 5's help panel — keep the `context` prop. |
+| `apps/web/app/faq/FeedbackButtons.tsx`                     | Client. 👍/👎 pair for one entry, own-vote state held locally.                                                                            |
+| `apps/web/app/(board)/federal/faq/submission-view.ts`      | Pure. Maps `FaqSubmission[]` + a user-id→name map into render-ready card view models.                                                     |
+| `apps/web/app/(board)/federal/faq/submission-view.test.ts` | Unit tests for the above.                                                                                                                 |
+| `apps/web/app/(board)/federal/faq/SubmissionsPanel.tsx`    | Client. The "Offene Fragen" tab body: cards + "Antwort verfassen" / "Verwerfen".                                                          |
 
 **Modified**
 
-| File | Change |
-| --- | --- |
-| `apps/web/app/faq/FaqExplorer.tsx` | Persistent "Frage einreichen" button above the search field; the no-results CTA opens the same dialog with the query prefilled (replaces the `{/* PR 4: Submission-Dialog */}` marker at line 185). |
-| `apps/web/app/faq/FaqEntryCard.tsx` | `<FeedbackButtons>` in the open-entry footer. |
-| `apps/web/app/(board)/federal/faq/actions.ts` | Add `discardSubmissionAction`. |
-| `apps/web/app/(board)/federal/faq/page.tsx` | Load open submissions + submitter names, pass to the board. |
-| `apps/web/app/(board)/federal/faq/FaqAdminBoard.tsx` | Two tabs; "Antwort verfassen" opens the existing `FaqEntryDialog` prefilled and linked. |
-| `apps/web/app/(board)/federal/overview/page.tsx` | "Offene FAQ-Fragen" counter card, only when > 0. |
-| `e2e/faq.e2e.ts` | Submission, feedback, answer-loop, discard and counter coverage. |
+| File                                                 | Change                                                                                                                                                                                              |
+| ---------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `apps/web/app/faq/FaqExplorer.tsx`                   | Persistent "Frage einreichen" button above the search field; the no-results CTA opens the same dialog with the query prefilled (replaces the `{/* PR 4: Submission-Dialog */}` marker at line 185). |
+| `apps/web/app/faq/FaqEntryCard.tsx`                  | `<FeedbackButtons>` in the open-entry footer.                                                                                                                                                       |
+| `apps/web/app/(board)/federal/faq/actions.ts`        | Add `discardSubmissionAction`.                                                                                                                                                                      |
+| `apps/web/app/(board)/federal/faq/page.tsx`          | Load open submissions + submitter names, pass to the board.                                                                                                                                         |
+| `apps/web/app/(board)/federal/faq/FaqAdminBoard.tsx` | Two tabs; "Antwort verfassen" opens the existing `FaqEntryDialog` prefilled and linked.                                                                                                             |
+| `apps/web/app/(board)/federal/overview/page.tsx`     | "Offene FAQ-Fragen" counter card, only when > 0.                                                                                                                                                    |
+| `e2e/faq.e2e.ts`                                     | Submission, feedback, answer-loop, discard and counter coverage.                                                                                                                                    |
 
 **Untouched on purpose:** `modules/faq/**` (every service needed already exists and is integration-tested), `apps/web/lib/faq/**`, `FaqEntryDialog.tsx` (its `submissionId` prop already threads through to `saveEntryAction`).
 
@@ -143,10 +143,7 @@ export async function submitQuestionAction(input: {
   }
 }
 
-export async function voteEntryAction(
-  entryId: string,
-  helpful: boolean,
-): Promise<FaqActionResult> {
+export async function voteEntryAction(entryId: string, helpful: boolean): Promise<FaqActionResult> {
   try {
     const me = await requireSignedIn();
     // userId is the session's, never the client's — one vote per member per
@@ -277,76 +274,78 @@ import { SubmitQuestionDialog } from "./SubmitQuestionDialog";
 Add state next to the existing `useState` calls (after `const [hashTarget, setHashTarget] = useState<string | null>(null);`):
 
 ```tsx
-  // `null` = closed. A string is the question the dialog opens prefilled with,
-  // so the no-results CTA can hand over whatever the member just searched for.
-  const [submitPrefill, setSubmitPrefill] = useState<string | null>(null);
+// `null` = closed. A string is the question the dialog opens prefilled with,
+// so the no-results CTA can hand over whatever the member just searched for.
+const [submitPrefill, setSubmitPrefill] = useState<string | null>(null);
 ```
 
 Replace the search-field wrapper (the `<div className="mb-8">` block starting at line 134) so the button sits beside the search input:
 
 ```tsx
-      <div className="mb-8">
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="min-w-[16rem] flex-1">
-            <Input
-              ref={searchRef}
-              type="search"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Suche"
-              aria-label='FAQ durchsuchen ("/" drücken zum Fokussieren)'
-            />
-          </div>
-          <button
-            type="button"
-            onClick={() => setSubmitPrefill("")}
-            className="rounded-bdas-sm bg-bdas-red px-3 py-2 text-sm font-semibold text-bdas-surface"
-          >
-            Frage einreichen
-          </button>
-        </div>
-        <div
-          role="group"
-          aria-label="Nach Thema filtern"
-          className="mt-3 flex gap-2 overflow-x-auto lg:hidden"
-        >
-          {chips}
-        </div>
-      </div>
+<div className="mb-8">
+  <div className="flex flex-wrap items-center gap-3">
+    <div className="min-w-[16rem] flex-1">
+      <Input
+        ref={searchRef}
+        type="search"
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        placeholder="Suche"
+        aria-label='FAQ durchsuchen ("/" drücken zum Fokussieren)'
+      />
+    </div>
+    <button
+      type="button"
+      onClick={() => setSubmitPrefill("")}
+      className="rounded-bdas-sm bg-bdas-red px-3 py-2 text-sm font-semibold text-bdas-surface"
+    >
+      Frage einreichen
+    </button>
+  </div>
+  <div
+    role="group"
+    aria-label="Nach Thema filtern"
+    className="mt-3 flex gap-2 overflow-x-auto lg:hidden"
+  >
+    {chips}
+  </div>
+</div>
 ```
 
 Replace the no-results block (lines 179–186, the one holding the `{/* PR 4: Submission-Dialog */}` marker) with:
 
 ```tsx
-            <div className="rounded-bdas border border-bdas-soft bg-bdas-surface p-8 text-center">
-              <p className="text-lg font-semibold text-bdas-ink">Keine Antwort gefunden.</p>
-              <p className="mt-2 text-bdas-ink-muted">
-                Stell deine Frage über „Frage einreichen“ — wir beantworten sie dann hier.
-              </p>
-              <button
-                type="button"
-                onClick={() => setSubmitPrefill(query.trim())}
-                className="mt-4 rounded-bdas-sm bg-bdas-red px-3 py-2 text-sm font-semibold text-bdas-surface"
-              >
-                Frage einreichen
-              </button>
-            </div>
+<div className="rounded-bdas border border-bdas-soft bg-bdas-surface p-8 text-center">
+  <p className="text-lg font-semibold text-bdas-ink">Keine Antwort gefunden.</p>
+  <p className="mt-2 text-bdas-ink-muted">
+    Stell deine Frage über „Frage einreichen“ — wir beantworten sie dann hier.
+  </p>
+  <button
+    type="button"
+    onClick={() => setSubmitPrefill(query.trim())}
+    className="mt-4 rounded-bdas-sm bg-bdas-red px-3 py-2 text-sm font-semibold text-bdas-surface"
+  >
+    Frage einreichen
+  </button>
+</div>
 ```
 
 Finally, render the dialog just before the component's closing `</div>` (after the `lg:grid` block):
 
 ```tsx
-      {submitPrefill !== null && (
-        <SubmitQuestionDialog
-          // Remount per prefill so a second open (e.g. from the no-results CTA
-          // with a different query) resets the form's initial state.
-          key={submitPrefill}
-          open
-          onClose={() => setSubmitPrefill(null)}
-          initialQuestion={submitPrefill}
-          context={null}
-        />
-      )}
+{
+  submitPrefill !== null && (
+    <SubmitQuestionDialog
+      // Remount per prefill so a second open (e.g. from the no-results CTA
+      // with a different query) resets the form's initial state.
+      key={submitPrefill}
+      open
+      onClose={() => setSubmitPrefill(null)}
+      initialQuestion={submitPrefill}
+      context={null}
+    />
+  );
+}
 ```
 
 - [ ] **Step 4: Write the failing e2e test**
@@ -506,7 +505,7 @@ import { FeedbackButtons } from "./FeedbackButtons";
 Insert `<FeedbackButtons entryId={entry.id} />` inside the `<footer>` as the last child, after the `relatedQuestions` block and before `</footer>`:
 
 ```tsx
-          <FeedbackButtons entryId={entry.id} />
+<FeedbackButtons entryId={entry.id} />
 ```
 
 - [ ] **Step 3: Write the failing e2e test**
@@ -514,18 +513,18 @@ Insert `<FeedbackButtons entryId={entry.id} />` inside the `<footer>` as the las
 Append inside the existing `test.describe("Einreichungen", ...)` block in `e2e/faq.e2e.ts`:
 
 ```ts
-  test("a member rates an entry and the thumb stays pressed", async ({ page }) => {
-    const email = "faq-daumen@e2e.bdas.test";
-    await deleteUserByEmail(email);
-    await registerVerifyLogin(page, { email, firstName: "Faq", lastName: "Daumen" });
+test("a member rates an entry and the thumb stays pressed", async ({ page }) => {
+  const email = "faq-daumen@e2e.bdas.test";
+  await deleteUserByEmail(email);
+  await registerVerifyLogin(page, { email, firstName: "Faq", lastName: "Daumen" });
 
-    await page.goto("/faq");
-    // A plain member's primary section is open by default (order.ts), so the
-    // first entry's footer — and its thumbs — are already in the DOM.
-    const thumbUp = page.getByRole("button", { name: "Hilfreich", exact: true }).first();
-    await thumbUp.click();
-    await expect(thumbUp).toHaveAttribute("aria-pressed", "true");
-  });
+  await page.goto("/faq");
+  // A plain member's primary section is open by default (order.ts), so the
+  // first entry's footer — and its thumbs — are already in the DOM.
+  const thumbUp = page.getByRole("button", { name: "Hilfreich", exact: true }).first();
+  await thumbUp.click();
+  await expect(thumbUp).toHaveAttribute("aria-pressed", "true");
+});
 ```
 
 - [ ] **Step 4: Run the e2e test**
@@ -827,52 +826,54 @@ import type { SubmissionCardView } from "./submission-view";
 Extend the props to accept `submissions: readonly SubmissionCardView[]`, and add tab state beside the existing `useState` calls:
 
 ```tsx
-  const [tab, setTab] = useState<"entries" | "submissions">("entries");
+const [tab, setTab] = useState<"entries" | "submissions">("entries");
 ```
 
 Insert the tab bar as the first child of the outermost `<div className="flex flex-col gap-6">`, before the `TopicsPanel` row:
 
 ```tsx
-      <div role="tablist" aria-label="FAQ-Verwaltung" className="flex gap-2">
-        {(
-          [
-            ["entries", "Fragen & Antworten"],
-            ["submissions", `Offene Fragen${submissions.length > 0 ? ` (${submissions.length})` : ""}`],
-          ] as const
-        ).map(([key, label]) => (
-          <button
-            key={key}
-            type="button"
-            role="tab"
-            aria-selected={tab === key}
-            onClick={() => setTab(key)}
-            className={
-              tab === key
-                ? "rounded-bdas-sm border border-bdas-red px-3 py-1.5 text-sm font-semibold text-bdas-red"
-                : "rounded-bdas-sm border border-bdas-soft px-3 py-1.5 text-sm text-bdas-ink-body hover:bg-bdas-overlay-hover"
-            }
-          >
-            {label}
-          </button>
-        ))}
-      </div>
+<div role="tablist" aria-label="FAQ-Verwaltung" className="flex gap-2">
+  {(
+    [
+      ["entries", "Fragen & Antworten"],
+      ["submissions", `Offene Fragen${submissions.length > 0 ? ` (${submissions.length})` : ""}`],
+    ] as const
+  ).map(([key, label]) => (
+    <button
+      key={key}
+      type="button"
+      role="tab"
+      aria-selected={tab === key}
+      onClick={() => setTab(key)}
+      className={
+        tab === key
+          ? "rounded-bdas-sm border border-bdas-red px-3 py-1.5 text-sm font-semibold text-bdas-red"
+          : "rounded-bdas-sm border border-bdas-soft px-3 py-1.5 text-sm text-bdas-ink-body hover:bg-bdas-overlay-hover"
+      }
+    >
+      {label}
+    </button>
+  ))}
+</div>
 ```
 
 Wrap the existing entry-management markup (the `TopicsPanel`/`+ Eintrag` row, the `groups.map(...)` blocks, and the empty-state `<p>`) in `{tab === "entries" && ( … )}`, and add the submissions branch after it:
 
 ```tsx
-      {tab === "submissions" && (
-        <SubmissionsPanel
-          submissions={submissions}
-          onAnswer={() => {
-            /* Task 4 */
-          }}
-          onDiscard={() => {
-            /* Task 5 */
-          }}
-          pending={pending}
-        />
-      )}
+{
+  tab === "submissions" && (
+    <SubmissionsPanel
+      submissions={submissions}
+      onAnswer={() => {
+        /* Task 4 */
+      }}
+      onDiscard={() => {
+        /* Task 5 */
+      }}
+      pending={pending}
+    />
+  );
+}
 ```
 
 - [ ] **Step 8: Write the failing e2e test**
@@ -880,34 +881,34 @@ Wrap the existing entry-management markup (the `TopicsPanel`/`+ Eintrag` row, th
 Append to the existing `test.describe("Board-Verwaltung /federal/faq", ...)` block in `e2e/faq.e2e.ts`:
 
 ```ts
-  test("the board sees an open submission in the Offene Fragen tab", async ({ page }) => {
-    const question = `E2E-Frage-Board ${uniqueSlug("s")}?`;
+test("the board sees an open submission in the Offene Fragen tab", async ({ page }) => {
+  const question = `E2E-Frage-Board ${uniqueSlug("s")}?`;
 
-    const memberEmail = "faq-board-einreicher@e2e.bdas.test";
-    await deleteUserByEmail(memberEmail);
-    await registerVerifyLogin(page, {
-      email: memberEmail,
-      firstName: "Faq",
-      lastName: "Boardfrage",
-    });
-    await page.goto("/faq");
-    await page.getByRole("button", { name: "Frage einreichen" }).first().click();
-    await page.getByRole("dialog").getByLabel("Deine Frage").fill(question);
-    await page.getByRole("dialog").getByRole("button", { name: "Absenden" }).click();
-    await expect(page.getByRole("dialog").getByText("Danke!", { exact: false })).toBeVisible();
-    await logout(page);
-
-    await deleteUserByEmail(FEDERAL_EMAIL);
-    await registerVerifyLogin(page, {
-      email: FEDERAL_EMAIL,
-      firstName: "Bundes",
-      lastName: "Vorstand",
-    });
-    await page.goto("/federal/faq");
-    await page.getByRole("tab", { name: /Offene Fragen/ }).click();
-    await expect(page.getByText(question, { exact: true })).toBeVisible();
-    await expect(page.getByText("Faq Boardfrage")).toBeVisible();
+  const memberEmail = "faq-board-einreicher@e2e.bdas.test";
+  await deleteUserByEmail(memberEmail);
+  await registerVerifyLogin(page, {
+    email: memberEmail,
+    firstName: "Faq",
+    lastName: "Boardfrage",
   });
+  await page.goto("/faq");
+  await page.getByRole("button", { name: "Frage einreichen" }).first().click();
+  await page.getByRole("dialog").getByLabel("Deine Frage").fill(question);
+  await page.getByRole("dialog").getByRole("button", { name: "Absenden" }).click();
+  await expect(page.getByRole("dialog").getByText("Danke!", { exact: false })).toBeVisible();
+  await logout(page);
+
+  await deleteUserByEmail(FEDERAL_EMAIL);
+  await registerVerifyLogin(page, {
+    email: FEDERAL_EMAIL,
+    firstName: "Bundes",
+    lastName: "Vorstand",
+  });
+  await page.goto("/federal/faq");
+  await page.getByRole("tab", { name: /Offene Fragen/ }).click();
+  await expect(page.getByText(question, { exact: true })).toBeVisible();
+  await expect(page.getByText("Faq Boardfrage")).toBeVisible();
+});
 ```
 
 Extend the file's `./helpers/flows` import to include `logout`:
@@ -970,46 +971,46 @@ In `apps/web/app/(board)/federal/faq/FaqAdminBoard.tsx`, replace the `onAnswer` 
 Append to `test.describe("Board-Verwaltung /federal/faq", ...)` in `e2e/faq.e2e.ts`:
 
 ```ts
-  test("the board answers a submission and it leaves the open queue", async ({ page }) => {
-    const question = `E2E-Antwortfrage ${uniqueSlug("a")}?`;
+test("the board answers a submission and it leaves the open queue", async ({ page }) => {
+  const question = `E2E-Antwortfrage ${uniqueSlug("a")}?`;
 
-    const memberEmail = "faq-antwort-einreicher@e2e.bdas.test";
-    await deleteUserByEmail(memberEmail);
-    await registerVerifyLogin(page, { email: memberEmail, firstName: "Faq", lastName: "Antwort" });
-    await page.goto("/faq");
-    await page.getByRole("button", { name: "Frage einreichen" }).first().click();
-    await page.getByRole("dialog").getByLabel("Deine Frage").fill(question);
-    await page.getByRole("dialog").getByRole("button", { name: "Absenden" }).click();
-    await expect(page.getByRole("dialog").getByText("Danke!", { exact: false })).toBeVisible();
-    await logout(page);
+  const memberEmail = "faq-antwort-einreicher@e2e.bdas.test";
+  await deleteUserByEmail(memberEmail);
+  await registerVerifyLogin(page, { email: memberEmail, firstName: "Faq", lastName: "Antwort" });
+  await page.goto("/faq");
+  await page.getByRole("button", { name: "Frage einreichen" }).first().click();
+  await page.getByRole("dialog").getByLabel("Deine Frage").fill(question);
+  await page.getByRole("dialog").getByRole("button", { name: "Absenden" }).click();
+  await expect(page.getByRole("dialog").getByText("Danke!", { exact: false })).toBeVisible();
+  await logout(page);
 
-    await deleteUserByEmail(FEDERAL_EMAIL);
-    await registerVerifyLogin(page, {
-      email: FEDERAL_EMAIL,
-      firstName: "Bundes",
-      lastName: "Vorstand",
-    });
-    await page.goto("/federal/faq");
-    await page.getByRole("tab", { name: /Offene Fragen/ }).click();
-
-    const card = page.getByRole("article").filter({ hasText: question });
-    await card.getByRole("button", { name: "Antwort verfassen" }).click();
-
-    const dialog = page.getByRole("dialog");
-    // The entry form opens prefilled with the submitted question.
-    await expect(dialog.getByPlaceholder("Frage")).toHaveValue(question);
-    await dialog.getByRole("button", { name: "Veröffentlichen" }).click();
-
-    // Publishing the linked draft answers the submission: the open tab empties.
-    await page.goto("/federal/faq");
-    await page.getByRole("tab", { name: /Offene Fragen/ }).click();
-    await expect(page.getByRole("article").filter({ hasText: question })).toHaveCount(0);
-
-    // …and the answer is live on /faq.
-    await page.goto("/faq");
-    await page.getByPlaceholder("Suche").fill(question);
-    await expect(page.locator("mark").first()).toBeVisible();
+  await deleteUserByEmail(FEDERAL_EMAIL);
+  await registerVerifyLogin(page, {
+    email: FEDERAL_EMAIL,
+    firstName: "Bundes",
+    lastName: "Vorstand",
   });
+  await page.goto("/federal/faq");
+  await page.getByRole("tab", { name: /Offene Fragen/ }).click();
+
+  const card = page.getByRole("article").filter({ hasText: question });
+  await card.getByRole("button", { name: "Antwort verfassen" }).click();
+
+  const dialog = page.getByRole("dialog");
+  // The entry form opens prefilled with the submitted question.
+  await expect(dialog.getByPlaceholder("Frage")).toHaveValue(question);
+  await dialog.getByRole("button", { name: "Veröffentlichen" }).click();
+
+  // Publishing the linked draft answers the submission: the open tab empties.
+  await page.goto("/federal/faq");
+  await page.getByRole("tab", { name: /Offene Fragen/ }).click();
+  await expect(page.getByRole("article").filter({ hasText: question })).toHaveCount(0);
+
+  // …and the answer is live on /faq.
+  await page.goto("/faq");
+  await page.getByPlaceholder("Suche").fill(question);
+  await expect(page.locator("mark").first()).toBeVisible();
+});
 ```
 
 - [ ] **Step 3: Run the e2e test**
@@ -1071,46 +1072,48 @@ import { Dialog } from "@bdas/design-system";
 …and add `discardSubmissionAction` to the existing `./actions` import list. Add state beside the other `useState` calls:
 
 ```tsx
-  const [discarding, setDiscarding] = useState<SubmissionCardView | null>(null);
+const [discarding, setDiscarding] = useState<SubmissionCardView | null>(null);
 ```
 
 Replace the `onDiscard` stub with `onDiscard={(card) => setDiscarding(card)}`, then render the confirmation next to the existing `{dialog && …}` block:
 
 ```tsx
-      {discarding && (
-        <Dialog open onClose={() => setDiscarding(null)} title="Frage verwerfen">
-          <div className="flex flex-col gap-4">
-            <p className="text-bdas-ink-body">
-              „{discarding.question}“ wird verworfen und verschwindet aus der Liste. Das lässt sich
-              nicht rückgängig machen.
-            </p>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                disabled={pending}
-                onClick={() => {
-                  const id = discarding.id;
-                  setDiscarding(null);
-                  start(async () => {
-                    const res = await discardSubmissionAction(id);
-                    if (!res.ok) setError(res.error);
-                  });
-                }}
-                className="rounded-bdas-sm bg-bdas-red px-3 py-1.5 text-sm font-semibold text-bdas-surface disabled:opacity-40"
-              >
-                Verwerfen
-              </button>
-              <button
-                type="button"
-                onClick={() => setDiscarding(null)}
-                className="rounded-bdas-sm border border-bdas-soft px-3 py-1.5 text-sm text-bdas-ink-body hover:bg-bdas-overlay-hover"
-              >
-                Abbrechen
-              </button>
-            </div>
-          </div>
-        </Dialog>
-      )}
+{
+  discarding && (
+    <Dialog open onClose={() => setDiscarding(null)} title="Frage verwerfen">
+      <div className="flex flex-col gap-4">
+        <p className="text-bdas-ink-body">
+          „{discarding.question}“ wird verworfen und verschwindet aus der Liste. Das lässt sich
+          nicht rückgängig machen.
+        </p>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            disabled={pending}
+            onClick={() => {
+              const id = discarding.id;
+              setDiscarding(null);
+              start(async () => {
+                const res = await discardSubmissionAction(id);
+                if (!res.ok) setError(res.error);
+              });
+            }}
+            className="rounded-bdas-sm bg-bdas-red px-3 py-1.5 text-sm font-semibold text-bdas-surface disabled:opacity-40"
+          >
+            Verwerfen
+          </button>
+          <button
+            type="button"
+            onClick={() => setDiscarding(null)}
+            className="rounded-bdas-sm border border-bdas-soft px-3 py-1.5 text-sm text-bdas-ink-body hover:bg-bdas-overlay-hover"
+          >
+            Abbrechen
+          </button>
+        </div>
+      </div>
+    </Dialog>
+  );
+}
 ```
 
 - [ ] **Step 3: Write the failing e2e test**
@@ -1118,38 +1121,38 @@ Replace the `onDiscard` stub with `onDiscard={(card) => setDiscarding(card)}`, t
 Append to `test.describe("Board-Verwaltung /federal/faq", ...)` in `e2e/faq.e2e.ts`:
 
 ```ts
-  test("the board discards a submission after confirming", async ({ page }) => {
-    const question = `E2E-Verwerfen ${uniqueSlug("v")}?`;
+test("the board discards a submission after confirming", async ({ page }) => {
+  const question = `E2E-Verwerfen ${uniqueSlug("v")}?`;
 
-    const memberEmail = "faq-verwerf-einreicher@e2e.bdas.test";
-    await deleteUserByEmail(memberEmail);
-    await registerVerifyLogin(page, { email: memberEmail, firstName: "Faq", lastName: "Verwerf" });
-    await page.goto("/faq");
-    await page.getByRole("button", { name: "Frage einreichen" }).first().click();
-    await page.getByRole("dialog").getByLabel("Deine Frage").fill(question);
-    await page.getByRole("dialog").getByRole("button", { name: "Absenden" }).click();
-    await expect(page.getByRole("dialog").getByText("Danke!", { exact: false })).toBeVisible();
-    await logout(page);
+  const memberEmail = "faq-verwerf-einreicher@e2e.bdas.test";
+  await deleteUserByEmail(memberEmail);
+  await registerVerifyLogin(page, { email: memberEmail, firstName: "Faq", lastName: "Verwerf" });
+  await page.goto("/faq");
+  await page.getByRole("button", { name: "Frage einreichen" }).first().click();
+  await page.getByRole("dialog").getByLabel("Deine Frage").fill(question);
+  await page.getByRole("dialog").getByRole("button", { name: "Absenden" }).click();
+  await expect(page.getByRole("dialog").getByText("Danke!", { exact: false })).toBeVisible();
+  await logout(page);
 
-    await deleteUserByEmail(FEDERAL_EMAIL);
-    await registerVerifyLogin(page, {
-      email: FEDERAL_EMAIL,
-      firstName: "Bundes",
-      lastName: "Vorstand",
-    });
-    await page.goto("/federal/faq");
-    await page.getByRole("tab", { name: /Offene Fragen/ }).click();
-
-    await page
-      .getByRole("article")
-      .filter({ hasText: question })
-      .getByRole("button", { name: "Verwerfen" })
-      .click();
-    // The confirmation is a modal (Spec §6), not window.confirm.
-    await page.getByRole("dialog").getByRole("button", { name: "Verwerfen" }).click();
-
-    await expect(page.getByRole("article").filter({ hasText: question })).toHaveCount(0);
+  await deleteUserByEmail(FEDERAL_EMAIL);
+  await registerVerifyLogin(page, {
+    email: FEDERAL_EMAIL,
+    firstName: "Bundes",
+    lastName: "Vorstand",
   });
+  await page.goto("/federal/faq");
+  await page.getByRole("tab", { name: /Offene Fragen/ }).click();
+
+  await page
+    .getByRole("article")
+    .filter({ hasText: question })
+    .getByRole("button", { name: "Verwerfen" })
+    .click();
+  // The confirmation is a modal (Spec §6), not window.confirm.
+  await page.getByRole("dialog").getByRole("button", { name: "Verwerfen" }).click();
+
+  await expect(page.getByRole("article").filter({ hasText: question })).toHaveCount(0);
+});
 ```
 
 - [ ] **Step 4: Run the e2e test**
@@ -1200,22 +1203,24 @@ import { ActionStrip, type ActionItem } from "../../_components/ActionStrip";
 Fetch the count alongside the existing reads — guarded by the flag, so the page keeps working (and skips the query) while `faq_suite` is off:
 
 ```tsx
-  const faqOpen = isFlagOn("faq_suite") ? await openSubmissionCount(db) : 0;
+const faqOpen = isFlagOn("faq_suite") ? await openSubmissionCount(db) : 0;
 ```
 
 Replace the `<ActionStrip …>` call:
 
 ```tsx
-      <ActionStrip
-        items={[
-          { count: counts.pending, label: "Freigaben", href: "/federal/members" },
-          // Spec §6: this one appears only when there is work — unlike
-          // "Freigaben", which renders calm at zero.
-          ...(faqOpen > 0
-            ? [{ count: faqOpen, label: "Offene FAQ-Fragen", href: "/federal/faq" }]
-            : []),
-        ] satisfies ActionItem[]}
-      />
+<ActionStrip
+  items={
+    [
+      { count: counts.pending, label: "Freigaben", href: "/federal/members" },
+      // Spec §6: this one appears only when there is work — unlike
+      // "Freigaben", which renders calm at zero.
+      ...(faqOpen > 0
+        ? [{ count: faqOpen, label: "Offene FAQ-Fragen", href: "/federal/faq" }]
+        : []),
+    ] satisfies ActionItem[]
+  }
+/>
 ```
 
 - [ ] **Step 2: Write the failing e2e test**
@@ -1223,28 +1228,28 @@ Replace the `<ActionStrip …>` call:
 Append to `test.describe("Board-Verwaltung /federal/faq", ...)` in `e2e/faq.e2e.ts`:
 
 ```ts
-  test("an open submission surfaces on the federal overview", async ({ page }) => {
-    const question = `E2E-Zaehler ${uniqueSlug("z")}?`;
+test("an open submission surfaces on the federal overview", async ({ page }) => {
+  const question = `E2E-Zaehler ${uniqueSlug("z")}?`;
 
-    const memberEmail = "faq-zaehler-einreicher@e2e.bdas.test";
-    await deleteUserByEmail(memberEmail);
-    await registerVerifyLogin(page, { email: memberEmail, firstName: "Faq", lastName: "Zaehler" });
-    await page.goto("/faq");
-    await page.getByRole("button", { name: "Frage einreichen" }).first().click();
-    await page.getByRole("dialog").getByLabel("Deine Frage").fill(question);
-    await page.getByRole("dialog").getByRole("button", { name: "Absenden" }).click();
-    await expect(page.getByRole("dialog").getByText("Danke!", { exact: false })).toBeVisible();
-    await logout(page);
+  const memberEmail = "faq-zaehler-einreicher@e2e.bdas.test";
+  await deleteUserByEmail(memberEmail);
+  await registerVerifyLogin(page, { email: memberEmail, firstName: "Faq", lastName: "Zaehler" });
+  await page.goto("/faq");
+  await page.getByRole("button", { name: "Frage einreichen" }).first().click();
+  await page.getByRole("dialog").getByLabel("Deine Frage").fill(question);
+  await page.getByRole("dialog").getByRole("button", { name: "Absenden" }).click();
+  await expect(page.getByRole("dialog").getByText("Danke!", { exact: false })).toBeVisible();
+  await logout(page);
 
-    await deleteUserByEmail(FEDERAL_EMAIL);
-    await registerVerifyLogin(page, {
-      email: FEDERAL_EMAIL,
-      firstName: "Bundes",
-      lastName: "Vorstand",
-    });
-    await page.goto("/federal/overview");
-    await expect(page.getByRole("link", { name: /Offene FAQ-Fragen/ })).toBeVisible();
+  await deleteUserByEmail(FEDERAL_EMAIL);
+  await registerVerifyLogin(page, {
+    email: FEDERAL_EMAIL,
+    firstName: "Bundes",
+    lastName: "Vorstand",
   });
+  await page.goto("/federal/overview");
+  await expect(page.getByRole("link", { name: /Offene FAQ-Fragen/ })).toBeVisible();
+});
 ```
 
 - [ ] **Step 3: Run the e2e test**
