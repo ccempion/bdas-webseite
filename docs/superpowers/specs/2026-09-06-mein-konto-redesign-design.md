@@ -77,12 +77,12 @@ two columns as a small heading. The spec overrides the mockup here.
 
 Identity column (order fixed, top to bottom):
 
-| Block | Source |
-| --- | --- |
-| Avatar + name + e-mail | `getCurrentMember`, `signedProfilePhotoUrl` |
-| Status / Gruppe / Mitglied seit | `member.status`, `groups`, `member.joinedAt` |
-| Deine Rollen | `me.grants` |
-| Quiet links: Kontoeinstellungen, Abmelden | static |
+| Block                                     | Source                                       |
+| ----------------------------------------- | -------------------------------------------- |
+| Avatar + name + e-mail                    | `getCurrentMember`, `signedProfilePhotoUrl`  |
+| Status / Gruppe / Mitglied seit           | `member.status`, `groups`, `member.joinedAt` |
+| Deine Rollen                              | `me.grants`                                  |
+| Quiet links: Kontoeinstellungen, Abmelden | static                                       |
 
 The data export is reachable from the settings page only, not from both places;
 the mockup shows it in the sidebar as well, and the spec overrides the mockup here.
@@ -92,13 +92,13 @@ the row rather than printing a placeholder.
 
 Content column:
 
-| Block | Behaviour |
-| --- | --- |
-| Action items | Zero or more. Group change, pending approvals, "Bewerbung abgeschickt". Only genuinely actionable items; durable states move to the identity column as rows or chips. |
-| Deine nächsten Veranstaltungen | Up to 3 upcoming registrations, each with date, time, place, registration state and an `.ics` download. Hidden entirely when the member has none. |
-| Teilnahmen | Count of attended events. Hidden when zero. |
-| Meine Gruppe | Card linking to `/gruppen/<slug>`. Hidden when `primaryGroupId` is null. |
-| Meine Daten | The existing `EditableProfile` — record when complete, form when not. |
+| Block                          | Behaviour                                                                                                                                                             |
+| ------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Action items                   | Zero or more. Group change, pending approvals, "Bewerbung abgeschickt". Only genuinely actionable items; durable states move to the identity column as rows or chips. |
+| Deine nächsten Veranstaltungen | Up to 3 upcoming registrations, each with date, time, place, registration state and an `.ics` download. Hidden entirely when the member has none.                     |
+| Teilnahmen                     | Count of attended events. Hidden when zero.                                                                                                                           |
+| Meine Gruppe                   | Card linking to `/gruppen/<slug>`. Hidden when `primaryGroupId` is null.                                                                                              |
+| Meine Daten                    | The existing `EditableProfile` — record when complete, form when not.                                                                                                 |
 
 Waitlisted registrations render as "Warteliste, Platz N" using
 `registration.waitlistPosition`, not as "angemeldet".
@@ -144,7 +144,7 @@ No new tables, no migrations.
   `isProfileComplete`, `countPendingApprovals` are all in use on the page today.
 - `eventToIcs` already exists in the events module and backs the `.ics` link.
 
-**Package naming, easy to get wrong:** the events *module* is
+**Package naming, easy to get wrong:** the events _module_ is
 `@bdas/events-module`. `@bdas/events` is the core event **bus** in `core/events`.
 
 **New exports required:**
@@ -180,13 +180,13 @@ and essentially nobody else, so the two-column layout is drawn for that case and
 the remaining states get a correct but plain fallback. Designing them properly
 is deferred.
 
-| State | Treatment |
-| --- | --- |
-| `active` | The full design, as specified in §3.1. |
+| State           | Treatment                                                                                                          |
+| --------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `active`        | The full design, as specified in §3.1.                                                                             |
 | everything else | Single column at every width: status line, then the profile record. No identity sidebar, no events, no attendance. |
 
 One caveat worth stating rather than discovering later: registration still walks
-a new applicant through *no member row* → `pending` before they ever become
+a new applicant through _no member row_ → `pending` before they ever become
 active, so the fallback is on the live path for every new member, not a dead
 branch. It has to be correct and unembarrassing — it does not have to be
 designed. The fallback is close to today's page, which is why it is cheap.
@@ -247,11 +247,11 @@ Not a follow-up: **active sessions**, decided against in §2.
 
 Three PRs, one module each (CLAUDE.md §4 "one module per PR"):
 
-| PR | Module | Contents |
-| --- | --- | --- |
-| 1 | `modules/events` | `listMyUpcomingRegistrations`, `countAttendedEvents`, integration tests |
-| 2 | `modules/members` | `ROLE_LABELS` export; the two board components switch to it |
-| 3 | `apps/web` | Overview redesign, `/account/einstellungen`, view-model tests, E2E |
+| PR  | Module            | Contents                                                                |
+| --- | ----------------- | ----------------------------------------------------------------------- |
+| 1   | `modules/events`  | `listMyUpcomingRegistrations`, `countAttendedEvents`, integration tests |
+| 2   | `modules/members` | `ROLE_LABELS` export; the two board components switch to it             |
+| 3   | `apps/web`        | Overview redesign, `/account/einstellungen`, view-model tests, E2E      |
 
 PR 2 is small enough to fold into PR 3, but that would put two modules in one
 PR. Flagging rather than deciding: say so if you want them combined.
