@@ -12,6 +12,10 @@ export type IdentityColumnProps = {
   email: string;
   rows: ReadonlyArray<IdentityRow>;
   chips: ReadonlyArray<RoleChip>;
+  /** Gates the photo-upload control (`AccountAvatar`), which drives the
+   *  `profile` module's upload/save/remove actions — stays hidden while that
+   *  module is flagged off, same as the old page did (CLAUDE.md §1 rule 6). */
+  showAvatar: boolean;
 };
 
 /**
@@ -26,12 +30,13 @@ export function IdentityColumn({
   email,
   rows,
   chips,
+  showAvatar,
 }: IdentityColumnProps) {
   return (
     <div className="flex flex-col gap-4">
       <Card className="p-6">
         <div className="flex flex-col items-start gap-4">
-          <AccountAvatar photoUrl={photoUrl} initials={initials} />
+          {showAvatar ? <AccountAvatar photoUrl={photoUrl} initials={initials} /> : null}
           <div className="flex flex-col gap-0.5">
             <h2 className="text-lg font-semibold text-bdas-ink">{name}</h2>
             <p className="text-sm text-bdas-ink-muted">{email}</p>

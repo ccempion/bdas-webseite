@@ -185,6 +185,7 @@ export default async function AccountPage({
             email={me.user.email}
             rows={identityRows}
             chips={chips}
+            showAvatar={profileFlagOn && Boolean(me.member)}
           />
           <div className="flex flex-col gap-6">
             {statusAlerts}
