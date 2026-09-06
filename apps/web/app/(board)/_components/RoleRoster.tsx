@@ -2,7 +2,8 @@
 
 import { useTransition } from "react";
 
-import { ROLE_LABELS, type RoleHolder } from "@bdas/members";
+import type { Role } from "@bdas/auth";
+import type { RoleHolder } from "@bdas/members";
 
 import { revokeRoleAction } from "./role-actions";
 
@@ -11,11 +12,13 @@ export function RoleRoster({
   groupNames,
   revalidatePath,
   currentMemberId,
+  roleLabels,
 }: {
   sections: ReadonlyArray<{ title: string; holders: RoleHolder[] }>;
   groupNames: Record<string, string>;
   revalidatePath: string;
   currentMemberId: string | null;
+  roleLabels: Record<Role, string>;
 }) {
   const [pending, start] = useTransition();
   return (
@@ -33,7 +36,7 @@ export function RoleRoster({
               <span
                 className={`rounded-bdas-pill px-2 py-0.5 text-xs font-semibold ${h.role === "federal_board" ? "bg-bdas-red text-bdas-surface" : "bg-bdas-surface-hover text-bdas-red"}`}
               >
-                {ROLE_LABELS[h.role]}
+                {roleLabels[h.role]}
                 {h.groupId ? ` · ${groupNames[h.groupId] ?? h.groupId}` : ""}
               </span>
               <span className="flex-1 text-sm text-bdas-ink">
