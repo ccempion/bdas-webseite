@@ -16,7 +16,7 @@ import {
 import { FaqEntryDialog, type FaqEntryDialogInitial } from "./FaqEntryDialog";
 import { groupByScope } from "./group-entries";
 import { SubmissionsPanel } from "./SubmissionsPanel";
-import type { SubmissionCardView } from "./submission-view";
+import { resumableDraft, type SubmissionCardView } from "./submission-view";
 import { TopicsPanel } from "./TopicsPanel";
 
 const EMPTY_ENTRY: FaqEntryDialogInitial = {
@@ -222,18 +222,27 @@ export function FaqAdminBoard({
       {tab === "submissions" && (
         <SubmissionsPanel
           submissions={submissions}
-          onAnswer={(card) =>
-            setDialog({
-              initial: {
-                ...EMPTY_ENTRY,
-                question: card.question,
-                // Links the draft to the submission; publishing it flips the
-                // submission to `answered` inside publishEntry's transaction.
-                submissionId: card.id,
-              },
-              currentStatus: null,
-            })
-          }
+          onAnswer={(card) => {
+            // A draft already linked to this submission is reopened for
+            // editing. Creating a second one would orphan the first and leave
+            // the submission open forever, inflating the queue counter.
+            const draft = resumableDraft(card, entries);
+            setDialog(
+              draft
+                ? { initial: toInitial(draft), currentStatus: draft.status }
+                : {
+                    initial: {
+                      ...EMPTY_ENTRY,
+                      question: card.question,
+                      // Links the draft to the submission; publishing it flips
+                      // the submission to `answered` inside publishEntry's
+                      // transaction.
+                      submissionId: card.id,
+                    },
+                    currentStatus: null,
+                  },
+            );
+          }}
           onDiscard={(card) => setDiscarding(card)}
           pending={pending}
         />

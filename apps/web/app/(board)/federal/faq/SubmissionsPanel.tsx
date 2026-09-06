@@ -38,7 +38,7 @@ export function SubmissionsPanel({
                 {s.contextLabel}
               </span>
             )}
-            {s.hasDraft && (
+            {s.draftEntryId !== null && (
               <span className="rounded-bdas-pill border border-bdas-red px-2 py-0.5 font-semibold text-bdas-red">
                 Entwurf angelegt
               </span>
@@ -51,7 +51,7 @@ export function SubmissionsPanel({
               onClick={() => onAnswer(s)}
               className="rounded-bdas-sm bg-bdas-red px-3 py-1.5 text-xs font-semibold text-bdas-surface disabled:opacity-40"
             >
-              {s.hasDraft ? "Neuen Entwurf anlegen" : "Antwort verfassen"}
+              {s.draftEntryId !== null ? "Entwurf fortsetzen" : "Antwort verfassen"}
             </button>
             <button
               type="button"
