@@ -69,6 +69,12 @@ notification preferences later without another restructuring.
 
 ### 3.1 `/account` — overview
 
+**Fixed constraint:** the page keeps an `<h1>Mein Konto</h1>`. `e2e/auth.e2e.ts`
+asserts that heading by role in three places, and it is the name the header
+links to. The mockup shows the member's name as the largest text; in the build
+the name is an `<h2>` inside the identity column and "Mein Konto" sits above the
+two columns as a small heading. The spec overrides the mockup here.
+
 Identity column (order fixed, top to bottom):
 
 | Block | Source |
@@ -136,15 +142,18 @@ No new tables, no migrations.
 - `member.joinedAt` exists on the `Member` type.
 - `listGroups`, `getOpenGroupChange`, `getProfile`, `signedProfilePhotoUrl`,
   `isProfileComplete`, `countPendingApprovals` are all in use on the page today.
-- `eventToIcs` already exists in `@bdas/events` and backs the `.ics` link.
+- `eventToIcs` already exists in the events module and backs the `.ics` link.
+
+**Package naming, easy to get wrong:** the events *module* is
+`@bdas/events-module`. `@bdas/events` is the core event **bus** in `core/events`.
 
 **New exports required:**
 
-1. `@bdas/events` — `listMyUpcomingRegistrations(db, memberId, limit)`.
-   Returns upcoming, non-cancelled registrations joined to their event:
-   `{ eventId, title, startsAt, location, slug, waitlistPosition }`.
+1. `@bdas/events-module` — `listMyUpcomingRegistrations(db, memberId, limit)`.
+   Upcoming, non-cancelled registrations joined to their published event:
+   `{ eventId, title, startsAt, location, groupId, waitlistPosition }`.
    Ordered by `startsAt` ascending. One query, not N+1.
-2. `@bdas/events` — `countAttendedEvents(db, memberId)`.
+2. `@bdas/events-module` — `countAttendedEvents(db, memberId)`.
    `count()` over `event_attendance` where `attended = true`.
 3. `@bdas/members` — `ROLE_LABELS: Record<Role, string>` in `types.ts`,
    re-exported from `index.ts`.
