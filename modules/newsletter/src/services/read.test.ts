@@ -86,7 +86,9 @@ describe.skipIf(!reachable)("newsletter read services", () => {
     await add({ id: "nls_b", status: "subscribed", source: "konto", groupId: "g1" });
     await add({ id: "nls_c", status: "subscribed", source: "konto", groupId: "g2" });
 
-    expect((await listSubscribers(t.db, { status: "pending" })).map((r) => r.id)).toEqual(["nls_a"]);
+    expect((await listSubscribers(t.db, { status: "pending" })).map((r) => r.id)).toEqual([
+      "nls_a",
+    ]);
     expect((await listSubscribers(t.db, { source: "konto" })).map((r) => r.id).sort()).toEqual([
       "nls_b",
       "nls_c",

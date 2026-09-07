@@ -42,7 +42,9 @@ describe.skipIf(!reachable)("newsletter rate limit", () => {
 
   it("keeps keys independent", async () => {
     await rateLimit(t.db, { key: "a", limit: 1, windowMs: 60_000 });
-    await expect(rateLimit(t.db, { key: "b", limit: 1, windowMs: 60_000 })).resolves.toBeUndefined();
+    await expect(
+      rateLimit(t.db, { key: "b", limit: 1, windowMs: 60_000 }),
+    ).resolves.toBeUndefined();
   });
 
   it("tryRateLimit reports the verdict instead of throwing", async () => {

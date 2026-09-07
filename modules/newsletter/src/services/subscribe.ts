@@ -32,10 +32,7 @@ export type SubscribeAsUserInput = {
  * (spec §3.1). Idempotent: an already-subscribed account gets its row back
  * untouched and no second consent-log entry.
  */
-export async function subscribeAsUser(
-  db: Db,
-  input: SubscribeAsUserInput,
-): Promise<Subscription> {
+export async function subscribeAsUser(db: Db, input: SubscribeAsUserInput): Promise<Subscription> {
   // A resolvable address lets an earlier anonymous row be adopted rather than
   // duplicated. When it cannot be resolved, a synthetic key satisfies the
   // NOT NULL/UNIQUE contract without inventing a plausible address.

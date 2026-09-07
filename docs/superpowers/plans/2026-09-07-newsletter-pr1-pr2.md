@@ -41,50 +41,50 @@ Die Spec verweist Detailfragen ausdrücklich in den Implementierungsplan (§13.4
 
 **PR 1 — `modules/newsletter/`**
 
-| Datei                        | Verantwortung                                                                 |
-| ---------------------------- | ----------------------------------------------------------------------------- |
-| `package.json`               | Workspace-Paket `@bdas/newsletter`                                            |
-| `tsconfig.json`              | erbt `tsconfig.base.json`                                                      |
-| `README.md`                  | Modul-README nach CLAUDE.md §1 Regel 5                                        |
-| `migrations/0001_init.sql`   | Die vier Tabellen                                                              |
-| `src/schema.ts`              | Drizzle-Tabellen (privat)                                                      |
-| `src/types.ts`               | Statuswerte, Quellen, öffentliche Typen, `newId`                              |
-| `src/tokens.ts`              | Token-Erzeugung + SHA-256-Hashing (privat)                                    |
-| `src/rate-limit.ts`          | Fixed-Window-Drosselung auf `newsletter_rate_limits` (privat)                 |
-| `src/resolver.ts`            | `AccountEmailResolver`-Schnittstelle + globalThis-Slot                        |
-| `src/consent-log.ts`         | `recordConsent` — append-only Protokollschreiber (privat)                     |
-| `src/events.ts`              | Die zwei veröffentlichten Ereignistypen                                       |
-| `src/services/subscribe.ts`  | `subscribeAsUser`, `subscribePublicly`                                        |
-| `src/services/confirm.ts`    | `confirmSubscription`, `unsubscribeByToken`, `unsubscribeAsUser`              |
-| `src/services/read.ts`       | `getSubscriptionForUser`, `listSubscribers`, `countSubscribers`               |
-| `src/services/prompts.ts`    | `declineForUser`, `shouldPrompt`                                              |
-| `src/subscribers.ts`         | `registerNewsletterSubscribers` — Bus-Handler, werfen nie                     |
-| `src/test-db.ts`             | Privates Testharnisch (Muster: `modules/faq/src/test-db.ts`)                  |
-| `src/index.ts`               | Die einzige öffentliche Oberfläche                                            |
+| Datei                       | Verantwortung                                                    |
+| --------------------------- | ---------------------------------------------------------------- |
+| `package.json`              | Workspace-Paket `@bdas/newsletter`                               |
+| `tsconfig.json`             | erbt `tsconfig.base.json`                                        |
+| `README.md`                 | Modul-README nach CLAUDE.md §1 Regel 5                           |
+| `migrations/0001_init.sql`  | Die vier Tabellen                                                |
+| `src/schema.ts`             | Drizzle-Tabellen (privat)                                        |
+| `src/types.ts`              | Statuswerte, Quellen, öffentliche Typen, `newId`                 |
+| `src/tokens.ts`             | Token-Erzeugung + SHA-256-Hashing (privat)                       |
+| `src/rate-limit.ts`         | Fixed-Window-Drosselung auf `newsletter_rate_limits` (privat)    |
+| `src/resolver.ts`           | `AccountEmailResolver`-Schnittstelle + globalThis-Slot           |
+| `src/consent-log.ts`        | `recordConsent` — append-only Protokollschreiber (privat)        |
+| `src/events.ts`             | Die zwei veröffentlichten Ereignistypen                          |
+| `src/services/subscribe.ts` | `subscribeAsUser`, `subscribePublicly`                           |
+| `src/services/confirm.ts`   | `confirmSubscription`, `unsubscribeByToken`, `unsubscribeAsUser` |
+| `src/services/read.ts`      | `getSubscriptionForUser`, `listSubscribers`, `countSubscribers`  |
+| `src/services/prompts.ts`   | `declineForUser`, `shouldPrompt`                                 |
+| `src/subscribers.ts`        | `registerNewsletterSubscribers` — Bus-Handler, werfen nie        |
+| `src/test-db.ts`            | Privates Testharnisch (Muster: `modules/faq/src/test-db.ts`)     |
+| `src/index.ts`              | Die einzige öffentliche Oberfläche                               |
 
 Geändert: `infra/migrations/src/manifest.ts`, `core/feature-flags/src/index.ts`. Neu: `docs/decisions/0035-newsletter-consent-model.md`.
 
 **PR 2 — App-Schicht**
 
-| Datei                                             | Verantwortung                                          |
-| ------------------------------------------------- | ------------------------------------------------------ |
-| `core/design-system/src/tokens.ts`                | `ink.onBrand`, `keyframes.fadeSlideUp`                 |
-| `core/design-system/src/tailwind-preset.ts`       | Utilities dazu                                          |
-| `core/design-system/src/components/Button.tsx`    | Variante `on-brand`                                     |
-| `core/design-system/README.md`                    | Anmeldung der Erweiterung (§7)                         |
-| `apps/web/app/_newsletter/flag.ts`                | `requireNewsletterFlag()`                              |
-| `apps/web/app/_newsletter/actions.ts`             | Server Actions: eintragen, abbestellen, wegklicken     |
-| `apps/web/app/_newsletter/NewsletterToggle.tsx`   | B1 — Zeile mit Schalter                                 |
-| `apps/web/app/_newsletter/NewsletterPrompt.tsx`   | C1 — roter Blickfang-Banner                            |
-| `apps/web/app/_newsletter/signup-cookie.ts`       | Kurzlebiges Cookie für den zweiten Anlauf              |
-| `apps/web/lib/newsletter-bootstrap.ts`            | Resolver + Bus-Subscriber verdrahten                    |
-| `apps/web/instrumentation.ts`                     | `bootNewsletter()` beim Start                          |
-| `apps/web/app/account/einstellungen/page.tsx`     | Schalter in die reservierte Karte                       |
-| `apps/web/app/account/page.tsx`                   | Banner unter der h1                                     |
-| `apps/web/app/registrieren/RegistrierenForm.tsx`  | Ungehakte Checkbox (E2-Kasten)                         |
-| `apps/web/app/registrieren/actions.ts`            | Checkbox → `pending`, Cookie setzen                    |
-| `apps/web/app/registrieren/erfolg/page.tsx`       | Zweiter, weicherer Anlauf                              |
-| `e2e/newsletter.e2e.ts`                           | Abnahme für die eingeloggten Flächen                   |
+| Datei                                            | Verantwortung                                      |
+| ------------------------------------------------ | -------------------------------------------------- |
+| `core/design-system/src/tokens.ts`               | `ink.onBrand`, `keyframes.fadeSlideUp`             |
+| `core/design-system/src/tailwind-preset.ts`      | Utilities dazu                                     |
+| `core/design-system/src/components/Button.tsx`   | Variante `on-brand`                                |
+| `core/design-system/README.md`                   | Anmeldung der Erweiterung (§7)                     |
+| `apps/web/app/_newsletter/flag.ts`               | `requireNewsletterFlag()`                          |
+| `apps/web/app/_newsletter/actions.ts`            | Server Actions: eintragen, abbestellen, wegklicken |
+| `apps/web/app/_newsletter/NewsletterToggle.tsx`  | B1 — Zeile mit Schalter                            |
+| `apps/web/app/_newsletter/NewsletterPrompt.tsx`  | C1 — roter Blickfang-Banner                        |
+| `apps/web/app/_newsletter/signup-cookie.ts`      | Kurzlebiges Cookie für den zweiten Anlauf          |
+| `apps/web/lib/newsletter-bootstrap.ts`           | Resolver + Bus-Subscriber verdrahten               |
+| `apps/web/instrumentation.ts`                    | `bootNewsletter()` beim Start                      |
+| `apps/web/app/account/einstellungen/page.tsx`    | Schalter in die reservierte Karte                  |
+| `apps/web/app/account/page.tsx`                  | Banner unter der h1                                |
+| `apps/web/app/registrieren/RegistrierenForm.tsx` | Ungehakte Checkbox (E2-Kasten)                     |
+| `apps/web/app/registrieren/actions.ts`           | Checkbox → `pending`, Cookie setzen                |
+| `apps/web/app/registrieren/erfolg/page.tsx`      | Zweiter, weicherer Anlauf                          |
+| `e2e/newsletter.e2e.ts`                          | Abnahme für die eingeloggten Flächen               |
 
 ---
 
@@ -685,7 +685,9 @@ describe.skipIf(!reachable)("newsletter rate limit", () => {
 
   it("keeps keys independent", async () => {
     await rateLimit(t.db, { key: "a", limit: 1, windowMs: 60_000 });
-    await expect(rateLimit(t.db, { key: "b", limit: 1, windowMs: 60_000 })).resolves.toBeUndefined();
+    await expect(
+      rateLimit(t.db, { key: "b", limit: 1, windowMs: 60_000 }),
+    ).resolves.toBeUndefined();
   });
 
   it("tryRateLimit reports the verdict instead of throwing", async () => {
@@ -943,9 +945,7 @@ import type { Db } from "@bdas/db";
 import { newsletterSubscribers } from "../schema";
 import type { NewsletterSource, Subscription, SubscriptionStatus } from "../types";
 
-export function rowToSubscription(
-  r: typeof newsletterSubscribers.$inferSelect,
-): Subscription {
+export function rowToSubscription(r: typeof newsletterSubscribers.$inferSelect): Subscription {
   return {
     id: r.id,
     email: r.email,
@@ -962,10 +962,7 @@ export function rowToSubscription(
 
 /** The account's subscription, whatever its status — the caller decides what
  *  a `declined` or `unsubscribed` row means for its surface. */
-export async function getSubscriptionForUser(
-  db: Db,
-  userId: string,
-): Promise<Subscription | null> {
+export async function getSubscriptionForUser(db: Db, userId: string): Promise<Subscription | null> {
   const [row] = await db
     .select()
     .from(newsletterSubscribers)
@@ -1122,10 +1119,7 @@ export type SubscribeAsUserInput = {
  * (spec §3.1). Idempotent: an already-subscribed account gets its row back
  * untouched and no second consent-log entry.
  */
-export async function subscribeAsUser(
-  db: Db,
-  input: SubscribeAsUserInput,
-): Promise<Subscription> {
+export async function subscribeAsUser(db: Db, input: SubscribeAsUserInput): Promise<Subscription> {
   // A resolvable address lets an earlier anonymous row be adopted rather than
   // duplicated. When it cannot be resolved, a synthetic key satisfies the
   // NOT NULL/UNIQUE contract without inventing a plausible address.
@@ -1165,7 +1159,8 @@ export async function subscribeAsUser(
       subscriberId: row.id,
       // "resubscribed" is the log's word for a *new* consent replacing an
       // ended one (spec §9); a pending row simply completing is "subscribed".
-      event: row.status === "unsubscribed" || row.status === "declined" ? "resubscribed" : "subscribed",
+      event:
+        row.status === "unsubscribed" || row.status === "declined" ? "resubscribed" : "subscribed",
       source: input.source,
       sourcePath: input.sourcePath ?? null,
       ...(input.context ? { context: input.context } : {}),
@@ -1875,11 +1870,19 @@ describe.skipIf(!reachable)("newsletter read services", () => {
   beforeEach(async () => {
     t = await setupNewsletterDb();
     // Default: nothing resolvable, so the stored key is used verbatim.
-    setAccountEmailResolver({ async resolve() { return new Map(); } });
+    setAccountEmailResolver({
+      async resolve() {
+        return new Map();
+      },
+    });
   });
   afterEach(async () => {
     await t.cleanup();
-    setAccountEmailResolver({ async resolve() { return new Map(); } });
+    setAccountEmailResolver({
+      async resolve() {
+        return new Map();
+      },
+    });
   });
 
   const add = async (over: Partial<typeof newsletterSubscribers.$inferInsert> = {}) => {
@@ -1905,7 +1908,9 @@ describe.skipIf(!reachable)("newsletter read services", () => {
   it("reports the current account address, not the stored key", async () => {
     await add({ id: "nls_u", email: "old@example.org", userId: "u1" });
     setAccountEmailResolver({
-      async resolve() { return new Map([["u1", "neu@example.org"]]); },
+      async resolve() {
+        return new Map([["u1", "neu@example.org"]]);
+      },
     });
     const [row] = await listSubscribers(t.db);
     expect(row?.email).toBe("neu@example.org");
@@ -1922,7 +1927,9 @@ describe.skipIf(!reachable)("newsletter read services", () => {
     await add({ id: "nls_anon", email: "b@example.org" });
     await add({ id: "nls_acct", email: "a@example.org", userId: "u1" });
     setAccountEmailResolver({
-      async resolve() { return new Map([["u1", "b@example.org"]]); },
+      async resolve() {
+        return new Map([["u1", "b@example.org"]]);
+      },
     });
     const rows = await listSubscribers(t.db);
     expect(rows).toHaveLength(1);
@@ -1934,7 +1941,9 @@ describe.skipIf(!reachable)("newsletter read services", () => {
     await add({ id: "nls_b", status: "subscribed", source: "konto", groupId: "g1" });
     await add({ id: "nls_c", status: "subscribed", source: "konto", groupId: "g2" });
 
-    expect((await listSubscribers(t.db, { status: "pending" })).map((r) => r.id)).toEqual(["nls_a"]);
+    expect((await listSubscribers(t.db, { status: "pending" })).map((r) => r.id)).toEqual([
+      "nls_a",
+    ]);
     expect((await listSubscribers(t.db, { source: "konto" })).map((r) => r.id).sort()).toEqual([
       "nls_b",
       "nls_c",
@@ -1945,7 +1954,9 @@ describe.skipIf(!reachable)("newsletter read services", () => {
   it("searches the resolved address, not the stale stored one", async () => {
     await add({ id: "nls_u", email: "alt@example.org", userId: "u1" });
     setAccountEmailResolver({
-      async resolve() { return new Map([["u1", "zeynep@example.org"]]); },
+      async resolve() {
+        return new Map([["u1", "zeynep@example.org"]]);
+      },
     });
     expect((await listSubscribers(t.db, { search: "ZEYNEP" })).map((r) => r.id)).toEqual(["nls_u"]);
     expect(await listSubscribers(t.db, { search: "alt@" })).toEqual([]);
@@ -1959,7 +1970,9 @@ describe.skipIf(!reachable)("newsletter read services", () => {
     await add({ id: "nls_u", status: "unsubscribed" });
     await add({ id: "nls_d", status: "declined" });
     setAccountEmailResolver({
-      async resolve() { return new Map([["u1", "dup@example.org"]]); },
+      async resolve() {
+        return new Map([["u1", "dup@example.org"]]);
+      },
     });
 
     const counts = await countSubscribers(t.db);
@@ -2207,7 +2220,11 @@ describe.skipIf(!reachable)("newsletter prompts", () => {
   });
 
   it("falls back to a synthetic key when the account address is unresolvable", async () => {
-    setAccountEmailResolver({ async resolve() { return new Map(); } });
+    setAccountEmailResolver({
+      async resolve() {
+        return new Map();
+      },
+    });
     for (let i = 0; i < MAX_DISMISSALS; i += 1) await declineForUser(t.db, { userId: "u9" });
     const [row] = await t.db.select().from(newsletterSubscribers);
     expect(row?.email).toBe("user:u9");
@@ -2894,9 +2911,9 @@ describe("Button on-brand variant", () => {
 describe("H1 eye-catcher tokens", () => {
   it("declares the on-brand ink and exposes it as a utility", () => {
     expect(colors.ink.onBrand).toBe("#ffffff");
-    const bdas = (tailwindPreset.theme?.extend?.["colors"] as Record<string, Record<string, string>>)[
-      "bdas"
-    ];
+    const bdas = (
+      tailwindPreset.theme?.extend?.["colors"] as Record<string, Record<string, string>>
+    )["bdas"];
     expect(bdas?.["ink-on-brand"]).toBe(colors.ink.onBrand);
   });
 
@@ -3109,11 +3126,11 @@ export function bootNewsletter(): void {
 `apps/web/instrumentation.ts` — nach `bootMembers()`:
 
 ```ts
-    const { bootNewsletter } = await import("./lib/newsletter-bootstrap");
-    // Registering a subscription is synchronous and in-process; there is
-    // nothing transient to degrade gracefully from. A flag-off boot returns
-    // immediately.
-    bootNewsletter();
+const { bootNewsletter } = await import("./lib/newsletter-bootstrap");
+// Registering a subscription is synchronous and in-process; there is
+// nothing transient to degrade gracefully from. A flag-off boot returns
+// immediately.
+bootNewsletter();
 ```
 
 Zusätzlich rufen die Server Actions `bootNewsletter()` selbst auf (Task 13). Das ist kein Gürtel-und-Hosenträger, sondern die Lehre aus `965b043`: Next bündelt `instrumentation.ts` getrennt, und der Resolver muss in **dem** Bündel gesetzt sein, das die Action ausführt. Der Bus ist `globalThis`-gestützt und damit geteilt, der `booted`-Merker nicht — deshalb ist `bootNewsletter()` idempotent gebaut.
@@ -3448,19 +3465,21 @@ Sollte eine der Utilities (`bg-bdas-overlay-hover`, `shadow-bdas-card`, `ease-bd
 `apps/web/app/account/einstellungen/page.tsx` — den Platzhalterblock ersetzen durch:
 
 ```tsx
-      {newsletterEnabled() ? (
-        <Card flat className="p-6">
-          <h2 className="mb-4 text-lg font-semibold text-bdas-ink">E-Mail-Benachrichtigungen</h2>
-          <NewsletterToggle userId={me.user.id} />
-        </Card>
-      ) : (
-        /* Reserved. Position and name are fixed now so that shipping the
+{
+  newsletterEnabled() ? (
+    <Card flat className="p-6">
+      <h2 className="mb-4 text-lg font-semibold text-bdas-ink">E-Mail-Benachrichtigungen</h2>
+      <NewsletterToggle userId={me.user.id} />
+    </Card>
+  ) : (
+    /* Reserved. Position and name are fixed now so that shipping the
            preferences is an insert, not a rearrangement. Not a control: it is
            inert and announces itself as unavailable. */
-        <Card flat className="border-dashed p-6" aria-disabled="true">
-          … unverändert …
-        </Card>
-      )}
+    <Card flat className="border-dashed p-6" aria-disabled="true">
+      … unverändert …
+    </Card>
+  );
+}
 ```
 
 plus die Importe `newsletterEnabled` (`../../_newsletter/flag`) und `NewsletterToggle` (`../../_newsletter/NewsletterToggle`).
@@ -3579,16 +3598,18 @@ export function NewsletterPrompt() {
 `apps/web/app/account/page.tsx` — direkt nach der h1 „Mein Konto" (beide Zweige des Layouts, Zeilen ~202 und ~212 der heutigen Fassung):
 
 ```tsx
-{showNewsletterPrompt ? <NewsletterPrompt /> : null}
+{
+  showNewsletterPrompt ? <NewsletterPrompt /> : null;
+}
 ```
 
 und weiter oben, bei den übrigen Abfragen:
 
 ```tsx
-  // Gated by the flag helper, never by requireNewsletterFlag(): a notFound()
-  // here would take the whole account page away over a side feature.
-  const showNewsletterPrompt =
-    newsletterEnabled() && me.user.id ? await shouldPrompt(db, me.user.id) : false;
+// Gated by the flag helper, never by requireNewsletterFlag(): a notFound()
+// here would take the whole account page away over a side feature.
+const showNewsletterPrompt =
+  newsletterEnabled() && me.user.id ? await shouldPrompt(db, me.user.id) : false;
 ```
 
 Steht der Banner in beiden Layout-Zweigen doppelt im Markup, wird er stattdessen **einmal** oberhalb des Zweigs gerendert — die h1 kommt in beiden Zweigen vor, der Banner soll aber genau einmal erscheinen. Beim Einbau prüfen, welche der beiden Stellen der gemeinsame Elternknoten ist.
@@ -3632,22 +3653,28 @@ Das Formular ist eine Client-Komponente und kann `isFlagOn` nicht selbst lesen; 
 `apps/web/app/registrieren/RegistrierenForm.tsx` — Prop `newsletterOn: boolean` ergänzen und nach der Einwilligungs-Checkbox einsetzen:
 
 ```tsx
-      {newsletterOn ? (
-        <div className="rounded-bdas border border-bdas-soft bg-bdas-overlay-faint p-4">
-          <label htmlFor="newsletter" className="flex items-start gap-2 text-sm text-bdas-ink-body">
-            {/* Never pre-checked, never coupled to the registration (spec §6). */}
-            <input id="newsletter" name="newsletter" type="checkbox" value="true" className="mt-1" />
-            <span>
-              <span className="font-medium text-bdas-ink">Schreibt mir auch den Newsletter.</span>{" "}
-              Ein paar Mal im Jahr, was im Verband ansteht.
-            </span>
-          </label>
-          <p className="mt-2 text-xs text-bdas-ink-muted">
-            Abbestellen kannst du jederzeit unter „Mein Konto". Wie wir mit deinen Daten umgehen,
-            steht im <a href={privacyUrl} className="underline">Datenschutzhinweis</a>.
-          </p>
-        </div>
-      ) : null}
+{
+  newsletterOn ? (
+    <div className="rounded-bdas border border-bdas-soft bg-bdas-overlay-faint p-4">
+      <label htmlFor="newsletter" className="flex items-start gap-2 text-sm text-bdas-ink-body">
+        {/* Never pre-checked, never coupled to the registration (spec §6). */}
+        <input id="newsletter" name="newsletter" type="checkbox" value="true" className="mt-1" />
+        <span>
+          <span className="font-medium text-bdas-ink">Schreibt mir auch den Newsletter.</span> Ein
+          paar Mal im Jahr, was im Verband ansteht.
+        </span>
+      </label>
+      <p className="mt-2 text-xs text-bdas-ink-muted">
+        Abbestellen kannst du jederzeit unter „Mein Konto". Wie wir mit deinen Daten umgehen, steht
+        im{" "}
+        <a href={privacyUrl} className="underline">
+          Datenschutzhinweis
+        </a>
+        .
+      </p>
+    </div>
+  ) : null;
+}
 ```
 
 `apps/web/app/registrieren/page.tsx` — `newsletterOn={newsletterEnabled()}` an das Formular durchreichen.
@@ -3657,31 +3684,31 @@ Das Formular ist eine Client-Komponente und kann `isFlagOn` nicht selbst lesen; 
 `apps/web/app/registrieren/actions.ts` — nach dem Versand der Verifizierungsmail, **vor** dem `redirect`:
 
 ```ts
-  // A newsletter hiccup must never cost someone their account: log and move on.
-  // Deliberately outside the redirect below — Next implements redirect() as a
-  // throw, and an enclosing catch would swallow the navigation.
-  if (newsletterEnabled()) {
-    try {
-      bootNewsletter();
-      if (formData.get("newsletter") === "true") {
-        await subscribeAtRegistration(getDb(), {
-          userId: result.userId,
-          email,
-          source: "registrierung",
-          sourcePath: "/registrieren",
-          context: { ip },
-        });
-      } else {
-        // Unticked: keep the address for the one softer second attempt on the
-        // success page. Ticked means done — nobody gets asked twice (§6).
-        setSignupCookie({ userId: result.userId, email: email.trim().toLowerCase() });
-      }
-    } catch (err) {
-      console.error("[newsletter] registration signup failed:", err);
+// A newsletter hiccup must never cost someone their account: log and move on.
+// Deliberately outside the redirect below — Next implements redirect() as a
+// throw, and an enclosing catch would swallow the navigation.
+if (newsletterEnabled()) {
+  try {
+    bootNewsletter();
+    if (formData.get("newsletter") === "true") {
+      await subscribeAtRegistration(getDb(), {
+        userId: result.userId,
+        email,
+        source: "registrierung",
+        sourcePath: "/registrieren",
+        context: { ip },
+      });
+    } else {
+      // Unticked: keep the address for the one softer second attempt on the
+      // success page. Ticked means done — nobody gets asked twice (§6).
+      setSignupCookie({ userId: result.userId, email: email.trim().toLowerCase() });
     }
+  } catch (err) {
+    console.error("[newsletter] registration signup failed:", err);
   }
+}
 
-  redirect("/registrieren/erfolg");
+redirect("/registrieren/erfolg");
 ```
 
 - [ ] **Step 3: Tests erweitern**
@@ -3786,7 +3813,9 @@ export function NewsletterSecondAttempt() {
 `apps/web/app/registrieren/erfolg/page.tsx` — nach dem `Alert`, vor dem „Keine E-Mail erhalten?"-Absatz:
 
 ```tsx
-      {newsletterEnabled() && readSignupCookie() ? <NewsletterSecondAttempt /> : null}
+{
+  newsletterEnabled() && readSignupCookie() ? <NewsletterSecondAttempt /> : null;
+}
 ```
 
 - [ ] **Step 3: Ansehen**
@@ -3829,8 +3858,8 @@ Der Lauf deckt die drei Behauptungen ab, die dieser PR aufstellt: Der Haken bei 
 und vor dem Absenden:
 
 ```ts
-  // Behind the `newsletter` flag the box may not be rendered at all.
-  if (opts.newsletter === true) await page.locator("#newsletter").check();
+// Behind the `newsletter` flag the box may not be rendered at all.
+if (opts.newsletter === true) await page.locator("#newsletter").check();
 ```
 
 - [ ] **Step 2: E2E schreiben**
