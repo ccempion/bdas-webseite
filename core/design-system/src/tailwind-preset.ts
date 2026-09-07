@@ -28,6 +28,7 @@ export const tailwindPreset: TailwindPreset = {
       },
       zIndex: {
         "bdas-header": zIndex.header,
+        "bdas-nav-progress": zIndex.navProgress,
       },
       borderRadius: {
         bdas: radii.md,
