@@ -85,6 +85,11 @@ export function FaqHelpPanel({
         <div className="flex flex-wrap gap-3 border-t border-bdas-soft pt-3">
           <Link
             href="/faq"
+            // Dialog opens via showModal(), so the sheet sits in the browser's
+            // top layer and blocks the page behind it. The launcher's `open`
+            // lives in the root layout and survives the navigation, so without
+            // this the viewer lands on /faq underneath the still-open sheet.
+            onClick={onClose}
             className="text-sm font-semibold text-bdas-red transition-colors duration-bdas-quick ease-bdas hover:underline"
           >
             Alle FAQ ansehen

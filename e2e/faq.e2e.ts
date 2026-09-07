@@ -476,27 +476,33 @@ test.describe("Kontextuelle Hilfe", () => {
     const res = await page.request.get("/api/faq/help?context=dateien");
     expect(res.status()).toBe(200);
     const body = (await res.json()) as {
-      contextEntries: Array<Record<string, unknown>>;
-      allEntries: Array<Record<string, unknown>>;
-      popular: Array<Record<string, unknown>>;
+      entries: Array<Record<string, unknown>>;
+      contextIds: string[];
+      popularIds: string[];
     };
     // A plain member never sees the Bundesvorstand section (visibility.ts).
-    const questions = body.allEntries.map((e) => e["question"]).join(" ");
+    const questions = body.entries.map((e) => e["question"]).join(" ");
     expect(questions).not.toContain("Bundesvorstand");
-    expect(body.allEntries.length).toBeGreaterThan(0);
+    expect(body.entries.length).toBeGreaterThan(0);
 
     // `context` only selects which entries are highlighted — it never widens
-    // the result set, so every contextEntries id must also be in allEntries.
-    const allIds = new Set(body.allEntries.map((e) => e["id"]));
-    for (const e of body.contextEntries) expect(allIds.has(e["id"])).toBe(true);
+    // the result set, so both id lists must resolve inside `entries`.
+    const allIds = new Set(body.entries.map((e) => e["id"]));
+    for (const id of [...body.contextIds, ...body.popularIds]) {
+      expect(allIds.has(id)).toBe(true);
+    }
 
     // The wire shape is FaqHelpEntry only — no leaked fields (topic,
     // relatedIds, updatedAtIso, contexts) that /faq's full view carries.
-    for (const e of [...body.allEntries, ...body.contextEntries, ...body.popular]) {
+    for (const e of body.entries) {
       expect(Object.keys(e).sort()).toEqual(
         ["body", "id", "question", "searchText", "youtubeId"].sort(),
       );
     }
+
+    // Entries travel once. A regression that inlined the subsets again would
+    // still satisfy every assertion above.
+    expect(Object.keys(body).sort()).toEqual(["contextIds", "entries", "popularIds"]);
   });
 
   test("omitting context returns everything visible with nothing pinned", async ({ page }) => {
@@ -507,11 +513,11 @@ test.describe("Kontextuelle Hilfe", () => {
     const res = await page.request.get("/api/faq/help");
     expect(res.status()).toBe(200);
     const body = (await res.json()) as {
-      contextEntries: unknown[];
-      allEntries: unknown[];
+      entries: unknown[];
+      contextIds: string[];
     };
-    expect(body.contextEntries).toEqual([]);
-    expect(body.allEntries.length).toBeGreaterThan(0);
+    expect(body.contextIds).toEqual([]);
+    expect(body.entries.length).toBeGreaterThan(0);
   });
 
   test("the help panel shows the entries assigned to the route", async ({ page }) => {
@@ -541,6 +547,55 @@ test.describe("Kontextuelle Hilfe", () => {
     const panel = page.getByRole("dialog");
     await expect(panel.getByText("Passend zu dieser Seite")).toBeVisible();
     await expect(panel.getByText(question, { exact: true })).toBeVisible();
+  });
+
+  test("the panel closes on 'Alle FAQ ansehen' and refetches for the new route", async ({
+    page,
+  }) => {
+    // Covers two regressions at once, both caused by the launcher living in
+    // the root layout, which the App Router does not remount on a client-side
+    // navigation:
+    //   1. the payload was cached in a single slot, so the panel kept showing
+    //      the previous route's entries under "Passend zu dieser Seite";
+    //   2. the "Alle FAQ ansehen" link navigated without closing the sheet,
+    //      which showModal() keeps in the top layer over the destination.
+    // The link itself is the client-side navigation, so page.goto (a full
+    // reload, which would reset the state and hide both bugs) is not used.
+    const question = `E2E-Kontextwechsel ${uniqueSlug("w")}?`;
+    await deleteFaqEntriesByContext("dateien");
+
+    await deleteUserByEmail(FEDERAL_EMAIL);
+    await registerVerifyLogin(page, {
+      email: FEDERAL_EMAIL,
+      firstName: "Bundes",
+      lastName: "Vorstand",
+    });
+
+    await page.goto("/federal/faq");
+    await page.getByRole("button", { name: "+ Eintrag" }).click();
+    const entryDialog = page.getByRole("dialog");
+    await entryDialog.getByPlaceholder("Frage").fill(question);
+    await entryDialog.getByRole("button", { name: "Dateien", exact: true }).click();
+    await entryDialog.getByRole("button", { name: "Veröffentlichen" }).click();
+    await expect(page.getByText(question, { exact: true })).toBeVisible();
+
+    await page.goto("/dateien");
+    await page.getByRole("button", { name: "Hilfe öffnen" }).click();
+    const panel = page.getByRole("dialog");
+    await expect(panel.getByText("Passend zu dieser Seite")).toBeVisible();
+    await expect(panel.getByText(question, { exact: true })).toBeVisible();
+
+    await panel.getByRole("link", { name: "Alle FAQ ansehen" }).click();
+    await expect(page).toHaveURL(/\/faq$/);
+    // Bug 2: the sheet used to stay in the top layer over the FAQ page.
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+
+    // /faq matches no registry key (contexts.ts), so the panel must fall back
+    // to "Beliebte Fragen". Bug 1 showed the cached /dateien entries instead.
+    await page.getByRole("button", { name: "Hilfe öffnen" }).click();
+    const reopened = page.getByRole("dialog");
+    await expect(reopened.getByText("Beliebte Fragen")).toBeVisible();
+    await expect(reopened.getByText("Passend zu dieser Seite")).toHaveCount(0);
   });
 
   test("the launcher stays off public pages", async ({ page }) => {

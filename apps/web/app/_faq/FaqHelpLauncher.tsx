@@ -6,12 +6,13 @@ import { useState } from "react";
 import type { FaqHelpEntry } from "../api/faq/help/route";
 import { SubmitQuestionDialog } from "../faq/SubmitQuestionDialog";
 import { isSignedInSurface, matchContext } from "../../lib/faq/contexts";
+import { pickByIds } from "../../lib/faq/help";
 import { FaqHelpPanel } from "./FaqHelpPanel";
 
 type Payload = {
-  contextEntries: FaqHelpEntry[];
-  allEntries: FaqHelpEntry[];
-  popular: FaqHelpEntry[];
+  entries: FaqHelpEntry[];
+  contextIds: string[];
+  popularIds: string[];
 };
 
 /**
@@ -23,12 +24,18 @@ export function FaqHelpLauncher() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [payload, setPayload] = useState<Payload | null>(null);
+  const [payloads, setPayloads] = useState<Record<string, Payload>>({});
   const [submitOpen, setSubmitOpen] = useState(false);
   const [empty, setEmpty] = useState(false);
   const [error, setError] = useState(false);
 
   const context = matchContext(pathname);
+  // One cache entry per context key. The launcher is mounted in the root
+  // layout, which the App Router does not remount on a client-side
+  // navigation — a single slot would answer /profil with what it fetched for
+  // /dateien, under the heading "Passend zu dieser Seite".
+  const cacheKey = context ?? "";
+  const payload = payloads[cacheKey] ?? null;
 
   // "Der Button erscheint nie vor leerem Panel" (Spec §7): the FAQ ships
   // seeded content, so the only way to an empty panel is a viewer with no
@@ -40,6 +47,10 @@ export function FaqHelpLauncher() {
 
   async function openPanel() {
     setOpen(true);
+    // A stale error must not outlive the request that caused it: the panel
+    // renders `error` ahead of `loading`, so leaving it set would show the
+    // failure text for the whole of the next — possibly fine — fetch.
+    setError(false);
     if (payload) return;
     setLoading(true);
     try {
@@ -52,9 +63,8 @@ export function FaqHelpLauncher() {
         return;
       }
       const next = (await res.json()) as Payload;
-      setError(false);
-      setPayload(next);
-      if (next.allEntries.length === 0) {
+      setPayloads((prev) => ({ ...prev, [cacheKey]: next }));
+      if (next.entries.length === 0) {
         setOpen(false);
         setEmpty(true);
       }
@@ -82,9 +92,9 @@ export function FaqHelpLauncher() {
           onClose={() => setOpen(false)}
           loading={loading}
           error={error}
-          contextEntries={payload?.contextEntries ?? []}
-          popular={payload?.popular ?? []}
-          allEntries={payload?.allEntries ?? []}
+          contextEntries={payload ? pickByIds(payload.entries, payload.contextIds) : []}
+          popular={payload ? pickByIds(payload.entries, payload.popularIds) : []}
+          allEntries={payload?.entries ?? []}
           onSubmitQuestion={() => {
             setOpen(false);
             setSubmitOpen(true);

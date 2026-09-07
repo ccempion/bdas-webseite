@@ -15,24 +15,42 @@ export function flattenSections(sections: readonly FaqSectionView[]): FaqEntryVi
   return out;
 }
 
-export function partitionByContext(
+/** The already-visible entries pinned to `contextKey`; none without one. */
+export function entriesForContext(
   entries: readonly FaqEntryView[],
   contextKey: string | null,
-): { inContext: FaqEntryView[]; rest: FaqEntryView[] } {
-  if (contextKey === null) return { inContext: [], rest: [...entries] };
-  const inContext: FaqEntryView[] = [];
-  const rest: FaqEntryView[] = [];
-  for (const e of entries) (e.contexts.includes(contextKey) ? inContext : rest).push(e);
-  return { inContext, rest };
+): FaqEntryView[] {
+  if (contextKey === null) return [];
+  return entries.filter((e) => e.contexts.includes(contextKey));
 }
 
 /**
  * The "Beliebte Fragen" fallback (Spec §7) when no entry is pinned to the
  * current route. `assembleFaq` already hoists the viewer's own section to the
- * front (order.ts), so taking from the top is what "Bereich des Viewers" means.
+ * front (order.ts) and `flattenSections` preserves that order, so taking from
+ * the top is what "Bereich des Viewers" means.
  */
-export function popularFrom(sections: readonly FaqSectionView[], limit: number): FaqEntryView[] {
-  return flattenSections(sections).slice(0, limit);
+export function popularFrom<T>(entries: readonly T[], limit: number): T[] {
+  return entries.slice(0, limit);
+}
+
+/**
+ * Resolves the id lists the help route sends beside its one entry list back
+ * into entries. The route sends ids rather than repeating whole entries in
+ * three overlapping arrays — an entry carries its full Tiptap body and then
+ * the same body again as lowercased `searchText`. Unknown ids are skipped.
+ */
+export function pickByIds<T extends { id: string }>(
+  entries: readonly T[],
+  ids: readonly string[],
+): T[] {
+  const byId = new Map(entries.map((e) => [e.id, e]));
+  const out: T[] = [];
+  for (const id of ids) {
+    const found = byId.get(id);
+    if (found) out.push(found);
+  }
+  return out;
 }
 
 /**

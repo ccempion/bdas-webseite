@@ -5,7 +5,7 @@ import { getCurrentMember } from "@bdas/members";
 
 import { readSessionCookie } from "../../../../lib/auth-cookie";
 import { assembleFaq, type FaqEntryView } from "../../../../lib/faq/assemble";
-import { flattenSections, partitionByContext, popularFrom } from "../../../../lib/faq/help";
+import { entriesForContext, flattenSections, popularFrom } from "../../../../lib/faq/help";
 
 export const dynamic = "force-dynamic";
 
@@ -35,16 +35,17 @@ function toHelpEntry(e: FaqEntryView): FaqHelpEntry {
 export async function GET(req: Request) {
   if (!isFlagOn("faq_suite")) return Response.json({ error: "Nicht verfügbar." }, { status: 404 });
 
+  const db = getDb();
+
   // The viewer comes from the session cookie only. The `context` query param
   // selects which entries are highlighted; it never widens what is returned.
   const session = readSessionCookie();
   if (!session) return Response.json({ error: "Anmeldung erforderlich." }, { status: 401 });
-  const me = await getCurrentMember(getDb(), session);
+  const me = await getCurrentMember(db, session);
   if (!me) return Response.json({ error: "Anmeldung erforderlich." }, { status: 401 });
 
   const context = new URL(req.url).searchParams.get("context");
 
-  const db = getDb();
   const [entries, topics] = await Promise.all([
     listEntries(db, { status: "published" }),
     listTopics(db),
@@ -53,11 +54,14 @@ export async function GET(req: Request) {
   // never surface an entry the FAQ page would hide (Spec §7).
   const { sections } = assembleFaq({ entries, topics, grants: me.grants });
   const visible = flattenSections(sections);
-  const { inContext } = partitionByContext(visible, context);
 
+  // Ids, not three overlapping arrays of whole entries: both subsets are
+  // drawn from `entries`, and an entry carries its full Tiptap body plus the
+  // same body again as lowercased `searchText`. The panel resolves them with
+  // `pickByIds`.
   return Response.json({
-    contextEntries: inContext.map(toHelpEntry),
-    allEntries: visible.map(toHelpEntry),
-    popular: popularFrom(sections, POPULAR_LIMIT).map(toHelpEntry),
+    entries: visible.map(toHelpEntry),
+    contextIds: entriesForContext(visible, context).map((e) => e.id),
+    popularIds: popularFrom(visible, POPULAR_LIMIT).map((e) => e.id),
   });
 }

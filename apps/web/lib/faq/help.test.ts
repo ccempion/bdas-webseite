@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { FaqEntryView, FaqSectionView } from "./assemble";
-import { flattenSections, partitionByContext, popularFrom, searchEntries } from "./help";
+import { entriesForContext, flattenSections, pickByIds, popularFrom, searchEntries } from "./help";
 
 function entry(id: string, over: Partial<FaqEntryView> = {}): FaqEntryView {
   return {
@@ -49,39 +49,58 @@ describe("flattenSections", () => {
   });
 });
 
-describe("partitionByContext", () => {
-  it("splits on the context key", () => {
+describe("entriesForContext", () => {
+  it("keeps only the entries pinned to the key", () => {
     const entries = [
       entry("a", { contexts: ["dateien"] }),
       entry("b"),
       entry("c", { contexts: ["profil", "dateien"] }),
     ];
-    const { inContext, rest } = partitionByContext(entries, "dateien");
-    expect(inContext.map((e) => e.id)).toEqual(["a", "c"]);
-    expect(rest.map((e) => e.id)).toEqual(["b"]);
+    expect(entriesForContext(entries, "dateien").map((e) => e.id)).toEqual(["a", "c"]);
   });
 
-  it("puts everything in `rest` when there is no context", () => {
-    const entries = [entry("a", { contexts: ["dateien"] })];
-    const { inContext, rest } = partitionByContext(entries, null);
-    expect(inContext).toEqual([]);
-    expect(rest.map((e) => e.id)).toEqual(["a"]);
+  it("returns nothing when the route matches no context", () => {
+    expect(entriesForContext([entry("a", { contexts: ["dateien"] })], null)).toEqual([]);
+  });
+
+  it("returns nothing for a key no entry carries", () => {
+    expect(entriesForContext([entry("a", { contexts: ["dateien"] })], "profil")).toEqual([]);
   });
 });
 
 describe("popularFrom", () => {
   it("takes from the viewer's primary section first and caps at the limit", () => {
-    // assembleFaq already hoists the primary section to index 0 (order.ts).
-    const sections = [
+    // assembleFaq hoists the primary section to index 0 (order.ts) and
+    // flattenSections preserves that order, so the top of the flat list is
+    // "Bereich des Viewers".
+    const flat = flattenSections([
       section("bundesvorstand", [entry("a"), entry("b"), entry("c")]),
       section("allgemein", [entry("d")]),
-    ];
-    expect(popularFrom(sections, 2).map((e) => e.id)).toEqual(["a", "b"]);
+    ]);
+    expect(popularFrom(flat, 2).map((e) => e.id)).toEqual(["a", "b"]);
   });
 
   it("falls through to later sections when the first is short", () => {
-    const sections = [section("bundesvorstand", [entry("a")]), section("allgemein", [entry("d")])];
-    expect(popularFrom(sections, 3).map((e) => e.id)).toEqual(["a", "d"]);
+    const flat = flattenSections([
+      section("bundesvorstand", [entry("a")]),
+      section("allgemein", [entry("d")]),
+    ]);
+    expect(popularFrom(flat, 3).map((e) => e.id)).toEqual(["a", "d"]);
+  });
+});
+
+describe("pickByIds", () => {
+  it("resolves ids in the order given, not the order of the entry list", () => {
+    const entries = [entry("a"), entry("b"), entry("c")];
+    expect(pickByIds(entries, ["c", "a"]).map((e) => e.id)).toEqual(["c", "a"]);
+  });
+
+  it("skips an id no entry carries rather than yielding a hole", () => {
+    expect(pickByIds([entry("a")], ["a", "gone"]).map((e) => e.id)).toEqual(["a"]);
+  });
+
+  it("returns nothing for no ids", () => {
+    expect(pickByIds([entry("a")], [])).toEqual([]);
   });
 });
 
