@@ -136,7 +136,7 @@ export function AccountAvatar({
       {/* Constrained to the circle's width, or the caption starts at the header
           column's left edge instead of sitting under the circle. */}
       <p style={{ width: SIZE }} className="text-center text-sm text-bdas-ink-muted">
-        {busy ? "Einen Moment…" : preview ? "Bild ansehen" : "Bild hochladen"}
+        {busy ? "Einen Moment…" : preview ? : "Bild hochladen"}
       </p>
       {error ? <p className="max-w-xs text-center text-sm text-bdas-red">{error}</p> : null}
       {lightboxOpen && preview ? (
