@@ -224,3 +224,70 @@ export async function subscribePublicly(db: Db, input: SubscribePubliclyInput): 
     at: new Date(),
   });
 }
+
+export type SubscribeAtRegistrationInput = {
+  readonly userId: string;
+  readonly email: string;
+  readonly source: Extract<NewsletterSource, "registrierung" | "registrierung_erfolg">;
+  readonly sourcePath?: string | null | undefined;
+  readonly context?: ConsentContext | undefined;
+};
+
+/**
+ * The registration path (spec §3.3). Writes a `pending` row and publishes
+ * NOTHING: the verification mail the registration already sends is the double
+ * opt-in for both. `auth.user.verified` lifts the row to `subscribed`
+ * (see subscribers.ts). Never verified means never on the list.
+ *
+ * Idempotent and quiet by design — this runs inside `registerAction`, where a
+ * newsletter hiccup must never cost someone their account.
+ */
+export async function subscribeAtRegistration(
+  db: Db,
+  input: SubscribeAtRegistrationInput,
+): Promise<void> {
+  const email = input.email.trim().toLowerCase();
+
+  const [existing] = await db
+    .select()
+    .from(newsletterSubscribers)
+    .where(eq(newsletterSubscribers.email, email))
+    .limit(1);
+
+  if (existing) {
+    // Adopt an earlier anonymous row rather than duplicating it. Status is
+    // left alone: a `subscribed` row is already done, and an `unsubscribed`
+    // one gets its new consent through the account surfaces, not here.
+    if (existing.userId === null) {
+      await db
+        .update(newsletterSubscribers)
+        .set({ userId: input.userId })
+        .where(eq(newsletterSubscribers.id, existing.id));
+    }
+    return;
+  }
+
+  const [row] = await db
+    .insert(newsletterSubscribers)
+    .values({
+      id: newId(),
+      email,
+      userId: input.userId,
+      status: "pending",
+      unsubscribeTokenHash: hashToken(newToken()),
+      source: input.source,
+      sourcePath: input.sourcePath ?? null,
+    })
+    .onConflictDoNothing()
+    .returning();
+
+  if (row) {
+    await recordConsent(db, {
+      subscriberId: row.id,
+      event: "subscribed",
+      source: input.source,
+      sourcePath: input.sourcePath ?? null,
+      ...(input.context ? { context: input.context } : {}),
+    });
+  }
+}
