@@ -14,8 +14,6 @@ type Payload = {
   popular: FaqHelpEntry[];
 };
 
-const EMPTY: Payload = { contextEntries: [], allEntries: [], popular: [] };
-
 /**
  * The route half of Spec §7's gate — a Server Component cannot read the
  * pathname, so the public/signed-in split happens here. Nothing is fetched
@@ -28,6 +26,7 @@ export function FaqHelpLauncher() {
   const [payload, setPayload] = useState<Payload | null>(null);
   const [submitOpen, setSubmitOpen] = useState(false);
   const [empty, setEmpty] = useState(false);
+  const [error, setError] = useState(false);
 
   const context = matchContext(pathname);
 
@@ -35,7 +34,8 @@ export function FaqHelpLauncher() {
   // seeded content, so the only way to an empty panel is a viewer with no
   // visible entries at all. That is discovered on the first open, and the
   // launcher then retires itself for the rest of this page session rather
-  // than paying a probe request on every page.
+  // than paying a probe request on every page. A failed request is not that
+  // — it says nothing about the corpus — so it must never trip this branch.
   if (!isSignedInSurface(pathname) || empty) return null;
 
   async function openPanel() {
@@ -47,12 +47,19 @@ export function FaqHelpLauncher() {
         ? `/api/faq/help?context=${encodeURIComponent(context)}`
         : "/api/faq/help";
       const res = await fetch(url);
-      const next: Payload = res.ok ? ((await res.json()) as Payload) : EMPTY;
+      if (!res.ok) {
+        setError(true);
+        return;
+      }
+      const next = (await res.json()) as Payload;
+      setError(false);
       setPayload(next);
       if (next.allEntries.length === 0) {
         setOpen(false);
         setEmpty(true);
       }
+    } catch {
+      setError(true);
     } finally {
       setLoading(false);
     }
@@ -74,6 +81,7 @@ export function FaqHelpLauncher() {
           open
           onClose={() => setOpen(false)}
           loading={loading}
+          error={error}
           contextEntries={payload?.contextEntries ?? []}
           popular={payload?.popular ?? []}
           allEntries={payload?.allEntries ?? []}

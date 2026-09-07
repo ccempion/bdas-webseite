@@ -18,6 +18,7 @@ export function FaqHelpPanel({
   open,
   onClose,
   loading,
+  error,
   contextEntries,
   popular,
   allEntries,
@@ -26,6 +27,7 @@ export function FaqHelpPanel({
   open: boolean;
   onClose: () => void;
   loading: boolean;
+  error: boolean;
   contextEntries: readonly FaqHelpEntry[];
   popular: readonly FaqHelpEntry[];
   allEntries: readonly FaqHelpEntry[];
@@ -57,7 +59,11 @@ export function FaqHelpPanel({
         />
         <h3 className="text-sm font-bold text-bdas-ink">{heading}</h3>
 
-        {loading ? (
+        {error ? (
+          <p className="text-sm text-bdas-ink-muted">
+            Die Hilfe konnte gerade nicht geladen werden. Bitte versuch es später noch einmal.
+          </p>
+        ) : loading ? (
           <p className="text-sm text-bdas-ink-muted">Wird geladen …</p>
         ) : shown.length === 0 ? (
           <p className="text-sm text-bdas-ink-muted">
