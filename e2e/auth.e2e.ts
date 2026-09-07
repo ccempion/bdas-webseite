@@ -6,7 +6,15 @@
 import { expect, test } from "@playwright/test";
 
 import { latestResetToken, resetRateLimits, uniqueEmail } from "./helpers/db";
-import { login, logout, openMobileMenu, PASSWORD, register, verify } from "./helpers/flows";
+import {
+  login,
+  logout,
+  openMobileMenu,
+  PASSWORD,
+  register,
+  registerVerifyLogin,
+  verify,
+} from "./helpers/flows";
 
 test("register → verify → login → logout → reset → re-login", async ({ page }) => {
   const email = uniqueEmail("auth");
@@ -65,5 +73,26 @@ test("register → verify → login → logout → reset → re-login", async ({
   // The old password must no longer work; the new one must.
   await login(page, email, newPassword);
   await page.goto("/account");
+  await expect(page.getByRole("heading", { name: "Mein Konto" })).toBeVisible();
+});
+
+/**
+ * ADR 0034 moved e-mail, password and data export off /account onto a sub-page.
+ * This pins the route the member takes to reach them, in both directions.
+ */
+test("a member reaches account settings from Mein Konto", async ({ page }) => {
+  const email = uniqueEmail("settings");
+  await registerVerifyLogin(page, { email });
+
+  await page.goto("/account");
+  await page.getByRole("link", { name: "Kontoeinstellungen" }).click();
+
+  await expect(page).toHaveURL(/\/account\/einstellungen/);
+  await expect(page.getByRole("heading", { name: "Kontoeinstellungen" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "E-Mail-Adresse" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Passwort", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Deine Daten" })).toBeVisible();
+
+  await page.getByRole("link", { name: "← Mein Konto" }).click();
   await expect(page.getByRole("heading", { name: "Mein Konto" })).toBeVisible();
 });

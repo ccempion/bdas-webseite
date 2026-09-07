@@ -1,10 +1,4 @@
-import type { GrantAuditEntry } from "@bdas/members";
-
-const ROLE_LABEL: Record<string, string> = {
-  federal_board: "Bundesvorstand",
-  local_board_lead: "Lead",
-  local_board: "Vorstand",
-};
+import { ROLE_LABELS, type GrantAuditEntry } from "@bdas/members";
 
 export function AuditLog({
   entries,
@@ -26,7 +20,7 @@ export function AuditLog({
             {e.revokedAt ? "ENTZOGEN" : "ERTEILT"}
           </span>
           <span className="text-bdas-ink-body">
-            {ROLE_LABEL[e.role] ?? e.role}
+            {ROLE_LABELS[e.role]}
             {e.groupId ? ` · ${groupNames[e.groupId] ?? e.groupId}` : ""} &rarr; {e.firstName}{" "}
             {e.lastName}
           </span>

@@ -84,6 +84,24 @@ export type RosterRow = {
   readonly registeredAt: Date;
 };
 
+/**
+ * One upcoming event a member is signed up for, shaped for `/account`.
+ * Deliberately not `EventItem`: the account overview needs six fields, and
+ * returning the whole event would invite the page to render things the
+ * personal overview has no business showing.
+ */
+export type MyRegistration = {
+  readonly eventId: string;
+  readonly title: string;
+  readonly startsAt: Date;
+  /** Display location: the structured name when set, else the free-text field. */
+  readonly location: string | null;
+  /** null = federation-wide. Lets the app tell "you organise this" from grants. */
+  readonly groupId: string | null;
+  /** null = confirmed; >=1 = waitlisted at that rank. */
+  readonly waitlistPosition: number | null;
+};
+
 /** Per-event counts for list/detail rendering. */
 export type EventWithCounts = EventItem & {
   readonly confirmedCount: number;

@@ -1,5 +1,5 @@
 import { getDb } from "@bdas/db";
-import { listGrantAudit, listMembers, listRoleHolders } from "@bdas/members";
+import { ROLE_LABELS, listGrantAudit, listMembers, listRoleHolders } from "@bdas/members";
 
 import { requireLeadScope } from "../../../../_dashboard/session";
 import { AuditLog } from "../../../_components/AuditLog";
@@ -79,6 +79,7 @@ export default async function VorstandPage({
           groupNames={{}}
           revalidatePath={revalidate}
           currentMemberId={me.member?.id ?? null}
+          roleLabels={ROLE_LABELS}
         />
       )}
     </section>

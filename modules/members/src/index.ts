@@ -73,7 +73,7 @@ export type {
   RejectionCategory,
   RejectionReason,
 } from "./types";
-export { REJECTION_CATEGORY_LABELS } from "./types";
+export { REJECTION_CATEGORY_LABELS, ROLE_LABELS } from "./types";
 export type {
   MembersEvent,
   ProfileCreated,

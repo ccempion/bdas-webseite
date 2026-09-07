@@ -1,9 +1,9 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
-import { PASSWORD_RULE_HINT } from "@bdas/auth";
 import { getDb } from "@bdas/db";
 import { Alert, Button, Card } from "@bdas/design-system";
+import { countAttendedEvents, listMyUpcomingRegistrations } from "@bdas/events-module";
 import { isFlagOn } from "@bdas/feature-flags";
 import { listGroups } from "@bdas/groups";
 import { getCurrentMember, getOpenGroupChange } from "@bdas/members";
@@ -13,14 +13,15 @@ import { requireAuthFlag } from "../_auth/flag";
 import { requireMembersFlag } from "../_members/flag";
 import { AccountAvatar } from "./AccountAvatar";
 import { ApprovalsAlert } from "./ApprovalsAlert";
-import { ChangePasswordCard } from "./ChangePasswordCard";
-import { EmailChangeCard } from "./EmailChangeCard";
 import { isProfileComplete } from "../_profile/complete";
 import { signedProfilePhotoUrl } from "../_profile/photo-url";
 import { SUBMITTED_PARAM, SUBMITTED_VALUE } from "../_profile/submitted";
 import { readSessionCookie } from "../../lib/auth-cookie";
 import { EditableProfile } from "./EditableProfile";
+import { IdentityColumn } from "./IdentityColumn";
 import { buildProfileSummary } from "./profile-summary";
+import { UpcomingEvents } from "./UpcomingEvents";
+import { buildIdentityRows, layoutMode, roleChips } from "./view-model";
 import { WithdrawChangeButton } from "./WithdrawChangeButton";
 
 export const metadata = { title: "Mein Konto" };
@@ -88,18 +89,36 @@ export default async function AccountPage({
   // to infer it from a status line that also shows on every later visit.
   const justSubmitted = searchParams?.[SUBMITTED_PARAM] === SUBMITTED_VALUE;
 
-  return (
-    <main className="mx-auto flex max-w-3xl flex-col gap-6 px-4 py-12">
-      <header className="flex items-center gap-5">
-        {profileFlagOn && me.member ? (
-          <AccountAvatar photoUrl={photoUrl} initials={initials} />
-        ) : null}
-        <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-semibold text-bdas-ink">Mein Konto</h1>
-          <p className="text-bdas-ink-body">{me.user.email}</p>
-        </div>
-      </header>
+  const mode = layoutMode(me.member?.status ?? null);
+  const identityRows = buildIdentityRows({
+    status: me.member?.status ?? null,
+    groupName: currentGroupName,
+    joinedAt: me.member?.joinedAt ?? null,
+  });
+  const chips = roleChips(me.grants);
 
+  // Events is flag-gated (CLAUDE.md §3): with the flag off the module's tables
+  // may not even be migrated, so guard the reads rather than the render.
+  const eventsOn = isFlagOn("events");
+  const memberId = me.member?.id ?? null;
+  const [registrations, attended] =
+    eventsOn && memberId && mode === "full"
+      ? await Promise.all([
+          listMyUpcomingRegistrations(db, memberId),
+          countAttendedEvents(db, memberId),
+        ])
+      : [[], 0];
+
+  const organizerGroupIds = me.grants
+    .filter((g) => g.role === "event_organizer" && g.groupId !== null)
+    .map((g) => g.groupId as string);
+
+  const fullName = me.member
+    ? `${me.member.firstName} ${me.member.lastName}`.trim()
+    : me.user.email;
+
+  const statusAlerts = (
+    <>
       {justSubmitted && status === "pending" ? (
         <Alert variant="success" title="Bewerbung abgeschickt">
           Deine Bewerbung ist eingegangen und liegt jetzt beim lokalen Vorstand zur Entscheidung.
@@ -107,12 +126,6 @@ export default async function AccountPage({
       ) : status === "pending" ? (
         <Alert variant="info" title="Profil eingereicht">
           {STATUS_LABEL["pending"]}
-        </Alert>
-      ) : null}
-
-      {status === "active" ? (
-        <Alert variant="success" title="Mitgliedschaft aktiv">
-          {STATUS_LABEL["active"]}
         </Alert>
       ) : null}
 
@@ -132,44 +145,119 @@ export default async function AccountPage({
       ) : null}
 
       <ApprovalsAlert groupSlug={currentGroupSlug} />
+    </>
+  );
 
-      <Card flat className="p-6">
-        <h2 className="mb-4 text-lg font-semibold text-bdas-ink">
-          {complete ? "Meine Daten" : me.member ? "Profil bearbeiten" : "Profil vervollständigen"}
-        </h2>
-        <EditableProfile
-          complete={complete}
-          rows={buildProfileSummary({
-            firstName: me.member?.firstName ?? "",
-            lastName: me.member?.lastName ?? "",
-            groupName: currentGroupName,
-            studiengang: profile?.studiengang ?? "",
-            abschlussart: profile?.abschlussart ?? "",
-            uni: profile?.uni ?? "",
-            geburtsdatum: profile?.geburtsdatum ?? "",
-            gefundenDurch: profile?.gefundenDurch ?? "",
-            empfehlerName: profile?.empfehlerName ?? null,
-            vorstellung: profile?.vorstellung ?? null,
-          })}
-          profileForm={{ ...membersFormProps, isNew: !me.member }}
-          extendedForm={profileFlagOn && me.member ? { initial: extendedInitial } : null}
-        />
-      </Card>
+  const profileCard = (
+    <Card flat className="p-6">
+      <h2 className="mb-4 text-lg font-semibold text-bdas-ink">
+        {complete ? "Meine Daten" : me.member ? "Profil bearbeiten" : "Profil vervollständigen"}
+      </h2>
+      <EditableProfile
+        complete={complete}
+        rows={buildProfileSummary({
+          firstName: me.member?.firstName ?? "",
+          lastName: me.member?.lastName ?? "",
+          groupName: currentGroupName,
+          studiengang: profile?.studiengang ?? "",
+          abschlussart: profile?.abschlussart ?? "",
+          uni: profile?.uni ?? "",
+          geburtsdatum: profile?.geburtsdatum ?? "",
+          gefundenDurch: profile?.gefundenDurch ?? "",
+          empfehlerName: profile?.empfehlerName ?? null,
+          vorstellung: profile?.vorstellung ?? null,
+        })}
+        profileForm={{ ...membersFormProps, isNew: !me.member }}
+        extendedForm={profileFlagOn && me.member ? { initial: extendedInitial } : null}
+      />
+    </Card>
+  );
 
-      <EmailChangeCard currentEmail={me.user.email} />
+  const settingsLink = (
+    <div className="flex flex-wrap items-center gap-3">
+      <Link href="/account/einstellungen">
+        <Button variant="secondary">Kontoeinstellungen</Button>
+      </Link>
+      <form action="/abmelden" method="post">
+        <Button type="submit" variant="secondary">
+          Abmelden
+        </Button>
+      </form>
+    </div>
+  );
 
-      <ChangePasswordCard passwordHint={PASSWORD_RULE_HINT} />
+  return (
+    <main className="mx-auto flex max-w-5xl flex-col gap-6 px-4 py-12">
+      {mode === "plain" ? (
+        <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
+          {/* The fallback keeps today's header, avatar included: the identity
+              column that carries the photo control in "full" is not drawn here,
+              and dropping it would take profile photos away from every member
+              who has not been approved yet (design spec §5). */}
+          <header className="flex items-center gap-5">
+            {profileFlagOn && me.member ? (
+              <AccountAvatar photoUrl={photoUrl} initials={initials} />
+            ) : null}
+            <div className="flex flex-col gap-1">
+              <h1 className="text-2xl font-semibold text-bdas-ink">Mein Konto</h1>
+              <p className="text-bdas-ink-body">{me.user.email}</p>
+            </div>
+          </header>
+          {statusAlerts}
+          {profileCard}
+          {settingsLink}
+        </div>
+      ) : (
+        <>
+          <h1 className="text-2xl font-semibold text-bdas-ink">Mein Konto</h1>
+          <div className="grid gap-7 md:grid-cols-[minmax(0,19rem)_minmax(0,1fr)] md:items-start">
+            <IdentityColumn
+              photoUrl={photoUrl}
+              initials={initials}
+              name={fullName}
+              email={me.user.email}
+              rows={identityRows}
+              chips={chips}
+              showAvatar={profileFlagOn && Boolean(me.member)}
+            />
+            <div className="flex flex-col gap-6">
+              {statusAlerts}
 
-      <div className="flex flex-wrap items-center gap-3">
-        <Link href="/account/datenexport">
-          <Button variant="secondary">Meine Daten exportieren</Button>
-        </Link>
-        <form action="/abmelden" method="post">
-          <Button type="submit" variant="secondary">
-            Abmelden
-          </Button>
-        </form>
-      </div>
+              <UpcomingEvents registrations={registrations} organizerGroupIds={organizerGroupIds} />
+
+              {attended > 0 || currentGroupSlug ? (
+                <div className="grid gap-4 sm:grid-cols-2">
+                  {attended > 0 ? (
+                    <Card flat className="p-6">
+                      <span className="block text-3xl font-semibold tabular-nums text-bdas-ink">
+                        {attended}
+                      </span>
+                      <span className="block text-sm text-bdas-ink-muted">
+                        {attended === 1 ? "Veranstaltung besucht" : "Veranstaltungen besucht"}
+                      </span>
+                    </Card>
+                  ) : null}
+
+                  {currentGroupSlug && currentGroupName ? (
+                    <Link href={`/gruppen/${currentGroupSlug}`} className="group block">
+                      <Card className="h-full p-6">
+                        <span className="block font-semibold text-bdas-ink">
+                          {currentGroupName}
+                        </span>
+                        <span className="mt-2 block text-sm text-bdas-ink-body underline">
+                          Zur Gruppenseite
+                        </span>
+                      </Card>
+                    </Link>
+                  ) : null}
+                </div>
+              ) : null}
+
+              {profileCard}
+            </div>
+          </div>
+        </>
+      )}
     </main>
   );
 }

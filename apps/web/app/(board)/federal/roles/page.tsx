@@ -1,6 +1,6 @@
 import { getDb } from "@bdas/db";
 import { listGroups } from "@bdas/groups";
-import { listGrantAudit, listMembers, listRoleHolders } from "@bdas/members";
+import { ROLE_LABELS, listGrantAudit, listMembers, listRoleHolders } from "@bdas/members";
 
 import { loadCurrentMember } from "../../../_dashboard/session";
 import { AuditLog } from "../../_components/AuditLog";
@@ -77,6 +77,7 @@ export default async function FederalRolesPage({
           groupNames={groupNames}
           revalidatePath="/federal/roles"
           currentMemberId={me?.member?.id ?? null}
+          roleLabels={ROLE_LABELS}
         />
       )}
     </section>

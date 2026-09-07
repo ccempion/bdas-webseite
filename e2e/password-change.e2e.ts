@@ -8,15 +8,18 @@ import { login, logout, PASSWORD, register, submitAndSettle, verify } from "./he
 
 const NEW_PASSWORD = "Ganz-Anderes-Pferd-7!";
 
-test("change the password from /account, then sign in with the new one", async ({ page }) => {
+test("change the password from account settings, then sign in with the new one", async ({
+  page,
+}) => {
   const email = `pw-${Date.now()}@example.de`;
 
   await register(page, { email });
   await verify(page, email);
   await login(page, email);
 
-  await page.goto("/account");
-  // /account renders both the e-mail-change and password-change cards, and each
+  // ADR 0034 moved the credential cards off /account onto this sub-page.
+  await page.goto("/account/einstellungen");
+  // The page renders both the e-mail-change and password-change cards, and each
   // carries its own "Aktuelles Passwort" field. Two consequences the locators
   // below depend on:
   //   1. The DOM ids must stay distinct. A collision points every label[for]
@@ -63,7 +66,7 @@ test("change the password from /account, then sign in with the new one", async (
   await expect(page.getByText("Passwort geändert.")).toBeVisible();
 
   // The session that made the change survives it — no redirect to /anmelden.
-  await expect(page).toHaveURL(/\/account$/);
+  await expect(page).toHaveURL(/\/account\/einstellungen$/);
 
   await logout(page);
 
