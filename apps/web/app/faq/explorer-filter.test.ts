@@ -11,6 +11,7 @@ const entry = (id: string, over: object = {}) => ({
   youtubeId: null,
   updatedAtIso: "2026-09-01T00:00:00.000Z",
   relatedIds: [],
+  contexts: [],
   ...over,
 });
 const sections: FaqSectionView[] = [

@@ -12,6 +12,7 @@
 import { expect, type Page, test } from "@playwright/test";
 
 import {
+  deleteFaqEntriesByContext,
   deleteUserByEmail,
   faqFeedbackByUserAndEntry,
   grantLocalBoard,
@@ -456,5 +457,231 @@ test.describe("Einreichungen", () => {
     await expect
       .poll(async () => (await faqFeedbackByUserAndEntry(memberEmail, entryId!))?.helpful ?? null)
       .toBe(true);
+  });
+});
+
+test.describe("Kontextuelle Hilfe", () => {
+  test.use({ viewport: { width: 1280, height: 900 }, isMobile: false, hasTouch: false });
+
+  test("the help route rejects a signed-out request", async ({ page }) => {
+    const res = await page.request.get("/api/faq/help?context=dateien");
+    expect(res.status()).toBe(401);
+  });
+
+  test("the help route returns only entries the viewer may see", async ({ page }) => {
+    const email = "faq-hilfe-api@e2e.bdas.test";
+    await deleteUserByEmail(email);
+    await registerVerifyLogin(page, { email, firstName: "Faq", lastName: "Hilfe" });
+
+    const res = await page.request.get("/api/faq/help?context=dateien");
+    expect(res.status()).toBe(200);
+    const body = (await res.json()) as {
+      entries: Array<Record<string, unknown>>;
+      contextIds: string[];
+      popularIds: string[];
+    };
+    // A plain member never sees the Bundesvorstand section (visibility.ts).
+    const questions = body.entries.map((e) => e["question"]).join(" ");
+    expect(questions).not.toContain("Bundesvorstand");
+    expect(body.entries.length).toBeGreaterThan(0);
+
+    // `context` only selects which entries are highlighted — it never widens
+    // the result set, so both id lists must resolve inside `entries`.
+    const allIds = new Set(body.entries.map((e) => e["id"]));
+    for (const id of [...body.contextIds, ...body.popularIds]) {
+      expect(allIds.has(id)).toBe(true);
+    }
+
+    // The wire shape is FaqHelpEntry only — no leaked fields (topic,
+    // relatedIds, updatedAtIso, contexts) that /faq's full view carries.
+    for (const e of body.entries) {
+      expect(Object.keys(e).sort()).toEqual(
+        ["body", "id", "question", "searchText", "youtubeId"].sort(),
+      );
+    }
+
+    // Entries travel once. A regression that inlined the subsets again would
+    // still satisfy every assertion above.
+    expect(Object.keys(body).sort()).toEqual(["contextIds", "entries", "popularIds"]);
+  });
+
+  test("omitting context returns everything visible with nothing pinned", async ({ page }) => {
+    const email = "faq-hilfe-api-nocontext@e2e.bdas.test";
+    await deleteUserByEmail(email);
+    await registerVerifyLogin(page, { email, firstName: "Faq", lastName: "Ohnekontext" });
+
+    const res = await page.request.get("/api/faq/help");
+    expect(res.status()).toBe(200);
+    const body = (await res.json()) as {
+      entries: unknown[];
+      contextIds: string[];
+    };
+    expect(body.contextIds).toEqual([]);
+    expect(body.entries.length).toBeGreaterThan(0);
+  });
+
+  test("the help panel shows the entries assigned to the route", async ({ page }) => {
+    // Nothing in the seed is pinned to a context (migrations/0002_seed.sql
+    // writes no faq_entry_contexts rows), so the board creates one first.
+    const question = `E2E-Kontexthilfe ${uniqueSlug("k")}?`;
+
+    await deleteUserByEmail(FEDERAL_EMAIL);
+    await registerVerifyLogin(page, {
+      email: FEDERAL_EMAIL,
+      firstName: "Bundes",
+      lastName: "Vorstand",
+    });
+
+    await page.goto("/federal/faq");
+    await page.getByRole("button", { name: "+ Eintrag" }).click();
+    const entryDialog = page.getByRole("dialog");
+    await entryDialog.getByPlaceholder("Frage").fill(question);
+    // "Anzeigen bei: Dateien" — the FilterChip for the `dateien` registry key.
+    await entryDialog.getByRole("button", { name: "Dateien", exact: true }).click();
+    await entryDialog.getByRole("button", { name: "Veröffentlichen" }).click();
+    await expect(page.getByText(question, { exact: true })).toBeVisible();
+
+    // /dateien maps to the `dateien` context (contexts.ts).
+    await page.goto("/dateien");
+    await page.getByRole("button", { name: "Hilfe öffnen" }).click();
+    const panel = page.getByRole("dialog");
+    await expect(panel.getByText("Passend zu dieser Seite")).toBeVisible();
+    await expect(panel.getByText(question, { exact: true })).toBeVisible();
+  });
+
+  test("the panel closes on 'Alle FAQ ansehen' and refetches for the new route", async ({
+    page,
+  }) => {
+    // Covers two regressions at once, both caused by the launcher living in
+    // the root layout, which the App Router does not remount on a client-side
+    // navigation:
+    //   1. the payload was cached in a single slot, so the panel kept showing
+    //      the previous route's entries under "Passend zu dieser Seite";
+    //   2. the "Alle FAQ ansehen" link navigated without closing the sheet,
+    //      which showModal() keeps in the top layer over the destination.
+    // The link itself is the client-side navigation, so page.goto (a full
+    // reload, which would reset the state and hide both bugs) is not used.
+    const question = `E2E-Kontextwechsel ${uniqueSlug("w")}?`;
+    await deleteFaqEntriesByContext("dateien");
+
+    await deleteUserByEmail(FEDERAL_EMAIL);
+    await registerVerifyLogin(page, {
+      email: FEDERAL_EMAIL,
+      firstName: "Bundes",
+      lastName: "Vorstand",
+    });
+
+    await page.goto("/federal/faq");
+    await page.getByRole("button", { name: "+ Eintrag" }).click();
+    const entryDialog = page.getByRole("dialog");
+    await entryDialog.getByPlaceholder("Frage").fill(question);
+    await entryDialog.getByRole("button", { name: "Dateien", exact: true }).click();
+    await entryDialog.getByRole("button", { name: "Veröffentlichen" }).click();
+    await expect(page.getByText(question, { exact: true })).toBeVisible();
+
+    await page.goto("/dateien");
+    await page.getByRole("button", { name: "Hilfe öffnen" }).click();
+    const panel = page.getByRole("dialog");
+    await expect(panel.getByText("Passend zu dieser Seite")).toBeVisible();
+    await expect(panel.getByText(question, { exact: true })).toBeVisible();
+
+    await panel.getByRole("link", { name: "Alle FAQ ansehen" }).click();
+    await expect(page).toHaveURL(/\/faq$/);
+    // Bug 2: the sheet used to stay in the top layer over the FAQ page.
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+
+    // /faq matches no registry key (contexts.ts), so the panel must fall back
+    // to "Beliebte Fragen". Bug 1 showed the cached /dateien entries instead.
+    await page.getByRole("button", { name: "Hilfe öffnen" }).click();
+    const reopened = page.getByRole("dialog");
+    await expect(reopened.getByText("Beliebte Fragen")).toBeVisible();
+    await expect(reopened.getByText("Passend zu dieser Seite")).toHaveCount(0);
+  });
+
+  test("the launcher stays off public pages", async ({ page }) => {
+    const email = "faq-hilfe-public@e2e.bdas.test";
+    await deleteUserByEmail(email);
+    await registerVerifyLogin(page, { email, firstName: "Faq", lastName: "Public" });
+
+    await page.goto("/gruppen");
+    await expect(page.getByRole("button", { name: "Hilfe öffnen" })).toHaveCount(0);
+  });
+
+  test("FaqHinweis renders the pinned entry inline on /dateien", async ({ page }) => {
+    // FaqHinweis caps at MAX_ENTRIES=3 (unlike the uncapped help panel), so
+    // this assertion needs a clean slate — see deleteFaqEntriesByContext.
+    await deleteFaqEntriesByContext("dateien");
+
+    const question = `E2E-Hinweis ${uniqueSlug("h")}?`;
+
+    await deleteUserByEmail(FEDERAL_EMAIL);
+    await registerVerifyLogin(page, {
+      email: FEDERAL_EMAIL,
+      firstName: "Bundes",
+      lastName: "Vorstand",
+    });
+
+    await page.goto("/federal/faq");
+    await page.getByRole("button", { name: "+ Eintrag" }).click();
+    const entryDialog = page.getByRole("dialog");
+    await entryDialog.getByPlaceholder("Frage").fill(question);
+    await entryDialog.getByRole("button", { name: "Dateien", exact: true }).click();
+    await entryDialog.getByRole("button", { name: "Veröffentlichen" }).click();
+    await expect(page.getByText(question, { exact: true })).toBeVisible();
+
+    await page.goto("/dateien");
+    const hinweis = page.getByRole("complementary").filter({ hasText: "Hilfe zu dieser Seite" });
+    await expect(hinweis).toBeVisible();
+    await expect(hinweis.getByText(question, { exact: true })).toBeVisible();
+  });
+
+  test("FaqHinweis caps at three entries even when four are pinned", async ({ page }) => {
+    // A local database survives between runs and nothing else drops the
+    // entries the specs above pin to `dateien` — clear them first so "exactly
+    // N of the M I create are visible" tests the cap, not leftover state from
+    // an earlier run (see deleteFaqEntriesByContext).
+    await deleteFaqEntriesByContext("dateien");
+
+    await deleteUserByEmail(FEDERAL_EMAIL);
+    await registerVerifyLogin(page, {
+      email: FEDERAL_EMAIL,
+      firstName: "Bundes",
+      lastName: "Vorstand",
+    });
+
+    // Created in this order, so position (append-only) makes the first three
+    // the only ones the after-visibility slice keeps — the fourth is the one
+    // the cap must drop.
+    const questions = [1, 2, 3, 4].map((n) => `E2E-Kappung ${n} ${uniqueSlug("c")}?`);
+    await page.goto("/federal/faq");
+    for (const question of questions) {
+      await page.getByRole("button", { name: "+ Eintrag" }).click();
+      const entryDialog = page.getByRole("dialog");
+      await entryDialog.getByPlaceholder("Frage").fill(question);
+      await entryDialog.getByRole("button", { name: "Dateien", exact: true }).click();
+      await entryDialog.getByRole("button", { name: "Veröffentlichen" }).click();
+      await expect(page.getByText(question, { exact: true })).toBeVisible();
+    }
+
+    await page.goto("/dateien");
+    const hinweis = page.getByRole("complementary").filter({ hasText: "Hilfe zu dieser Seite" });
+    await expect(hinweis).toBeVisible();
+    // MAX_ENTRIES = 3 (FaqHinweis.tsx): exactly three accordions render, no
+    // matter that four entries are pinned to this context.
+    await expect(hinweis.locator("details")).toHaveCount(3);
+    for (const question of questions.slice(0, 3)) {
+      await expect(hinweis.getByText(question, { exact: true })).toBeVisible();
+    }
+    await expect(hinweis.getByText(questions[3]!, { exact: true })).toHaveCount(0);
+  });
+
+  test("a signed-out visitor sees no FaqHinweis aside on /dateien", async ({ page }) => {
+    // Every Playwright test starts with a fresh, cookie-less context (see the
+    // config's `storageState`), so no explicit sign-out is needed here.
+    await page.goto("/dateien");
+    await expect(page.getByRole("link", { name: "melde dich an" })).toBeVisible();
+    await expect(
+      page.getByRole("complementary").filter({ hasText: "Hilfe zu dieser Seite" }),
+    ).toHaveCount(0);
   });
 });
