@@ -64,6 +64,22 @@ Ordering from `listEntries` is _storage_ order — sections and subgroups sort b
 their declaration order in `types.ts`. The order actually shown to a member is
 the app layer's call (PR 2 reorders per viewer role).
 
+## Kontext-Schlüssel
+
+`faq_entry_contexts` speichert freie Strings. Das gültige Register — Schlüssel,
+Label und Routen-Muster — lebt im Code unter `apps/web/lib/faq/contexts.ts`
+(Spec §3). Das Modul validiert die Schlüssel bewusst nicht: ein Schlüssel, der
+aus dem Register verschwindet, bleibt auf seinen Einträgen stehen und wird von
+der App als Rohwert angezeigt, statt still zu verschwinden.
+
+Konsument:innen: `listEntriesByContext` für die gezielte Einbettung
+(`<FaqHinweis>`), `listEntries` für das globale Hilfe-Panel, das ohnehin den
+ganzen sichtbaren Bestand für seine Mini-Suche braucht.
+
+Datenschutz: Das Hilfe-Panel lädt ausschließlich von der eigenen Origin
+(`/api/faq/help`); nur das YouTube-Facade der Leseseite spricht Dritte an, und
+das ist in `docs/datenschutz/` dokumentiert.
+
 ## Feature flag
 
 Gated by `faq_suite` in `core/feature-flags` (CLAUDE.md §3). Off in production
