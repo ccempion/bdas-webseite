@@ -512,4 +512,42 @@ test.describe("Kontextuelle Hilfe", () => {
     expect(body.contextEntries).toEqual([]);
     expect(body.allEntries.length).toBeGreaterThan(0);
   });
+
+  test("the help panel shows the entries assigned to the route", async ({ page }) => {
+    // Nothing in the seed is pinned to a context (migrations/0002_seed.sql
+    // writes no faq_entry_contexts rows), so the board creates one first.
+    const question = `E2E-Kontexthilfe ${uniqueSlug("k")}?`;
+
+    await deleteUserByEmail(FEDERAL_EMAIL);
+    await registerVerifyLogin(page, {
+      email: FEDERAL_EMAIL,
+      firstName: "Bundes",
+      lastName: "Vorstand",
+    });
+
+    await page.goto("/federal/faq");
+    await page.getByRole("button", { name: "+ Eintrag" }).click();
+    const entryDialog = page.getByRole("dialog");
+    await entryDialog.getByPlaceholder("Frage").fill(question);
+    // "Anzeigen bei: Dateien" — the FilterChip for the `dateien` registry key.
+    await entryDialog.getByRole("button", { name: "Dateien", exact: true }).click();
+    await entryDialog.getByRole("button", { name: "Veröffentlichen" }).click();
+    await expect(page.getByText(question, { exact: true })).toBeVisible();
+
+    // /dateien maps to the `dateien` context (contexts.ts).
+    await page.goto("/dateien");
+    await page.getByRole("button", { name: "Hilfe öffnen" }).click();
+    const panel = page.getByRole("dialog");
+    await expect(panel.getByText("Passend zu dieser Seite")).toBeVisible();
+    await expect(panel.getByText(question, { exact: true })).toBeVisible();
+  });
+
+  test("the launcher stays off public pages", async ({ page }) => {
+    const email = "faq-hilfe-public@e2e.bdas.test";
+    await deleteUserByEmail(email);
+    await registerVerifyLogin(page, { email, firstName: "Faq", lastName: "Public" });
+
+    await page.goto("/gruppen");
+    await expect(page.getByRole("button", { name: "Hilfe öffnen" })).toHaveCount(0);
+  });
 });
