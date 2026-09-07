@@ -2,7 +2,7 @@ import { integer, pgTable, text, timestamp } from "drizzle-orm/pg-core";
 
 export const newsletterSubscribers = pgTable("newsletter_subscribers", {
   id: text("id").primaryKey(),
-  email: text("email").notNull(),
+  email: text("email").notNull().unique(),
   userId: text("user_id"),
   status: text("status").notNull(),
   confirmTokenHash: text("confirm_token_hash"),
@@ -18,7 +18,9 @@ export const newsletterSubscribers = pgTable("newsletter_subscribers", {
 
 export const newsletterConsentLog = pgTable("newsletter_consent_log", {
   id: text("id").primaryKey(),
-  subscriberId: text("subscriber_id").notNull(),
+  subscriberId: text("subscriber_id")
+    .notNull()
+    .references(() => newsletterSubscribers.id, { onDelete: "cascade" }),
   event: text("event").notNull(),
   occurredAt: timestamp("occurred_at", { withTimezone: true }).notNull().defaultNow(),
   ip: text("ip"),
