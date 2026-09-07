@@ -22,6 +22,7 @@ export const tailwindPreset: TailwindPreset = {
           ink: colors.ink.strong,
           "ink-body": colors.ink.body,
           "ink-muted": colors.ink.muted,
+          "ink-on-brand": colors.ink.onBrand,
           surface: colors.surface.base,
           "surface-hover": colors.surface.hover,
         },
@@ -80,11 +81,13 @@ export const tailwindPreset: TailwindPreset = {
       },
       keyframes: {
         "bdas-fade-slide-down": keyframes.fadeSlideDown,
+        "bdas-fade-slide-up": keyframes.fadeSlideUp,
         "bdas-loader-sweep": keyframes.loaderSweep,
         "bdas-loader-cap": keyframes.loaderCap,
       },
       animation: {
         "bdas-fade-slide-down": "bdas-fade-slide-down 400ms ease forwards",
+        "bdas-fade-slide-up": `bdas-fade-slide-up ${motion.durationSlow} ease forwards`,
         "bdas-loader-sweep": `bdas-loader-sweep ${motion.durationLoop} ease infinite`,
         "bdas-loader-cap": `bdas-loader-cap ${motion.durationLoop} ease infinite`,
       },

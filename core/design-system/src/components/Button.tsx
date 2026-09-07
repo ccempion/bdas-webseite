@@ -3,7 +3,7 @@ import type { ButtonHTMLAttributes } from "react";
 
 import { cx } from "../cx";
 
-export type ButtonVariant = "primary" | "secondary" | "ghost";
+export type ButtonVariant = "primary" | "secondary" | "ghost" | "on-brand";
 export type ButtonSize = "sm" | "md";
 
 export type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
@@ -18,6 +18,11 @@ const VARIANT: Record<ButtonVariant, string> = {
     "bg-bdas-surface text-bdas-ink border border-bdas-soft hover:bg-bdas-overlay-hover focus-visible:ring-2 focus-visible:ring-bdas-soft",
   ghost:
     "bg-transparent text-bdas-ink hover:bg-bdas-overlay-hover focus-visible:ring-2 focus-visible:ring-bdas-soft",
+  /** White button on a filled brand-red field (spec §13.3). Only legal inside
+   *  such a field — on a white page it disappears. */
+  "on-brand":
+    "bg-bdas-surface text-bdas-red hover:bg-bdas-surface-hover " +
+    "focus-visible:ring-2 focus-visible:ring-bdas-ink-on-brand/60",
 };
 
 const SIZE: Record<ButtonSize, string> = {
