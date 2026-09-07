@@ -240,6 +240,23 @@ export async function seedContentPage(slug: string, data: unknown): Promise<void
     ON CONFLICT (slug) DO UPDATE SET data = EXCLUDED.data, updated_by = EXCLUDED.updated_by`;
 }
 
+/**
+ * Drop every FAQ entry pinned to one context key.
+ *
+ * Nothing else removes them, so a local database that survives between runs
+ * accumulates every entry the `Kontextuelle Hilfe` specs create — and
+ * `FaqHinweis` caps at `MAX_ENTRIES`, so a spec asserting "exactly N of the M
+ * entries I pin are visible" needs the M it creates to be every entry
+ * currently pinned to that context, not that plus whatever earlier runs left
+ * behind. `faq_entry_contexts` cascades from `faq_entries`, so deleting the
+ * entries is enough (same shape of problem as `deleteSeededGroups` above).
+ */
+export async function deleteFaqEntriesByContext(context: string): Promise<void> {
+  await sql`
+    DELETE FROM faq_entries
+     WHERE id IN (SELECT entry_id FROM faq_entry_contexts WHERE context = ${context})`;
+}
+
 /** Query whether a member voted on an FAQ entry and whether they found it helpful. */
 export async function faqFeedbackByUserAndEntry(
   userEmail: string,

@@ -12,6 +12,7 @@
 import { expect, type Page, test } from "@playwright/test";
 
 import {
+  deleteFaqEntriesByContext,
   deleteUserByEmail,
   faqFeedbackByUserAndEntry,
   grantLocalBoard,
@@ -552,6 +553,10 @@ test.describe("Kontextuelle Hilfe", () => {
   });
 
   test("FaqHinweis renders the pinned entry inline on /dateien", async ({ page }) => {
+    // FaqHinweis caps at MAX_ENTRIES=3 (unlike the uncapped help panel), so
+    // this assertion needs a clean slate — see deleteFaqEntriesByContext.
+    await deleteFaqEntriesByContext("dateien");
+
     const question = `E2E-Hinweis ${uniqueSlug("h")}?`;
 
     await deleteUserByEmail(FEDERAL_EMAIL);
@@ -573,5 +578,55 @@ test.describe("Kontextuelle Hilfe", () => {
     const hinweis = page.getByRole("complementary").filter({ hasText: "Hilfe zu dieser Seite" });
     await expect(hinweis).toBeVisible();
     await expect(hinweis.getByText(question, { exact: true })).toBeVisible();
+  });
+
+  test("FaqHinweis caps at three entries even when four are pinned", async ({ page }) => {
+    // A local database survives between runs and nothing else drops the
+    // entries the specs above pin to `dateien` — clear them first so "exactly
+    // N of the M I create are visible" tests the cap, not leftover state from
+    // an earlier run (see deleteFaqEntriesByContext).
+    await deleteFaqEntriesByContext("dateien");
+
+    await deleteUserByEmail(FEDERAL_EMAIL);
+    await registerVerifyLogin(page, {
+      email: FEDERAL_EMAIL,
+      firstName: "Bundes",
+      lastName: "Vorstand",
+    });
+
+    // Created in this order, so position (append-only) makes the first three
+    // the only ones the after-visibility slice keeps — the fourth is the one
+    // the cap must drop.
+    const questions = [1, 2, 3, 4].map((n) => `E2E-Kappung ${n} ${uniqueSlug("c")}?`);
+    await page.goto("/federal/faq");
+    for (const question of questions) {
+      await page.getByRole("button", { name: "+ Eintrag" }).click();
+      const entryDialog = page.getByRole("dialog");
+      await entryDialog.getByPlaceholder("Frage").fill(question);
+      await entryDialog.getByRole("button", { name: "Dateien", exact: true }).click();
+      await entryDialog.getByRole("button", { name: "Veröffentlichen" }).click();
+      await expect(page.getByText(question, { exact: true })).toBeVisible();
+    }
+
+    await page.goto("/dateien");
+    const hinweis = page.getByRole("complementary").filter({ hasText: "Hilfe zu dieser Seite" });
+    await expect(hinweis).toBeVisible();
+    // MAX_ENTRIES = 3 (FaqHinweis.tsx): exactly three accordions render, no
+    // matter that four entries are pinned to this context.
+    await expect(hinweis.locator("details")).toHaveCount(3);
+    for (const question of questions.slice(0, 3)) {
+      await expect(hinweis.getByText(question, { exact: true })).toBeVisible();
+    }
+    await expect(hinweis.getByText(questions[3]!, { exact: true })).toHaveCount(0);
+  });
+
+  test("a signed-out visitor sees no FaqHinweis aside on /dateien", async ({ page }) => {
+    // Every Playwright test starts with a fresh, cookie-less context (see the
+    // config's `storageState`), so no explicit sign-out is needed here.
+    await page.goto("/dateien");
+    await expect(page.getByRole("link", { name: "melde dich an" })).toBeVisible();
+    await expect(
+      page.getByRole("complementary").filter({ hasText: "Hilfe zu dieser Seite" }),
+    ).toHaveCount(0);
   });
 });
