@@ -119,10 +119,21 @@ export function AccountAvatar({
         onClick={() => (preview ? setLightboxOpen(true) : inputRef.current?.click())}
         aria-label={preview ? "Profilbild vergrößern" : "Profilbild hochladen"}
         style={{ width: SIZE, height: SIZE }}
-        className="shrink-0 overflow-hidden rounded-bdas-full border border-bdas-soft bg-bdas-overlay-soft transition-shadow duration-bdas-quick ease-bdas hover:shadow-bdas-card focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-bdas-red disabled:opacity-60"
+        className={`group shrink-0 overflow-hidden rounded-bdas-full border border-bdas-soft bg-bdas-overlay-soft transition duration-bdas-soft ease-bdas enabled:hover:shadow-bdas-lift-md enabled:focus-visible:shadow-bdas-lift-md motion-safe:enabled:hover:translate-y-bdas-lift-sm motion-safe:enabled:focus-visible:translate-y-bdas-lift-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-bdas-red disabled:opacity-60 ${
+          preview ? "cursor-zoom-in" : ""
+        }`}
       >
         {preview ? (
-          <img src={preview} alt="" className="h-full w-full object-cover" />
+          // The photo carries its own affordance: it lifts and eases in a step
+          // closer when pointed at or focused, which is what tells you it can
+          // be opened — there is no caption under it any more. Motion-safe, so
+          // reduced-motion users get the shadow lift and the zoom cursor
+          // instead; `aria-label` above carries it for screen readers.
+          <img
+            src={preview}
+            alt=""
+            className="h-full w-full object-cover transition-transform duration-bdas-soft ease-bdas motion-safe:group-hover:scale-105 motion-safe:group-focus-visible:scale-105"
+          />
         ) : (
           <span
             aria-hidden
@@ -133,11 +144,17 @@ export function AccountAvatar({
           </span>
         )}
       </button>
-      {/* Constrained to the circle's width, or the caption starts at the header
+      {/* Only says something when there is something to say: an empty avatar
+          needs the invitation, a busy one needs the reassurance. Once a photo
+          is there, the motion on it is the affordance and a caption would only
+          repeat what the picture already shows.
+          Constrained to the circle's width, or the caption starts at the header
           column's left edge instead of sitting under the circle. */}
-      <p style={{ width: SIZE }} className="text-center text-sm text-bdas-ink-muted">
-        {busy ? "Einen Moment…" : preview ? : "Bild hochladen"}
-      </p>
+      {busy || !preview ? (
+        <p style={{ width: SIZE }} className="text-center text-sm text-bdas-ink-muted">
+          {busy ? "Einen Moment…" : "Bild hochladen"}
+        </p>
+      ) : null}
       {error ? <p className="max-w-xs text-center text-sm text-bdas-red">{error}</p> : null}
       {lightboxOpen && preview ? (
         <PhotoLightbox
