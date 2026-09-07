@@ -34,6 +34,10 @@ describe.skipIf(!reachable)("newsletter rate limit", () => {
       `UPDATE newsletter_rate_limits SET expires_at = now() - interval '1 second'`,
     );
     await expect(rateLimit(t.db, { key, limit: 1, windowMs: 60_000 })).resolves.toBeUndefined();
+    // The new window must be armed with a future expires_at, not left in the
+    // past — otherwise every later call would keep taking the "fresh window"
+    // branch and the limiter would never fire again.
+    await expect(rateLimit(t.db, { key, limit: 1, windowMs: 60_000 })).rejects.toThrow();
   });
 
   it("keeps keys independent", async () => {

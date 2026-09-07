@@ -7,6 +7,11 @@
  * breach of rule 1. Extracting the algorithm into core/ was considered and
  * rejected because it would drag a security review onto an otherwise harmless
  * PR — revisit at a third call site (spec §4).
+ *
+ * The window is fixed, not sliding: it accepts up to 2x `limit` across a
+ * window straddle (e.g. `limit` attempts just before the window boundary,
+ * then `limit` more right after). Accepted property of this design, not a
+ * defect — a sliding window costs more to maintain for a control this cheap.
  */
 import { sql } from "drizzle-orm";
 import type { PostgresJsDatabase } from "drizzle-orm/postgres-js";
@@ -18,6 +23,12 @@ import { newsletterRateLimits } from "./schema";
 export type Db = PostgresJsDatabase<Record<string, never>>;
 
 export type RateLimitOpts = {
+  /**
+   * One row per key — a caller enforcing more than one budget against the
+   * same identity (e.g. a per-15-minute and a per-day cap on one address)
+   * must use a distinct key per budget, or the two windows clobber each
+   * other's `expires_at`.
+   */
   readonly key: string;
   readonly limit: number;
   readonly windowMs: number;
@@ -62,7 +73,9 @@ export async function tryRateLimit(db: Db, opts: RateLimitOpts): Promise<boolean
     })
     .returning({ count: newsletterRateLimits.count });
 
-  return (result[0]?.count ?? 0) <= opts.limit;
+  // Fail closed: an empty result (should not happen, DO UPDATE is
+  // unconditional) must deny, not admit.
+  return (result[0]?.count ?? Number.POSITIVE_INFINITY) <= opts.limit;
 }
 
 /** Throws RateLimitError once the key has exceeded `limit` in the window. */
