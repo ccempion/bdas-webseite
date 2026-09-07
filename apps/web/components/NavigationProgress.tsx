@@ -87,9 +87,9 @@ export function NavigationProgress() {
   if (!sichtbar) return null;
 
   return (
-    <div className="pointer-events-none fixed inset-x-0 top-4 z-bdas-nav-progress flex justify-center">
-      <span className="animate-bdas-fade-slide-down rounded-bdas bg-bdas-surface px-4 py-2 shadow-bdas-card">
-        <BdasLoader size="sm" />
+    <div className="pointer-events-none fixed inset-0 z-bdas-nav-progress flex items-center justify-center">
+      <span className="animate-bdas-fade-slide-down rounded-bdas bg-bdas-surface px-8 py-6 shadow-bdas-card">
+        <BdasLoader size="lg" />
       </span>
     </div>
   );
