@@ -22,6 +22,7 @@ describe("matchContext", () => {
   // test fails instead of the panel silently going quiet.
   const realRoutes: ReadonlyArray<readonly [string, string]> = [
     ["/admin/events/neu", "events.erstellen"],
+    ["/admin/events/abc123/edit", "events.erstellen"],
     ["/dateien", "dateien"],
     ["/dateien/fld_123", "dateien"],
     ["/federal/files", "dateien"],
@@ -29,6 +30,7 @@ describe("matchContext", () => {
     ["/federal/members", "board.mitglieder"],
     ["/gruppe/berlin/members", "board.mitglieder"],
     ["/federal/groups", "board.gruppen"],
+    ["/gruppe/berlin/profil", "board.gruppen"],
     ["/profil", "profil"],
     ["/account", "profil"],
   ];
