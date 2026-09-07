@@ -458,3 +458,58 @@ test.describe("Einreichungen", () => {
       .toBe(true);
   });
 });
+
+test.describe("Kontextuelle Hilfe", () => {
+  test.use({ viewport: { width: 1280, height: 900 }, isMobile: false, hasTouch: false });
+
+  test("the help route rejects a signed-out request", async ({ page }) => {
+    const res = await page.request.get("/api/faq/help?context=dateien");
+    expect(res.status()).toBe(401);
+  });
+
+  test("the help route returns only entries the viewer may see", async ({ page }) => {
+    const email = "faq-hilfe-api@e2e.bdas.test";
+    await deleteUserByEmail(email);
+    await registerVerifyLogin(page, { email, firstName: "Faq", lastName: "Hilfe" });
+
+    const res = await page.request.get("/api/faq/help?context=dateien");
+    expect(res.status()).toBe(200);
+    const body = (await res.json()) as {
+      contextEntries: Array<Record<string, unknown>>;
+      allEntries: Array<Record<string, unknown>>;
+      popular: Array<Record<string, unknown>>;
+    };
+    // A plain member never sees the Bundesvorstand section (visibility.ts).
+    const questions = body.allEntries.map((e) => e["question"]).join(" ");
+    expect(questions).not.toContain("Bundesvorstand");
+    expect(body.allEntries.length).toBeGreaterThan(0);
+
+    // `context` only selects which entries are highlighted — it never widens
+    // the result set, so every contextEntries id must also be in allEntries.
+    const allIds = new Set(body.allEntries.map((e) => e["id"]));
+    for (const e of body.contextEntries) expect(allIds.has(e["id"])).toBe(true);
+
+    // The wire shape is FaqHelpEntry only — no leaked fields (topic,
+    // relatedIds, updatedAtIso, contexts) that /faq's full view carries.
+    for (const e of [...body.allEntries, ...body.contextEntries, ...body.popular]) {
+      expect(Object.keys(e).sort()).toEqual(
+        ["body", "id", "question", "searchText", "youtubeId"].sort(),
+      );
+    }
+  });
+
+  test("omitting context returns everything visible with nothing pinned", async ({ page }) => {
+    const email = "faq-hilfe-api-nocontext@e2e.bdas.test";
+    await deleteUserByEmail(email);
+    await registerVerifyLogin(page, { email, firstName: "Faq", lastName: "Ohnekontext" });
+
+    const res = await page.request.get("/api/faq/help");
+    expect(res.status()).toBe(200);
+    const body = (await res.json()) as {
+      contextEntries: unknown[];
+      allEntries: unknown[];
+    };
+    expect(body.contextEntries).toEqual([]);
+    expect(body.allEntries.length).toBeGreaterThan(0);
+  });
+});
