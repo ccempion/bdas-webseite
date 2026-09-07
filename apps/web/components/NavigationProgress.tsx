@@ -46,9 +46,6 @@ export function NavigationProgress() {
 
   useEffect(() => {
     function beiKlick(event: MouseEvent) {
-      // A handler that already called preventDefault owns this click; no route change follows.
-      if (event.defaultPrevented) return;
-
       const ziel = event.target;
       if (!(ziel instanceof Element)) return;
       const anker = ziel.closest("a");
@@ -66,10 +63,15 @@ export function NavigationProgress() {
       if (losgeht) starten();
     }
 
-    document.addEventListener("click", beiKlick);
+    // Capture phase on purpose: next/link calls preventDefault() on the anchor to
+    // navigate client-side, and React delegates that to the root container — a
+    // bubble-phase listener would therefore see defaultPrevented on exactly the
+    // clicks worth tracking. Running first means a handler that genuinely
+    // suppresses navigation can still leave the indicator up; NOTBREMSE_MS ends it.
+    document.addEventListener("click", beiKlick, true);
     window.addEventListener("popstate", starten);
     return () => {
-      document.removeEventListener("click", beiKlick);
+      document.removeEventListener("click", beiKlick, true);
       window.removeEventListener("popstate", starten);
     };
   }, [starten]);
