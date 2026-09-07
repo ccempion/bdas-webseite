@@ -26,6 +26,7 @@ export const FLAGS = [
   "profile",
   "faq",
   "faq_suite",
+  "newsletter",
   "podcast",
 ] as const;
 

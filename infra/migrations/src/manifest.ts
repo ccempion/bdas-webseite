@@ -29,4 +29,6 @@ export const MIGRATION_MANIFEST: ReadonlyArray<string> = [
   "profile",
   // FAQ suite v2 (spec 2026-09-04): faq_* tables, no cross-module FK.
   "faq",
+  // Newsletter (spec 2026-09-06): newsletter_* tables, no cross-module FK.
+  "newsletter",
 ];
