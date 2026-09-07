@@ -550,4 +550,28 @@ test.describe("Kontextuelle Hilfe", () => {
     await page.goto("/gruppen");
     await expect(page.getByRole("button", { name: "Hilfe öffnen" })).toHaveCount(0);
   });
+
+  test("FaqHinweis renders the pinned entry inline on /dateien", async ({ page }) => {
+    const question = `E2E-Hinweis ${uniqueSlug("h")}?`;
+
+    await deleteUserByEmail(FEDERAL_EMAIL);
+    await registerVerifyLogin(page, {
+      email: FEDERAL_EMAIL,
+      firstName: "Bundes",
+      lastName: "Vorstand",
+    });
+
+    await page.goto("/federal/faq");
+    await page.getByRole("button", { name: "+ Eintrag" }).click();
+    const entryDialog = page.getByRole("dialog");
+    await entryDialog.getByPlaceholder("Frage").fill(question);
+    await entryDialog.getByRole("button", { name: "Dateien", exact: true }).click();
+    await entryDialog.getByRole("button", { name: "Veröffentlichen" }).click();
+    await expect(page.getByText(question, { exact: true })).toBeVisible();
+
+    await page.goto("/dateien");
+    const hinweis = page.getByRole("complementary").filter({ hasText: "Hilfe zu dieser Seite" });
+    await expect(hinweis).toBeVisible();
+    await expect(hinweis.getByText(question, { exact: true })).toBeVisible();
+  });
 });

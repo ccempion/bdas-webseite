@@ -9,6 +9,7 @@ import { getCurrentMember, type CurrentMember } from "@bdas/members";
 
 import { requireFilesFlag } from "../_files/flag";
 import { FolderIndex } from "../_files/FolderIndex";
+import { FaqHinweis } from "../_faq/FaqHinweis";
 import { readSessionCookie } from "../../lib/auth-cookie";
 
 export const metadata = { title: "Dateien" };
@@ -67,6 +68,7 @@ export default async function DateienPage() {
         <p className="text-bdas-ink-body">Dokumente, die dir zur Verfügung stehen.</p>
       </header>
       {body}
+      <FaqHinweis context="dateien" />
     </main>
   );
 }
