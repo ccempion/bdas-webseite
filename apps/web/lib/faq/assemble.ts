@@ -14,6 +14,10 @@ export type FaqEntryView = {
   youtubeId: string | null;
   updatedAtIso: string; // für "Zuletzt aktualisiert"
   relatedIds: readonly string[];
+  // Registry keys this entry is pinned to (Spec §3). Carried on the view so
+  // the help panel can partition a single fetched payload without a second
+  // query; a handful of short strings per entry.
+  contexts: readonly string[];
 };
 
 export type FaqSubgroupView = {
@@ -108,6 +112,7 @@ function toEntryView(row: FaqEntryRow, topicById: ReadonlyMap<string, FaqTopic>)
     youtubeId: row.youtubeId,
     updatedAtIso: row.updatedAt.toISOString(),
     relatedIds: row.relatedIds,
+    contexts: row.contexts,
   };
 }
 
