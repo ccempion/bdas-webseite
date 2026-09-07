@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 
 import { getDb } from "@bdas/db";
 import { Alert, Button, Card } from "@bdas/design-system";
+import { countAttendedEvents, listMyUpcomingRegistrations } from "@bdas/events-module";
 import { isFlagOn } from "@bdas/feature-flags";
 import { listGroups } from "@bdas/groups";
 import { getCurrentMember, getOpenGroupChange } from "@bdas/members";
@@ -18,6 +19,7 @@ import { readSessionCookie } from "../../lib/auth-cookie";
 import { EditableProfile } from "./EditableProfile";
 import { IdentityColumn } from "./IdentityColumn";
 import { buildProfileSummary } from "./profile-summary";
+import { UpcomingEvents } from "./UpcomingEvents";
 import { buildIdentityRows, layoutMode, roleChips } from "./view-model";
 import { WithdrawChangeButton } from "./WithdrawChangeButton";
 
@@ -93,6 +95,23 @@ export default async function AccountPage({
     joinedAt: me.member?.joinedAt ?? null,
   });
   const chips = roleChips(me.grants);
+
+  // Events is flag-gated (CLAUDE.md §3): with the flag off the module's tables
+  // may not even be migrated, so guard the reads rather than the render.
+  const eventsOn = isFlagOn("events");
+  const memberId = me.member?.id ?? null;
+  const [registrations, attended] =
+    eventsOn && memberId && mode === "full"
+      ? await Promise.all([
+          listMyUpcomingRegistrations(db, memberId),
+          countAttendedEvents(db, memberId),
+        ])
+      : [[], 0];
+
+  const organizerGroupIds = me.grants
+    .filter((g) => g.role === "event_organizer" && g.groupId !== null)
+    .map((g) => g.groupId as string);
+
   const fullName = me.member
     ? `${me.member.firstName} ${me.member.lastName}`.trim()
     : me.user.email;
@@ -190,6 +209,35 @@ export default async function AccountPage({
           />
           <div className="flex flex-col gap-6">
             {statusAlerts}
+
+            <UpcomingEvents registrations={registrations} organizerGroupIds={organizerGroupIds} />
+
+            {attended > 0 || currentGroupSlug ? (
+              <div className="grid gap-4 sm:grid-cols-2">
+                {attended > 0 ? (
+                  <Card flat className="p-6">
+                    <span className="block text-3xl font-semibold tabular-nums text-bdas-ink">
+                      {attended}
+                    </span>
+                    <span className="block text-sm text-bdas-ink-muted">
+                      {attended === 1 ? "Veranstaltung besucht" : "Veranstaltungen besucht"}
+                    </span>
+                  </Card>
+                ) : null}
+
+                {currentGroupSlug && currentGroupName ? (
+                  <Link href={`/gruppen/${currentGroupSlug}`} className="group block">
+                    <Card className="h-full p-6">
+                      <span className="block font-semibold text-bdas-ink">{currentGroupName}</span>
+                      <span className="mt-2 block text-sm text-bdas-ink-body underline">
+                        Zur Gruppenseite
+                      </span>
+                    </Card>
+                  </Link>
+                ) : null}
+              </div>
+            ) : null}
+
             {profileCard}
           </div>
         </div>
