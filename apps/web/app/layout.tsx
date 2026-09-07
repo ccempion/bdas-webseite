@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 import { isFlagOn } from "@bdas/feature-flags";
 
 import { CookieNotice } from "../components/CookieNotice";
+import { NavigationProgress } from "../components/NavigationProgress";
 import { SiteFooter } from "../components/SiteFooter";
 import { SiteHeader } from "../components/SiteHeader";
 import { PublicHeader } from "./_public/PublicHeader";
@@ -34,6 +35,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
     <html lang="de">
       <body className="flex min-h-screen flex-col antialiased">
         <WindowDropGuard />
+        <NavigationProgress />
         <a
           href="#inhalt"
           className="sr-only rounded-bdas px-4 py-2 focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:bg-bdas-surface focus:text-bdas-ink focus:shadow-bdas-card"

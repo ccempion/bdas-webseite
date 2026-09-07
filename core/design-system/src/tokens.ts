@@ -63,6 +63,12 @@ export const zIndex = {
    * never disappears under embedded content while scrolling.
    */
   header: "1100",
+  /**
+   * The navigation progress indicator. Outranks the sticky header so it stays
+   * visible while a route change is in flight (ADR 0026 loader, re-introduced
+   * client-side after the root loading.tsx broke 404 status codes).
+   */
+  navProgress: "1200",
 } as const;
 
 export const radii = {
