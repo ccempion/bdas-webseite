@@ -11,6 +11,7 @@ import { getProfile } from "@bdas/profile";
 
 import { requireAuthFlag } from "../_auth/flag";
 import { requireMembersFlag } from "../_members/flag";
+import { AccountAvatar } from "./AccountAvatar";
 import { ApprovalsAlert } from "./ApprovalsAlert";
 import { isProfileComplete } from "../_profile/complete";
 import { signedProfilePhotoUrl } from "../_profile/photo-url";
@@ -187,60 +188,75 @@ export default async function AccountPage({
 
   return (
     <main className="mx-auto flex max-w-5xl flex-col gap-6 px-4 py-12">
-      <h1 className="text-2xl font-semibold text-bdas-ink">Mein Konto</h1>
-
       {mode === "plain" ? (
         <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
-          <p className="text-bdas-ink-body">{me.user.email}</p>
+          {/* The fallback keeps today's header, avatar included: the identity
+              column that carries the photo control in "full" is not drawn here,
+              and dropping it would take profile photos away from every member
+              who has not been approved yet (design spec §5). */}
+          <header className="flex items-center gap-5">
+            {profileFlagOn && me.member ? (
+              <AccountAvatar photoUrl={photoUrl} initials={initials} />
+            ) : null}
+            <div className="flex flex-col gap-1">
+              <h1 className="text-2xl font-semibold text-bdas-ink">Mein Konto</h1>
+              <p className="text-bdas-ink-body">{me.user.email}</p>
+            </div>
+          </header>
           {statusAlerts}
           {profileCard}
           {settingsLink}
         </div>
       ) : (
-        <div className="grid gap-7 md:grid-cols-[minmax(0,19rem)_minmax(0,1fr)] md:items-start">
-          <IdentityColumn
-            photoUrl={photoUrl}
-            initials={initials}
-            name={fullName}
-            email={me.user.email}
-            rows={identityRows}
-            chips={chips}
-            showAvatar={profileFlagOn && Boolean(me.member)}
-          />
-          <div className="flex flex-col gap-6">
-            {statusAlerts}
+        <>
+          <h1 className="text-2xl font-semibold text-bdas-ink">Mein Konto</h1>
+          <div className="grid gap-7 md:grid-cols-[minmax(0,19rem)_minmax(0,1fr)] md:items-start">
+            <IdentityColumn
+              photoUrl={photoUrl}
+              initials={initials}
+              name={fullName}
+              email={me.user.email}
+              rows={identityRows}
+              chips={chips}
+              showAvatar={profileFlagOn && Boolean(me.member)}
+            />
+            <div className="flex flex-col gap-6">
+              {statusAlerts}
 
-            <UpcomingEvents registrations={registrations} organizerGroupIds={organizerGroupIds} />
+              <UpcomingEvents registrations={registrations} organizerGroupIds={organizerGroupIds} />
 
-            {attended > 0 || currentGroupSlug ? (
-              <div className="grid gap-4 sm:grid-cols-2">
-                {attended > 0 ? (
-                  <Card flat className="p-6">
-                    <span className="block text-3xl font-semibold tabular-nums text-bdas-ink">
-                      {attended}
-                    </span>
-                    <span className="block text-sm text-bdas-ink-muted">
-                      {attended === 1 ? "Veranstaltung besucht" : "Veranstaltungen besucht"}
-                    </span>
-                  </Card>
-                ) : null}
-
-                {currentGroupSlug && currentGroupName ? (
-                  <Link href={`/gruppen/${currentGroupSlug}`} className="group block">
-                    <Card className="h-full p-6">
-                      <span className="block font-semibold text-bdas-ink">{currentGroupName}</span>
-                      <span className="mt-2 block text-sm text-bdas-ink-body underline">
-                        Zur Gruppenseite
+              {attended > 0 || currentGroupSlug ? (
+                <div className="grid gap-4 sm:grid-cols-2">
+                  {attended > 0 ? (
+                    <Card flat className="p-6">
+                      <span className="block text-3xl font-semibold tabular-nums text-bdas-ink">
+                        {attended}
+                      </span>
+                      <span className="block text-sm text-bdas-ink-muted">
+                        {attended === 1 ? "Veranstaltung besucht" : "Veranstaltungen besucht"}
                       </span>
                     </Card>
-                  </Link>
-                ) : null}
-              </div>
-            ) : null}
+                  ) : null}
 
-            {profileCard}
+                  {currentGroupSlug && currentGroupName ? (
+                    <Link href={`/gruppen/${currentGroupSlug}`} className="group block">
+                      <Card className="h-full p-6">
+                        <span className="block font-semibold text-bdas-ink">
+                          {currentGroupName}
+                        </span>
+                        <span className="mt-2 block text-sm text-bdas-ink-body underline">
+                          Zur Gruppenseite
+                        </span>
+                      </Card>
+                    </Link>
+                  ) : null}
+                </div>
+              ) : null}
+
+              {profileCard}
+            </div>
           </div>
-        </div>
+        </>
       )}
     </main>
   );
