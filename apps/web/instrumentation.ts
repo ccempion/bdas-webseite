@@ -20,5 +20,10 @@ export async function register(): Promise<void> {
     // No flag, no retry loop: registering the subscription is synchronous and
     // in-process, so there is nothing transient here to degrade gracefully from.
     bootMembers();
+    const { bootNewsletter } = await import("./lib/newsletter-bootstrap");
+    // Registering a subscription is synchronous and in-process; there is
+    // nothing transient to degrade gracefully from. A flag-off boot returns
+    // immediately.
+    bootNewsletter();
   }
 }

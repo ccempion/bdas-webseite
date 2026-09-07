@@ -25,6 +25,7 @@
     "@bdas/files": "workspace:*",
     "@bdas/groups": "workspace:*",
     "@bdas/members": "workspace:*",
+    "@bdas/newsletter": "workspace:*",
     "@bdas/notifications": "workspace:*",
     "@bdas/profile": "workspace:*",
     "@bdas/storage": "workspace:*",
