@@ -8,6 +8,7 @@ import { PublicFooterView } from "../_public/PublicFooterView";
 import { PublicHeaderView } from "../_public/PublicHeaderView";
 import type { CanvasChrome } from "./canvas-chrome";
 import { type Ausrichtung, ausrichtungFlex, ausrichtungText } from "./ausrichtung";
+import { buttonKlasse } from "./button-klasse";
 import { type BildBreite, bildBreiteClass, normalizeBildBreite } from "./bild-breite";
 import { BildGroesseGriff } from "./BildGroesseGriff";
 import { FotoField } from "./FotoField";
@@ -473,10 +474,7 @@ export const puckConfig: Config<Blocks> = {
           );
         }
 
-        const cls =
-          variante === "sekundaer"
-            ? "inline-flex items-center rounded-bdas-sm border border-bdas-strong px-4 py-2 text-sm text-bdas-ink transition-colors duration-bdas-quick ease-bdas hover:bg-bdas-surface-hover"
-            : "inline-flex items-center rounded-bdas-sm bg-bdas-red px-4 py-2 text-sm font-medium text-white transition-colors duration-bdas-quick ease-bdas hover:opacity-90";
+        const cls = buttonKlasse(variante);
         return (
           <div className={`flex ${ausrichtungFlex(ausrichtung)}`}>
             {isExternalHref(safe) ? (
