@@ -13,7 +13,14 @@ vi.mock("next/image", () => ({
 }));
 
 import { legalUrls } from "../../lib/legal";
-import { ausrichtungFlex, ausrichtungText, normalizeContent, puckConfig } from "./puck-config";
+import {
+  akkordeonKeys,
+  ausrichtungFlex,
+  ausrichtungText,
+  breiteClass,
+  normalizeContent,
+  puckConfig,
+} from "./puck-config";
 
 /** The nav the server derives and passes through metadata. Flags are off in the
  *  test environment, so this is deliberately richer than anything `navItems()`
@@ -209,10 +216,10 @@ describe("puckConfig", () => {
     );
   });
 
-  it("Spalten offers a 2/3 column select", () => {
+  it("Spalten offers a 2/3/4 column and asymmetric select", () => {
     const anzahl = puckConfig.components.Spalten?.fields?.anzahl;
     if (anzahl?.type !== "select") throw new Error("Spalten needs an anzahl select");
-    expect(anzahl.options?.map((o) => o.value)).toEqual(["2", "3"]);
+    expect(anzahl.options?.map((o) => o.value)).toEqual(["2", "3", "4", "1-2", "2-1"]);
   });
 
   it("Spalten renders its drop zones and gates the third on anzahl", () => {
@@ -967,5 +974,204 @@ describe("puckConfig", () => {
       } as never) as never,
     );
     expect(out).toContain("Inhalt");
+  });
+
+  describe("Breite: voll", () => {
+    it("breiteClass has no max-width class for voll", () => {
+      expect(breiteClass("voll")).toBe("");
+    });
+
+    it("breiteClass keeps existing schmal/breit behaviour", () => {
+      expect(breiteClass("schmal")).toBe("max-w-3xl");
+      expect(breiteClass("breit")).toBe("max-w-5xl");
+    });
+
+    it("normalizeContent keeps a voll width the document already carries", () => {
+      const data = { root: { props: { breite: "voll" } }, content: [] } as unknown as Data;
+      const out = normalizeContent(data, "schmal");
+      expect((out.root.props as { breite?: string }).breite).toBe("voll");
+    });
+
+    it("normalizeContent still seeds the fallback when no width is stored", () => {
+      const data = { root: { props: {} }, content: [] } as unknown as Data;
+      const out = normalizeContent(data, "voll");
+      expect((out.root.props as { breite?: string }).breite).toBe("voll");
+    });
+  });
+
+  describe("root breite field", () => {
+    it("offers schmal/breit/voll by default (no slug in metadata)", () => {
+      const resolve = puckConfig.root?.resolveFields;
+      if (!resolve) throw new Error("root.resolveFields missing");
+      const fields = resolve(
+        { props: { breite: "schmal" } } as never,
+        { metadata: {} } as never,
+      ) as unknown as { breite: { options: { value: string }[] } };
+      expect(fields.breite.options.map((o) => o.value)).toEqual(["schmal", "breit", "voll"]);
+    });
+
+    it("hides voll for legal-text slugs", () => {
+      const resolve = puckConfig.root?.resolveFields;
+      if (!resolve) throw new Error("root.resolveFields missing");
+      for (const slug of ["datenschutz", "impressum", "nutzungsbedingungen"]) {
+        const fields = resolve(
+          { props: { breite: "schmal" } } as never,
+          { metadata: { slug } } as never,
+        ) as unknown as { breite: { options: { value: string }[] } };
+        expect(fields.breite.options.map((o) => o.value)).toEqual(["schmal", "breit"]);
+      }
+    });
+
+    it("keeps voll for content-page slugs, including dynamic group slugs", () => {
+      const resolve = puckConfig.root?.resolveFields;
+      if (!resolve) throw new Error("root.resolveFields missing");
+      for (const slug of ["ueber-uns", "ueber-uns/bdaj", "gruppen/berlin"]) {
+        const fields = resolve(
+          { props: { breite: "schmal" } } as never,
+          { metadata: { slug } } as never,
+        ) as unknown as { breite: { options: { value: string }[] } };
+        expect(fields.breite.options.map((o) => o.value)).toEqual(["schmal", "breit", "voll"]);
+      }
+    });
+  });
+
+  describe("Spalten presets", () => {
+    const render = () => {
+      const r = puckConfig.components.Spalten?.render;
+      if (!r) throw new Error("Spalten render missing");
+      return r;
+    };
+    const puck = { renderDropZone: ({ zone }: { zone: string }) => `[${zone}]` };
+
+    it("2 and 3 keep their existing equal-column classes", () => {
+      const out2 = renderToStaticMarkup(render()({ anzahl: "2", puck } as never));
+      expect(out2).toContain("sm:grid-cols-2");
+      const out3 = renderToStaticMarkup(render()({ anzahl: "3", puck } as never));
+      expect(out3).toContain("sm:grid-cols-3");
+    });
+
+    it("4 renders four zones on a four-column grid", () => {
+      const out = renderToStaticMarkup(render()({ anzahl: "4", puck } as never));
+      expect(out).toContain("lg:grid-cols-4");
+      for (const zone of ["spalte-1", "spalte-2", "spalte-3", "spalte-4"]) {
+        expect(out).toContain(`[${zone}]`);
+      }
+    });
+
+    it("1-2 gives the second zone a double column-span", () => {
+      const out = renderToStaticMarkup(render()({ anzahl: "1-2", puck } as never));
+      expect(out).toContain("sm:col-span-1");
+      expect(out).toContain("sm:col-span-2");
+    });
+
+    it("2-1 gives the first zone a double column-span", () => {
+      const out = renderToStaticMarkup(render()({ anzahl: "2-1", puck } as never));
+      const firstSpanIndex = out.indexOf("sm:col-span-2");
+      const secondSpanIndex = out.indexOf("sm:col-span-1");
+      expect(firstSpanIndex).toBeGreaterThan(-1);
+      expect(secondSpanIndex).toBeGreaterThan(firstSpanIndex);
+    });
+
+    it("exposes all five options on the anzahl field", () => {
+      const anzahl = puckConfig.components.Spalten?.fields?.anzahl;
+      if (anzahl?.type !== "select") throw new Error("anzahl must be a select field");
+      expect(anzahl.options.map((o) => o.value)).toEqual(["2", "3", "4", "1-2", "2-1"]);
+    });
+  });
+
+  describe("Panel block", () => {
+    it("wraps its DropZone in the design-system Card", () => {
+      const render = puckConfig.components.Panel?.render;
+      if (!render) throw new Error("Panel render missing");
+      const puck = { renderDropZone: ({ zone }: { zone: string }) => `[${zone}]` };
+      const out = renderToStaticMarkup(render({ titel: "", variante: "standard", puck } as never));
+      expect(out).toContain("[inhalt]");
+      expect(out).toMatch(/class="[^"]*rounded-bdas[^"]*"/);
+    });
+
+    it("shows the title when set", () => {
+      const render = puckConfig.components.Panel?.render;
+      if (!render) throw new Error("Panel render missing");
+      const puck = { renderDropZone: () => null };
+      const out = renderToStaticMarkup(
+        render({ titel: "Kontakt", variante: "standard", puck } as never),
+      );
+      expect(out).toContain("Kontakt");
+    });
+
+    it("hervorgehoben adds the accent left-border", () => {
+      const render = puckConfig.components.Panel?.render;
+      if (!render) throw new Error("Panel render missing");
+      const puck = { renderDropZone: () => null };
+      const out = renderToStaticMarkup(
+        render({ titel: "", variante: "hervorgehoben", puck } as never),
+      );
+      expect(out).toContain("border-l-4");
+      expect(out).toContain("border-l-bdas-red");
+    });
+
+    it("standard variant has no accent border", () => {
+      const render = puckConfig.components.Panel?.render;
+      if (!render) throw new Error("Panel render missing");
+      const puck = { renderDropZone: () => null };
+      const out = renderToStaticMarkup(render({ titel: "", variante: "standard", puck } as never));
+      expect(out).not.toContain("border-l-4");
+    });
+  });
+
+  describe("Akkordeon block", () => {
+    it("shows a placeholder in the editor when empty", () => {
+      const render = puckConfig.components.Akkordeon?.render;
+      if (!render) throw new Error("Akkordeon render missing");
+      const out = renderToStaticMarkup(
+        render({ eintraege: [], puck: { isEditing: true } } as never),
+      );
+      expect(out).toContain("Noch keine Einträge");
+    });
+
+    it("renders one details element per entry using the shared accordion class", () => {
+      const render = puckConfig.components.Akkordeon?.render;
+      if (!render) throw new Error("Akkordeon render missing");
+      const out = renderToStaticMarkup(
+        render({
+          eintraege: [
+            { frage: "Wie trete ich bei?", antwort: "Über das Anmeldeformular." },
+            { frage: "Wo treffen wir uns?", antwort: "Immer donnerstags." },
+          ],
+          puck: { isEditing: false },
+        } as never),
+      );
+      expect((out.match(/class="bdas-accordion"/g) ?? []).length).toBe(2);
+      expect(out).toContain("Wie trete ich bei?");
+      expect(out).toContain("Über das Anmeldeformular.");
+    });
+
+    it("keys an entry by its question, so a reorder moves the open state with it", () => {
+      const eintraege = [{ frage: "Wie trete ich bei?" }, { frage: "Wo treffen wir uns?" }];
+      const keys = akkordeonKeys(eintraege);
+      expect(keys).toEqual(["Wie trete ich bei?", "Wo treffen wir uns?"]);
+      expect(akkordeonKeys([...eintraege].reverse())).toEqual([...keys].reverse());
+    });
+
+    it("keeps keys distinct for duplicate and empty questions", () => {
+      const keys = akkordeonKeys([
+        { frage: "Beitrag?" },
+        { frage: "Beitrag?" },
+        { frage: "" },
+        { frage: "" },
+      ]);
+      expect(new Set(keys).size).toBe(4);
+    });
+
+    it("summarises an entry by its question", () => {
+      const eintraege = puckConfig.components.Akkordeon?.fields?.eintraege;
+      if (eintraege?.type !== "array" || !eintraege.getItemSummary) {
+        throw new Error("array field with getItemSummary expected");
+      }
+      expect(eintraege.getItemSummary({ frage: "Wie trete ich bei?", antwort: "" }, 0)).toBe(
+        "Wie trete ich bei?",
+      );
+      expect(eintraege.getItemSummary({ frage: "", antwort: "" }, 0)).toBe("Neuer Eintrag");
+    });
   });
 });

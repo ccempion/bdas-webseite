@@ -56,18 +56,20 @@ type Blocks = {
     hoehe: "klein" | "mittel" | "gross";
   };
   Spalten: {
-    anzahl: "2" | "3";
+    anzahl: "2" | "3" | "4" | "1-2" | "2-1";
   };
   Organigramm: { kaesten: Kasten[] };
+  Panel: { titel: string; variante: "standard" | "hervorgehoben" };
+  Akkordeon: { eintraege: { frage: string; antwort: string }[] };
 };
 
 /** Content-column width. Carried on the page's root so the same value frames
  *  the blocks in the editor preview (`<Puck>`) and the public page (`<Render>`).
  *  `breit` gives the person grid room; text pages stay at reading width. */
-export type Breite = "schmal" | "breit";
+export type Breite = "schmal" | "breit" | "voll";
 
 export const breiteClass = (breite: Breite): string =>
-  breite === "breit" ? "max-w-5xl" : "max-w-3xl";
+  breite === "breit" ? "max-w-5xl" : breite === "voll" ? "" : "max-w-3xl";
 
 /** Per-block horizontal alignment (ADR 0023 palette). `links` is the default
  *  and is what every block rendered before the control existed. */
@@ -125,6 +127,76 @@ const ausrichtungField = {
   ],
 };
 
+const SPALTEN_LAYOUT: Record<
+  Blocks["Spalten"]["anzahl"],
+  { grid: string; zonen: { zone: string; span?: string }[] }
+> = {
+  "2": {
+    grid: "grid gap-6 sm:grid-cols-2",
+    zonen: [{ zone: "spalte-1" }, { zone: "spalte-2" }],
+  },
+  "3": {
+    grid: "grid gap-6 sm:grid-cols-3",
+    zonen: [{ zone: "spalte-1" }, { zone: "spalte-2" }, { zone: "spalte-3" }],
+  },
+  "4": {
+    grid: "grid gap-6 sm:grid-cols-2 lg:grid-cols-4",
+    zonen: [{ zone: "spalte-1" }, { zone: "spalte-2" }, { zone: "spalte-3" }, { zone: "spalte-4" }],
+  },
+  "1-2": {
+    grid: "grid gap-6 sm:grid-cols-3",
+    zonen: [
+      { zone: "spalte-1", span: "sm:col-span-1" },
+      { zone: "spalte-2", span: "sm:col-span-2" },
+    ],
+  },
+  "2-1": {
+    grid: "grid gap-6 sm:grid-cols-3",
+    zonen: [
+      { zone: "spalte-1", span: "sm:col-span-2" },
+      { zone: "spalte-2", span: "sm:col-span-1" },
+    ],
+  },
+};
+
+/** Keys for the Akkordeon entries. `<details>` open/closed is DOM state, so an
+ *  index key would leave the open row behind as soon as the board reorders
+ *  entries in the editor: React would reuse the node at position 0 for whatever
+ *  moved there. The question is the entry's natural identity; duplicates and
+ *  empty questions fall back to a positional key so React still sees distinct
+ *  values. */
+export const akkordeonKeys = (eintraege: { frage: string }[]): string[] => {
+  const gesehen = new Map<string, number>();
+  return eintraege.map((e, i) => {
+    const basis = e.frage || `eintrag-${i}`;
+    const n = (gesehen.get(basis) ?? 0) + 1;
+    gesehen.set(basis, n);
+    return n === 1 ? basis : `${basis}#${n}`;
+  });
+};
+
+/** Legal-text pages stay at reading width — "voll" is never offered there,
+ *  enforced here rather than left to editorial judgement (spec §4). */
+const LEGAL_SLUGS = new Set(["datenschutz", "impressum", "nutzungsbedingungen"]);
+
+const BREITE_OPTIONS = [
+  { label: "Schmal", value: "schmal" },
+  { label: "Breit", value: "breit" },
+  { label: "Volle Breite", value: "voll" },
+] as const;
+
+const breiteField = {
+  type: "select" as const,
+  label: "Breite",
+  options: BREITE_OPTIONS,
+};
+
+const breiteFieldOhneVoll = {
+  type: "select" as const,
+  label: "Breite",
+  options: BREITE_OPTIONS.filter((o) => o.value !== "voll"),
+};
+
 /** The single seam every Puck tree passes through, on all eight paths — the
  *  seven public `<Render>` call sites and `<Puck>`.
  *
@@ -140,7 +212,7 @@ const ausrichtungField = {
 export function normalizeContent(data: Data, fallback: Breite): Data {
   const props = (data.root?.props ?? {}) as Record<string, unknown>;
   const mitBreite =
-    props.breite === "schmal" || props.breite === "breit"
+    props.breite === "schmal" || props.breite === "breit" || props.breite === "voll"
       ? data
       : ({ ...data, root: { ...data.root, props: { ...props, breite: fallback } } } as Data);
 
@@ -159,9 +231,16 @@ export function normalizeContent(data: Data, fallback: Breite): Data {
  * layout lives only in the route's `<main>` and the editor renders full-bleed.
  */
 export const puckConfig: Config<Blocks> = {
-  // `breite` is carried on root.props (seeded by normalizeContent), not a Puck field —
-  // it's a per-page layout constant, not something the board edits.
   root: {
+    fields: {
+      breite: breiteField,
+    },
+    resolveFields: (_data, { metadata }) => {
+      const slug = (metadata as { slug?: string } | undefined)?.slug;
+      return {
+        breite: slug !== undefined && LEGAL_SLUGS.has(slug) ? breiteFieldOhneVoll : breiteField,
+      };
+    },
     render: ({ children, ...props }) => {
       const breite = ((props as unknown as { breite?: Breite }).breite ?? "schmal") as Breite;
       const puck = (props as unknown as { puck?: { isEditing?: boolean; metadata?: unknown } })
@@ -489,17 +568,29 @@ export const puckConfig: Config<Blocks> = {
           options: [
             { label: "2 Spalten", value: "2" },
             { label: "3 Spalten", value: "3" },
+            { label: "4 Spalten", value: "4" },
+            { label: "1/3 + 2/3", value: "1-2" },
+            { label: "2/3 + 1/3", value: "2-1" },
           ],
         },
       },
       defaultProps: { anzahl: "2" },
-      render: ({ anzahl, puck }) => (
-        <div className={anzahl === "3" ? "grid gap-6 sm:grid-cols-3" : "grid gap-6 sm:grid-cols-2"}>
-          {puck.renderDropZone({ zone: "spalte-1" })}
-          {puck.renderDropZone({ zone: "spalte-2" })}
-          {anzahl === "3" ? puck.renderDropZone({ zone: "spalte-3" }) : null}
-        </div>
-      ),
+      render: ({ anzahl, puck }) => {
+        const layout = SPALTEN_LAYOUT[anzahl];
+        return (
+          <div className={layout.grid}>
+            {layout.zonen.map(({ zone, span }) =>
+              span ? (
+                <div key={zone} className={span}>
+                  {puck.renderDropZone({ zone })}
+                </div>
+              ) : (
+                <React.Fragment key={zone}>{puck.renderDropZone({ zone })}</React.Fragment>
+              ),
+            )}
+          </div>
+        );
+      },
     },
     Organigramm: {
       label: "Organigramm",
@@ -554,6 +645,61 @@ export const puckConfig: Config<Blocks> = {
         ) : (
           <Organigramm kaesten={kaesten} />
         ),
+    },
+    Panel: {
+      label: "Panel / Kasten",
+      fields: {
+        titel: { type: "text", label: "Titel (optional)" },
+        variante: {
+          type: "select",
+          label: "Variante",
+          options: [
+            { label: "Standard", value: "standard" },
+            { label: "Hervorgehoben", value: "hervorgehoben" },
+          ],
+        },
+      },
+      defaultProps: { titel: "", variante: "standard" },
+      render: ({ titel, variante, puck }) => (
+        <Card className={variante === "hervorgehoben" ? "border-l-4 border-l-bdas-red p-6" : "p-6"}>
+          {titel ? <p className="mb-3 font-semibold text-bdas-ink">{titel}</p> : null}
+          {puck.renderDropZone({ zone: "inhalt" })}
+        </Card>
+      ),
+    },
+    Akkordeon: {
+      label: "Akkordeon",
+      fields: {
+        eintraege: {
+          type: "array",
+          label: "Einträge",
+          arrayFields: {
+            frage: { type: "text", label: "Frage" },
+            antwort: { type: "textarea", label: "Antwort" },
+          },
+          defaultItemProps: { frage: "", antwort: "" },
+          getItemSummary: (e) => e.frage || "Neuer Eintrag",
+        },
+      },
+      defaultProps: { eintraege: [] },
+      render: ({ eintraege, puck }) => {
+        const liste = eintraege ?? [];
+        const keys = akkordeonKeys(liste);
+        return liste.length === 0 && puck?.isEditing ? (
+          <BlockPlatzhalter titel="Akkordeon" hinweis="Noch keine Einträge hinzugefügt." />
+        ) : (
+          <div className="flex flex-col gap-3">
+            {liste.map((e, i) => (
+              <details key={keys[i]} className="bdas-accordion">
+                <summary>{e.frage}</summary>
+                <div>
+                  <p className="whitespace-pre-line text-bdas-ink-body">{e.antwort}</p>
+                </div>
+              </details>
+            ))}
+          </div>
+        );
+      },
     },
   },
 };

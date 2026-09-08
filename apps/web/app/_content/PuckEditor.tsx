@@ -11,6 +11,7 @@ import { Alert } from "@bdas/design-system";
 
 import type { CanvasChrome } from "./canvas-chrome";
 import { ContentSlugContext } from "./content-slug-context";
+import { PreviewToggle } from "./PreviewToggle";
 import { type Breite, normalizeContent, puckConfig } from "./puck-config";
 
 /** Full-page Puck editor. Publish = save-is-live (spec §1): PUT the document,
@@ -39,7 +40,7 @@ export function PuckEditor({
   // Puck treats a new `metadata` identity as a change signal and re-renders the
   // whole canvas tree; `setError` in onPublish would otherwise do that on every
   // failed save.
-  const metadata = useMemo(() => ({ chrome }), [chrome]);
+  const metadata = useMemo(() => ({ chrome, slug }), [chrome, slug]);
 
   return (
     <div className="min-h-screen">
@@ -59,6 +60,14 @@ export function PuckEditor({
           metadata={metadata}
           headerTitle="BDAS Editor"
           headerPath={`/${slug}`}
+          overrides={{
+            headerActions: ({ children }) => (
+              <>
+                <PreviewToggle />
+                {children}
+              </>
+            ),
+          }}
           onPublish={async (data: Data) => {
             setError(null);
             const res = await fetch(`/api/content/pages/${slug}`, {
