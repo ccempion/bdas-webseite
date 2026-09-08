@@ -74,7 +74,7 @@ export default async function DateiOrdnerPage({ params }: { params: { folderId: 
         />
       </section>
 
-      <FileList files={files} folderId={params.folderId} canWrite={false} />
+      <FileList files={files} folderId={params.folderId} canWrite={canWrite} />
     </main>
   );
 }

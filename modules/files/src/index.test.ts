@@ -325,6 +325,112 @@ describeIfDb("two-phase upload", () => {
   });
 });
 
+/**
+ * file_manager (local role redesign, D2b): full upload/delete access to the
+ * group_members root of its OWN group — never the local_board root, never
+ * another group's members folder.
+ */
+describeIfDb("two-phase upload / deleteFile — file_manager scope boundary", () => {
+  let t: TestDb;
+  const fileMgrMuc = () =>
+    meWith([{ role: "file_manager", groupId: "grp_muc" }], {
+      id: "mbr_1",
+      userId: "usr_1",
+      firstName: "T",
+      lastName: "M",
+      primaryGroupId: "grp_muc",
+      status: "active",
+      joinedAt: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+  async function folderId(scope: string, groupId: string): Promise<string> {
+    const rows = await t.db.select().from(folders);
+    return rows.find((f) => f.scope === scope && f.groupId === groupId)!.id;
+  }
+
+  beforeEach(async () => {
+    t = await createTestDb();
+    await applyMigrations(t);
+    setStorage(fakeStorage());
+    await seedGroupAndMember(t, { groupId: "grp_muc", memberId: "mbr_1", userId: "usr_1" });
+    await t.client`INSERT INTO groups (id, slug, name, city) VALUES ('grp_other', 'other', 'Andere', 'Anderswo')`;
+    await ensureFolders(t.db);
+  });
+  afterEach(async () => {
+    resetEventBus();
+    await t.cleanup();
+  });
+
+  it("uploads, confirms, and deletes a file in its own group's members folder", async () => {
+    const ownMembersFolder = await folderId("group_members", "grp_muc");
+    setStorage(fakeStorage({ statObject: async () => ({ sizeBytes: 500 }) }));
+    const { fileId: uploaded } = await requestUpload(
+      t.db,
+      ownMembersFolder,
+      { filename: "gruppenfoto.pdf", mimeType: "application/pdf", sizeBytes: 500 },
+      fileMgrMuc(),
+    );
+    const confirmed = await confirmUpload(t.db, uploaded, fileMgrMuc());
+    expect(confirmed.status).toBe("ready");
+
+    await deleteFile(t.db, uploaded, fileMgrMuc());
+    expect(await t.db.select().from(files)).toHaveLength(0);
+  });
+
+  it("refuses to upload into the local_board (board-internal) folder of its own group", async () => {
+    const boardFolder = await folderId("local_board", "grp_muc");
+    await expect(
+      requestUpload(
+        t.db,
+        boardFolder,
+        { filename: "vertraulich.pdf", mimeType: "application/pdf", sizeBytes: 10 },
+        fileMgrMuc(),
+      ),
+    ).rejects.toThrow("Kein Schreibzugriff auf diesen Ordner.");
+  });
+
+  it("refuses to upload into another group's members folder", async () => {
+    const foreignFolder = await folderId("group_members", "grp_other");
+    await expect(
+      requestUpload(
+        t.db,
+        foreignFolder,
+        { filename: "fremd.pdf", mimeType: "application/pdf", sizeBytes: 10 },
+        fileMgrMuc(),
+      ),
+    ).rejects.toThrow("Kein Schreibzugriff auf diesen Ordner.");
+  });
+
+  it("refuses to delete a file that already lives in the board folder", async () => {
+    const boardFolder = await folderId("local_board", "grp_muc");
+    const boardMember = meWith([{ role: "local_board_lead", groupId: "grp_muc" }], {
+      id: "mbr_1",
+      userId: "usr_1",
+      firstName: "T",
+      lastName: "M",
+      primaryGroupId: "grp_muc",
+      status: "active",
+      joinedAt: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+    setStorage(fakeStorage({ statObject: async () => ({ sizeBytes: 500 }) }));
+    const { fileId: boardFileId } = await requestUpload(
+      t.db,
+      boardFolder,
+      { filename: "protokoll.pdf", mimeType: "application/pdf", sizeBytes: 500 },
+      boardMember,
+    );
+    await confirmUpload(t.db, boardFileId, boardMember);
+
+    await expect(deleteFile(t.db, boardFileId, fileMgrMuc())).rejects.toThrow(
+      "Kein Schreibzugriff auf diese Datei.",
+    );
+  });
+});
+
 describeIfDb("listFiles / getDownloadUrl / deleteFile", () => {
   let t: TestDb;
   const boardMe = () =>
