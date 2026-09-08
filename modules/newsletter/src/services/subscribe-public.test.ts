@@ -117,6 +117,71 @@ describe.skipIf(!reachable)("subscribePublicly", () => {
     expect(seen).toHaveLength(0);
   });
 
+  it("stops the sixth signup from one IP within the hour, silently", async () => {
+    const ctx = { ip: "203.0.113.55" };
+    for (let i = 1; i <= 5; i += 1) {
+      await subscribePublicly(t.db, {
+        email: `mensch${i}@example.org`,
+        source: "footer",
+        context: ctx,
+      });
+    }
+    expect(await rows()).toHaveLength(5);
+
+    // The sixth is refused — but the caller cannot tell (spec §8 no. 4).
+    await expect(
+      subscribePublicly(t.db, { email: "mensch6@example.org", source: "footer", context: ctx }),
+    ).resolves.toBeUndefined();
+    expect(await rows()).toHaveLength(5);
+  });
+
+  it("counts the IP budget across addresses, and leaves other IPs alone", async () => {
+    // Five different addresses from one IP exhaust the budget even though each
+    // address is seen for the first time — that is the point of the IP cap.
+    for (let i = 1; i <= 6; i += 1) {
+      await subscribePublicly(t.db, {
+        email: `a${i}@example.org`,
+        source: "footer",
+        context: { ip: "203.0.113.99" },
+      });
+    }
+    expect(await rows()).toHaveLength(5);
+
+    await subscribePublicly(t.db, {
+      email: "anders@example.org",
+      source: "footer",
+      context: { ip: "198.51.100.1" },
+    });
+    expect(await rows()).toHaveLength(6);
+  });
+
+  it("does not apply the IP cap when no IP is known", async () => {
+    // A server-side caller may have no IP at all; refusing everything then
+    // would break the path rather than protect it.
+    for (let i = 1; i <= 7; i += 1) {
+      await subscribePublicly(t.db, { email: `ohne${i}@example.org`, source: "footer" });
+    }
+    expect(await rows()).toHaveLength(7);
+  });
+
+  it("refuses over-budget attempts before touching the subscriber table", async () => {
+    const ctx = { ip: "203.0.113.77" };
+    for (let i = 1; i <= 5; i += 1) {
+      await subscribePublicly(t.db, { email: `b${i}@example.org`, source: "footer", context: ctx });
+    }
+    // An address that already exists must not be touched either once the IP is
+    // over budget — otherwise the cap would still leak "this address is known"
+    // through a changed token.
+    const before = await t.client.unsafe(
+      `SELECT confirm_token_hash FROM newsletter_subscribers WHERE email = 'b1@example.org'`,
+    );
+    await subscribePublicly(t.db, { email: "b1@example.org", source: "footer", context: ctx });
+    const after = await t.client.unsafe(
+      `SELECT confirm_token_hash FROM newsletter_subscribers WHERE email = 'b1@example.org'`,
+    );
+    expect(after[0]!["confirm_token_hash"]).toBe(before[0]!["confirm_token_hash"]);
+  });
+
   it("rejects an address that is not one", async () => {
     await expect(
       subscribePublicly(t.db, { email: "keine-adresse", source: "footer" }),
