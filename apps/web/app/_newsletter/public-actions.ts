@@ -26,7 +26,10 @@ function consentContext() {
   return {
     ip: h.get("x-forwarded-for")?.split(",")[0]?.trim() ?? h.get("x-real-ip"),
     userAgent: h.get("user-agent"),
-    siteUrl: process.env["PUBLIC_SITE_URL"] ?? "",
+    // Same fallback as every other mail-sending action in the app. An empty
+    // base would put a RELATIVE link in the confirmation mail, which is dead
+    // the moment it leaves the server.
+    siteUrl: process.env["PUBLIC_SITE_URL"] ?? "http://localhost:3000",
   };
 }
 
