@@ -4,12 +4,13 @@ import type { Grant, Member, MemberStatus } from "./types";
 
 const ALL_ROLES: ReadonlyArray<Role> = [
   "member",
-  "local_board",
   "local_board_lead",
   "federal_board",
   "alumnus",
   "event_organizer",
   "page_editor",
+  "file_manager",
+  "blogger",
 ];
 
 export function isRole(value: string): value is Role {
@@ -52,36 +53,34 @@ export function isFederalBoard(grants: ReadonlyArray<Grant>): boolean {
 }
 
 /**
- * May the actor manage this group? Federal board → any group. A `local_board`
- * or `local_board_lead` → only the group its grant is scoped to (a lead is the
- * group's highest-trust role and manages it too, per ADR 0013). A null groupId
- * is manageable only by federal board (a member with no primary group).
+ * May the actor manage this group? Federal board → any group. A group's Lead
+ * (`local_board_lead`) → only the group its grant is scoped to — the local
+ * role redesign folded the old plain `local_board` role into Lead, so Lead is
+ * now the sole local "manages this group" authority. A null groupId is
+ * manageable only by federal board (a member with no primary group).
  */
 export function canManageGroup(grants: ReadonlyArray<Grant>, groupId: string | null): boolean {
-  if (isFederalBoard(grants)) return true;
-  if (groupId === null) return false;
-  return grants.some(
-    (g) => (g.role === "local_board" || g.role === "local_board_lead") && g.groupId === groupId,
-  );
-}
-
-/**
- * May the actor grant/revoke `local_board` for this group (ADR 0013)? Federal
- * board → any group. A `local_board_lead` → only the group its lead grant is
- * scoped to. A null groupId is never delegable — only federal (handled above).
- * Note: a plain `local_board` grant does NOT confer this; only a lead does.
- */
-export function canGrantLocalBoard(grants: ReadonlyArray<Grant>, groupId: string | null): boolean {
   if (isFederalBoard(grants)) return true;
   if (groupId === null) return false;
   return grants.some((g) => g.role === "local_board_lead" && g.groupId === groupId);
 }
 
 /**
+ * May the actor grant/revoke the group's local delegate roles (`event_organizer`,
+ * `page_editor`, `file_manager`, `blogger`)? Federal board → any group. A Lead
+ * → only its own group. Identical authority to `canManageGroup` — kept as a
+ * separate name because the two questions ("can run this group" vs. "can hand
+ * out its delegate roles") are conceptually distinct even though every Lead
+ * today answers yes to both.
+ */
+export function canGrantLocalRoles(grants: ReadonlyArray<Grant>, groupId: string | null): boolean {
+  return canManageGroup(grants, groupId);
+}
+
+/**
  * May the actor edit the group's public content page (ADR 0026)? Federal board
  * → any group. A `local_board_lead` or `page_editor` → only the group its
- * grant is scoped to. Plain `local_board` does NOT edit — the lead delegates
- * explicitly via `page_editor`.
+ * grant is scoped to.
  */
 export function canEditGroupPage(grants: ReadonlyArray<Grant>, groupId: string): boolean {
   if (isFederalBoard(grants)) return true;
@@ -93,21 +92,19 @@ export function canEditGroupPage(grants: ReadonlyArray<Grant>, groupId: string):
 /**
  * May the actor decide a *pending* member's join for a local group (ADR 0021)?
  * A join decision — accept (→ active) or reject (→ inactive) — belongs to the
- * group's own board: a `local_board` or `local_board_lead` scoped to that group.
- * Federal board is NOT a blanket authority here; it may act only as an emergency
- * fallback when the group has zero active local-board seats. A pending member
- * with no group (groupId null) has no local board to speak for it and is routed
- * through `canManageGroup` (federal-only) by the caller instead.
+ * group's Lead. Federal board is NOT a blanket authority here; it may act only
+ * as an emergency fallback when the group has zero active Lead seats. A
+ * pending member with no group (groupId null) has no local Lead to speak for
+ * it and is routed through `canManageGroup` (federal-only) by the caller
+ * instead.
  */
 export function canDecideJoinRequest(
   grants: ReadonlyArray<Grant>,
   groupId: string,
   groupHasLocalBoard: boolean,
 ): boolean {
-  const isLocalBoard = grants.some(
-    (g) => (g.role === "local_board" || g.role === "local_board_lead") && g.groupId === groupId,
-  );
-  if (isLocalBoard) return true;
+  const isLead = grants.some((g) => g.role === "local_board_lead" && g.groupId === groupId);
+  if (isLead) return true;
   if (!groupHasLocalBoard) return isFederalBoard(grants);
   return false;
 }

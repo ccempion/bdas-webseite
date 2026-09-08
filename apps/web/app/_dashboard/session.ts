@@ -5,7 +5,7 @@ import { getCurrentUser, type CurrentUser } from "@bdas/auth";
 import { getDb } from "@bdas/db";
 import { canAdministerBoard, canSeeFederalScope, canSeeGroupScope } from "@bdas/dashboard-shell";
 import { isFlagOn } from "@bdas/feature-flags";
-import { canGrantLocalBoard, getCurrentMember, type CurrentMember } from "@bdas/members";
+import { canGrantLocalRoles, getCurrentMember, type CurrentMember } from "@bdas/members";
 import { getGroupBySlug } from "@bdas/groups";
 
 import { readSessionCookie } from "../../lib/auth-cookie";
@@ -55,12 +55,12 @@ export async function requireGroupScope(
   return { me, groupId: group.id };
 }
 
-/** Lead-only gate for /gruppe/[slug]/vorstand: federal or a local_board_lead
- *  of this group (canGrantLocalBoard, ADR 0013). */
+/** Lead-only gate for /gruppe/[slug]/vorstand: federal or the group's Lead
+ *  (canGrantLocalRoles, ADR 0013). */
 export async function requireLeadScope(
   slug: string,
 ): Promise<{ me: CurrentMember; groupId: string }> {
   const { me, groupId } = await requireGroupScope(slug);
-  if (!canGrantLocalBoard(me.grants, groupId)) redirect(`/gruppe/${slug}/overview`);
+  if (!canGrantLocalRoles(me.grants, groupId)) redirect(`/gruppe/${slug}/overview`);
   return { me, groupId };
 }

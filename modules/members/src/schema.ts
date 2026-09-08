@@ -24,7 +24,8 @@ export type MemberRow = typeof members.$inferSelect;
 
 /**
  * Scoped role grants (ADR 0007). `groupId` NULL ⇔ unscoped (federal_board);
- * set ⇔ scoped (local_board of that group). `revokedAt` NULL ⇔ active.
+ * set ⇔ scoped (local_board_lead of that group, or one of its delegate roles).
+ * `revokedAt` NULL ⇔ active.
  */
 export const memberRoleGrants = pgTable(
   "member_role_grants",

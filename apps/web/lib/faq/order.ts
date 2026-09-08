@@ -8,11 +8,10 @@ export type FaqGrant = { readonly role: Role; readonly groupId: string | null };
 
 export type OrderedSection = { readonly key: SectionKey; readonly defaultOpen: boolean };
 
-/** The four sub-roles that make the `vorstand` section a viewer's primary one.
+/** The sub-roles that make the `vorstand` section a viewer's primary one.
  *  Their strings double as the subgroup ids in content/faq/vorstand.ts. */
 const VORSTAND_ROLES: ReadonlySet<Role> = new Set<Role>([
   "local_board_lead",
-  "local_board",
   "event_organizer",
   "page_editor",
 ]);

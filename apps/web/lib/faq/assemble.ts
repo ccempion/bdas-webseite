@@ -72,9 +72,9 @@ const SECTION_META: Record<FaqSectionKey, SectionMeta> = {
     title: "Vorstand",
     intro:
       "Funktionen für den lokalen Vorstand, jeweils auf die eigene Gruppe begrenzt — getrennt nach den vier Vorstandsrollen.",
-    visibleTo: ["local_board", "local_board_lead", "event_organizer", "page_editor"],
+    visibleTo: ["local_board_lead", "event_organizer", "page_editor"],
     subgroups: [
-      { key: "local_board", title: "Vorstand", visibleTo: ["local_board", "local_board_lead"] },
+      { key: "local_board", title: "Vorstand", visibleTo: ["local_board_lead"] },
       { key: "local_board_lead", title: "LEAD", visibleTo: ["local_board_lead"] },
       { key: "event_organizer", title: "Event Organisator", visibleTo: ["event_organizer"] },
       { key: "page_editor", title: "Seiten Editor", visibleTo: ["page_editor"] },

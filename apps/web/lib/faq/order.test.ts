@@ -21,7 +21,6 @@ describe("primarySection", () => {
   });
 
   it("any local board sub-role → vorstand", () => {
-    expect(primarySection([grant("local_board", "g1")])).toBe("vorstand");
     expect(primarySection([grant("local_board_lead", "g1")])).toBe("vorstand");
     expect(primarySection([grant("event_organizer", "g1")])).toBe("vorstand");
     expect(primarySection([grant("page_editor", "g1")])).toBe("vorstand");
@@ -42,7 +41,11 @@ describe("orderSections", () => {
       .map((s) => s.key);
 
   it("always renders all four sections with allgemein last", () => {
-    for (const g of [[grant("member")], [grant("federal_board")], [grant("local_board", "g1")]]) {
+    for (const g of [
+      [grant("member")],
+      [grant("federal_board")],
+      [grant("local_board_lead", "g1")],
+    ]) {
       expect(keys(g)).toHaveLength(4);
       expect(keys(g).at(-1)).toBe("allgemein");
       expect(new Set(keys(g))).toEqual(

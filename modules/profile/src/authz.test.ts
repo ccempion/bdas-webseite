@@ -20,7 +20,7 @@ describe("canViewProfile", () => {
     expect(canViewProfile(OWNER, "usr_owner")).toBe(true);
   });
   it("allows any board role", () => {
-    for (const role of ["federal_board", "local_board", "local_board_lead"]) {
+    for (const role of ["federal_board", "local_board_lead"]) {
       expect(
         canViewProfile({ userId: "usr_x", grants: [{ role, groupId: null }] }, "usr_owner"),
       ).toBe(true);

@@ -193,7 +193,7 @@ describeIfDb("ensureFolders / listFolders", () => {
 describeIfDb("two-phase upload", () => {
   let t: TestDb;
   const boardMe = () =>
-    meWith([{ role: "local_board", groupId: "grp_muc" }], {
+    meWith([{ role: "local_board_lead", groupId: "grp_muc" }], {
       id: "mbr_1",
       userId: "usr_1",
       firstName: "T",
@@ -328,7 +328,7 @@ describeIfDb("two-phase upload", () => {
 describeIfDb("listFiles / getDownloadUrl / deleteFile", () => {
   let t: TestDb;
   const boardMe = () =>
-    meWith([{ role: "local_board", groupId: "grp_muc" }], {
+    meWith([{ role: "local_board_lead", groupId: "grp_muc" }], {
       id: "mbr_1",
       userId: "usr_1",
       firstName: "T",
@@ -434,7 +434,7 @@ describeIfDb("listFiles / getDownloadUrl / deleteFile", () => {
 describeIfDb("sweepStalePendingUploads", () => {
   let t: TestDb;
   const boardMe = () =>
-    meWith([{ role: "local_board", groupId: "grp_muc" }], {
+    meWith([{ role: "local_board_lead", groupId: "grp_muc" }], {
       id: "mbr_1",
       userId: "usr_1",
       firstName: "T",
@@ -569,7 +569,7 @@ describeIfDb("row-level security lockdown", () => {
 describeIfDb("folderFileCounts", () => {
   let t: TestDb;
   const boardMe = () =>
-    meWith([{ role: "local_board", groupId: "grp_muc" }], {
+    meWith([{ role: "local_board_lead", groupId: "grp_muc" }], {
       id: "mbr_1",
       userId: "usr_1",
       firstName: "T",

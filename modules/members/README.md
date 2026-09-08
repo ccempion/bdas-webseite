@@ -17,10 +17,10 @@ Federation-side member profiles. Identity lives in `@bdas/auth`; membership
 
 1. User registers + verifies through `@bdas/auth` (no member row yet).
 2. User fills the `/account` form → `createProfile()` → status `pending`.
-3. A board user who manages the member's group (`federal_board`, or
-   `local_board` of that group) opens `/admin/pending-members` → approves via
+3. A board user who manages the member's group (`federal_board`, or the
+   group's `local_board_lead`) opens `/admin/pending-members` → approves via
    `approveMember()` → status `active` and `joined_at` is stamped.
-4. The active member can be promoted (`grantRole local_board <group>`,
+4. The active member can be promoted (`grantRole local_board_lead <group>`,
    federal_board only) or transitioned to `inactive` / `alumnus` later.
 
 ## Public surface
@@ -60,7 +60,7 @@ import {
 
 A `Grant` is `{ role, groupId }`. `groupId === null` ⇔ unscoped
 (`federal_board`, status-implied `member`/`alumnus`); a set `groupId` ⇔ scoped
-(`local_board` of that group).
+(`local_board_lead` of that group, or one of its delegate roles).
 
 `effectiveGrants(jwtRoles, member, dbGrants)` unions:
 
@@ -72,27 +72,32 @@ This is `getCurrentMember(...).grants`. Authorize against it via the
 predicates — never inspect a raw role list:
 
 - `isFederalBoard(grants)` — holds an unscoped board grant.
-- `canManageGroup(grants, groupId)` — federal_board (any) **or** `local_board`
-  scoped to `groupId`.
+- `canManageGroup(grants, groupId)` — federal_board (any) **or** the group's
+  Lead (`local_board_lead`). The local role redesign folded the old plain
+  `local_board` role into Lead, so Lead is the sole local "manages this group"
+  authority.
 - `canApproveMember(grants, member)` — `canManageGroup` of the member's
   primary group.
-- `canGrantLocalBoard(grants, groupId)` — federal_board (any) **or**
-  `local_board_lead` scoped to `groupId`.
+- `canGrantLocalRoles(grants, groupId)` — federal_board (any) **or** the
+  group's Lead. Governs granting the group's delegate roles: `event_organizer`,
+  `page_editor`, `file_manager`, `blogger`.
 - `canEditGroupPage(grants, groupId)` — federal_board (any) **or**
   `local_board_lead`/`page_editor` scoped to `groupId` (ADR 0026). `page_editor`
   is a group-scoped, lead-delegable role for the group's public content page —
-  granted/revoked the same way as `event_organizer` (ADR 0013/0017); plain
-  `local_board` does not get it automatically.
+  granted/revoked the same way as `event_organizer` (ADR 0013/0017).
 
 Grants are resolved from the DB on every request, **not** carried in the JWT
 (ADR 0007 §2) — a revoked grant takes effect immediately and ADR 0002 / the
 WordPress SSO plugin are untouched.
 
-`grantRole` / `revokeRole` (ADR 0007, amended by ADR 0013): `federal_board`
-may grant any role. `local_board` grants require a `groupId`; `federal_board`
-grants must be unscoped. `local_board_lead` (ADR 0013): federal board appoints
-leads per group (several allowed); a lead grants/revokes `local_board` within
-its own group only.
+`grantRole` / `revokeRole` (ADR 0007, amended by ADR 0013 and the local role
+redesign): `federal_board` may grant any role. `local_board_lead`,
+`event_organizer`, `page_editor`, `file_manager`, and `blogger` grants require
+a `groupId`; `federal_board` grants must be unscoped. `local_board_lead`
+(ADR 0013): federal board appoints leads per group (several allowed); a lead
+grants/revokes the group's delegate roles (`event_organizer`, `page_editor`,
+`file_manager`, `blogger`) within its own group only — never another Lead, and
+never `federal_board`.
 
 ## Status transitions
 
@@ -124,7 +129,7 @@ withdrawn by `withdrawGroupChange`. At most one open request per member (partial
 unique index).
 
 `decideGroupChange` is the board's side. The **destination** group's board
-decides — a `local_board`/`local_board_lead` scoped to `to_group_id` — with
+decides — its Lead (`local_board_lead`) scoped to `to_group_id` — with
 federal board as fallback only when that group has no active board seat
 (`canDecideJoinRequest`, ADR 0021). The origin group can see the request but has
 no veto. Approval moves the member, leaves `status` untouched, and **revokes

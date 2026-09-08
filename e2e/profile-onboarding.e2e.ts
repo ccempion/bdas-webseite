@@ -10,7 +10,7 @@
  */
 import { expect, test } from "@playwright/test";
 
-import { grantLocalBoard, seedGroup, uniqueEmail, uniqueSlug } from "./helpers/db";
+import { grantLocalBoardLead, seedGroup, uniqueEmail, uniqueSlug } from "./helpers/db";
 import {
   createProfile,
   login,
@@ -100,7 +100,7 @@ test("register → verify → wizard → the local board sees the application", 
   const boardEmail = uniqueEmail("profil-vorstand");
   await registerVerifyLogin(page, { email: boardEmail });
   await createProfile(page, { firstName: "Lokal", lastName: "Vorstand" });
-  await grantLocalBoard(boardEmail, groupId); // DB-read grants: live next request
+  await grantLocalBoardLead(boardEmail, groupId); // DB-read grants: live next request
 
   await page.goto(`/gruppe/${groupSlug}/bewerbungen`);
   const card = page.locator("main > div", { hasText: lastName });

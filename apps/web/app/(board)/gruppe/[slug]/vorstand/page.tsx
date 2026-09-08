@@ -39,7 +39,6 @@ export default async function VorstandPage({
             name: `${m.firstName} ${m.lastName}`,
           }))}
           roleOptions={[
-            { role: "local_board", label: "Vorstand", groupId },
             { role: "event_organizer", label: "Organisator", groupId },
             { role: "page_editor", label: "Seiten-Editor", groupId },
           ]}
@@ -66,7 +65,6 @@ export default async function VorstandPage({
         <RoleRoster
           sections={[
             { title: "Leads", holders: ofGroup.filter((h) => h.role === "local_board_lead") },
-            { title: "Vorstand", holders: ofGroup.filter((h) => h.role === "local_board") },
             {
               title: "Organisatoren",
               holders: ofGroup.filter((h) => h.role === "event_organizer"),

@@ -46,18 +46,18 @@ describeIfDb("listBoardRecipientsForGroup", () => {
     `;
   }
 
-  it("returns the group's active local_board + local_board_lead grantees", async () => {
+  it("returns the group's active Lead(s)", async () => {
     await createMember("mem_lead", "usr_lead");
-    await createMember("mem_board", "usr_board");
+    await createMember("mem_lead2", "usr_lead2");
     await createMember("mem_federal", "usr_federal");
 
     await grant("mem_lead", "local_board_lead", "grp_a", "mrg_1");
-    await grant("mem_board", "local_board", "grp_a", "mrg_2");
+    await grant("mem_lead2", "local_board_lead", "grp_a", "mrg_2");
     await grant("mem_federal", "federal_board", null, "mrg_3");
 
     const ids = await listBoardRecipientsForGroup(t.db, "grp_a");
 
-    expect(new Set(ids)).toEqual(new Set(["mem_lead", "mem_board"]));
+    expect(new Set(ids)).toEqual(new Set(["mem_lead", "mem_lead2"]));
   });
 
   it("excludes revoked grants", async () => {

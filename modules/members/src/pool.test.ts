@@ -15,7 +15,7 @@ const FEDERAL = {
 };
 const LOCAL = {
   userId: "usr_local",
-  grants: [{ role: "local_board", groupId: "grp_a" }] as ReadonlyArray<Grant>,
+  grants: [{ role: "local_board_lead", groupId: "grp_a" }] as ReadonlyArray<Grant>,
 };
 
 describeIfDb("groupless pool", () => {

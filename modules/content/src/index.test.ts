@@ -149,9 +149,9 @@ describeIfDb("group-scoped saves (ADR 0026)", () => {
     expect((await getPage(t.db, GROUP_SLUG))?.data).toEqual(DOC);
   });
 
-  it("plain local_board and foreign-group grants are rejected", async () => {
+  it("a non-editor role and foreign-group grants are rejected", async () => {
     for (const actor of [
-      scoped("local_board", "grp_aachen"),
+      scoped("event_organizer", "grp_aachen"),
       scoped("page_editor", "grp_koeln"),
       scoped("local_board_lead", "grp_koeln"),
       PLAIN,

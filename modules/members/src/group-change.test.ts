@@ -32,7 +32,7 @@ const self = (userId: string) => ({
 });
 const boardOf = (userId: string, groupId: string) => ({
   userId,
-  grants: [{ role: "local_board", groupId }] as ReadonlyArray<Grant>,
+  grants: [{ role: "local_board_lead", groupId }] as ReadonlyArray<Grant>,
 });
 
 describeIfDb("group change requests — schema", () => {
@@ -185,7 +185,7 @@ describeIfDb("changePrimaryGroup", () => {
 
   it("applies an exit immediately, logs it, and revokes origin-group grants", async () => {
     const id = await activeMember("usr_leaver");
-    await grantRole(t.db, id, "local_board", FEDERAL, "grp_a");
+    await grantRole(t.db, id, "local_board_lead", FEDERAL, "grp_a");
 
     const res = await changePrimaryGroup(t.db, id, null, self("usr_leaver"));
 
@@ -201,7 +201,7 @@ describeIfDb("changePrimaryGroup", () => {
     expect(logged?.["to_group_id"]).toBeNull();
 
     const grants = await t.client`
-      SELECT revoked_at FROM member_role_grants WHERE member_id = ${id} AND role = 'local_board'
+      SELECT revoked_at FROM member_role_grants WHERE member_id = ${id} AND role = 'local_board_lead'
     `;
     expect(grants[0]?.["revoked_at"]).not.toBeNull();
   });
@@ -313,7 +313,7 @@ describeIfDb("decideGroupChange", () => {
       primaryGroupId: groupId,
     });
     await approveMember(t.db, m.id, FEDERAL);
-    await grantRole(t.db, m.id, "local_board", FEDERAL, groupId);
+    await grantRole(t.db, m.id, "local_board_lead", FEDERAL, groupId);
   }
 
   it("approves: moves the member and closes the request", async () => {
@@ -336,7 +336,7 @@ describeIfDb("decideGroupChange", () => {
 
   it("approves: revokes grants scoped to the group left behind", async () => {
     const { memberId, requestId } = await pendingTransfer("usr_exboard");
-    await grantRole(t.db, memberId, "local_board", FEDERAL, "grp_a");
+    await grantRole(t.db, memberId, "local_board_lead", FEDERAL, "grp_a");
     await giveBoardSeat("usr_b_board", "grp_b");
 
     await decideGroupChange(t.db, requestId, "approved", boardOf("usr_b_board", "grp_b"));
@@ -576,7 +576,7 @@ describeIfDb("listIncomingGroupChanges", () => {
       primaryGroupId: groupId,
     });
     await approveMember(t.db, m.id, FEDERAL);
-    await grantRole(t.db, m.id, "local_board", FEDERAL, groupId);
+    await grantRole(t.db, m.id, "local_board_lead", FEDERAL, groupId);
   }
 
   it("the destination board sees the applicant, hydrated, and may decide", async () => {
@@ -739,7 +739,7 @@ describeIfDb("rejection reasons", () => {
       INSERT INTO members (id, user_id, first_name, last_name, primary_group_id, status, joined_at)
       VALUES ('mem_board', 'usr_board', 'Bea', 'Board', 'grp_b', 'active', now())
     `;
-    await grantRole(t.db, "mem_board", "local_board", FEDERAL, "grp_b");
+    await grantRole(t.db, "mem_board", "local_board_lead", FEDERAL, "grp_b");
   });
 
   afterEach(async () => {

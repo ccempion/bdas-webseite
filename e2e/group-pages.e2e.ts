@@ -58,7 +58,7 @@ test("a page_editor reaches the Puck editor from the group page", async ({ page 
   await createProfile(page, { firstName: "Page", lastName: "Editor" });
 
   // memberIdByEmail races the profile-create Server Action's commit (same
-  // race grantLocalBoard/activateMemberByEmail in helpers/db.ts poll for);
+  // race grantLocalBoardLead/activateMemberByEmail in helpers/db.ts poll for);
   // poll until the row lands.
   let memberId: string | null = null;
   await expect(async () => {

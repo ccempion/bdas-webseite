@@ -15,9 +15,9 @@ export type Scope =
 /**
  * The scopes a user may switch between, derived from their grants (ADR 0007 /
  * 0013). Federal board is a superset: it yields the federal scope AND every
- * active group. `local_board` and `local_board_lead` each yield their own
- * group. Order: federal first, then groups in the order `groups` is given
- * (callers pass them city-then-name sorted). De-duplicated by group id.
+ * active group. Each Lead (`local_board_lead`) grant yields its own group.
+ * Order: federal first, then groups in the order `groups` is given (callers
+ * pass them city-then-name sorted). De-duplicated by group id.
  */
 export function boardScopes(
   grants: ReadonlyArray<Grant>,
@@ -32,7 +32,7 @@ export function boardScopes(
     for (const g of groups) if (g.status === "active") wanted.add(g.id);
   } else {
     for (const grant of grants) {
-      if ((grant.role === "local_board" || grant.role === "local_board_lead") && grant.groupId) {
+      if (grant.role === "local_board_lead" && grant.groupId) {
         wanted.add(grant.groupId);
       }
     }
@@ -40,7 +40,7 @@ export function boardScopes(
 
   for (const g of groups) {
     if (!wanted.has(g.id)) continue;
-    // A local board may not manage an archived group; only federal winds it down
+    // A Lead may not manage an archived group; only federal winds it down
     // (and the federal branch above already restricts to active groups anyway).
     if (!isFederal && g.status === "archived") continue;
     out.push({ kind: "group", groupId: g.id, slug: g.slug, name: g.name });

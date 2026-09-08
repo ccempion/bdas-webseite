@@ -25,7 +25,9 @@ function visibleFor(grants: FaqGrant[]): { keys: SectionKey[]; vorstandSubgroupI
 
 describe("hasAny", () => {
   it("true when the viewer holds at least one of the listed roles", () => {
-    expect(hasAny([grant("local_board", "g1")], ["local_board", "federal_board"])).toBe(true);
+    expect(hasAny([grant("local_board_lead", "g1")], ["local_board_lead", "federal_board"])).toBe(
+      true,
+    );
   });
 
   it("false when none of the viewer's grants match", () => {
@@ -102,11 +104,6 @@ describe("role-by-role visibility (mirrors page.tsx's filter step)", () => {
   it("a pure page_editor sees vorstand, but only the page_editor subgroup", () => {
     const { vorstandSubgroupIds } = visibleFor([grant("page_editor", "g1")]);
     expect(vorstandSubgroupIds).toEqual(["page_editor"]);
-  });
-
-  it("a plain local_board sees the baseline subgroup only, not LEAD-exclusive content", () => {
-    const { vorstandSubgroupIds } = visibleFor([grant("local_board", "g1")]);
-    expect(vorstandSubgroupIds).toEqual(["local_board"]);
   });
 
   it("a LEAD sees both the baseline subgroup and the LEAD-exclusive one", () => {

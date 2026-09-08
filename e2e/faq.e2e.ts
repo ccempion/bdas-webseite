@@ -15,7 +15,7 @@ import {
   deleteFaqEntriesByContext,
   deleteUserByEmail,
   faqFeedbackByUserAndEntry,
-  grantLocalBoard,
+  grantLocalBoardLead,
   seedGroup,
   uniqueSlug,
 } from "./helpers/db";
@@ -131,7 +131,7 @@ test.describe("Board-Verwaltung /federal/faq", () => {
     const email = "faq-local-board@e2e.bdas.test";
     await deleteUserByEmail(email);
     await registerVerifyLogin(page, { email, firstName: "Faq", lastName: "Lokal" });
-    await grantLocalBoard(email, groupId); // takes effect on next request (DB-read grants)
+    await grantLocalBoardLead(email, groupId); // takes effect on next request (DB-read grants)
 
     await page.goto("/federal/faq");
     await page.waitForURL("**/account**");
