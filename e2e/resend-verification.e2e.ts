@@ -23,7 +23,7 @@ test("unverified login surfaces the resend link, which issues a fresh token", as
   // Logging in unverified must not reach /account; it surfaces the resend link.
   await resetRateLimits();
   await page.goto("/anmelden");
-  await page.getByLabel("E-Mail").fill(email);
+  await page.getByLabel("E-Mail", { exact: true }).fill(email);
   await page.getByLabel("Passwort", { exact: true }).fill(PASSWORD);
   await page.getByRole("button", { name: "Anmelden" }).click();
 
@@ -34,7 +34,7 @@ test("unverified login surfaces the resend link, which issues a fresh token", as
   await resendLink.click();
   await page.waitForURL("**/verifizierung-erneut-senden");
   await expect(page.getByRole("heading", { name: "Bestätigungsmail erneut senden" })).toBeVisible();
-  await page.getByLabel("E-Mail").fill(email);
+  await page.getByLabel("E-Mail", { exact: true }).fill(email);
   await page.getByRole("button", { name: "Bestätigungsmail senden" }).click();
   await expect(page.getByText("E-Mail gesendet")).toBeVisible();
 

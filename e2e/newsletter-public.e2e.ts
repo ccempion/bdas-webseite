@@ -10,12 +10,20 @@
  */
 import { expect, test } from "@playwright/test";
 
-import { deleteNewsletterSubscriberByEmail, newsletterStatus } from "./helpers/db";
+import {
+  deleteNewsletterSubscriberByEmail,
+  newsletterStatus,
+  resetNewsletterRateLimits,
+} from "./helpers/db";
 
 const unique = () => `nlp-${Date.now()}-${Math.random().toString(36).slice(2, 7)}@example.org`;
 
 test.describe("newsletter, public capture", () => {
   test("the footer form creates a pending row and confirms nothing yet", async ({ page }) => {
+    // Five signups per IP per hour, and the whole run is one IP — without this
+    // the cap swallows the signup silently and the failure looks like a bug in
+    // the form rather than a spent budget.
+    await resetNewsletterRateLimits();
     const email = unique();
     try {
       await page.goto("/");
@@ -57,11 +65,11 @@ test.describe("newsletter, public capture", () => {
 
   test("the honeypot is not reachable by keyboard or screen reader", async ({ page }) => {
     await page.goto("/");
-    // aria-hidden keeps the field out of the accessibility tree, so no role
-    // query reaches it. `getByLabel` would still find it — that is a DOM query
-    // over label/for, not an accessibility one, and it is the wrong instrument
-    // for this claim.
+    // It carries no label and sits behind aria-hidden, so nothing that reads
+    // the accessibility tree reaches it — and no other page in the app has to
+    // dodge a second field called "Website".
     await expect(page.getByRole("textbox", { name: "Website" })).toHaveCount(0);
+    await expect(page.getByLabel("Website")).toHaveCount(0);
 
     // It stays a real text input on purpose — that is what a naive bot fills —
     // so it is parked off-screen rather than hidden, and `toBeHidden` would not

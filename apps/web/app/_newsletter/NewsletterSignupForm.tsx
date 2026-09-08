@@ -52,7 +52,6 @@ export function NewsletterSignupForm({
   const uid = useId();
   const headingId = `newsletter-heading-${uid}`;
   const emailId = `newsletter-email-${uid}`;
-  const honeypotId = `newsletter-hp-${uid}`;
 
   // Read after mount: localStorage does not exist while rendering on the server,
   // and a mismatch between the two would be a hydration error.
@@ -105,17 +104,17 @@ export function NewsletterSignupForm({
           <input type="hidden" name="sourcePath" value={sourcePath} />
 
           {/* Invisible to people, irresistible to naive bots (spec §8 no. 2).
-              aria-hidden + tabIndex keep it away from assistive technology. The
-              NAME is what the action reads; the id only ties the label to it. */}
+              aria-hidden + tabIndex keep it away from assistive technology; the
+              NAME is what both the bot and the action go by.
+
+              Deliberately unlabelled. A <label>Website</label> here would put a
+              second field of that name into every page of the site — the footer
+              is global — colliding with the real Website field on the group
+              form. It bought nothing: a bot that fills every input does not
+              read labels, and aria-hidden means no assistive technology ever
+              reaches this one. */}
           <div aria-hidden className="absolute left-[-9999px] h-0 w-0 overflow-hidden">
-            <label htmlFor={honeypotId}>Website</label>
-            <input
-              id={honeypotId}
-              name={HONEYPOT_FIELD}
-              type="text"
-              tabIndex={-1}
-              autoComplete="off"
-            />
+            <input name={HONEYPOT_FIELD} type="text" tabIndex={-1} autoComplete="off" />
           </div>
 
           <div className="grow" style={{ minWidth: "12rem" }}>

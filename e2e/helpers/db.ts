@@ -270,6 +270,19 @@ export async function faqFeedbackByUserAndEntry(
   return rows[0] ?? null;
 }
 
+/**
+ * Clear the newsletter throttles (its own table, owned by `modules/newsletter`,
+ * so `resetRateLimits` above does not reach it).
+ *
+ * The public signup is capped at five per IP per hour — and a whole Playwright
+ * run shares one IP. Without this the sixth signup of the hour is refused
+ * SILENTLY, by design: the page still says "Fast geschafft." while nothing is
+ * written, so the spec fails on the row and not on anything it can see.
+ */
+export async function resetNewsletterRateLimits(): Promise<void> {
+  await sql`DELETE FROM newsletter_rate_limits`;
+}
+
 /** Newsletter rows survive `deleteUserByEmail` when there is no account behind
  *  the address at all, which is exactly the public-capture case. */
 export async function deleteNewsletterSubscriberByEmail(email: string): Promise<void> {
