@@ -1077,4 +1077,48 @@ describe("puckConfig", () => {
       expect(anzahl.options.map((o) => o.value)).toEqual(["2", "3", "4", "1-2", "2-1"]);
     });
   });
+
+  describe("Panel block", () => {
+    it("wraps its DropZone in the design-system Card", () => {
+      const render = puckConfig.components.Panel?.render;
+      if (!render) throw new Error("Panel render missing");
+      const puck = { renderDropZone: ({ zone }: { zone: string }) => `[${zone}]` };
+      const out = renderToStaticMarkup(
+        render({ titel: "", variante: "standard", puck } as never),
+      );
+      expect(out).toContain("[inhalt]");
+      expect(out).toMatch(/class="[^"]*rounded-bdas[^"]*"/);
+    });
+
+    it("shows the title when set", () => {
+      const render = puckConfig.components.Panel?.render;
+      if (!render) throw new Error("Panel render missing");
+      const puck = { renderDropZone: () => null };
+      const out = renderToStaticMarkup(
+        render({ titel: "Kontakt", variante: "standard", puck } as never),
+      );
+      expect(out).toContain("Kontakt");
+    });
+
+    it("hervorgehoben adds the accent left-border", () => {
+      const render = puckConfig.components.Panel?.render;
+      if (!render) throw new Error("Panel render missing");
+      const puck = { renderDropZone: () => null };
+      const out = renderToStaticMarkup(
+        render({ titel: "", variante: "hervorgehoben", puck } as never),
+      );
+      expect(out).toContain("border-l-4");
+      expect(out).toContain("border-bdas-red");
+    });
+
+    it("standard variant has no accent border", () => {
+      const render = puckConfig.components.Panel?.render;
+      if (!render) throw new Error("Panel render missing");
+      const puck = { renderDropZone: () => null };
+      const out = renderToStaticMarkup(
+        render({ titel: "", variante: "standard", puck } as never),
+      );
+      expect(out).not.toContain("border-l-4");
+    });
+  });
 });
