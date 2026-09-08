@@ -146,3 +146,45 @@ describe("render — event manage/cancel link", () => {
     expect(out.text).not.toMatch(/abgelehnt|nicht angenommen/);
   });
 });
+
+describe("newsletter templates", () => {
+  it("renders the confirmation mail with the link and no name", () => {
+    const mail = render("newsletter_confirm", {
+      firstName: "",
+      eventTitle: "",
+      confirmUrl: "https://bdas.de/newsletter/bestaetigen?token=abc",
+    });
+
+    expect(mail.subject).toBe("BDAS — Bitte bestätige deine Anmeldung");
+    // An anonymous signup has no name, so the salutation stays nameless —
+    // "Hallo Gast" (what sendTransactionalToGuest would default to) reads worse
+    // than no name at all.
+    expect(mail.text).toContain("Hallo,");
+    expect(mail.text).not.toContain("Hallo Gast");
+    expect(mail.text).toContain("https://bdas.de/newsletter/bestaetigen?token=abc");
+    expect(mail.html).toContain("https://bdas.de/newsletter/bestaetigen?token=abc");
+    // Seven days is the token lifetime from spec §4 — say so in the mail.
+    expect(mail.text).toContain("sieben Tage");
+  });
+
+  it("renders the already-subscribed mail with the unsubscribe link", () => {
+    const mail = render("newsletter_already_subscribed", {
+      firstName: "",
+      eventTitle: "",
+      unsubscribeUrl: "https://bdas.de/newsletter/abmelden",
+    });
+
+    expect(mail.subject).toBe("BDAS — Du bist schon dabei");
+    expect(mail.text).not.toContain("Hallo Gast");
+    expect(mail.text).toContain("https://bdas.de/newsletter/abmelden");
+  });
+
+  it("escapes a hostile url instead of letting it into the markup", () => {
+    const mail = render("newsletter_confirm", {
+      firstName: "",
+      eventTitle: "",
+      confirmUrl: 'https://bdas.de/x?a="><script>alert(1)</script>',
+    });
+    expect(mail.html).not.toContain("<script>");
+  });
+});
