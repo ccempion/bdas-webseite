@@ -298,3 +298,74 @@ describeIfDb("deleteFolder", () => {
     );
   });
 });
+
+/**
+ * file_manager (local role redesign, D2b): full folder-management access —
+ * create/rename/delete — but strictly to the group_members root of its OWN
+ * group. Never the local_board (board-internal) root, never another group.
+ */
+describeIfDb("createFolder / renameFolder / deleteFolder — file_manager scope boundary", () => {
+  let t: TestDb;
+  let membersRootA: string;
+  let boardRootA: string;
+  let membersRootB: string;
+
+  const FILE_MGR_A: Grant[] = [{ role: "file_manager", groupId: "grp_a" }];
+
+  beforeEach(async () => {
+    t = await createTestDb();
+    boardRootA = await seedBoardRoot(t);
+    const rows = await t.client`
+      SELECT id, group_id FROM folders WHERE scope = 'group_members'
+    `;
+    membersRootA = String(rows.find((r) => r["group_id"] === "grp_a")?.["id"]);
+    membersRootB = String(rows.find((r) => r["group_id"] === "grp_b")?.["id"]);
+  });
+
+  afterEach(async () => {
+    await t.cleanup();
+  });
+
+  it("creates, renames, and deletes a subfolder in its own group's members folder", async () => {
+    const created = await createFolder(
+      t.db,
+      { parentId: membersRootA, name: "Fotos" },
+      actor(FILE_MGR_A),
+    );
+    expect(created.scope).toBe("group_members");
+    expect(created.groupId).toBe("grp_a");
+
+    const renamed = await renameFolder(t.db, created.id, { name: "Bilder" }, actor(FILE_MGR_A));
+    expect(renamed.name).toBe("Bilder");
+
+    await deleteFolder(t.db, renamed.id, actor(FILE_MGR_A));
+    const rows = await t.client`SELECT count(*)::int AS n FROM folders WHERE id = ${renamed.id}`;
+    expect(rows[0]?.["n"]).toBe(0);
+  });
+
+  it("refuses to create a folder in the board (local_board) root of its own group", async () => {
+    await expect(
+      createFolder(t.db, { parentId: boardRootA, name: "Verboten" }, actor(FILE_MGR_A)),
+    ).rejects.toThrow("Kein Schreibzugriff auf diesen Ordner.");
+  });
+
+  it("refuses to create a folder in another group's members folder", async () => {
+    await expect(
+      createFolder(t.db, { parentId: membersRootB, name: "Verboten" }, actor(FILE_MGR_A)),
+    ).rejects.toThrow("Kein Schreibzugriff auf diesen Ordner.");
+  });
+
+  it("refuses to rename or delete an existing subfolder of the board root", async () => {
+    const boardChild = await createFolder(
+      t.db,
+      { parentId: boardRootA, name: "Protokolle" },
+      actor(BOARD_A),
+    );
+    await expect(
+      renameFolder(t.db, boardChild.id, { name: "X" }, actor(FILE_MGR_A)),
+    ).rejects.toThrow("Kein Schreibzugriff auf diesen Ordner.");
+    await expect(deleteFolder(t.db, boardChild.id, actor(FILE_MGR_A))).rejects.toThrow(
+      "Kein Schreibzugriff auf diesen Ordner.",
+    );
+  });
+});
