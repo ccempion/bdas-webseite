@@ -206,6 +206,9 @@ export const puckConfig: Config<Blocks> = {
               showEvents={chrome?.events ?? false}
               showGroups={chrome?.groups ?? false}
               showFaq={chrome?.faq ?? false}
+              // The editor shows a preview, not a live form. An editor opening
+              // the page preview must not be able to sign themselves up.
+              showNewsletter={false}
             />
           </div>
         </div>

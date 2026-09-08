@@ -10,6 +10,18 @@ vi.mock("next/image", () => ({
     React.createElement("img", { alt, className }),
 }));
 
+// The signup form is a client component: `useFormState` needs Next's action
+// context, which a static render has not got. What the footer owns is the
+// wiring — that the card is mounted at all, with the right source and the
+// guard that keeps it off /newsletter — so the stub reports exactly that.
+vi.mock("../_newsletter/NewsletterSignupForm", () => ({
+  NewsletterSignupForm: ({ source, hideOnPath }: { source: string; hideOnPath?: string }) =>
+    React.createElement("div", {
+      "data-newsletter-form": source,
+      "data-hide-on-path": hideOnPath,
+    }),
+}));
+
 import { PublicFooterView } from "./PublicFooterView";
 
 const view = (props: Partial<Parameters<typeof PublicFooterView>[0]> = {}) =>
@@ -21,6 +33,7 @@ const view = (props: Partial<Parameters<typeof PublicFooterView>[0]> = {}) =>
       showEvents={false}
       showGroups={false}
       showFaq={false}
+      showNewsletter={false}
       {...props}
     />,
   );
@@ -70,5 +83,15 @@ describe("PublicFooterView", () => {
     expect(out).toContain('alt="Instagram"');
     expect(out).toContain('alt="LinkedIn"');
     expect(out).not.toContain('aria-label="Rechtliches und Social Media"');
+  });
+  it("renders the newsletter card above the footer when enabled", () => {
+    const out = view({ showNewsletter: true });
+    expect(out).toContain('data-newsletter-form="footer"');
+    // The footer is on /newsletter too, where the page already carries the form.
+    expect(out).toContain('data-hide-on-path="/newsletter"');
+  });
+
+  it("leaves the footer exactly as it was when the flag is off", () => {
+    expect(view()).not.toContain("data-newsletter-form");
   });
 });
