@@ -61,7 +61,7 @@ export default async function VorstandPage({
         </a>
       </nav>
       {showAudit ? (
-        <AuditLog entries={audit} groupNames={{}} />
+        <AuditLog entries={audit} groupNames={{}} showGroupName={false} />
       ) : (
         <RoleRoster
           sections={[
@@ -80,6 +80,7 @@ export default async function VorstandPage({
           revalidatePath={revalidate}
           currentMemberId={me.member?.id ?? null}
           roleLabels={ROLE_LABELS}
+          showGroupName={false}
         />
       )}
     </section>

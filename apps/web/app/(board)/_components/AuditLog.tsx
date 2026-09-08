@@ -3,9 +3,14 @@ import { ROLE_LABELS, type GrantAuditEntry } from "@bdas/members";
 export function AuditLog({
   entries,
   groupNames,
+  showGroupName = true,
 }: {
   entries: GrantAuditEntry[];
   groupNames: Record<string, string>;
+  /** Set false when every entry is already scoped to one known group (e.g. a
+   *  group's own Vorstand page) — the suffix would only repeat context the
+   *  page already established, or fall back to a raw internal id. */
+  showGroupName?: boolean;
 }) {
   return (
     <div className="overflow-hidden rounded-bdas border border-bdas-soft bg-bdas-surface shadow-bdas-card">
@@ -21,8 +26,9 @@ export function AuditLog({
           </span>
           <span className="text-bdas-ink-body">
             {ROLE_LABELS[e.role]}
-            {e.groupId ? ` · ${groupNames[e.groupId] ?? e.groupId}` : ""} &rarr; {e.firstName}{" "}
-            {e.lastName}
+            {showGroupName && e.groupId
+              ? ` · ${groupNames[e.groupId] ?? e.groupId}`
+              : ""} &rarr; {e.firstName} {e.lastName}
           </span>
           <span className="ml-auto text-xs text-bdas-ink-muted">
             {(e.revokedAt ?? e.grantedAt).toLocaleDateString("de-DE")}
