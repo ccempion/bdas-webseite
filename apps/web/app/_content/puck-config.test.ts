@@ -717,7 +717,15 @@ describe("puckConfig", () => {
       .filter(([, c]) => c?.fields && "ausrichtung" in c.fields)
       .map(([name]) => name)
       .sort();
-    expect(mit).toEqual(["Absatz", "Bild", "Button", "Fliesstext", "Hero", "Ueberschrift", "Zitat"]);
+    expect(mit).toEqual([
+      "Absatz",
+      "Bild",
+      "Button",
+      "Fliesstext",
+      "Hero",
+      "Ueberschrift",
+      "Zitat",
+    ]);
   });
 
   it("a document saved before Ausrichtung existed still renders left-aligned", () => {
