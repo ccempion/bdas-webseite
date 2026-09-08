@@ -1,4 +1,4 @@
-# ADR 0034 — Freies Layout & zweite Puck-Paletten-Erweiterung
+# ADR 0036 — Freies Layout & zweite Puck-Paletten-Erweiterung
 
 - **Status:** Accepted
 - **Date:** 2026-09-08

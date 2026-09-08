@@ -2,7 +2,7 @@
 
 **Datum:** 2026-09-08
 **Status:** Freigegeben (Brainstorming-Session)
-**Bezug:** ADR 0023 (Puck-Grundentscheidung), ADR 0025 (erste Paletten-Erweiterung), ADR 0034 (diese Erweiterung)
+**Bezug:** ADR 0023 (Puck-Grundentscheidung), ADR 0025 (erste Paletten-Erweiterung), ADR 0036 (diese Erweiterung)
 **Scope:** `apps/web/app/_content/puck-config.tsx` + zugehörige Feld-/Renderer-Dateien, `core/design-system` (ein neues Rezept), `apps/web/package.json` (eine neue Abhängigkeit). Kein `modules/content`-Schema, keine Migration, kein neues Feature-Flag.
 
 ---
