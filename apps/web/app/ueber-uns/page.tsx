@@ -8,7 +8,7 @@ import { getDb } from "@bdas/db";
 import { isFlagOn } from "@bdas/feature-flags";
 import { isFederalBoard } from "@bdas/members";
 
-import { normalizeContent, puckConfig } from "../_content/puck-config";
+import { breiteClass, normalizeContent, puckConfig } from "../_content/puck-config";
 import { loadCurrentMember } from "../_dashboard/session";
 import { requirePublicShellFlag } from "../_public/flag";
 
@@ -31,8 +31,10 @@ export default async function KurzportraitPage() {
   const canEdit = me !== null && isFederalBoard(me.grants);
 
   return (
-    <main className="mx-auto flex max-w-3xl flex-col gap-6 px-4 py-12">
-      <div className="flex flex-col items-start gap-4 sm:flex-row sm:justify-between">
+    <main className="py-12">
+      <div
+        className={`mx-auto flex w-full flex-col items-start gap-4 px-4 sm:flex-row sm:justify-between ${breiteClass("schmal")}`}
+      >
         <h1 className="text-3xl font-semibold text-bdas-ink">Über uns</h1>
         {canEdit ? (
           <Link
@@ -44,9 +46,11 @@ export default async function KurzportraitPage() {
         ) : null}
       </div>
       {page ? (
-        <Render config={puckConfig} data={normalizeContent(page.data as Data, "schmal")} />
+        <div className="mt-6">
+          <Render config={puckConfig} data={normalizeContent(page.data as Data, "schmal")} />
+        </div>
       ) : (
-        <>
+        <div className={`mx-auto mt-6 flex w-full flex-col gap-6 px-4 ${breiteClass("schmal")}`}>
           {/* Platzhaltertext — bearbeitbar durch den Bundessprecher*innenrat (Spec §8). */}
           <p className="text-bdas-ink-body">
             Der Bund der Alevitischen Studierenden in Deutschland (BDAS) ist der Zusammenschluss
@@ -57,7 +61,7 @@ export default async function KurzportraitPage() {
             Von der Erstsemester-Begrüßung bis zur Bundeskonferenz: Unsere Hochschulgruppen leben
             alevitische Werte im Studienalltag — offen, demokratisch und solidarisch.
           </p>
-        </>
+        </div>
       )}
     </main>
   );
