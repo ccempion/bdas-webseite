@@ -269,3 +269,20 @@ export async function faqFeedbackByUserAndEntry(
     WHERE u.email_normalized = lower(${userEmail}) AND f.entry_id = ${entryId}`;
   return rows[0] ?? null;
 }
+
+/** Newsletter rows survive `deleteUserByEmail` when there is no account behind
+ *  the address at all, which is exactly the public-capture case. */
+export async function deleteNewsletterSubscriberByEmail(email: string): Promise<void> {
+  await sql`DELETE FROM newsletter_subscribers WHERE email = ${email.toLowerCase()}`;
+}
+
+/**
+ * The confirmation token is only ever stored hashed, so a spec cannot read it
+ * back and click it. It reads the status instead: the E2E asserts the visible
+ * outcome of the double opt-in, not the token itself.
+ */
+export async function newsletterStatus(email: string): Promise<string | null> {
+  const rows = await sql<{ status: string }[]>`
+    SELECT status FROM newsletter_subscribers WHERE email = ${email.toLowerCase()} LIMIT 1`;
+  return rows[0]?.status ?? null;
+}
