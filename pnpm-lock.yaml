@@ -607,6 +607,9 @@ importers:
       '@bdas/members':
         specifier: workspace:*
         version: link:../members
+      '@bdas/newsletter':
+        specifier: workspace:*
+        version: link:../newsletter
       '@bdas/profile':
         specifier: workspace:*
         version: link:../profile
