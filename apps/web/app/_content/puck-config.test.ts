@@ -13,7 +13,13 @@ vi.mock("next/image", () => ({
 }));
 
 import { legalUrls } from "../../lib/legal";
-import { ausrichtungFlex, ausrichtungText, normalizeContent, puckConfig } from "./puck-config";
+import {
+  ausrichtungFlex,
+  ausrichtungText,
+  breiteClass,
+  normalizeContent,
+  puckConfig,
+} from "./puck-config";
 
 /** The nav the server derives and passes through metadata. Flags are off in the
  *  test environment, so this is deliberately richer than anything `navItems()`
@@ -967,5 +973,28 @@ describe("puckConfig", () => {
       } as never) as never,
     );
     expect(out).toContain("Inhalt");
+  });
+
+  describe("Breite: voll", () => {
+    it("breiteClass has no max-width class for voll", () => {
+      expect(breiteClass("voll")).toBe("");
+    });
+
+    it("breiteClass keeps existing schmal/breit behaviour", () => {
+      expect(breiteClass("schmal")).toBe("max-w-3xl");
+      expect(breiteClass("breit")).toBe("max-w-5xl");
+    });
+
+    it("normalizeContent keeps a voll width the document already carries", () => {
+      const data: Data = { root: { props: { breite: "voll" } }, content: [] };
+      const out = normalizeContent(data, "schmal");
+      expect((out.root.props as { breite?: string }).breite).toBe("voll");
+    });
+
+    it("normalizeContent still seeds the fallback when no width is stored", () => {
+      const data: Data = { root: { props: {} }, content: [] };
+      const out = normalizeContent(data, "voll");
+      expect((out.root.props as { breite?: string }).breite).toBe("voll");
+    });
   });
 });

@@ -64,10 +64,10 @@ type Blocks = {
 /** Content-column width. Carried on the page's root so the same value frames
  *  the blocks in the editor preview (`<Puck>`) and the public page (`<Render>`).
  *  `breit` gives the person grid room; text pages stay at reading width. */
-export type Breite = "schmal" | "breit";
+export type Breite = "schmal" | "breit" | "voll";
 
 export const breiteClass = (breite: Breite): string =>
-  breite === "breit" ? "max-w-5xl" : "max-w-3xl";
+  breite === "breit" ? "max-w-5xl" : breite === "voll" ? "" : "max-w-3xl";
 
 /** Per-block horizontal alignment (ADR 0023 palette). `links` is the default
  *  and is what every block rendered before the control existed. */
@@ -140,7 +140,7 @@ const ausrichtungField = {
 export function normalizeContent(data: Data, fallback: Breite): Data {
   const props = (data.root?.props ?? {}) as Record<string, unknown>;
   const mitBreite =
-    props.breite === "schmal" || props.breite === "breit"
+    props.breite === "schmal" || props.breite === "breit" || props.breite === "voll"
       ? data
       : ({ ...data, root: { ...data.root, props: { ...props, breite: fallback } } } as Data);
 
