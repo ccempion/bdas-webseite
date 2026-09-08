@@ -986,13 +986,13 @@ describe("puckConfig", () => {
     });
 
     it("normalizeContent keeps a voll width the document already carries", () => {
-      const data: Data = { root: { props: { breite: "voll" } }, content: [] };
+      const data = { root: { props: { breite: "voll" } }, content: [] } as unknown as Data;
       const out = normalizeContent(data, "schmal");
       expect((out.root.props as { breite?: string }).breite).toBe("voll");
     });
 
     it("normalizeContent still seeds the fallback when no width is stored", () => {
-      const data: Data = { root: { props: {} }, content: [] };
+      const data = { root: { props: {} }, content: [] } as unknown as Data;
       const out = normalizeContent(data, "voll");
       expect((out.root.props as { breite?: string }).breite).toBe("voll");
     });
