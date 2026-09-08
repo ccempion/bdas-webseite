@@ -652,7 +652,7 @@ export const puckConfig: Config<Blocks> = {
         <Card
           className={
             variante === "hervorgehoben"
-              ? "border-l-4 border-bdas-red p-6"
+              ? "border-l-4 border-l-bdas-red p-6"
               : "p-6"
           }
         >

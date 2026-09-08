@@ -1108,7 +1108,7 @@ describe("puckConfig", () => {
         render({ titel: "", variante: "hervorgehoben", puck } as never),
       );
       expect(out).toContain("border-l-4");
-      expect(out).toContain("border-bdas-red");
+      expect(out).toContain("border-l-bdas-red");
     });
 
     it("standard variant has no accent border", () => {
