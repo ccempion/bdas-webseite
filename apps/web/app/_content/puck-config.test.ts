@@ -997,4 +997,40 @@ describe("puckConfig", () => {
       expect((out.root.props as { breite?: string }).breite).toBe("voll");
     });
   });
+
+  describe("root breite field", () => {
+    it("offers schmal/breit/voll by default (no slug in metadata)", () => {
+      const resolve = puckConfig.root?.resolveFields;
+      if (!resolve) throw new Error("root.resolveFields missing");
+      const fields = resolve(
+        { props: { breite: "schmal" } } as never,
+        { metadata: {} } as never,
+      ) as unknown as { breite: { options: { value: string }[] } };
+      expect(fields.breite.options.map((o) => o.value)).toEqual(["schmal", "breit", "voll"]);
+    });
+
+    it("hides voll for legal-text slugs", () => {
+      const resolve = puckConfig.root?.resolveFields;
+      if (!resolve) throw new Error("root.resolveFields missing");
+      for (const slug of ["datenschutz", "impressum", "nutzungsbedingungen"]) {
+        const fields = resolve(
+          { props: { breite: "schmal" } } as never,
+          { metadata: { slug } } as never,
+        ) as unknown as { breite: { options: { value: string }[] } };
+        expect(fields.breite.options.map((o) => o.value)).toEqual(["schmal", "breit"]);
+      }
+    });
+
+    it("keeps voll for content-page slugs, including dynamic group slugs", () => {
+      const resolve = puckConfig.root?.resolveFields;
+      if (!resolve) throw new Error("root.resolveFields missing");
+      for (const slug of ["ueber-uns", "ueber-uns/bdaj", "gruppen/berlin"]) {
+        const fields = resolve(
+          { props: { breite: "schmal" } } as never,
+          { metadata: { slug } } as never,
+        ) as unknown as { breite: { options: { value: string }[] } };
+        expect(fields.breite.options.map((o) => o.value)).toEqual(["schmal", "breit", "voll"]);
+      }
+    });
+  });
 });

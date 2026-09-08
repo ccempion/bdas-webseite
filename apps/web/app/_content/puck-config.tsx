@@ -125,6 +125,28 @@ const ausrichtungField = {
   ],
 };
 
+/** Legal-text pages stay at reading width — "voll" is never offered there,
+ *  enforced here rather than left to editorial judgement (spec §4). */
+const LEGAL_SLUGS = new Set(["datenschutz", "impressum", "nutzungsbedingungen"]);
+
+const BREITE_OPTIONS = [
+  { label: "Schmal", value: "schmal" },
+  { label: "Breit", value: "breit" },
+  { label: "Volle Breite", value: "voll" },
+] as const;
+
+const breiteField = {
+  type: "select" as const,
+  label: "Breite",
+  options: BREITE_OPTIONS,
+};
+
+const breiteFieldOhneVoll = {
+  type: "select" as const,
+  label: "Breite",
+  options: BREITE_OPTIONS.filter((o) => o.value !== "voll"),
+};
+
 /** The single seam every Puck tree passes through, on all eight paths — the
  *  seven public `<Render>` call sites and `<Puck>`.
  *
@@ -159,9 +181,16 @@ export function normalizeContent(data: Data, fallback: Breite): Data {
  * layout lives only in the route's `<main>` and the editor renders full-bleed.
  */
 export const puckConfig: Config<Blocks> = {
-  // `breite` is carried on root.props (seeded by normalizeContent), not a Puck field —
-  // it's a per-page layout constant, not something the board edits.
   root: {
+    fields: {
+      breite: breiteField,
+    },
+    resolveFields: (_data, { metadata }) => {
+      const slug = (metadata as { slug?: string } | undefined)?.slug;
+      return {
+        breite: slug !== undefined && LEGAL_SLUGS.has(slug) ? breiteFieldOhneVoll : breiteField,
+      };
+    },
     render: ({ children, ...props }) => {
       const breite = ((props as unknown as { breite?: Breite }).breite ?? "schmal") as Breite;
       const puck = (props as unknown as { puck?: { isEditing?: boolean; metadata?: unknown } })
