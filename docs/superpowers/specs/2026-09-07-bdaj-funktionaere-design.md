@@ -146,11 +146,11 @@ BDAJ-Funktionär\*innen erscheinen im allgemeinen (Mitglieder-)Verzeichnis wie j
 
 ## 7. Migrations
 
-| Modul     | Datei                            | Inhalt                                                |
-| --------- | --------------------------------- | ------------------------------------------------------ |
-| `groups`  | `NNNN_affiliate_kind.sql`        | `kind`-Spalte + Check, `city` nullable + Check         |
-| `members` | `0010_blog_author.sql`           | `blog_author` in `member_role_grants_role_check`       |
-| `files`   | `NNNN_member_folder_access.sql`  | neue Tabelle `member_folder_access`                    |
+| Modul     | Datei                           | Inhalt                                           |
+| --------- | ------------------------------- | ------------------------------------------------ |
+| `groups`  | `NNNN_affiliate_kind.sql`       | `kind`-Spalte + Check, `city` nullable + Check   |
+| `members` | `0010_blog_author.sql`          | `blog_author` in `member_role_grants_role_check` |
+| `files`   | `NNNN_member_folder_access.sql` | neue Tabelle `member_folder_access`              |
 
 Seed (nicht Migration): eine `groups`-Zeile `slug='bdaj', kind='affiliate'`.
 
