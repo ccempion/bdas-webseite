@@ -159,6 +159,22 @@ const SPALTEN_LAYOUT: Record<
   },
 };
 
+/** Keys for the Akkordeon entries. `<details>` open/closed is DOM state, so an
+ *  index key would leave the open row behind as soon as the board reorders
+ *  entries in the editor: React would reuse the node at position 0 for whatever
+ *  moved there. The question is the entry's natural identity; duplicates and
+ *  empty questions fall back to a positional key so React still sees distinct
+ *  values. */
+export const akkordeonKeys = (eintraege: { frage: string }[]): string[] => {
+  const gesehen = new Map<string, number>();
+  return eintraege.map((e, i) => {
+    const basis = e.frage || `eintrag-${i}`;
+    const n = (gesehen.get(basis) ?? 0) + 1;
+    gesehen.set(basis, n);
+    return n === 1 ? basis : `${basis}#${n}`;
+  });
+};
+
 /** Legal-text pages stay at reading width — "voll" is never offered there,
  *  enforced here rather than left to editorial judgement (spec §4). */
 const LEGAL_SLUGS = new Set(["datenschutz", "impressum", "nutzungsbedingungen"]);
@@ -666,13 +682,15 @@ export const puckConfig: Config<Blocks> = {
         },
       },
       defaultProps: { eintraege: [] },
-      render: ({ eintraege, puck }) =>
-        (eintraege ?? []).length === 0 && puck?.isEditing ? (
+      render: ({ eintraege, puck }) => {
+        const liste = eintraege ?? [];
+        const keys = akkordeonKeys(liste);
+        return liste.length === 0 && puck?.isEditing ? (
           <BlockPlatzhalter titel="Akkordeon" hinweis="Noch keine Einträge hinzugefügt." />
         ) : (
           <div className="flex flex-col gap-3">
-            {(eintraege ?? []).map((e, i) => (
-              <details key={i} className="bdas-accordion">
+            {liste.map((e, i) => (
+              <details key={keys[i]} className="bdas-accordion">
                 <summary>{e.frage}</summary>
                 <div>
                   <p className="whitespace-pre-line text-bdas-ink-body">{e.antwort}</p>
@@ -680,7 +698,8 @@ export const puckConfig: Config<Blocks> = {
               </details>
             ))}
           </div>
-        ),
+        );
+      },
     },
   },
 };

@@ -14,6 +14,7 @@ vi.mock("next/image", () => ({
 
 import { legalUrls } from "../../lib/legal";
 import {
+  akkordeonKeys,
   ausrichtungFlex,
   ausrichtungText,
   breiteClass,
@@ -1143,6 +1144,23 @@ describe("puckConfig", () => {
       expect((out.match(/class="bdas-accordion"/g) ?? []).length).toBe(2);
       expect(out).toContain("Wie trete ich bei?");
       expect(out).toContain("Über das Anmeldeformular.");
+    });
+
+    it("keys an entry by its question, so a reorder moves the open state with it", () => {
+      const eintraege = [{ frage: "Wie trete ich bei?" }, { frage: "Wo treffen wir uns?" }];
+      const keys = akkordeonKeys(eintraege);
+      expect(keys).toEqual(["Wie trete ich bei?", "Wo treffen wir uns?"]);
+      expect(akkordeonKeys([...eintraege].reverse())).toEqual([...keys].reverse());
+    });
+
+    it("keeps keys distinct for duplicate and empty questions", () => {
+      const keys = akkordeonKeys([
+        { frage: "Beitrag?" },
+        { frage: "Beitrag?" },
+        { frage: "" },
+        { frage: "" },
+      ]);
+      expect(new Set(keys).size).toBe(4);
     });
 
     it("summarises an entry by its question", () => {
