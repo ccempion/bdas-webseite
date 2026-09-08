@@ -22,10 +22,19 @@ function JoinButton() {
  * brand red, ink.onBrand text, a white button. It stands out through the
  * colour change alone on an otherwise white page, so the entrance animation
  * is `motion-safe:` only and nothing is lost without it.
+ *
+ * The banner decides its own visibility rather than being omitted upstream.
+ * A Server Action always re-renders its route, and answering this one is
+ * exactly what makes the account stop qualifying — so a parent that rendered
+ * `null` on `!eligible` would tear the banner out mid-answer and swallow the
+ * "Du bist dabei" confirmation (spec §13.2). Staying mounted keeps that
+ * sentence readable; the next page load drops the banner for good.
  */
-export function NewsletterPrompt() {
+export function NewsletterPrompt({ eligible }: { eligible: boolean }) {
   const [joined, join] = useFormState(subscribeMeAction, initial);
   const [, dismiss] = useFormState(dismissPromptAction, initial);
+
+  if (!eligible && !joined.ok) return null;
 
   return (
     <section

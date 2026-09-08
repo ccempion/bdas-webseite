@@ -125,8 +125,12 @@ export default async function AccountPage({
   const showNewsletterPrompt = newsletterEnabled() ? await shouldPrompt(db, me.user.id) : false;
 
   // Built once and placed in both layout branches: only one branch ever
-  // renders, so the banner still appears exactly once.
-  const newsletterPrompt = showNewsletterPrompt ? <NewsletterPrompt /> : null;
+  // renders, so the banner still appears exactly once. Mounted whenever the
+  // flag is on and handed its eligibility — see NewsletterPrompt on why it,
+  // and not this page, decides whether to draw anything.
+  const newsletterPrompt = newsletterEnabled() ? (
+    <NewsletterPrompt eligible={showNewsletterPrompt} />
+  ) : null;
 
   const statusAlerts = (
     <>

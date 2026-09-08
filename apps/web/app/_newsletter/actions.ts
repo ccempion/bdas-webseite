@@ -58,7 +58,10 @@ export async function subscribeMeAction(
     return { error: GENERIC_ERROR };
   }
 
-  revalidatePath("/account");
+  // Deliberately NOT revalidating /account: the C1 banner lives there and
+  // stops qualifying the moment this succeeds, so a revalidate would unmount
+  // it mid-answer and swallow the "Du bist dabei" confirmation (spec §13.2).
+  // /account is dynamic, so the next load renders without the banner anyway.
   revalidatePath("/account/einstellungen");
   return { ok: true };
 }
