@@ -7,15 +7,24 @@ import { legalUrls } from "../../lib/legal";
 import { PublicFooterView } from "../_public/PublicFooterView";
 import { PublicHeaderView } from "../_public/PublicHeaderView";
 import type { CanvasChrome } from "./canvas-chrome";
+import { type Ausrichtung, ausrichtungFlex, ausrichtungText } from "./ausrichtung";
+import { buttonKlasse } from "./button-klasse";
 import { type BildBreite, bildBreiteClass, normalizeBildBreite } from "./bild-breite";
 import { BildGroesseGriff } from "./BildGroesseGriff";
 import { FotoField } from "./FotoField";
+import { Hero, type HeroHintergrund, type HeroHoehe } from "./Hero";
 import { Organigramm } from "./Organigramm";
 import type { Kasten } from "./org-tree";
 import { RichTextField } from "./RichTextField";
 import { istLeererRichText, renderRichText } from "./rich-text";
 import { isExternalHref, safeHref } from "./href";
 import { BlockPlatzhalter } from "./BlockPlatzhalter";
+
+// Re-exported from their leaf module (see `ausrichtung.ts`): `puck-config.tsx`
+// stayed the import site for these three long before block components moved
+// into their own files, and every consumer still imports them from here.
+export { ausrichtungFlex, ausrichtungText } from "./ausrichtung";
+export type { Ausrichtung } from "./ausrichtung";
 
 type Person = {
   foto: string;
@@ -61,6 +70,16 @@ type Blocks = {
   Organigramm: { kaesten: Kasten[] };
   Panel: { titel: string; variante: "standard" | "hervorgehoben" };
   Akkordeon: { eintraege: { frage: string; antwort: string }[] };
+  Hero: {
+    ueberschrift: string;
+    untertext: string;
+    hintergrund: HeroHintergrund;
+    bild: string;
+    hoehe: HeroHoehe;
+    ausrichtung: Ausrichtung;
+    buttonLabel: string;
+    buttonHref: string;
+  };
 };
 
 /** Content-column width. Carried on the page's root so the same value frames
@@ -70,36 +89,6 @@ export type Breite = "schmal" | "breit" | "voll";
 
 export const breiteClass = (breite: Breite): string =>
   breite === "breit" ? "max-w-5xl" : breite === "voll" ? "" : "max-w-3xl";
-
-/** Per-block horizontal alignment (ADR 0023 palette). `links` is the default
- *  and is what every block rendered before the control existed. */
-export type Ausrichtung = "links" | "mittig" | "rechts";
-
-const AUSRICHTUNG_TEXT: Record<Ausrichtung, string> = {
-  links: "text-left",
-  mittig: "text-center",
-  rechts: "text-right",
-};
-
-const AUSRICHTUNG_FLEX: Record<Ausrichtung, string> = {
-  links: "justify-start",
-  mittig: "justify-center",
-  rechts: "justify-end",
-};
-
-/** Both lookups fall back to the `links` classes for a missing or unrecognised
- *  value: documents saved before this field existed carry no `ausrichtung`,
- *  and they must keep rendering exactly as they did. Class strings are
- *  literals — Tailwind's scanner never sees an interpolated class. */
-export const ausrichtungText = (a: Ausrichtung | undefined): string =>
-  a !== undefined && Object.hasOwn(AUSRICHTUNG_TEXT, a)
-    ? AUSRICHTUNG_TEXT[a]
-    : AUSRICHTUNG_TEXT.links;
-
-export const ausrichtungFlex = (a: Ausrichtung | undefined): string =>
-  a !== undefined && Object.hasOwn(AUSRICHTUNG_FLEX, a)
-    ? AUSRICHTUNG_FLEX[a]
-    : AUSRICHTUNG_FLEX.links;
 
 /** Marks the canvas chrome as decoration: not focusable, not in the
  *  accessibility tree, not clickable.
@@ -499,10 +488,7 @@ export const puckConfig: Config<Blocks> = {
           );
         }
 
-        const cls =
-          variante === "sekundaer"
-            ? "inline-flex items-center rounded-bdas-sm border border-bdas-strong px-4 py-2 text-sm text-bdas-ink transition-colors duration-bdas-quick ease-bdas hover:bg-bdas-surface-hover"
-            : "inline-flex items-center rounded-bdas-sm bg-bdas-red px-4 py-2 text-sm font-medium text-white transition-colors duration-bdas-quick ease-bdas hover:opacity-90";
+        const cls = buttonKlasse(variante);
         return (
           <div className={`flex ${ausrichtungFlex(ausrichtung)}`}>
             {isExternalHref(safe) ? (
@@ -701,6 +687,88 @@ export const puckConfig: Config<Blocks> = {
               </details>
             ))}
           </div>
+        );
+      },
+    },
+    Hero: {
+      label: "Hero / Aufmacher",
+      fields: {
+        ueberschrift: { type: "text", label: "Überschrift" },
+        untertext: { type: "textarea", label: "Untertext (optional)" },
+        hintergrund: {
+          type: "select",
+          label: "Hintergrund",
+          options: [
+            { label: "Helle Fläche", value: "hell" },
+            { label: "Akzentfarbe", value: "akzent" },
+            { label: "Bild", value: "bild" },
+          ],
+        },
+        bild: {
+          type: "custom",
+          label: "Hintergrundbild (nur bei Hintergrund „Bild“)",
+          render: ({ value, onChange }) => <FotoField value={value} onChange={onChange} />,
+        },
+        hoehe: {
+          type: "select",
+          label: "Höhe",
+          options: [
+            { label: "Kompakt", value: "kompakt" },
+            { label: "Mittel", value: "mittel" },
+            { label: "Groß", value: "gross" },
+          ],
+        },
+        ausrichtung: ausrichtungField,
+        buttonLabel: { type: "text", label: "Button-Beschriftung (optional)" },
+        buttonHref: { type: "text", label: "Button-Link (https://… oder /pfad)" },
+      },
+      defaultProps: {
+        ueberschrift: "Überschrift",
+        untertext: "",
+        hintergrund: "hell",
+        bild: "",
+        hoehe: "mittel",
+        ausrichtung: "links",
+        buttonLabel: "",
+        buttonHref: "",
+      },
+      // Empty means nothing at all on the public page — an empty coloured box
+      // is worse than no block. Same shape the `Bild` and `Button` blocks use:
+      // placeholder in the editor, `<></>` outside it. The placeholder is
+      // gated on `isEditing` because the structural sweep in the tests renders
+      // every block with `isEditing: false` and asserts none reaches a reader.
+      render: ({
+        ueberschrift,
+        untertext,
+        hintergrund,
+        bild,
+        hoehe,
+        ausrichtung,
+        buttonLabel,
+        buttonHref,
+        puck,
+      }) => {
+        if ((ueberschrift ?? "") === "" && (untertext ?? "") === "" && (bild ?? "") === "") {
+          return puck?.isEditing ? (
+            <BlockPlatzhalter
+              titel="Hero / Aufmacher"
+              hinweis="Noch kein Inhalt — Überschrift, Untertext oder Bild ergänzen."
+            />
+          ) : (
+            <></>
+          );
+        }
+        return (
+          <Hero
+            ueberschrift={ueberschrift}
+            untertext={untertext}
+            hintergrund={hintergrund}
+            bild={bild}
+            hoehe={hoehe}
+            ausrichtung={ausrichtung}
+            buttonLabel={buttonLabel}
+            buttonHref={buttonHref}
+          />
         );
       },
     },
