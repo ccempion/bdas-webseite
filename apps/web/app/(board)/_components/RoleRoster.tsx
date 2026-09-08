@@ -13,12 +13,17 @@ export function RoleRoster({
   revalidatePath,
   currentMemberId,
   roleLabels,
+  showGroupName = true,
 }: {
   sections: ReadonlyArray<{ title: string; holders: RoleHolder[] }>;
   groupNames: Record<string, string>;
   revalidatePath: string;
   currentMemberId: string | null;
   roleLabels: Record<Role, string>;
+  /** Set false when every row is already scoped to one known group (e.g. a
+   *  group's own Vorstand page) — the suffix would only repeat context the
+   *  page already established, or fall back to a raw internal id. */
+  showGroupName?: boolean;
 }) {
   const [pending, start] = useTransition();
   return (
@@ -37,7 +42,7 @@ export function RoleRoster({
                 className={`rounded-bdas-pill px-2 py-0.5 text-xs font-semibold ${h.role === "federal_board" ? "bg-bdas-red text-bdas-surface" : "bg-bdas-surface-hover text-bdas-red"}`}
               >
                 {roleLabels[h.role]}
-                {h.groupId ? ` · ${groupNames[h.groupId] ?? h.groupId}` : ""}
+                {showGroupName && h.groupId ? ` · ${groupNames[h.groupId] ?? h.groupId}` : ""}
               </span>
               <span className="flex-1 text-sm text-bdas-ink">
                 {h.firstName} {h.lastName}
