@@ -3,6 +3,9 @@ import Link from "next/link";
 import { Alert } from "@bdas/design-system";
 
 import { requireAuthFlag } from "../../_auth/flag";
+import { newsletterEnabled } from "../../_newsletter/flag";
+import { NewsletterSecondAttempt } from "../../_newsletter/NewsletterSecondAttempt";
+import { readSignupCookie } from "../../_newsletter/signup-cookie";
 
 export const metadata = { title: "Bitte E-Mail bestätigen" };
 
@@ -16,6 +19,7 @@ export default function RegistrierenErfolgPage() {
         Wir haben dir einen Link an deine E-Mail-Adresse geschickt. Bitte klicke darauf, um dein
         Konto zu aktivieren. Der Link ist 24 Stunden gültig. Schau auch in deinen Spam-Ordner.
       </Alert>
+      {newsletterEnabled() && readSignupCookie() ? <NewsletterSecondAttempt /> : null}
       <p className="text-sm text-bdas-ink-body">
         Keine E-Mail erhalten?{" "}
         <Link href="/verifizierung-erneut-senden" className="text-bdas-red hover:underline">
