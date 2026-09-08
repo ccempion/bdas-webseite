@@ -122,7 +122,15 @@ export function render(template: TransactionalTemplate, data: TemplateData): Ren
         "BDAS — Bitte bestätige deine Anmeldung",
         "schön, dass du dabei sein willst. Bestätige einmal kurz, dass diese Adresse dir gehört — dann bekommst du ein paar Mal im Jahr Neues aus dem Verband und den Hochschulgruppen.",
         confirmUrl ? { label: "Anmeldung bestätigen:", url: confirmUrl } : undefined,
-        "Der Link gilt sieben Tage. Wenn du dich nicht angemeldet hast, ignoriere diese E-Mail einfach — ohne Bestätigung passiert nichts.",
+        [
+          "Der Link gilt sieben Tage. Wenn du dich nicht angemeldet hast, ignoriere diese E-Mail einfach — ohne Bestätigung passiert nichts.",
+          // The only unsubscribe key an anonymous address ever receives. It
+          // also lets somebody who never signed up end the entry outright
+          // instead of merely ignoring it.
+          unsubscribeUrl ? `Wieder austragen kannst du dich hier: ${unsubscribeUrl}` : "",
+        ]
+          .filter(Boolean)
+          .join(" "),
       );
     case "newsletter_already_subscribed":
       return plainBody(

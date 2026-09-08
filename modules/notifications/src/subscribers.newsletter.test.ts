@@ -96,6 +96,7 @@ describeIfDb("notifications: the newsletter mails", () => {
       email: "neu@example.org",
       token: "plain-token",
       confirmUrl: "https://bdas.de/newsletter/bestaetigen?token=plain-token",
+      unsubscribeUrl: "https://bdas.de/newsletter/abmelden?token=unsub-token",
       at: new Date(),
     });
 
@@ -103,6 +104,8 @@ describeIfDb("notifications: the newsletter mails", () => {
     expect(sent[0]!.to).toBe("neu@example.org");
     expect(sent[0]!.subject).toBe("BDAS — Bitte bestätige deine Anmeldung");
     expect(sent[0]!.text).toContain("https://bdas.de/newsletter/bestaetigen?token=plain-token");
+    // Both keys travel together: this is the only mail this address will get.
+    expect(sent[0]!.text).toContain("https://bdas.de/newsletter/abmelden?token=unsub-token");
   });
 
   it("sends the already-subscribed mail without any token in the link", async () => {

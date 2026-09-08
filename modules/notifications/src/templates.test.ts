@@ -153,6 +153,7 @@ describe("newsletter templates", () => {
       firstName: "",
       eventTitle: "",
       confirmUrl: "https://bdas.de/newsletter/bestaetigen?token=abc",
+      unsubscribeUrl: "https://bdas.de/newsletter/abmelden?token=xyz",
     });
 
     expect(mail.subject).toBe("BDAS — Bitte bestätige deine Anmeldung");
@@ -165,6 +166,10 @@ describe("newsletter templates", () => {
     expect(mail.html).toContain("https://bdas.de/newsletter/bestaetigen?token=abc");
     // Seven days is the token lifetime from spec §4 — say so in the mail.
     expect(mail.text).toContain("sieben Tage");
+    // This mail is the only one an anonymous address ever gets, so it has to
+    // carry the way out too — otherwise /newsletter/abmelden is unreachable.
+    expect(mail.text).toContain("https://bdas.de/newsletter/abmelden?token=xyz");
+    expect(mail.html).toContain("https://bdas.de/newsletter/abmelden?token=xyz");
   });
 
   it("renders the already-subscribed mail with the unsubscribe link", () => {

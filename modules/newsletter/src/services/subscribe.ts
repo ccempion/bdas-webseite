@@ -11,7 +11,12 @@ import { ValidationError } from "@bdas/errors";
 import { getEventBus } from "@bdas/events";
 
 import { recordConsent } from "../consent-log";
-import { CONFIRM_PATH, type AlreadySubscribed, type ConfirmationRequested } from "../events";
+import {
+  CONFIRM_PATH,
+  UNSUBSCRIBE_PATH,
+  type AlreadySubscribed,
+  type ConfirmationRequested,
+} from "../events";
 import { tryRateLimit } from "../rate-limit";
 import { resolveOne } from "../resolver";
 import { newsletterSubscribers } from "../schema";
@@ -185,6 +190,12 @@ export async function subscribePublicly(db: Db, input: SubscribePubliclyInput): 
   }
 
   const token = newToken();
+  // Re-minted on every public signup, including for a row that already has one:
+  // only the HASH is stored, so an existing row's plaintext is gone and a mail
+  // quoting it would carry a key nobody holds. Nothing live is invalidated — a
+  // `subscribed` row returned above, so this only ever touches a row that is
+  // pending, ended or declined.
+  const unsubToken = newToken();
   const expiresAt = new Date(Date.now() + CONFIRM_TTL_MS);
   let subscriberId: string;
 
@@ -196,6 +207,7 @@ export async function subscribePublicly(db: Db, input: SubscribePubliclyInput): 
         status: "pending",
         confirmTokenHash: hashToken(token),
         confirmExpiresAt: expiresAt,
+        unsubscribeTokenHash: hashToken(unsubToken),
         unsubscribedAt: null,
       })
       .where(eq(newsletterSubscribers.id, existing.id));
@@ -220,7 +232,7 @@ export async function subscribePublicly(db: Db, input: SubscribePubliclyInput): 
         status: "pending",
         confirmTokenHash: hashToken(token),
         confirmExpiresAt: expiresAt,
-        unsubscribeTokenHash: hashToken(newToken()),
+        unsubscribeTokenHash: hashToken(unsubToken),
         source: input.source,
         sourcePath: input.sourcePath ?? null,
         groupId: input.groupId ?? null,
@@ -244,6 +256,7 @@ export async function subscribePublicly(db: Db, input: SubscribePubliclyInput): 
     email,
     token,
     confirmUrl: `${base}${CONFIRM_PATH}?token=${encodeURIComponent(token)}`,
+    unsubscribeUrl: `${base}${UNSUBSCRIBE_PATH}?token=${encodeURIComponent(unsubToken)}`,
     at: new Date(),
   });
 }

@@ -5,6 +5,7 @@ import { getEventBus, resetEventBus, type AnyEvent } from "@bdas/events";
 
 import type { AlreadySubscribed, ConfirmationRequested } from "../events";
 import { dbReachable, setupNewsletterDb } from "../test-db";
+import { peekUnsubscribeToken, unsubscribeByToken } from "./confirm";
 import { subscribePublicly } from "./subscribe";
 
 const reachable = await dbReachable();
@@ -187,5 +188,50 @@ describe.skipIf(!reachable)("subscribePublicly", () => {
       subscribePublicly(t.db, { email: "keine-adresse", source: "footer" }),
     ).rejects.toThrow();
     expect(await rows()).toHaveLength(0);
+  });
+  it("hands out a WORKING unsubscribe link with the confirmation mail", async () => {
+    // `unsubscribeByToken` calls itself "the only way out for an anonymous
+    // subscriber without an account" (spec §3.4). That is only true if the
+    // plaintext token actually reaches the person — minting it and dropping it
+    // on the floor leaves /newsletter/abmelden unreachable for everybody.
+    await subscribePublicly(t.db, {
+      email: "raus@example.org",
+      source: "footer",
+      context: { siteUrl: "https://bdas.de" },
+    });
+
+    const evt = seen[0] as ConfirmationRequested;
+    const token = new URL(evt.unsubscribeUrl).searchParams.get("token");
+    expect(evt.unsubscribeUrl).toBe(`https://bdas.de/newsletter/abmelden?token=${token}`);
+
+    // It is a real key, not decoration: it names the row and it ends it.
+    expect(await peekUnsubscribeToken(t.db, token!)).toEqual({
+      email: "raus@example.org",
+      alreadyUnsubscribed: false,
+    });
+    await unsubscribeByToken(t.db, token!);
+    expect(await peekUnsubscribeToken(t.db, token!)).toEqual({
+      email: "raus@example.org",
+      alreadyUnsubscribed: true,
+    });
+  });
+
+  it("re-mints the unsubscribe token when it revives an existing row", async () => {
+    // The stored hash has no recoverable plaintext, so a revived row would
+    // otherwise mail a link nobody holds the key for.
+    await subscribePublicly(t.db, { email: "wieder@example.org", source: "footer" });
+    await bypassThrottle();
+    await subscribePublicly(t.db, {
+      email: "wieder@example.org",
+      source: "footer",
+      context: { siteUrl: "https://bdas.de" },
+    });
+
+    const evt = seen[1] as ConfirmationRequested;
+    const token = new URL(evt.unsubscribeUrl).searchParams.get("token");
+    expect(await peekUnsubscribeToken(t.db, token!)).toEqual({
+      email: "wieder@example.org",
+      alreadyUnsubscribed: false,
+    });
   });
 });

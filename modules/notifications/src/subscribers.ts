@@ -327,13 +327,16 @@ export function registerNotificationSubscribers(db: Db, opts: { siteUrl?: string
     getEventBus().subscribe<ConfirmationRequested>(
       "newsletter.confirmation_requested",
       safe<ConfirmationRequested>(async (e) => {
-        // The URL is built by the publisher, which alone holds the plaintext
-        // token — it exists nowhere else after minting.
+        // Both URLs are built by the publisher, which alone holds the
+        // plaintext tokens — they exist nowhere else after minting. The
+        // unsubscribe link travels with the confirmation because this is the
+        // only mail an anonymous address ever gets: without it there is no way
+        // out short of owning an account.
         await sendTransactionalToGuest(
           db,
           "newsletter_confirm",
           { email: e.email },
-          { confirmUrl: e.confirmUrl },
+          { confirmUrl: e.confirmUrl, unsubscribeUrl: e.unsubscribeUrl },
         );
       }),
     ),
