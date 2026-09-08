@@ -24,11 +24,13 @@
 ## Task 1: `Breite` gains `"voll"` — type, class helper, normalization guard
 
 **Files:**
+
 - Modify: `apps/web/app/_content/puck-config.tsx:67-70` (`Breite` type, `breiteClass`)
 - Modify: `apps/web/app/_content/puck-config.tsx:140-150` (`normalizeContent` guard)
 - Test: `apps/web/app/_content/puck-config.test.ts`
 
 **Interfaces:**
+
 - Produces: `export type Breite = "schmal" | "breit" | "voll";` — `breiteClass(breite: Breite): string` now returns `""` for `"voll"` (no `max-w-*` class, so the flex column stretches to the full padded width). `normalizeContent` treats a stored `"voll"` as already-valid and does not overwrite it with the route fallback.
 - Consumes: nothing new from other tasks — this is the foundation every later task builds on.
 
@@ -99,19 +101,19 @@ export const breiteClass = (breite: Breite): string =>
 And in `normalizeContent`, replace:
 
 ```ts
-  const mitBreite =
-    props.breite === "schmal" || props.breite === "breit"
-      ? data
-      : ({ ...data, root: { ...data.root, props: { ...props, breite: fallback } } } as Data);
+const mitBreite =
+  props.breite === "schmal" || props.breite === "breit"
+    ? data
+    : ({ ...data, root: { ...data.root, props: { ...props, breite: fallback } } } as Data);
 ```
 
 with:
 
 ```ts
-  const mitBreite =
-    props.breite === "schmal" || props.breite === "breit" || props.breite === "voll"
-      ? data
-      : ({ ...data, root: { ...data.root, props: { ...props, breite: fallback } } } as Data);
+const mitBreite =
+  props.breite === "schmal" || props.breite === "breit" || props.breite === "voll"
+    ? data
+    : ({ ...data, root: { ...data.root, props: { ...props, breite: fallback } } } as Data);
 ```
 
 - [ ] **Step 4: Run tests to verify they pass**
@@ -138,9 +140,11 @@ git commit -m "feat(content): add voll width to Breite type and normalizeContent
 **Context:** every other content route (`bdaj`, `verbandsstruktur`, `bundessprecherinnenrat`, `gruppen/[slug]`) wraps its own header chrome in one width-constrained `<div>` and renders `<Render>` in a **separate**, unconstrained `<div className="mt-6">` — so `<Render>`'s own root width (from `puckConfig.root.render`) is the only thing constraining it. `ueber-uns/page.tsx` is the one outlier: header and `<Render>` share a single `<main className="mx-auto flex max-w-3xl flex-col gap-6 px-4 py-12">`. Once `breite` can be `"voll"`, that outer `max-w-3xl` would silently clip the content no matter what the board picks. This task brings the route in line with the other four.
 
 **Files:**
+
 - Modify: `apps/web/app/ueber-uns/page.tsx`
 
 **Interfaces:**
+
 - Consumes: `breiteClass` from `../_content/puck-config` (already used by `bdaj`/`verbandsstruktur`/`gruppen` for their header wrapper — same pattern reused here).
 - Produces: nothing new — purely a structural fix so Task 3's field has visible effect on this route.
 
@@ -148,84 +152,84 @@ git commit -m "feat(content): add voll width to Breite type and normalizeContent
 
 There is no existing test file for this route; add a minimal one asserting the structural invariant (header wrapper is width-constrained, content wrapper is not) via a static string check, matching how this codebase tests layout classes elsewhere (`puck-config.test.ts`'s grid-class assertions).
 
-Create `apps/web/app/ueber-uns/page.test.tsx`... — **do not create this.** This route is an async Server Component reading `getDb()`/session state; the existing test suite has no precedent for rendering App Router page components directly (every test in `puck-config.test.ts` tests the exported *helpers*, not routes). Skip a dedicated automated test for this structural fix — the risk (double `max-w-3xl` wrapping) is caught by manual verification in Step 3, and full coverage of "does the public page actually widen" belongs to the manual QA pass in Task 3, which exercises this route end-to-end.
+Create `apps/web/app/ueber-uns/page.test.tsx`... — **do not create this.** This route is an async Server Component reading `getDb()`/session state; the existing test suite has no precedent for rendering App Router page components directly (every test in `puck-config.test.ts` tests the exported _helpers_, not routes). Skip a dedicated automated test for this structural fix — the risk (double `max-w-3xl` wrapping) is caught by manual verification in Step 3, and full coverage of "does the public page actually widen" belongs to the manual QA pass in Task 3, which exercises this route end-to-end.
 
 - [ ] **Step 2: Implement**
 
 Replace the current single-`<main>` structure:
 
 ```tsx
-  return (
-    <main className="mx-auto flex max-w-3xl flex-col gap-6 px-4 py-12">
-      <div className="flex flex-col items-start gap-4 sm:flex-row sm:justify-between">
-        <h1 className="text-3xl font-semibold text-bdas-ink">Über uns</h1>
-        {canEdit ? (
-          <Link
-            href="/ueber-uns/bearbeiten"
-            className="inline-flex shrink-0 items-center rounded-bdas-sm border border-bdas-strong px-3 py-1.5 text-sm text-bdas-ink transition-colors duration-bdas-quick ease-bdas hover:bg-bdas-surface-hover"
-          >
-            Seite bearbeiten
-          </Link>
-        ) : null}
-      </div>
-      {page ? (
-        <Render config={puckConfig} data={normalizeContent(page.data as Data, "schmal")} />
-      ) : (
-        <>
-          {/* Platzhaltertext — bearbeitbar durch den Bundessprecher*innenrat (Spec §8). */}
-          <p className="text-bdas-ink-body">
-            Der Bund der Alevitischen Studierenden in Deutschland (BDAS) ist der Zusammenschluss
-            alevitischer Hochschulgruppen an deutschen Universitäten. Wir vernetzen Studierende,
-            organisieren Veranstaltungen und vertreten die Interessen alevitischer Studierender.
-          </p>
-          <p className="text-bdas-ink-body">
-            Von der Erstsemester-Begrüßung bis zur Bundeskonferenz: Unsere Hochschulgruppen leben
-            alevitische Werte im Studienalltag — offen, demokratisch und solidarisch.
-          </p>
-        </>
-      )}
-    </main>
-  );
+return (
+  <main className="mx-auto flex max-w-3xl flex-col gap-6 px-4 py-12">
+    <div className="flex flex-col items-start gap-4 sm:flex-row sm:justify-between">
+      <h1 className="text-3xl font-semibold text-bdas-ink">Über uns</h1>
+      {canEdit ? (
+        <Link
+          href="/ueber-uns/bearbeiten"
+          className="inline-flex shrink-0 items-center rounded-bdas-sm border border-bdas-strong px-3 py-1.5 text-sm text-bdas-ink transition-colors duration-bdas-quick ease-bdas hover:bg-bdas-surface-hover"
+        >
+          Seite bearbeiten
+        </Link>
+      ) : null}
+    </div>
+    {page ? (
+      <Render config={puckConfig} data={normalizeContent(page.data as Data, "schmal")} />
+    ) : (
+      <>
+        {/* Platzhaltertext — bearbeitbar durch den Bundessprecher*innenrat (Spec §8). */}
+        <p className="text-bdas-ink-body">
+          Der Bund der Alevitischen Studierenden in Deutschland (BDAS) ist der Zusammenschluss
+          alevitischer Hochschulgruppen an deutschen Universitäten. Wir vernetzen Studierende,
+          organisieren Veranstaltungen und vertreten die Interessen alevitischer Studierender.
+        </p>
+        <p className="text-bdas-ink-body">
+          Von der Erstsemester-Begrüßung bis zur Bundeskonferenz: Unsere Hochschulgruppen leben
+          alevitische Werte im Studienalltag — offen, demokratisch und solidarisch.
+        </p>
+      </>
+    )}
+  </main>
+);
 ```
 
 with the two-wrapper structure already used by `bdaj`/`verbandsstruktur` (header at a fixed `schmal` width, content unconstrained so `puckConfig.root.render` alone decides its width):
 
 ```tsx
-  return (
-    <main className="py-12">
-      <div
-        className={`mx-auto flex w-full flex-col items-start gap-4 px-4 sm:flex-row sm:justify-between ${breiteClass("schmal")}`}
-      >
-        <h1 className="text-3xl font-semibold text-bdas-ink">Über uns</h1>
-        {canEdit ? (
-          <Link
-            href="/ueber-uns/bearbeiten"
-            className="inline-flex shrink-0 items-center rounded-bdas-sm border border-bdas-strong px-3 py-1.5 text-sm text-bdas-ink transition-colors duration-bdas-quick ease-bdas hover:bg-bdas-surface-hover"
-          >
-            Seite bearbeiten
-          </Link>
-        ) : null}
+return (
+  <main className="py-12">
+    <div
+      className={`mx-auto flex w-full flex-col items-start gap-4 px-4 sm:flex-row sm:justify-between ${breiteClass("schmal")}`}
+    >
+      <h1 className="text-3xl font-semibold text-bdas-ink">Über uns</h1>
+      {canEdit ? (
+        <Link
+          href="/ueber-uns/bearbeiten"
+          className="inline-flex shrink-0 items-center rounded-bdas-sm border border-bdas-strong px-3 py-1.5 text-sm text-bdas-ink transition-colors duration-bdas-quick ease-bdas hover:bg-bdas-surface-hover"
+        >
+          Seite bearbeiten
+        </Link>
+      ) : null}
+    </div>
+    {page ? (
+      <div className="mt-6">
+        <Render config={puckConfig} data={normalizeContent(page.data as Data, "schmal")} />
       </div>
-      {page ? (
-        <div className="mt-6">
-          <Render config={puckConfig} data={normalizeContent(page.data as Data, "schmal")} />
-        </div>
-      ) : (
-        <div className={`mx-auto mt-6 flex w-full flex-col gap-6 px-4 ${breiteClass("schmal")}`}>
-          {/* Platzhaltertext — bearbeitbar durch den Bundessprecher*innenrat (Spec §8). */}
-          <p className="text-bdas-ink-body">
-            Der Bund der Alevitischen Studierenden in Deutschland (BDAS) ist der Zusammenschluss
-            alevitischer Hochschulgruppen an deutschen Universitäten. Wir vernetzen Studierende,
-            organisieren Veranstaltungen und vertreten die Interessen alevitischer Studierender.
-          </p>
-          <p className="text-bdas-ink-body">
-            Von der Erstsemester-Begrüßung bis zur Bundeskonferenz: Unsere Hochschulgruppen leben
-            alevitische Werte im Studienalltag — offen, demokratisch und solidarisch.
-          </p>
-        </div>
-      )}
-    </main>
-  );
+    ) : (
+      <div className={`mx-auto mt-6 flex w-full flex-col gap-6 px-4 ${breiteClass("schmal")}`}>
+        {/* Platzhaltertext — bearbeitbar durch den Bundessprecher*innenrat (Spec §8). */}
+        <p className="text-bdas-ink-body">
+          Der Bund der Alevitischen Studierenden in Deutschland (BDAS) ist der Zusammenschluss
+          alevitischer Hochschulgruppen an deutschen Universitäten. Wir vernetzen Studierende,
+          organisieren Veranstaltungen und vertreten die Interessen alevitischer Studierender.
+        </p>
+        <p className="text-bdas-ink-body">
+          Von der Erstsemester-Begrüßung bis zur Bundeskonferenz: Unsere Hochschulgruppen leben
+          alevitische Werte im Studienalltag — offen, demokratisch und solidarisch.
+        </p>
+      </div>
+    )}
+  </main>
+);
 ```
 
 Update the import line from:
@@ -261,15 +265,18 @@ git commit -m "refactor(content): split ueber-uns header and Puck content into s
 ## Task 3: Root `breite` becomes a real editor field, gated by slug
 
 **Files:**
+
 - Modify: `apps/web/app/_content/puck-config.tsx` (root config, new `LEGAL_SLUGS`/`breiteField` constants)
 - Modify: `apps/web/app/_content/PuckEditor.tsx` (metadata gains `slug`)
 - Test: `apps/web/app/_content/puck-config.test.ts`
 
 **Interfaces:**
+
 - Consumes: `Breite` (Task 1).
 - Produces: `puckConfig.root.fields.breite` (a `select` field), `puckConfig.root.resolveFields` (filters the `"voll"` option out for legal slugs). Board members editing `ueber-uns`, `ueber-uns/bdaj`, `ueber-uns/verbandsstruktur`, `ueber-uns/bundessprecherinnenrat`, or any `gruppen/<slug>` see all three width options; `datenschutz`/`impressum`/`nutzungsbedingungen` see only `schmal`/`breit`.
 
 **Puck API used (verified against `@puckeditor/core@0.23.0`'s shipped `.d.ts`):**
+
 - `RootConfig` is `Partial<ComponentConfigInternal<...>>` — it supports `fields` and `resolveFields` exactly like any component config.
 - `resolveFields?: (data, { metadata, ... }) => Fields | Promise<Fields>` — `metadata` is whatever object the `<Puck metadata={...}>` prop carries at runtime.
 - `puckConfig: Config<Blocks>` leaves the root-props generic at its default (`any`), so `root.fields`/`root.resolveFields` do not need extra casting beyond what the file already does for `root.render`.
@@ -283,10 +290,9 @@ describe("root breite field", () => {
   it("offers schmal/breit/voll by default (no slug in metadata)", () => {
     const resolve = puckConfig.root?.resolveFields;
     if (!resolve) throw new Error("root.resolveFields missing");
-    const fields = resolve(
-      { props: { breite: "schmal" } } as never,
-      { metadata: {} } as never,
-    ) as { breite: { options: { value: string }[] } };
+    const fields = resolve({ props: { breite: "schmal" } } as never, { metadata: {} } as never) as {
+      breite: { options: { value: string }[] };
+    };
     expect(fields.breite.options.map((o) => o.value)).toEqual(["schmal", "breit", "voll"]);
   });
 
@@ -377,13 +383,13 @@ to:
 In `apps/web/app/_content/PuckEditor.tsx`, extend the metadata so `resolveFields` can see the slug — change:
 
 ```tsx
-  const metadata = useMemo(() => ({ chrome }), [chrome]);
+const metadata = useMemo(() => ({ chrome }), [chrome]);
 ```
 
 to:
 
 ```tsx
-  const metadata = useMemo(() => ({ chrome, slug }), [chrome, slug]);
+const metadata = useMemo(() => ({ chrome, slug }), [chrome, slug]);
 ```
 
 - [ ] **Step 4: Run tests to verify they pass**
@@ -404,6 +410,7 @@ Expected: PASS
 - [ ] **Step 7: Manual verification**
 
 Run: `pnpm --filter web dev`. As a federal-board member:
+
 1. Open `/ueber-uns/bearbeiten` — confirm a "Breite" field appears (root/page-level settings panel, not a per-block field), offering Schmal/Breit/Volle Breite. Pick "Volle Breite", confirm the canvas widens accordingly (Task 2's fix makes this visible).
 2. Open `/datenschutz/bearbeiten` — confirm the same field shows only Schmal/Breit, no "Volle Breite" option.
 3. Publish the `/ueber-uns` change, reload `/ueber-uns` as a visitor — confirm the public page also renders full width.
@@ -420,10 +427,12 @@ git commit -m "feat(content): make root width a real editor field, gated by slug
 ## Task 4: `Spalten` — asymmetric and 4-column presets
 
 **Files:**
+
 - Modify: `apps/web/app/_content/puck-config.tsx` (`Blocks["Spalten"]`, `Spalten` component config)
 - Test: `apps/web/app/_content/puck-config.test.ts`
 
 **Interfaces:**
+
 - Produces: `Blocks["Spalten"]["anzahl"]` widens to `"2" | "3" | "4" | "1-2" | "2-1"`. A new internal `SPALTEN_LAYOUT` lookup drives both the wrapping grid class and which zones render with a column-span override — every class involved is a literal from this table, never interpolated.
 
 - [ ] **Step 1: Write the failing tests**
@@ -486,17 +495,17 @@ Expected: FAIL — `"4"`/`"1-2"`/`"2-1"` are not valid `anzahl` values yet and t
 Change `Blocks["Spalten"]` from:
 
 ```ts
-  Spalten: {
-    anzahl: "2" | "3";
-  };
+Spalten: {
+  anzahl: "2" | "3";
+}
 ```
 
 to:
 
 ```ts
-  Spalten: {
-    anzahl: "2" | "3" | "4" | "1-2" | "2-1";
-  };
+Spalten: {
+  anzahl: "2" | "3" | "4" | "1-2" | "2-1";
+}
 ```
 
 Add a layout lookup above the `puckConfig` export (near `ausrichtungField`):
@@ -516,12 +525,7 @@ const SPALTEN_LAYOUT: Record<
   },
   "4": {
     grid: "grid gap-6 sm:grid-cols-2 lg:grid-cols-4",
-    zonen: [
-      { zone: "spalte-1" },
-      { zone: "spalte-2" },
-      { zone: "spalte-3" },
-      { zone: "spalte-4" },
-    ],
+    zonen: [{ zone: "spalte-1" }, { zone: "spalte-2" }, { zone: "spalte-3" }, { zone: "spalte-4" }],
   },
   "1-2": {
     grid: "grid gap-6 sm:grid-cols-3",
@@ -630,10 +634,12 @@ git commit -m "feat(content): add asymmetric and four-column Spalten presets"
 ## Task 5: New block — Panel/Kasten
 
 **Files:**
+
 - Modify: `apps/web/app/_content/puck-config.tsx` (`Blocks["Panel"]`, new `Panel` component config)
 - Test: `apps/web/app/_content/puck-config.test.ts`
 
 **Interfaces:**
+
 - Produces: `Blocks["Panel"] = { titel: string; variante: "standard" | "hervorgehoben" }`. Renders a `Card` (from `@bdas/design-system`, already imported) wrapping a single nested `DropZone` named `"inhalt"`. `"hervorgehoben"` adds the same left-accent-border treatment the existing `Zitat` block already uses (`border-l-4 border-bdas-red`) — no new token, reuse of an established pattern.
 
 - [ ] **Step 1: Write the failing tests**
@@ -644,9 +650,7 @@ describe("Panel block", () => {
     const render = puckConfig.components.Panel?.render;
     if (!render) throw new Error("Panel render missing");
     const puck = { renderDropZone: ({ zone }: { zone: string }) => `[${zone}]` };
-    const out = renderToStaticMarkup(
-      render({ titel: "", variante: "standard", puck } as never),
-    );
+    const out = renderToStaticMarkup(render({ titel: "", variante: "standard", puck } as never));
     expect(out).toContain("[inhalt]");
     expect(out).toMatch(/class="[^"]*rounded-bdas[^"]*"/);
   });
@@ -676,9 +680,7 @@ describe("Panel block", () => {
     const render = puckConfig.components.Panel?.render;
     if (!render) throw new Error("Panel render missing");
     const puck = { renderDropZone: () => null };
-    const out = renderToStaticMarkup(
-      render({ titel: "", variante: "standard", puck } as never),
-    );
+    const out = renderToStaticMarkup(render({ titel: "", variante: "standard", puck } as never));
     expect(out).not.toContain("border-l-4");
   });
 });
@@ -694,7 +696,10 @@ Expected: FAIL — `puckConfig.components.Panel` does not exist.
 Add to `Blocks` (after `Organigramm`):
 
 ```ts
-  Panel: { titel: string; variante: "standard" | "hervorgehoben" };
+Panel: {
+  titel: string;
+  variante: "standard" | "hervorgehoben";
+}
 ```
 
 Add a new component entry to `puckConfig.components` (after `Organigramm`, before the closing `},` of `components`):
@@ -755,10 +760,12 @@ git commit -m "feat(content): add Panel/Kasten block"
 ## Task 6: New block — Akkordeon
 
 **Files:**
+
 - Modify: `apps/web/app/_content/puck-config.tsx` (`Blocks["Akkordeon"]`, new `Akkordeon` component config)
 - Test: `apps/web/app/_content/puck-config.test.ts`
 
 **Interfaces:**
+
 - Produces: `Blocks["Akkordeon"] = { eintraege: { frage: string; antwort: string }[] }`. Renders one `<details className="bdas-accordion">` per entry — the exact global class `apps/web/app/faq/FaqAccordion.tsx` already uses, so this gets the `<details>` idiom from CLAUDE.md §7 (left border + halo on `[open]`, `+`→`×`) for free, with zero new CSS.
 
 - [ ] **Step 1: Write the failing tests**
@@ -768,9 +775,7 @@ describe("Akkordeon block", () => {
   it("shows a placeholder in the editor when empty", () => {
     const render = puckConfig.components.Akkordeon?.render;
     if (!render) throw new Error("Akkordeon render missing");
-    const out = renderToStaticMarkup(
-      render({ eintraege: [], puck: { isEditing: true } } as never),
-    );
+    const out = renderToStaticMarkup(render({ eintraege: [], puck: { isEditing: true } } as never));
     expect(out).toContain("Noch keine Einträge");
   });
 
@@ -814,7 +819,13 @@ Expected: FAIL — `puckConfig.components.Akkordeon` does not exist.
 Add to `Blocks`:
 
 ```ts
-  Akkordeon: { eintraege: { frage: string; antwort: string }[] };
+Akkordeon: {
+  eintraege: {
+    frage: string;
+    antwort: string;
+  }
+  [];
+}
 ```
 
 Add a new component entry to `puckConfig.components`:
@@ -879,11 +890,13 @@ git commit -m "feat(content): add Akkordeon block"
 ## Task 7: In-editor preview toggle
 
 **Files:**
+
 - Create: `apps/web/app/_content/PreviewToggle.tsx`
 - Modify: `apps/web/app/_content/PuckEditor.tsx`
 - Test: `apps/web/app/_content/PreviewToggle.test.tsx`
 
 **Interfaces:**
+
 - Produces: `export function PreviewToggle(): JSX.Element` — a header-bar button that reads `usePuck().appState.ui.previewMode` and dispatches `{ type: "setUi", ui: { previewMode: "interactive" | "edit" } }` to flip it. Wired into `<Puck overrides={{ headerActions: ... }}>` in `PuckEditor.tsx`.
 - Puck API used (verified against the installed `.d.ts`): `usePuck()` (no selector — the exported `usePuck`, not `createUsePuck()`) returns `{ appState, dispatch, ... }`; `AppState = { data, ui: UiState }`; `UiState.previewMode: "interactive" | "edit"`; `SetUiAction = { type: "setUi"; ui: Partial<UiState> | ((previous: UiState) => Partial<UiState>) }`. `"interactive"` is Puck's own built-in mode that hides editing chrome and renders the canvas as the public page would.
 
