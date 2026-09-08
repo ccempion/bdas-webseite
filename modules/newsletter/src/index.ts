@@ -13,7 +13,12 @@ export {
   type SubscribeAtRegistrationInput,
   type SubscribePubliclyInput,
 } from "./services/subscribe";
-export { confirmSubscription, unsubscribeAsUser, unsubscribeByToken } from "./services/confirm";
+export {
+  confirmSubscription,
+  peekUnsubscribeToken,
+  unsubscribeAsUser,
+  unsubscribeByToken,
+} from "./services/confirm";
 export {
   countSubscribers,
   getSubscriptionForUser,
