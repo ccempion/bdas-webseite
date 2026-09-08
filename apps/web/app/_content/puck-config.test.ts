@@ -1083,9 +1083,7 @@ describe("puckConfig", () => {
       const render = puckConfig.components.Panel?.render;
       if (!render) throw new Error("Panel render missing");
       const puck = { renderDropZone: ({ zone }: { zone: string }) => `[${zone}]` };
-      const out = renderToStaticMarkup(
-        render({ titel: "", variante: "standard", puck } as never),
-      );
+      const out = renderToStaticMarkup(render({ titel: "", variante: "standard", puck } as never));
       expect(out).toContain("[inhalt]");
       expect(out).toMatch(/class="[^"]*rounded-bdas[^"]*"/);
     });
@@ -1115,10 +1113,47 @@ describe("puckConfig", () => {
       const render = puckConfig.components.Panel?.render;
       if (!render) throw new Error("Panel render missing");
       const puck = { renderDropZone: () => null };
-      const out = renderToStaticMarkup(
-        render({ titel: "", variante: "standard", puck } as never),
-      );
+      const out = renderToStaticMarkup(render({ titel: "", variante: "standard", puck } as never));
       expect(out).not.toContain("border-l-4");
+    });
+  });
+
+  describe("Akkordeon block", () => {
+    it("shows a placeholder in the editor when empty", () => {
+      const render = puckConfig.components.Akkordeon?.render;
+      if (!render) throw new Error("Akkordeon render missing");
+      const out = renderToStaticMarkup(
+        render({ eintraege: [], puck: { isEditing: true } } as never),
+      );
+      expect(out).toContain("Noch keine Einträge");
+    });
+
+    it("renders one details element per entry using the shared accordion class", () => {
+      const render = puckConfig.components.Akkordeon?.render;
+      if (!render) throw new Error("Akkordeon render missing");
+      const out = renderToStaticMarkup(
+        render({
+          eintraege: [
+            { frage: "Wie trete ich bei?", antwort: "Über das Anmeldeformular." },
+            { frage: "Wo treffen wir uns?", antwort: "Immer donnerstags." },
+          ],
+          puck: { isEditing: false },
+        } as never),
+      );
+      expect((out.match(/class="bdas-accordion"/g) ?? []).length).toBe(2);
+      expect(out).toContain("Wie trete ich bei?");
+      expect(out).toContain("Über das Anmeldeformular.");
+    });
+
+    it("summarises an entry by its question", () => {
+      const eintraege = puckConfig.components.Akkordeon?.fields?.eintraege;
+      if (eintraege?.type !== "array" || !eintraege.getItemSummary) {
+        throw new Error("array field with getItemSummary expected");
+      }
+      expect(eintraege.getItemSummary({ frage: "Wie trete ich bei?", antwort: "" }, 0)).toBe(
+        "Wie trete ich bei?",
+      );
+      expect(eintraege.getItemSummary({ frage: "", antwort: "" }, 0)).toBe("Neuer Eintrag");
     });
   });
 });

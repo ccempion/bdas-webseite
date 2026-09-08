@@ -60,6 +60,7 @@ type Blocks = {
   };
   Organigramm: { kaesten: Kasten[] };
   Panel: { titel: string; variante: "standard" | "hervorgehoben" };
+  Akkordeon: { eintraege: { frage: string; antwort: string }[] };
 };
 
 /** Content-column width. Carried on the page's root so the same value frames
@@ -140,12 +141,7 @@ const SPALTEN_LAYOUT: Record<
   },
   "4": {
     grid: "grid gap-6 sm:grid-cols-2 lg:grid-cols-4",
-    zonen: [
-      { zone: "spalte-1" },
-      { zone: "spalte-2" },
-      { zone: "spalte-3" },
-      { zone: "spalte-4" },
-    ],
+    zonen: [{ zone: "spalte-1" }, { zone: "spalte-2" }, { zone: "spalte-3" }, { zone: "spalte-4" }],
   },
   "1-2": {
     grid: "grid gap-6 sm:grid-cols-3",
@@ -649,17 +645,42 @@ export const puckConfig: Config<Blocks> = {
       },
       defaultProps: { titel: "", variante: "standard" },
       render: ({ titel, variante, puck }) => (
-        <Card
-          className={
-            variante === "hervorgehoben"
-              ? "border-l-4 border-l-bdas-red p-6"
-              : "p-6"
-          }
-        >
+        <Card className={variante === "hervorgehoben" ? "border-l-4 border-l-bdas-red p-6" : "p-6"}>
           {titel ? <p className="mb-3 font-semibold text-bdas-ink">{titel}</p> : null}
           {puck.renderDropZone({ zone: "inhalt" })}
         </Card>
       ),
+    },
+    Akkordeon: {
+      label: "Akkordeon",
+      fields: {
+        eintraege: {
+          type: "array",
+          label: "Einträge",
+          arrayFields: {
+            frage: { type: "text", label: "Frage" },
+            antwort: { type: "textarea", label: "Antwort" },
+          },
+          defaultItemProps: { frage: "", antwort: "" },
+          getItemSummary: (e) => e.frage || "Neuer Eintrag",
+        },
+      },
+      defaultProps: { eintraege: [] },
+      render: ({ eintraege, puck }) =>
+        (eintraege ?? []).length === 0 && puck?.isEditing ? (
+          <BlockPlatzhalter titel="Akkordeon" hinweis="Noch keine Einträge hinzugefügt." />
+        ) : (
+          <div className="flex flex-col gap-3">
+            {(eintraege ?? []).map((e, i) => (
+              <details key={i} className="bdas-accordion">
+                <summary>{e.frage}</summary>
+                <div>
+                  <p className="whitespace-pre-line text-bdas-ink-body">{e.antwort}</p>
+                </div>
+              </details>
+            ))}
+          </div>
+        ),
     },
   },
 };
