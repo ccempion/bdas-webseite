@@ -215,10 +215,10 @@ describe("puckConfig", () => {
     );
   });
 
-  it("Spalten offers a 2/3 column select", () => {
+  it("Spalten offers a 2/3/4 column and asymmetric select", () => {
     const anzahl = puckConfig.components.Spalten?.fields?.anzahl;
     if (anzahl?.type !== "select") throw new Error("Spalten needs an anzahl select");
-    expect(anzahl.options?.map((o) => o.value)).toEqual(["2", "3"]);
+    expect(anzahl.options?.map((o) => o.value)).toEqual(["2", "3", "4", "1-2", "2-1"]);
   });
 
   it("Spalten renders its drop zones and gates the third on anzahl", () => {
@@ -1031,6 +1031,50 @@ describe("puckConfig", () => {
         ) as unknown as { breite: { options: { value: string }[] } };
         expect(fields.breite.options.map((o) => o.value)).toEqual(["schmal", "breit", "voll"]);
       }
+    });
+  });
+
+  describe("Spalten presets", () => {
+    const render = () => {
+      const r = puckConfig.components.Spalten?.render;
+      if (!r) throw new Error("Spalten render missing");
+      return r;
+    };
+    const puck = { renderDropZone: ({ zone }: { zone: string }) => `[${zone}]` };
+
+    it("2 and 3 keep their existing equal-column classes", () => {
+      const out2 = renderToStaticMarkup(render()({ anzahl: "2", puck } as never));
+      expect(out2).toContain("sm:grid-cols-2");
+      const out3 = renderToStaticMarkup(render()({ anzahl: "3", puck } as never));
+      expect(out3).toContain("sm:grid-cols-3");
+    });
+
+    it("4 renders four zones on a four-column grid", () => {
+      const out = renderToStaticMarkup(render()({ anzahl: "4", puck } as never));
+      expect(out).toContain("lg:grid-cols-4");
+      for (const zone of ["spalte-1", "spalte-2", "spalte-3", "spalte-4"]) {
+        expect(out).toContain(`[${zone}]`);
+      }
+    });
+
+    it("1-2 gives the second zone a double column-span", () => {
+      const out = renderToStaticMarkup(render()({ anzahl: "1-2", puck } as never));
+      expect(out).toContain("sm:col-span-1");
+      expect(out).toContain("sm:col-span-2");
+    });
+
+    it("2-1 gives the first zone a double column-span", () => {
+      const out = renderToStaticMarkup(render()({ anzahl: "2-1", puck } as never));
+      const firstSpanIndex = out.indexOf("sm:col-span-2");
+      const secondSpanIndex = out.indexOf("sm:col-span-1");
+      expect(firstSpanIndex).toBeGreaterThan(-1);
+      expect(secondSpanIndex).toBeGreaterThan(firstSpanIndex);
+    });
+
+    it("exposes all five options on the anzahl field", () => {
+      const anzahl = puckConfig.components.Spalten?.fields?.anzahl;
+      if (anzahl?.type !== "select") throw new Error("anzahl must be a select field");
+      expect(anzahl.options.map((o) => o.value)).toEqual(["2", "3", "4", "1-2", "2-1"]);
     });
   });
 });

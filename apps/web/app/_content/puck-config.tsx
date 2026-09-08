@@ -56,7 +56,7 @@ type Blocks = {
     hoehe: "klein" | "mittel" | "gross";
   };
   Spalten: {
-    anzahl: "2" | "3";
+    anzahl: "2" | "3" | "4" | "1-2" | "2-1";
   };
   Organigramm: { kaesten: Kasten[] };
 };
@@ -123,6 +123,43 @@ const ausrichtungField = {
     { label: "Mittig", value: "mittig" },
     { label: "Rechtsbündig", value: "rechts" },
   ],
+};
+
+const SPALTEN_LAYOUT: Record<
+  Blocks["Spalten"]["anzahl"],
+  { grid: string; zonen: { zone: string; span?: string }[] }
+> = {
+  "2": {
+    grid: "grid gap-6 sm:grid-cols-2",
+    zonen: [{ zone: "spalte-1" }, { zone: "spalte-2" }],
+  },
+  "3": {
+    grid: "grid gap-6 sm:grid-cols-3",
+    zonen: [{ zone: "spalte-1" }, { zone: "spalte-2" }, { zone: "spalte-3" }],
+  },
+  "4": {
+    grid: "grid gap-6 sm:grid-cols-2 lg:grid-cols-4",
+    zonen: [
+      { zone: "spalte-1" },
+      { zone: "spalte-2" },
+      { zone: "spalte-3" },
+      { zone: "spalte-4" },
+    ],
+  },
+  "1-2": {
+    grid: "grid gap-6 sm:grid-cols-3",
+    zonen: [
+      { zone: "spalte-1", span: "sm:col-span-1" },
+      { zone: "spalte-2", span: "sm:col-span-2" },
+    ],
+  },
+  "2-1": {
+    grid: "grid gap-6 sm:grid-cols-3",
+    zonen: [
+      { zone: "spalte-1", span: "sm:col-span-2" },
+      { zone: "spalte-2", span: "sm:col-span-1" },
+    ],
+  },
 };
 
 /** Legal-text pages stay at reading width — "voll" is never offered there,
@@ -518,17 +555,29 @@ export const puckConfig: Config<Blocks> = {
           options: [
             { label: "2 Spalten", value: "2" },
             { label: "3 Spalten", value: "3" },
+            { label: "4 Spalten", value: "4" },
+            { label: "1/3 + 2/3", value: "1-2" },
+            { label: "2/3 + 1/3", value: "2-1" },
           ],
         },
       },
       defaultProps: { anzahl: "2" },
-      render: ({ anzahl, puck }) => (
-        <div className={anzahl === "3" ? "grid gap-6 sm:grid-cols-3" : "grid gap-6 sm:grid-cols-2"}>
-          {puck.renderDropZone({ zone: "spalte-1" })}
-          {puck.renderDropZone({ zone: "spalte-2" })}
-          {anzahl === "3" ? puck.renderDropZone({ zone: "spalte-3" }) : null}
-        </div>
-      ),
+      render: ({ anzahl, puck }) => {
+        const layout = SPALTEN_LAYOUT[anzahl];
+        return (
+          <div className={layout.grid}>
+            {layout.zonen.map(({ zone, span }) =>
+              span ? (
+                <div key={zone} className={span}>
+                  {puck.renderDropZone({ zone })}
+                </div>
+              ) : (
+                <React.Fragment key={zone}>{puck.renderDropZone({ zone })}</React.Fragment>
+              ),
+            )}
+          </div>
+        );
+      },
     },
     Organigramm: {
       label: "Organigramm",
