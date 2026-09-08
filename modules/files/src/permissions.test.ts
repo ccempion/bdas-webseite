@@ -47,6 +47,7 @@ function me(grants: Grant[], m: Member | null = member()): CurrentMember {
 const FED: Grant[] = [{ role: "federal_board", groupId: null }];
 const LEAD_MUC: Grant[] = [{ role: "local_board_lead", groupId: "grp_muc" }];
 const FILE_MGR_MUC: Grant[] = [{ role: "file_manager", groupId: "grp_muc" }];
+const BLOGGER_MUC: Grant[] = [{ role: "blogger", groupId: "grp_muc" }];
 const PLAIN: Grant[] = [{ role: "member", groupId: null }];
 
 describe("canRead", () => {
@@ -114,6 +115,13 @@ describe("canWrite", () => {
     it("cannot read the local_board (board-internal) folder — file_manager is not a board grant", () => {
       expect(canRead(folder("local_board", "grp_muc"), me(FILE_MGR_MUC))).toBe(false);
     });
+  });
+
+  it("a blogger has NO file access at all — blogger grants only blog authoring, nothing else", () => {
+    expect(canWrite(folder("group_members", "grp_muc"), me(BLOGGER_MUC))).toBe(false);
+    expect(canWrite(folder("local_board", "grp_muc"), me(BLOGGER_MUC))).toBe(false);
+    expect(canWrite(folder("members_all", null), me(BLOGGER_MUC))).toBe(false);
+    expect(canWrite(folder("federal_board", null), me(BLOGGER_MUC))).toBe(false);
   });
 });
 

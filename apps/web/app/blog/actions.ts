@@ -20,7 +20,7 @@ import { ForbiddenError, isAppError, NotFoundError } from "@bdas/errors";
 import { isFlagOn } from "@bdas/feature-flags";
 import { requireFederalBoard } from "@bdas/members";
 
-import { blogViewer, canAuthor, loadBlogMe } from "../_blog/access";
+import { blogViewer, canAuthorPost, canComment, loadBlogMe } from "../_blog/access";
 import { commentsEnabled } from "../_blog/flag";
 
 export type PostFormState = {
@@ -59,13 +59,16 @@ function appErr(err: unknown): PostFormState {
   throw err;
 }
 
-/** Create a post. Any eligible (active member or alumnus) user may author one. */
+/** Create a post. Eligible: federal board, Lead, Event-Manager, or Blogger (ADR 0037). */
 export async function createPostAction(_prev: PostFormState, fd: FormData): Promise<PostFormState> {
   if (!isFlagOn("blog")) return { error: "Nicht verfügbar." };
   const me = await loadBlogMe();
   if (!me) return { error: "Anmeldung erforderlich." };
-  if (!canAuthor(me)) {
-    return { error: "Nur aktive Mitglieder oder Alumni dürfen Beiträge veröffentlichen." };
+  if (!canAuthorPost(me)) {
+    return {
+      error:
+        "Nur Bundesvorstand, Lead, Event-Manager oder Blogger dürfen Beiträge veröffentlichen.",
+    };
   }
 
   let slug: string;
@@ -173,8 +176,9 @@ export async function dismissReportAction(_prev: ActionState, fd: FormData): Pro
 export type CommentFormState = { readonly error?: string; readonly success?: boolean };
 
 /**
- * Add a comment. Eligibility is ADR 0030's authoring rule reused verbatim —
- * active member or alumnus — so posting and commenting cannot drift apart.
+ * Add a comment. Eligibility is `canComment` — active member or alumnus,
+ * unchanged by the ADR 0037 authoring restriction (see that ADR's "Comments
+ * are unaffected" section).
  */
 export async function createCommentAction(
   _prev: CommentFormState,
@@ -183,7 +187,7 @@ export async function createCommentAction(
   if (!commentsEnabled()) return { error: "Nicht verfügbar." };
   const me = await loadBlogMe();
   if (!me) return { error: "Anmeldung erforderlich." };
-  if (!canAuthor(me)) {
+  if (!canComment(me)) {
     return { error: "Nur aktive Mitglieder oder Alumni dürfen kommentieren." };
   }
 

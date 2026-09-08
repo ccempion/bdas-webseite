@@ -39,9 +39,10 @@ export default async function VorstandPage({
             name: `${m.firstName} ${m.lastName}`,
           }))}
           roleOptions={[
-            { role: "event_organizer", label: "Organisator", groupId },
+            { role: "event_organizer", label: "Event-Manager", groupId },
             { role: "page_editor", label: "Seiten-Editor", groupId },
             { role: "file_manager", label: "Datei-Manager", groupId },
+            { role: "blogger", label: "Blogger", groupId },
           ]}
           revalidatePath={revalidate}
         />
@@ -67,7 +68,7 @@ export default async function VorstandPage({
           sections={[
             { title: "Leads", holders: ofGroup.filter((h) => h.role === "local_board_lead") },
             {
-              title: "Organisatoren",
+              title: "Event-Manager",
               holders: ofGroup.filter((h) => h.role === "event_organizer"),
             },
             {
@@ -77,6 +78,10 @@ export default async function VorstandPage({
             {
               title: "Datei-Manager",
               holders: ofGroup.filter((h) => h.role === "file_manager"),
+            },
+            {
+              title: "Blogger",
+              holders: ofGroup.filter((h) => h.role === "blogger"),
             },
           ]}
           groupNames={{}}

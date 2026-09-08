@@ -43,17 +43,40 @@ export async function loadBlogViewer(): Promise<{ me: CurrentMember | null; view
   return { me, viewer: blogViewer(me) };
 }
 
-/** Eligible to author a post: an active member or an alumnus. Pending (not yet
- *  confirmed by a Local Board) and inactive accounts cannot (ADR 0030). */
-export function canAuthor(me: CurrentMember | null): boolean {
+/**
+ * Eligible to COMMENT (read or write): an active member or an alumnus.
+ * Pending (not yet confirmed by a Lead) and inactive accounts cannot
+ * (ADR 0030's original rule, preserved verbatim for comments by ADR 0037
+ * even though blog *authoring* eligibility has since narrowed — see that
+ * ADR's "Comments are unaffected" section).
+ */
+export function canComment(me: CurrentMember | null): boolean {
   return me !== null && (me.member?.status === "active" || me.member?.status === "alumnus");
 }
 
-/** Any eligible (active member or alumnus) user may author a post. Otherwise → login/blog. */
+const BLOG_AUTHOR_ROLES = new Set([
+  "federal_board",
+  "local_board_lead",
+  "event_organizer",
+  "blogger",
+]);
+
+/**
+ * Eligible to AUTHOR a new post: federal board, a group's Lead, an
+ * Event-Manager, or a Blogger (ADR 0037 — supersedes ADR 0030's "any active
+ * member or alumnus" default). Deliberately grant-based, not status-based:
+ * holding one of these roles is itself the qualification.
+ */
+export function canAuthorPost(me: CurrentMember | null): boolean {
+  if (me === null) return false;
+  return me.grants.some((g) => BLOG_AUTHOR_ROLES.has(g.role));
+}
+
+/** Eligible to author a post (ADR 0037), or redirect. */
 export async function requirePostAuthor(): Promise<CurrentMember> {
   const me = await loadBlogMe();
   if (!me) redirect("/anmelden");
-  if (!canAuthor(me)) redirect("/blog");
+  if (!canAuthorPost(me)) redirect("/blog");
   return me;
 }
 

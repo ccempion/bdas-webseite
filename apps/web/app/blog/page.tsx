@@ -7,7 +7,7 @@ import { Alert, Button, Card } from "@bdas/design-system";
 
 import { commentsEnabled, requireBlogFlag } from "../_blog/flag";
 import { AuthorAvatar } from "../_blog/AuthorAvatar";
-import { canAuthor, loadBlogViewer, resolveAuthors } from "../_blog/access";
+import { canAuthorPost, canComment, loadBlogViewer, resolveAuthors } from "../_blog/access";
 import { BlogFilterBar } from "../_blog/BlogFilterBar";
 import { parseCategory, parseZeitraum, resolveSince } from "../_blog/filters";
 import { formatDate } from "../../lib/format";
@@ -42,12 +42,12 @@ export default async function BlogFeedPage({
     posts.map((p) => p.createdBy),
     me !== null,
   );
-  // Mirrors CommentsSection's own gate (canAuthor): the count must be
+  // Mirrors CommentsSection's own gate (canComment): the count must be
   // members-and-alumni only, same as reading the comments themselves
   // (ADR 0033), not just the environment flag — so the query is skipped
   // entirely for a viewer who could never see a comment.
   const commentCounts =
-    commentsEnabled() && canAuthor(me)
+    commentsEnabled() && canComment(me)
       ? await countCommentsByPost(
           db,
           posts.map((p) => p.id),
@@ -61,7 +61,7 @@ export default async function BlogFeedPage({
           <h1 className="text-3xl font-semibold text-bdas-ink">Blog</h1>
           <p className="text-bdas-ink-body">Beiträge aus dem BDAS.</p>
         </div>
-        {canAuthor(me) ? (
+        {canAuthorPost(me) ? (
           <Link href="/blog/neu">
             <Button>Neuer Beitrag</Button>
           </Link>
