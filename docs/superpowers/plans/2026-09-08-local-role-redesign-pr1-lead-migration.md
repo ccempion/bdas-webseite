@@ -16,7 +16,7 @@
 - **CLAUDE.md §1 rule 7:** migration lives in `modules/members/migrations/`, next sequential file is `0010_local_role_redesign.sql`.
 - **CLAUDE.md §4:** tests ship in this PR, not a follow-up; this PR changes authorization, so it needs `/security-review` before merge.
 - **Hard cutover accepted (D3):** no expand/contract split — the CHECK constraint drops `local_board` in the same migration that backfills the data. Pre-production, short deploy window is acceptable.
-- **Historical audit rows are rewritten too (D4):** the backfill renames *every* `local_board` row, active or revoked — the audit log shows "Lead" retroactively, not "Vorstand (jetzt Lead)".
+- **Historical audit rows are rewritten too (D4):** the backfill renames _every_ `local_board` row, active or revoked — the audit log shows "Lead" retroactively, not "Vorstand (jetzt Lead)".
 - Do not touch `event_organizer`'s or `page_editor`'s behavior in this PR — only `local_board` disappears here. `file_manager`/`blogger` get added to the CHECK domain now (so PR2/PR3 don't need their own migration) but are not yet grantable from any UI or used by any predicate until PR2/PR3 land.
 - Do not touch the FAQ (`apps/web/content/faq/vorstand.ts`) or the Datei-Bereich labels — both explicitly out of scope, owned elsewhere.
 
@@ -25,14 +25,16 @@
 ### Task 1: Migration — backfill `local_board` → `local_board_lead`, widen CHECK for the two new roles
 
 **Files:**
+
 - Create: `modules/members/migrations/0010_local_role_redesign.sql`
 - Test: `modules/members/src/local-role-redesign.integration.test.ts`
 
 **Interfaces:**
+
 - Consumes: existing `member_role_grants` table (`modules/members/src/schema.ts`), existing `member_role_grants_role_check` constraint (last widened in `modules/members/migrations/0007_page_editor.sql`).
 - Produces: `member_role_grants.role` domain is now `('member', 'local_board_lead', 'federal_board', 'alumnus', 'event_organizer', 'page_editor', 'file_manager', 'blogger')` — `local_board` is gone. Every previously-active or previously-revoked `local_board` row now reads `local_board_lead`.
 
-This is a data migration, not a pure function — TDD here means: write the integration test against a real (Docker) Postgres first, watch it fail against the *old* schema/data, then add the migration file and watch it pass. `pnpm db:up` must be running (see `modules/members/README.md` / repo root `README.md` for the Docker Postgres compose target used by module integration tests).
+This is a data migration, not a pure function — TDD here means: write the integration test against a real (Docker) Postgres first, watch it fail against the _old_ schema/data, then add the migration file and watch it pass. `pnpm db:up` must be running (see `modules/members/README.md` / repo root `README.md` for the Docker Postgres compose target used by module integration tests).
 
 - [ ] **Step 1: Write the failing integration test**
 
@@ -276,9 +278,11 @@ Claude-Session: https://claude.ai/code/session_01S4sVhZJkRX7Mwpv4mFxU18"
 ### Task 2: `Role` union — drop `local_board`, add `file_manager`/`blogger`
 
 **Files:**
+
 - Modify: `modules/auth/src/sso.ts`
 
 **Interfaces:**
+
 - Produces: `Role` type used by every module that imports `@bdas/auth`'s `Role` (via `@bdas/members`' `Grant`).
 
 - [ ] **Step 1: Update the union**
@@ -319,10 +323,12 @@ Claude-Session: https://claude.ai/code/session_01S4sVhZJkRX7Mwpv4mFxU18"
 ### Task 3: `modules/members/src/roles.ts` — collapse the predicates
 
 **Files:**
+
 - Modify: `modules/members/src/roles.ts`
 - Modify: `modules/members/src/roles.unit.test.ts`
 
 **Interfaces:**
+
 - Consumes: `Grant` from `./types` (unchanged shape).
 - Produces: `ALL_ROLES`, `isRole`, `canManageGroup`, `canGrantLocalRoles` (renamed from `canGrantLocalBoard`), `canEditGroupPage`, `canDecideJoinRequest` — same signatures as today except the renamed export.
 
@@ -335,7 +341,13 @@ import { describe, expect, it } from "vitest";
 
 import type { Grant } from "./types";
 
-import { canDecideJoinRequest, canEditGroupPage, canGrantLocalRoles, canManageGroup, isRole } from "./roles";
+import {
+  canDecideJoinRequest,
+  canEditGroupPage,
+  canGrantLocalRoles,
+  canManageGroup,
+  isRole,
+} from "./roles";
 
 const g = (role: string, groupId: string | null): Grant => ({ role, groupId }) as Grant;
 
@@ -580,9 +592,11 @@ Claude-Session: https://claude.ai/code/session_01S4sVhZJkRX7Mwpv4mFxU18"
 ### Task 4: `services/roles.ts` — grant/revoke rules
 
 **Files:**
+
 - Modify: `modules/members/src/services/roles.ts`
 
 **Interfaces:**
+
 - Consumes: `canGrantLocalRoles` (renamed, Task 3), `isFederalBoard`, `isRole` from `../roles`.
 - Produces: `grantRole`, `revokeRole` — same signatures, updated internal `requireCanGrant`/`requireValidScope`.
 
@@ -675,11 +689,13 @@ Claude-Session: https://claude.ai/code/session_01S4sVhZJkRX7Mwpv4mFxU18"
 ### Task 5: `role-views.ts`, `board-recipients.ts` — roster/audit queries and notification recipients
 
 **Files:**
+
 - Modify: `modules/members/src/services/role-views.ts`
 - Modify: `modules/members/src/services/board-recipients.ts`
 - Test: `modules/members/src/board-recipients.test.ts` (existing — update fixtures)
 
 **Interfaces:**
+
 - Produces: `ROSTER_ROLES` includes `file_manager`/`blogger`, no longer includes `local_board`. `listBoardRecipientsForGroup` queries only `local_board_lead`.
 
 - [ ] **Step 1: Update `ROSTER_ROLES`**
@@ -765,9 +781,11 @@ Claude-Session: https://claude.ai/code/session_01S4sVhZJkRX7Mwpv4mFxU18"
 ### Task 6: Sweep remaining `local_board` fixtures in `modules/members`
 
 **Files:**
+
 - Modify: any of `modules/members/src/{group-change.test.ts, pool.test.ts, index.export.test.ts, index.test.ts, application-migration.test.ts, subscribers.test.ts, approval-counts.test.ts}` that seed a `role: "local_board"` grant (confirm exact set via `grep -rn "local_board" modules/members/src --include=*.test.ts` — do not guess the list, verify it before editing).
 
 **Interfaces:**
+
 - No new interfaces — mechanical fixture rename.
 
 - [ ] **Step 1: Find every remaining reference**
@@ -776,7 +794,7 @@ Run: `pnpm --filter @bdas/members exec grep -rn "\"local_board\"" src` (or use y
 
 - [ ] **Step 2: Rename each fixture**
 
-For each match, change `role: "local_board"` (or the equivalent grant-literal `{ role: "local_board", groupId: ... }`) to `"local_board_lead"`. Where a test specifically exercises the *distinction* between `local_board` and `local_board_lead` (e.g. "a plain board member cannot grant roles, only a lead can" — this pattern shows up around `requireCanGrant`/`canGrantLocalRoles` tests), that test case is now obsolete (the distinction no longer exists) — delete it rather than renaming it, and add a one-line comment noting why if the surrounding `describe` block would otherwise look thin.
+For each match, change `role: "local_board"` (or the equivalent grant-literal `{ role: "local_board", groupId: ... }`) to `"local_board_lead"`. Where a test specifically exercises the _distinction_ between `local_board` and `local_board_lead` (e.g. "a plain board member cannot grant roles, only a lead can" — this pattern shows up around `requireCanGrant`/`canGrantLocalRoles` tests), that test case is now obsolete (the distinction no longer exists) — delete it rather than renaming it, and add a one-line comment noting why if the surrounding `describe` block would otherwise look thin.
 
 - [ ] **Step 3: Run the full module test suite**
 
@@ -798,6 +816,7 @@ Claude-Session: https://claude.ai/code/session_01S4sVhZJkRX7Mwpv4mFxU18"
 ### Task 7: `modules/members/README.md` — update documented predicates
 
 **Files:**
+
 - Modify: `modules/members/README.md`
 
 - [ ] **Step 1: Update the "Scoped role grants" section**
@@ -819,12 +838,14 @@ Claude-Session: https://claude.ai/code/session_01S4sVhZJkRX7Mwpv4mFxU18"
 ### Task 8: `dashboard-shell` — board-access and scope predicates
 
 **Files:**
+
 - Modify: `modules/dashboard-shell/src/access.ts`
 - Modify: `modules/dashboard-shell/src/scope.ts`
 - Modify: `modules/dashboard-shell/src/access.test.ts`
 - Modify: `modules/dashboard-shell/src/scope.test.ts` (if it seeds `local_board` — check)
 
 **Interfaces:**
+
 - Produces: `canAdministerBoard`, `canSeeGroupScope`, `boardScopes` — same signatures.
 
 - [ ] **Step 1: Update the failing tests first**
@@ -879,16 +900,16 @@ export function canSeeGroupScope(
 
 ```typescript
 // modules/dashboard-shell/src/scope.ts, in boardScopes:
-  const wanted = new Set<string>();
-  if (isFederal) {
-    for (const g of groups) if (g.status === "active") wanted.add(g.id);
-  } else {
-    for (const grant of grants) {
-      if (grant.role === "local_board_lead" && grant.groupId) {
-        wanted.add(grant.groupId);
-      }
+const wanted = new Set<string>();
+if (isFederal) {
+  for (const g of groups) if (g.status === "active") wanted.add(g.id);
+} else {
+  for (const grant of grants) {
+    if (grant.role === "local_board_lead" && grant.groupId) {
+      wanted.add(grant.groupId);
     }
   }
+}
 ```
 
 Also update the function's doc comment (currently: "`local_board` and `local_board_lead` each yield their own group") to just "Each Lead grant yields its own group."
@@ -913,10 +934,12 @@ Claude-Session: https://claude.ai/code/session_01S4sVhZJkRX7Mwpv4mFxU18"
 ### Task 9: `event-viewer.ts` — simplify `boardGroupIds`
 
 **Files:**
+
 - Modify: `apps/web/lib/event-viewer.ts`
 - Modify: `apps/web/app/lib/event-viewer.test.ts`
 
 **Interfaces:**
+
 - Produces: `viewerFrom` — same signature, `boardGroupIds` now sourced from `local_board_lead` only.
 
 - [ ] **Step 1: Update the test fixture**
@@ -924,11 +947,11 @@ Claude-Session: https://claude.ai/code/session_01S4sVhZJkRX7Mwpv4mFxU18"
 In `apps/web/app/lib/event-viewer.test.ts:40`, change:
 
 ```typescript
-    const board = viewerFrom({
-      user: { id: "u" },
-      member: { status: "active", primaryGroupId: "grp_a" },
-      grants: [{ role: "local_board_lead", groupId: "grp_a" }],
-    } as never);
+const board = viewerFrom({
+  user: { id: "u" },
+  member: { status: "active", primaryGroupId: "grp_a" },
+  grants: [{ role: "local_board_lead", groupId: "grp_a" }],
+} as never);
 ```
 
 - [ ] **Step 2: Confirm it still passes unchanged (same reasoning as Task 8 Step 2)**
@@ -966,9 +989,11 @@ Claude-Session: https://claude.ai/code/session_01S4sVhZJkRX7Mwpv4mFxU18"
 ### Task 10: `apps/web/app/_dashboard/session.ts` — rename the call site
 
 **Files:**
+
 - Modify: `apps/web/app/_dashboard/session.ts`
 
 **Interfaces:**
+
 - Consumes: `canGrantLocalRoles` (renamed in Task 3) instead of `canGrantLocalBoard`.
 
 - [ ] **Step 1: Update the import and call**
@@ -1009,12 +1034,14 @@ Claude-Session: https://claude.ai/code/session_01S4sVhZJkRX7Mwpv4mFxU18"
 ### Task 11: Grant-UI — remove `local_board` from the Vorstand page, remove its roster section
 
 **Files:**
+
 - Modify: `apps/web/app/(board)/gruppe/[slug]/vorstand/page.tsx`
 - Modify: `apps/web/app/(board)/_components/RoleRoster.tsx`
 - Modify: `apps/web/app/(board)/_components/AuditLog.tsx`
 - Modify: `apps/web/app/(board)/federal/roles/page.tsx`
 
 **Interfaces:**
+
 - No new interfaces — UI content changes only.
 
 This PR does **not** yet add `file_manager`/`blogger` grant options (PR2/PR3 do, once those roles have working permission logic behind them) — it only removes `local_board`, leaving `event_organizer` ("Organisator" — PR3 relabels it) and `page_editor` as the two grantable options for the remainder of this PR.
@@ -1041,38 +1068,38 @@ This one only ever listed the three federal-page roles — confirm it still does
 Remove the `local_board` grant option and its roster section:
 
 ```tsx
-        <GrantRoleModal
-          title="Vorstand hinzufügen"
-          candidates={groupMembers.map((m) => ({
-            memberId: m.id,
-            name: `${m.firstName} ${m.lastName}`,
-          }))}
-          roleOptions={[
-            { role: "event_organizer", label: "Organisator", groupId },
-            { role: "page_editor", label: "Seiten-Editor", groupId },
-          ]}
-          revalidatePath={revalidate}
-        />
+<GrantRoleModal
+  title="Vorstand hinzufügen"
+  candidates={groupMembers.map((m) => ({
+    memberId: m.id,
+    name: `${m.firstName} ${m.lastName}`,
+  }))}
+  roleOptions={[
+    { role: "event_organizer", label: "Organisator", groupId },
+    { role: "page_editor", label: "Seiten-Editor", groupId },
+  ]}
+  revalidatePath={revalidate}
+/>
 ```
 
 ```tsx
-        <RoleRoster
-          sections={[
-            { title: "Leads", holders: ofGroup.filter((h) => h.role === "local_board_lead") },
-            {
-              title: "Organisatoren",
-              holders: ofGroup.filter((h) => h.role === "event_organizer"),
-            },
-            {
-              title: "Seiten-Editoren",
-              holders: ofGroup.filter((h) => h.role === "page_editor"),
-            },
-          ]}
-          groupNames={{}}
-          revalidatePath={revalidate}
-          currentMemberId={me.member?.id ?? null}
-          showGroupName={false}
-        />
+<RoleRoster
+  sections={[
+    { title: "Leads", holders: ofGroup.filter((h) => h.role === "local_board_lead") },
+    {
+      title: "Organisatoren",
+      holders: ofGroup.filter((h) => h.role === "event_organizer"),
+    },
+    {
+      title: "Seiten-Editoren",
+      holders: ofGroup.filter((h) => h.role === "page_editor"),
+    },
+  ]}
+  groupNames={{}}
+  revalidatePath={revalidate}
+  currentMemberId={me.member?.id ?? null}
+  showGroupName={false}
+/>
 ```
 
 - [ ] **Step 4: Update `federal/roles/page.tsx`**
@@ -1080,18 +1107,18 @@ Remove the `local_board` grant option and its roster section:
 Remove the "Lokale Vorstände" section:
 
 ```tsx
-        <RoleRoster
-          sections={[
-            { title: "Bundesvorstand", holders: holders.filter((h) => h.role === "federal_board") },
-            {
-              title: "Lokale Vorstands-Leads",
-              holders: holders.filter((h) => h.role === "local_board_lead"),
-            },
-          ]}
-          groupNames={groupNames}
-          revalidatePath="/federal/roles"
-          currentMemberId={me?.member?.id ?? null}
-        />
+<RoleRoster
+  sections={[
+    { title: "Bundesvorstand", holders: holders.filter((h) => h.role === "federal_board") },
+    {
+      title: "Lokale Vorstands-Leads",
+      holders: holders.filter((h) => h.role === "local_board_lead"),
+    },
+  ]}
+  groupNames={groupNames}
+  revalidatePath="/federal/roles"
+  currentMemberId={me?.member?.id ?? null}
+/>
 ```
 
 - [ ] **Step 5: Typecheck and build**
@@ -1118,11 +1145,12 @@ Claude-Session: https://claude.ai/code/session_01S4sVhZJkRX7Mwpv4mFxU18"
 ### Task 12: Repo-wide sweep for any remaining `local_board` reference
 
 **Files:**
+
 - Whatever `grep` turns up outside the files already covered above.
 
 - [ ] **Step 1: Full-repo search**
 
-Run: `pnpm typecheck` (should now be fully green) and separately `grep -rn "\"local_board\"" modules apps --include=*.ts --include=*.tsx` (excluding `*.test.ts` files already handled, and excluding any match that's the *substring* `local_board_lead` — check carefully, since `local_board` is a substring of `local_board_lead`). Also check `modules/profile/src/authz.test.ts:23` specifically (identified during analysis: `for (const role of ["federal_board", "local_board", "local_board_lead"])`).
+Run: `pnpm typecheck` (should now be fully green) and separately `grep -rn "\"local_board\"" modules apps --include=*.ts --include=*.tsx` (excluding `*.test.ts` files already handled, and excluding any match that's the _substring_ `local_board_lead` — check carefully, since `local_board` is a substring of `local_board_lead`). Also check `modules/profile/src/authz.test.ts:23` specifically (identified during analysis: `for (const role of ["federal_board", "local_board", "local_board_lead"])`).
 
 - [ ] **Step 2: Fix `modules/profile/src/authz.test.ts`**
 

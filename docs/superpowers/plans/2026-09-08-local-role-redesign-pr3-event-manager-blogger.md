@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Relabel `event_organizer` to "Event-Manager" in the UI (no DB/behavior change to its event rights), introduce the new `blogger` role, and restrict blog **authoring** to Lead, Bundesvorstand, Event-Manager, and Blogger — while explicitly *not* touching who may **comment** on posts (still any active member or alumnus, per ADR 0030/0033's original rule).
+**Goal:** Relabel `event_organizer` to "Event-Manager" in the UI (no DB/behavior change to its event rights), introduce the new `blogger` role, and restrict blog **authoring** to Lead, Bundesvorstand, Event-Manager, and Blogger — while explicitly _not_ touching who may **comment** on posts (still any active member or alumnus, per ADR 0030/0033's original rule).
 
-**Architecture:** `apps/web/app/_blog/access.ts`'s `canAuthor()` is currently overloaded: it gates both "may write a new post" (`/blog/neu`, `createPostAction`) and "may write/read a comment" (`CommentsSection`, `createCommentAction`, the feed's comment-count query). ADR 0033 deliberately coupled these ("posting rights and commenting rights cannot drift apart") when both were the same rule. That coupling breaks now that posting gets a much narrower rule than commenting — restricting `canAuthor` outright would silently lock every ordinary active member out of commenting too, which nobody asked for and ADR 0033 never intended as a *consequence* of tightening authorship. This PR splits the one predicate into two: `canComment` (unchanged old rule) and `canAuthorPost` (new grant-based rule), and records the split as part of the new ADR.
+**Architecture:** `apps/web/app/_blog/access.ts`'s `canAuthor()` is currently overloaded: it gates both "may write a new post" (`/blog/neu`, `createPostAction`) and "may write/read a comment" (`CommentsSection`, `createCommentAction`, the feed's comment-count query). ADR 0033 deliberately coupled these ("posting rights and commenting rights cannot drift apart") when both were the same rule. That coupling breaks now that posting gets a much narrower rule than commenting — restricting `canAuthor` outright would silently lock every ordinary active member out of commenting too, which nobody asked for and ADR 0033 never intended as a _consequence_ of tightening authorship. This PR splits the one predicate into two: `canComment` (unchanged old rule) and `canAuthorPost` (new grant-based rule), and records the split as part of the new ADR.
 
 **Tech Stack:** TypeScript, Vitest.
 
@@ -13,7 +13,7 @@
 ## Global Constraints
 
 - **CLAUDE.md §4:** ADRs go in `docs/decisions/`, not chat/commit messages (Task 1). This PR changes authorization → needs `/security-review`.
-- **Comments are explicitly out of scope for restriction** — `canComment`'s behavior must be byte-for-byte identical to today's `canAuthor` (active member or alumnus). Every task below that touches a comment call site is a *rename*, never a *behavior change*.
+- **Comments are explicitly out of scope for restriction** — `canComment`'s behavior must be byte-for-byte identical to today's `canAuthor` (active member or alumnus). Every task below that touches a comment call site is a _rename_, never a _behavior change_.
 - Depends on PR1 (`blogger` must already be a legal `Role`/CHECK value) and does not depend on PR2.
 - Do not touch the FAQ (`apps/web/content/faq/vorstand.ts`) — owned elsewhere, per this session's brief.
 - Do not touch `modules/blog`'s own services (`createPost`, `visibility.ts`, `comments.ts`) — per that module's own doc comments, authorization is deliberately kept at the app layer (`apps/web/app/_blog/access.ts`) so the module itself stays free of an `@bdas/members` dependency (CLAUDE.md §1 rule 2). This PR only changes the app-layer gate.
@@ -23,6 +23,7 @@
 ### Task 1: Write the ADR
 
 **Files:**
+
 - Create: `docs/decisions/0034-local-role-redesign-blog-authoring.md`
 
 - [ ] **Step 1: Write the ADR**
@@ -69,8 +70,8 @@ ADR 0033 tied comment eligibility to ADR 0030's `canAuthor()` "verbatim,
 rather than redefined, so posting rights and commenting rights cannot drift
 apart." That reasoning assumed posting and commenting were meant to be the
 same population. They are not, going forward: restricting who may start a
-post is a moderation/ownership decision about the *feed*, not about who may
-join a *discussion* already happening on a visible post.
+post is a moderation/ownership decision about the _feed_, not about who may
+join a _discussion_ already happening on a visible post.
 
 Commenting (reading and writing) keeps ADR 0030's original rule verbatim:
 **any active member or alumnus**, independent of role. This PR splits the
@@ -115,10 +116,12 @@ Claude-Session: https://claude.ai/code/session_01S4sVhZJkRX7Mwpv4mFxU18"
 ### Task 2: Split `canAuthor` into `canComment` and `canAuthorPost` in `apps/web/app/_blog/access.ts`
 
 **Files:**
+
 - Modify: `apps/web/app/_blog/access.ts`
 - Modify: `apps/web/app/_blog/access.test.ts`
 
 **Interfaces:**
+
 - Produces: `canComment(me: CurrentMember | null): boolean` (renamed from `canAuthor`, same body), `canAuthorPost(me: CurrentMember | null): boolean` (new), `requirePostAuthor(): Promise<CurrentMember>` (same signature, now calls `canAuthorPost`).
 - Removes: `canAuthor` (renamed away — every call site must move to one of the two new names; see Task 3/4).
 
@@ -186,15 +189,15 @@ describe("canAuthorPost", () => {
   });
 
   it("allows local_board_lead (Lead)", () => {
-    expect(
-      canAuthorPost(memberWithGrants([{ role: "local_board_lead", groupId: "grp_a" }])),
-    ).toBe(true);
+    expect(canAuthorPost(memberWithGrants([{ role: "local_board_lead", groupId: "grp_a" }]))).toBe(
+      true,
+    );
   });
 
   it("allows event_organizer (Event-Manager)", () => {
-    expect(
-      canAuthorPost(memberWithGrants([{ role: "event_organizer", groupId: "grp_a" }])),
-    ).toBe(true);
+    expect(canAuthorPost(memberWithGrants([{ role: "event_organizer", groupId: "grp_a" }]))).toBe(
+      true,
+    );
   });
 
   it("allows blogger", () => {
@@ -206,12 +209,21 @@ describe("canAuthorPost", () => {
   });
 
   it("rejects an alumnus with no qualifying grant", () => {
-    expect(canAuthorPost({ ...memberWithGrants([]), member: { ...memberWithGrants([]).member!, status: "alumnus" } })).toBe(false);
+    expect(
+      canAuthorPost({
+        ...memberWithGrants([]),
+        member: { ...memberWithGrants([]).member!, status: "alumnus" },
+      }),
+    ).toBe(false);
   });
 
   it("rejects file_manager and page_editor — neither is a blog-authoring role", () => {
-    expect(canAuthorPost(memberWithGrants([{ role: "file_manager", groupId: "grp_a" }]))).toBe(false);
-    expect(canAuthorPost(memberWithGrants([{ role: "page_editor", groupId: "grp_a" }]))).toBe(false);
+    expect(canAuthorPost(memberWithGrants([{ role: "file_manager", groupId: "grp_a" }]))).toBe(
+      false,
+    );
+    expect(canAuthorPost(memberWithGrants([{ role: "page_editor", groupId: "grp_a" }]))).toBe(
+      false,
+    );
   });
 
   it("rejects a signed-out visitor", () => {
@@ -241,7 +253,12 @@ export function canComment(me: CurrentMember | null): boolean {
   return me !== null && (me.member?.status === "active" || me.member?.status === "alumnus");
 }
 
-const BLOG_AUTHOR_ROLES = new Set(["federal_board", "local_board_lead", "event_organizer", "blogger"]);
+const BLOG_AUTHOR_ROLES = new Set([
+  "federal_board",
+  "local_board_lead",
+  "event_organizer",
+  "blogger",
+]);
 
 /**
  * Eligible to AUTHOR a new post: federal board, a group's Lead, an
@@ -285,11 +302,13 @@ Claude-Session: https://claude.ai/code/session_01S4sVhZJkRX7Mwpv4mFxU18"
 ### Task 3: Update comment call sites to `canComment` (no behavior change)
 
 **Files:**
+
 - Modify: `apps/web/app/blog/page.tsx`
 - Modify: `apps/web/app/_blog/CommentsSection.tsx`
 - Modify: `apps/web/app/blog/actions.ts`
 
 **Interfaces:**
+
 - Consumes: `canComment` from `../_blog/access` (renamed import, Task 2).
 
 - [ ] **Step 1: `apps/web/app/blog/page.tsx`**
@@ -309,32 +328,34 @@ import { canAuthorPost, canComment, loadBlogViewer, resolveAuthors } from "../_b
 Line 45-50 (comment count — comments are unaffected, use `canComment`):
 
 ```tsx
-  // Mirrors CommentsSection's own gate (canComment): the count must be
-  // members-and-alumni only, same as reading the comments themselves
-  // (ADR 0033), not just the environment flag — so the query is skipped
-  // entirely for a viewer who could never see a comment.
-  const commentCounts =
-    commentsEnabled() && canComment(me)
-      ? await countCommentsByPost(
-          db,
-          posts.map((p) => p.id),
-        )
-      : new Map<string, number>();
+// Mirrors CommentsSection's own gate (canComment): the count must be
+// members-and-alumni only, same as reading the comments themselves
+// (ADR 0033), not just the environment flag — so the query is skipped
+// entirely for a viewer who could never see a comment.
+const commentCounts =
+  commentsEnabled() && canComment(me)
+    ? await countCommentsByPost(
+        db,
+        posts.map((p) => p.id),
+      )
+    : new Map<string, number>();
 ```
 
 Line 64 (the "Neuer Beitrag" link — this is authoring, use `canAuthorPost`):
 
 ```tsx
-        {canAuthorPost(me) ? (
-          <Link href="/blog/neu">
-            <Button>Neuer Beitrag</Button>
-          </Link>
-        ) : null}
+{
+  canAuthorPost(me) ? (
+    <Link href="/blog/neu">
+      <Button>Neuer Beitrag</Button>
+    </Link>
+  ) : null;
+}
 ```
 
 - [ ] **Step 2: `apps/web/app/_blog/CommentsSection.tsx`**
 
-This component gates the entire comments region — that's a *comment* eligibility question, use `canComment`:
+This component gates the entire comments region — that's a _comment_ eligibility question, use `canComment`:
 
 ```tsx
 import { blogViewer, canComment, resolveAuthors } from "./access";
@@ -395,10 +416,12 @@ Claude-Session: https://claude.ai/code/session_01S4sVhZJkRX7Mwpv4mFxU18"
 ### Task 4: Update post-authoring call sites to `canAuthorPost` (behavior change — this is the actual restriction)
 
 **Files:**
+
 - Modify: `apps/web/app/blog/actions.ts` (continues from Task 3 — same file, different function)
 - Modify: `apps/web/app/blog/neu/page.tsx`
 
 **Interfaces:**
+
 - Consumes: `canAuthorPost`/`requirePostAuthor` from `../_blog/access`.
 
 - [ ] **Step 1: `createPostAction` in `apps/web/app/blog/actions.ts`**
@@ -454,10 +477,12 @@ Claude-Session: https://claude.ai/code/session_01S4sVhZJkRX7Mwpv4mFxU18"
 ### Task 5: Relabel Event-Manager, add Blogger to the grant UI
 
 **Files:**
+
 - Modify: `apps/web/app/(board)/_components/RoleRoster.tsx`
 - Modify: `apps/web/app/(board)/gruppe/[slug]/vorstand/page.tsx`
 
 **Interfaces:**
+
 - No new interfaces — content changes to existing UI. (No DB/role-value change for `event_organizer` — label only, per D6.)
 
 - [ ] **Step 1: Relabel in `RoleRoster.tsx` and add `blogger`**
@@ -478,48 +503,48 @@ const ROLE_LABEL: Record<string, string> = {
 (Final state, combining PR2's Datei-Manager addition with this task's relabel + Blogger addition:)
 
 ```tsx
-        <GrantRoleModal
-          title="Vorstand hinzufügen"
-          candidates={groupMembers.map((m) => ({
-            memberId: m.id,
-            name: `${m.firstName} ${m.lastName}`,
-          }))}
-          roleOptions={[
-            { role: "event_organizer", label: "Event-Manager", groupId },
-            { role: "page_editor", label: "Seiten-Editor", groupId },
-            { role: "file_manager", label: "Datei-Manager", groupId },
-            { role: "blogger", label: "Blogger", groupId },
-          ]}
-          revalidatePath={revalidate}
-        />
+<GrantRoleModal
+  title="Vorstand hinzufügen"
+  candidates={groupMembers.map((m) => ({
+    memberId: m.id,
+    name: `${m.firstName} ${m.lastName}`,
+  }))}
+  roleOptions={[
+    { role: "event_organizer", label: "Event-Manager", groupId },
+    { role: "page_editor", label: "Seiten-Editor", groupId },
+    { role: "file_manager", label: "Datei-Manager", groupId },
+    { role: "blogger", label: "Blogger", groupId },
+  ]}
+  revalidatePath={revalidate}
+/>
 ```
 
 ```tsx
-        <RoleRoster
-          sections={[
-            { title: "Leads", holders: ofGroup.filter((h) => h.role === "local_board_lead") },
-            {
-              title: "Event-Manager",
-              holders: ofGroup.filter((h) => h.role === "event_organizer"),
-            },
-            {
-              title: "Seiten-Editoren",
-              holders: ofGroup.filter((h) => h.role === "page_editor"),
-            },
-            {
-              title: "Datei-Manager",
-              holders: ofGroup.filter((h) => h.role === "file_manager"),
-            },
-            {
-              title: "Blogger",
-              holders: ofGroup.filter((h) => h.role === "blogger"),
-            },
-          ]}
-          groupNames={{}}
-          revalidatePath={revalidate}
-          currentMemberId={me.member?.id ?? null}
-          showGroupName={false}
-        />
+<RoleRoster
+  sections={[
+    { title: "Leads", holders: ofGroup.filter((h) => h.role === "local_board_lead") },
+    {
+      title: "Event-Manager",
+      holders: ofGroup.filter((h) => h.role === "event_organizer"),
+    },
+    {
+      title: "Seiten-Editoren",
+      holders: ofGroup.filter((h) => h.role === "page_editor"),
+    },
+    {
+      title: "Datei-Manager",
+      holders: ofGroup.filter((h) => h.role === "file_manager"),
+    },
+    {
+      title: "Blogger",
+      holders: ofGroup.filter((h) => h.role === "blogger"),
+    },
+  ]}
+  groupNames={{}}
+  revalidatePath={revalidate}
+  currentMemberId={me.member?.id ?? null}
+  showGroupName={false}
+/>
 ```
 
 - [ ] **Step 3: Typecheck and build**
@@ -546,6 +571,7 @@ Claude-Session: https://claude.ai/code/session_01S4sVhZJkRX7Mwpv4mFxU18"
 ### Task 6: `role-views.ts` doc comment + final repo-wide sanity sweep
 
 **Files:**
+
 - Modify: `modules/members/src/services/role-views.ts` (doc comment only — the `ROSTER_ROLES` array itself was already finalized in PR1 Task 5)
 
 - [ ] **Step 1: Update the comment above `ROSTER_ROLES`**

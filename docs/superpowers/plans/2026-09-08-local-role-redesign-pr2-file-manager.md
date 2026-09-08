@@ -4,7 +4,7 @@
 
 **Goal:** Introduce the `file_manager` role: full file/folder access (upload, delete, rename, create/rename/delete folders), but strictly limited to the `group_members` folder of the holder's own group — never the `local_board` (internal board) folder, never another group.
 
-**Architecture:** `modules/files/src/permissions.ts`'s `canWrite` is the single chokepoint for every write action in the files module (upload, delete, and all three folder-write operations already funnel through it — verified during analysis: `services/files.ts:76,123,223` and `services/folder-writes.ts:61,107,144` all call `canWrite`, nothing calls a narrower predicate). Because `file_manager` is meant to get the *same full write access* as a Lead, just narrowed to one scope, this is a single-function change: split the `group_members` case out from `local_board` in `canWrite`'s switch and let a `file_manager` grant satisfy the former only. No new predicate function, no changes to `folder-writes.ts` or `services/files.ts` at all.
+**Architecture:** `modules/files/src/permissions.ts`'s `canWrite` is the single chokepoint for every write action in the files module (upload, delete, and all three folder-write operations already funnel through it — verified during analysis: `services/files.ts:76,123,223` and `services/folder-writes.ts:61,107,144` all call `canWrite`, nothing calls a narrower predicate). Because `file_manager` is meant to get the _same full write access_ as a Lead, just narrowed to one scope, this is a single-function change: split the `group_members` case out from `local_board` in `canWrite`'s switch and let a `file_manager` grant satisfy the former only. No new predicate function, no changes to `folder-writes.ts` or `services/files.ts` at all.
 
 The public member-facing files page (`apps/web/app/dateien/[folderId]/page.tsx`) already computes the correct `canWrite` value (line 43) but discards it, hardcoding `canWrite={false}` on the `FileList` it renders (line 77) — that one line is the entire UI change needed for D2 (access via `/dateien`).
 
@@ -16,7 +16,7 @@ The public member-facing files page (`apps/web/app/dateien/[folderId]/page.tsx`)
 
 - **CLAUDE.md §4:** this PR changes authorization → needs `/security-review`.
 - `file_manager` must **never** satisfy `local_board`-scope folders, `members_all`, or `federal_board` scope folders — those stay Lead/federal-only. Test this negatively, not just positively (the brief explicitly warns against "versehentliche Rechte-Ausweitung").
-- `file_manager` must **never** satisfy a `group_members` folder belonging to a *different* group than the grant's `groupId`.
+- `file_manager` must **never** satisfy a `group_members` folder belonging to a _different_ group than the grant's `groupId`.
 - Depends on PR1 having landed (`file_manager` must already be a legal value in the `member_role_grants` CHECK domain and the `Role` union — PR1 Task 1 and Task 2 cover this; do not re-add it here).
 
 ---
@@ -24,10 +24,12 @@ The public member-facing files page (`apps/web/app/dateien/[folderId]/page.tsx`)
 ### Task 1: `canWrite` — `file_manager` grants the `group_members` scope of its own group
 
 **Files:**
+
 - Modify: `modules/files/src/permissions.ts`
 - Modify: `modules/files/src/permissions.test.ts`
 
 **Interfaces:**
+
 - Consumes: `Grant` from `@bdas/members` (unchanged), `CurrentMember`.
 - Produces: `canWrite(folder, me)` — same signature, `group_members` and `local_board` scopes now branch separately.
 
@@ -157,9 +159,11 @@ Claude-Session: https://claude.ai/code/session_01S4sVhZJkRX7Mwpv4mFxU18"
 ### Task 2: Wire real write access into the public `/dateien` page
 
 **Files:**
+
 - Modify: `apps/web/app/dateien/[folderId]/page.tsx`
 
 **Interfaces:**
+
 - No new interfaces — `canWriteFolder` (already imported) is now actually used.
 
 There's no colocated test file for this page component (it's a Next.js Server Component page, exercised by e2e rather than unit tests) — verify by reading the diff and the manual check in Step 2.
@@ -169,14 +173,14 @@ There's no colocated test file for this page component (it's a Next.js Server Co
 In `apps/web/app/dateien/[folderId]/page.tsx`, the `canWrite` constant is already computed correctly on line 43 (`const canWrite = canWriteFolder(folder, me);`) and already drives `FolderAdminControls`/`NewFolderButton` visibility (lines 52, 66) — only the final `FileList` call still hardcodes `false`:
 
 ```tsx
-      <FileList files={files} folderId={params.folderId} canWrite={canWrite} />
+<FileList files={files} folderId={params.folderId} canWrite={canWrite} />
 ```
 
 (was `canWrite={false}`)
 
 - [ ] **Step 2: Manual verification**
 
-Run: `pnpm dev`. As a plain active member with no `file_manager` grant, open `/dateien`, navigate into your group's members folder — confirm no upload dropzone, no delete buttons, no folder admin controls appear (unchanged from before). Grant yourself (via the DB or `/gruppe/<slug>/vorstand` once PR3 adds the grant-UI option — for this PR, grant it directly via SQL or a temporary `grantRole` call in a script/REPL) a `file_manager` grant scoped to your group, reload — confirm the upload dropzone, per-file delete, "Neuer Ordner", and rename/delete folder controls now all appear inside your group's members folder, and confirm switching to a *different* group's members folder (if you have read access to browse there) shows no write controls. Also confirm the group's `local_board`-scope folder (if visible to you at all) shows no write controls for the file_manager grant.
+Run: `pnpm dev`. As a plain active member with no `file_manager` grant, open `/dateien`, navigate into your group's members folder — confirm no upload dropzone, no delete buttons, no folder admin controls appear (unchanged from before). Grant yourself (via the DB or `/gruppe/<slug>/vorstand` once PR3 adds the grant-UI option — for this PR, grant it directly via SQL or a temporary `grantRole` call in a script/REPL) a `file_manager` grant scoped to your group, reload — confirm the upload dropzone, per-file delete, "Neuer Ordner", and rename/delete folder controls now all appear inside your group's members folder, and confirm switching to a _different_ group's members folder (if you have read access to browse there) shows no write controls. Also confirm the group's `local_board`-scope folder (if visible to you at all) shows no write controls for the file_manager grant.
 
 - [ ] **Step 3: Typecheck**
 
@@ -198,10 +202,12 @@ Claude-Session: https://claude.ai/code/session_01S4sVhZJkRX7Mwpv4mFxU18"
 ### Task 3: Grant UI — add "Datei-Manager" to the Vorstand page
 
 **Files:**
+
 - Modify: `apps/web/app/(board)/gruppe/[slug]/vorstand/page.tsx`
 - Modify: `apps/web/app/(board)/_components/RoleRoster.tsx`
 
 **Interfaces:**
+
 - No new interfaces — content additions to existing UI.
 
 - [ ] **Step 1: Add the grant option and roster section**
@@ -209,43 +215,43 @@ Claude-Session: https://claude.ai/code/session_01S4sVhZJkRX7Mwpv4mFxU18"
 In `apps/web/app/(board)/gruppe/[slug]/vorstand/page.tsx` (state as left by PR1 Task 11):
 
 ```tsx
-        <GrantRoleModal
-          title="Vorstand hinzufügen"
-          candidates={groupMembers.map((m) => ({
-            memberId: m.id,
-            name: `${m.firstName} ${m.lastName}`,
-          }))}
-          roleOptions={[
-            { role: "event_organizer", label: "Organisator", groupId },
-            { role: "page_editor", label: "Seiten-Editor", groupId },
-            { role: "file_manager", label: "Datei-Manager", groupId },
-          ]}
-          revalidatePath={revalidate}
-        />
+<GrantRoleModal
+  title="Vorstand hinzufügen"
+  candidates={groupMembers.map((m) => ({
+    memberId: m.id,
+    name: `${m.firstName} ${m.lastName}`,
+  }))}
+  roleOptions={[
+    { role: "event_organizer", label: "Organisator", groupId },
+    { role: "page_editor", label: "Seiten-Editor", groupId },
+    { role: "file_manager", label: "Datei-Manager", groupId },
+  ]}
+  revalidatePath={revalidate}
+/>
 ```
 
 ```tsx
-        <RoleRoster
-          sections={[
-            { title: "Leads", holders: ofGroup.filter((h) => h.role === "local_board_lead") },
-            {
-              title: "Organisatoren",
-              holders: ofGroup.filter((h) => h.role === "event_organizer"),
-            },
-            {
-              title: "Seiten-Editoren",
-              holders: ofGroup.filter((h) => h.role === "page_editor"),
-            },
-            {
-              title: "Datei-Manager",
-              holders: ofGroup.filter((h) => h.role === "file_manager"),
-            },
-          ]}
-          groupNames={{}}
-          revalidatePath={revalidate}
-          currentMemberId={me.member?.id ?? null}
-          showGroupName={false}
-        />
+<RoleRoster
+  sections={[
+    { title: "Leads", holders: ofGroup.filter((h) => h.role === "local_board_lead") },
+    {
+      title: "Organisatoren",
+      holders: ofGroup.filter((h) => h.role === "event_organizer"),
+    },
+    {
+      title: "Seiten-Editoren",
+      holders: ofGroup.filter((h) => h.role === "page_editor"),
+    },
+    {
+      title: "Datei-Manager",
+      holders: ofGroup.filter((h) => h.role === "file_manager"),
+    },
+  ]}
+  groupNames={{}}
+  revalidatePath={revalidate}
+  currentMemberId={me.member?.id ?? null}
+  showGroupName={false}
+/>
 ```
 
 - [ ] **Step 2: Add the label**

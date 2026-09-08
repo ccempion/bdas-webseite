@@ -20,11 +20,13 @@
 ### Task 1: Add `showGroupName` to `RoleRoster` and `AuditLog`
 
 **Files:**
+
 - Modify: `apps/web/app/(board)/_components/RoleRoster.tsx`
 - Modify: `apps/web/app/(board)/_components/AuditLog.tsx`
 - Modify: `apps/web/app/(board)/gruppe/[slug]/vorstand/page.tsx`
 
 **Interfaces:**
+
 - Produces: `RoleRoster` prop `showGroupName?: boolean` (default `true`); `AuditLog` prop `showGroupName?: boolean` (default `true`).
 
 There is no existing unit test file for these two components (they're server-rendered presentational components with no colocated `.test.tsx`), so this task is verified by reading the diff plus a manual render check — there's no test harness to add a failing test to first. Do the edit directly, then verify by inspection and the dev server.
@@ -52,7 +54,9 @@ export function RoleRoster({
 And the badge span (was `{h.groupId ? \` · ${groupNames[h.groupId] ?? h.groupId}\` : ""}`):
 
 ```tsx
-                {showGroupName && h.groupId ? ` · ${groupNames[h.groupId] ?? h.groupId}` : ""}
+{
+  showGroupName && h.groupId ? ` · ${groupNames[h.groupId] ?? h.groupId}` : "";
+}
 ```
 
 - [ ] **Step 2: Add the same prop to `AuditLog`**
