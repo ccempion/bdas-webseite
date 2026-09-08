@@ -8,8 +8,12 @@ import { getDb } from "@bdas/db";
 import { isAppError, ValidationError } from "@bdas/errors";
 import { requireFlag } from "@bdas/feature-flags";
 import { createProfile } from "@bdas/members";
+import { subscribeAtRegistration } from "@bdas/newsletter";
 
 import { bootAuth } from "../../lib/auth-bootstrap";
+import { bootNewsletter } from "../../lib/newsletter-bootstrap";
+import { newsletterEnabled } from "../_newsletter/flag";
+import { setSignupCookie } from "../_newsletter/signup-cookie";
 
 export type RegisterFormState = {
   readonly error?: string;
@@ -77,6 +81,30 @@ export async function registerAction(
     // Account is already created; the resend-verification flow is the recovery
     // path. Don't fail the response — surface the failure in logs instead.
     console.error("[auth] verify email send failed:", err);
+  }
+
+  // A newsletter hiccup must never cost someone their account: log and move on.
+  // Deliberately outside the redirect below — Next implements redirect() as a
+  // throw, and an enclosing catch would swallow the navigation.
+  if (newsletterEnabled()) {
+    try {
+      bootNewsletter();
+      if (formData.get("newsletter") === "true") {
+        await subscribeAtRegistration(getDb(), {
+          userId: result.userId,
+          email,
+          source: "registrierung",
+          sourcePath: "/registrieren",
+          context: { ip },
+        });
+      } else {
+        // Unticked: keep the address for the one softer second attempt on the
+        // success page. Ticked means done — nobody gets asked twice (§6).
+        setSignupCookie({ userId: result.userId, email: email.trim().toLowerCase() });
+      }
+    } catch (err) {
+      console.error("[newsletter] registration signup failed:", err);
+    }
   }
 
   redirect("/registrieren/erfolg");

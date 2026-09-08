@@ -129,6 +129,9 @@ importers:
       '@bdas/members':
         specifier: workspace:*
         version: link:../../modules/members
+      '@bdas/newsletter':
+        specifier: workspace:*
+        version: link:../../modules/newsletter
       '@bdas/notifications':
         specifier: workspace:*
         version: link:../../modules/notifications

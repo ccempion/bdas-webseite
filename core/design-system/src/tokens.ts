@@ -24,6 +24,9 @@ export const colors = {
     body: "#555555",
     /** Tertiary — accordion icons, captions. */
     muted: "#888888",
+    /** Text and icons ON a filled brand-red surface (H1 eye-catcher, spec
+     *  §13.3). Legal only on `brand.red`; never a page text color. */
+    onBrand: "#ffffff",
   },
   surface: {
     /** Card / dropdown / pill background. */
@@ -141,6 +144,15 @@ export const typography = {
 export const keyframes = {
   fadeSlideDown: {
     from: { opacity: "0", transform: "translateY(-5px)" },
+    to: { opacity: "1", transform: "translateY(0)" },
+  },
+  /**
+   * Mirror of `fadeSlideDown` for a surface that rises into view: the H1
+   * eye-catcher enters from below (spec §13.3). Always applied with the
+   * `motion-safe:` prefix — the effect carries the colour, not the movement.
+   */
+  fadeSlideUp: {
+    from: { opacity: "0", transform: "translateY(5px)" },
     to: { opacity: "1", transform: "translateY(0)" },
   },
   /**

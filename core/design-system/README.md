@@ -66,6 +66,13 @@ the equivalent components across the app. Names refer to tokens in
   - summary color → `brand.red`, hairline divider under summary
   - `+` rotates 45° into `×` (also turns `brand.red`)
   - body fades in via `keyframes.fadeSlideDown`
+- **Brand field (H1 eye-catcher)** — a full `brand.red` surface with
+  `ink.onBrand` text and an `on-brand` (white) button; `radii.md`, shadow
+  `cardResting`, hover lift `lift.sm` + `cardLiftMd` over `durationSoft`.
+  Enters with `keyframes.fadeSlideUp` over `durationSlow`, `motion-safe:` only.
+  Reserved for the newsletter capture surfaces A3 and C1 (newsletter spec
+  §13.3) — it is the loudest thing on an otherwise white page and does not
+  scale to a third use without a decision.
 
 ## How to consume
 

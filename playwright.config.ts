@@ -71,6 +71,7 @@ export default defineConfig({
       BDAS_FLAG_PROFILE: "true",
       BDAS_FLAG_FAQ: "true",
       BDAS_FLAG_FAQ_SUITE: "true",
+      BDAS_FLAG_NEWSLETTER: "true",
     },
   },
 });

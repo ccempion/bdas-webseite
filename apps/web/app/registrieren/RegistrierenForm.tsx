@@ -11,9 +11,11 @@ const initial: RegisterFormState = {};
 export function RegistrierenForm({
   privacyUrl,
   passwordHint,
+  newsletterOn,
 }: {
   privacyUrl: string;
   passwordHint: string;
+  newsletterOn: boolean;
 }) {
   const [state, action] = useFormState(registerAction, initial);
   const consentError = state.fields?.["consent"];
@@ -78,6 +80,32 @@ export function RegistrierenForm({
           </p>
         ) : null}
       </div>
+      {newsletterOn ? (
+        <div className="rounded-bdas border border-bdas-soft bg-bdas-overlay-faint p-4">
+          <label htmlFor="newsletter" className="flex items-start gap-2 text-sm text-bdas-ink-body">
+            {/* Never pre-checked, never coupled to the registration (spec §6). */}
+            <input
+              id="newsletter"
+              name="newsletter"
+              type="checkbox"
+              value="true"
+              className="mt-1 accent-bdas-red"
+            />
+            <span>
+              <span className="font-medium text-bdas-ink">Schreibt mir auch den Newsletter.</span>{" "}
+              Ein paar Mal im Jahr, was im Verband ansteht.
+            </span>
+          </label>
+          <p className="mt-2 text-xs text-bdas-ink-muted">
+            Abbestellen kannst du jederzeit unter „Mein Konto“. Wie wir mit deinen Daten umgehen,
+            steht im{" "}
+            <a href={privacyUrl} target="_blank" rel="noreferrer noopener" className="underline">
+              Datenschutzhinweis
+            </a>
+            .
+          </p>
+        </div>
+      ) : null}
       <SubmitButton />
     </Form>
   );

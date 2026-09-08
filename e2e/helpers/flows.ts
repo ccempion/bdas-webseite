@@ -33,7 +33,13 @@ export async function pickCombo(
 
 export async function register(
   page: Page,
-  opts: { email: string; firstName?: string; lastName?: string; password?: string },
+  opts: {
+    email: string;
+    firstName?: string;
+    lastName?: string;
+    password?: string;
+    newsletter?: boolean;
+  },
 ): Promise<void> {
   await resetRateLimits();
   await page.goto("/registrieren");
@@ -42,6 +48,8 @@ export async function register(
   await page.getByLabel("E-Mail").fill(opts.email);
   await page.getByLabel("Passwort", { exact: true }).fill(opts.password ?? PASSWORD);
   await page.locator("#consent").check();
+  // Behind the `newsletter` flag the box may not be rendered at all.
+  if (opts.newsletter === true) await page.locator("#newsletter").check();
   await page.getByRole("button", { name: "Konto erstellen" }).click();
   await page.waitForURL("**/registrieren/erfolg");
 }
@@ -110,7 +118,13 @@ export async function logout(page: Page): Promise<void> {
 /** Register → verify → login in one go. Returns nothing; leaves session on the login landing page. */
 export async function registerVerifyLogin(
   page: Page,
-  opts: { email: string; firstName?: string; lastName?: string; password?: string },
+  opts: {
+    email: string;
+    firstName?: string;
+    lastName?: string;
+    password?: string;
+    newsletter?: boolean;
+  },
 ): Promise<void> {
   await register(page, opts);
   await verify(page, opts.email);

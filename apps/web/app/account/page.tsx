@@ -7,10 +7,13 @@ import { countAttendedEvents, listMyUpcomingRegistrations } from "@bdas/events-m
 import { isFlagOn } from "@bdas/feature-flags";
 import { listGroups } from "@bdas/groups";
 import { getCurrentMember, getOpenGroupChange } from "@bdas/members";
+import { shouldPrompt } from "@bdas/newsletter";
 import { getProfile } from "@bdas/profile";
 
 import { requireAuthFlag } from "../_auth/flag";
 import { requireMembersFlag } from "../_members/flag";
+import { newsletterEnabled } from "../_newsletter/flag";
+import { NewsletterPrompt } from "../_newsletter/NewsletterPrompt";
 import { AccountAvatar } from "./AccountAvatar";
 import { ApprovalsAlert } from "./ApprovalsAlert";
 import { isProfileComplete } from "../_profile/complete";
@@ -117,6 +120,18 @@ export default async function AccountPage({
     ? `${me.member.firstName} ${me.member.lastName}`.trim()
     : me.user.email;
 
+  // Gated by the flag helper, never by requireNewsletterFlag(): a notFound()
+  // here would take the whole account page away over a side feature.
+  const showNewsletterPrompt = newsletterEnabled() ? await shouldPrompt(db, me.user.id) : false;
+
+  // Built once and placed in both layout branches: only one branch ever
+  // renders, so the banner still appears exactly once. Mounted whenever the
+  // flag is on and handed its eligibility — see NewsletterPrompt on why it,
+  // and not this page, decides whether to draw anything.
+  const newsletterPrompt = newsletterEnabled() ? (
+    <NewsletterPrompt eligible={showNewsletterPrompt} />
+  ) : null;
+
   const statusAlerts = (
     <>
       {justSubmitted && status === "pending" ? (
@@ -203,6 +218,7 @@ export default async function AccountPage({
               <p className="text-bdas-ink-body">{me.user.email}</p>
             </div>
           </header>
+          {newsletterPrompt}
           {statusAlerts}
           {profileCard}
           {settingsLink}
@@ -210,6 +226,7 @@ export default async function AccountPage({
       ) : (
         <>
           <h1 className="text-2xl font-semibold text-bdas-ink">Mein Konto</h1>
+          {newsletterPrompt}
           <div className="grid gap-7 md:grid-cols-[minmax(0,19rem)_minmax(0,1fr)] md:items-start">
             <IdentityColumn
               photoUrl={photoUrl}

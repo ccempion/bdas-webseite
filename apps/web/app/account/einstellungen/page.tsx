@@ -8,6 +8,8 @@ import { getCurrentMember } from "@bdas/members";
 
 import { requireAuthFlag } from "../../_auth/flag";
 import { requireMembersFlag } from "../../_members/flag";
+import { newsletterEnabled } from "../../_newsletter/flag";
+import { NewsletterToggle } from "../../_newsletter/NewsletterToggle";
 import { readSessionCookie } from "../../../lib/auth-cookie";
 import { ChangePasswordCard } from "../ChangePasswordCard";
 import { EmailChangeCard } from "../EmailChangeCard";
@@ -38,20 +40,27 @@ export default async function AccountSettingsPage() {
 
       <ChangePasswordCard passwordHint={PASSWORD_RULE_HINT} />
 
-      {/* Reserved. Position and name are fixed now so that shipping the
-          preferences is an insert, not a rearrangement. Not a control: it is
-          inert and announces itself as unavailable. */}
-      <Card flat className="border-dashed p-6" aria-disabled="true">
-        <div className="flex flex-wrap items-center gap-3">
-          <h2 className="text-lg font-semibold text-bdas-ink-muted">E-Mail-Benachrichtigungen</h2>
-          <span className="rounded-bdas-pill border border-bdas-strong px-2.5 py-0.5 text-xs uppercase tracking-wide text-bdas-ink-muted">
-            Kommt bald
-          </span>
-        </div>
-        <p className="mt-2 text-sm text-bdas-ink-muted">
-          Hier wählst du künftig, welche Benachrichtigungen du per E-Mail bekommst.
-        </p>
-      </Card>
+      {newsletterEnabled() ? (
+        <Card flat className="p-6">
+          <h2 className="mb-4 text-lg font-semibold text-bdas-ink">E-Mail-Benachrichtigungen</h2>
+          <NewsletterToggle userId={me.user.id} />
+        </Card>
+      ) : (
+        /* Reserved. Position and name are fixed now so that shipping the
+           preferences is an insert, not a rearrangement. Not a control: it is
+           inert and announces itself as unavailable. */
+        <Card flat className="border-dashed p-6" aria-disabled="true">
+          <div className="flex flex-wrap items-center gap-3">
+            <h2 className="text-lg font-semibold text-bdas-ink-muted">E-Mail-Benachrichtigungen</h2>
+            <span className="rounded-bdas-pill border border-bdas-strong px-2.5 py-0.5 text-xs uppercase tracking-wide text-bdas-ink-muted">
+              Kommt bald
+            </span>
+          </div>
+          <p className="mt-2 text-sm text-bdas-ink-muted">
+            Hier wählst du künftig, welche Benachrichtigungen du per E-Mail bekommst.
+          </p>
+        </Card>
+      )}
 
       <Card flat className="p-6">
         <h2 className="mb-2 text-lg font-semibold text-bdas-ink">Deine Daten</h2>
