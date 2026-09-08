@@ -19,7 +19,7 @@ export type PendingMember = Member & { readonly status: "pending" };
 /**
  * One effective authority (ADR 0007). `groupId` null ⇔ unscoped
  * (federal_board, status-implied member/alumnus); set ⇔ scoped to a group
- * (local_board).
+ * (local_board_lead).
  */
 export type Grant = {
   readonly role: Role;
@@ -59,11 +59,12 @@ export const REJECTION_CATEGORY_LABELS: Record<RejectionCategory, string> = {
 export const ROLE_LABELS: Record<Role, string> = {
   member: "Mitglied",
   alumnus: "Alumnus",
-  local_board: "Vorstand",
   local_board_lead: "Lead",
   federal_board: "Bundesvorstand",
   event_organizer: "Organisator",
   page_editor: "Seiten-Editor",
+  file_manager: "Datei-Manager",
+  blogger: "Blogger",
 };
 
 /**

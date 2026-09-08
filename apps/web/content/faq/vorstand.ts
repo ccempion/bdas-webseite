@@ -11,7 +11,7 @@ export const vorstand: FaqSection = {
   title: "Vorstand",
   intro:
     "Funktionen für den lokalen Vorstand, jeweils auf die eigene Gruppe begrenzt — getrennt nach den vier Vorstandsrollen.",
-  visibleTo: ["local_board", "local_board_lead", "event_organizer", "page_editor"],
+  visibleTo: ["local_board_lead", "event_organizer", "page_editor"],
   entries: [],
   subgroups: [
     {
@@ -22,7 +22,7 @@ export const vorstand: FaqSection = {
       // without a separate plain local_board row — so the baseline how-to
       // content stays visible to a LEAD too, not just the narrower LEAD-only
       // extras below.
-      visibleTo: ["local_board", "local_board_lead"],
+      visibleTo: ["local_board_lead"],
       entries: [
         {
           id: "lb-uebersicht-roster",

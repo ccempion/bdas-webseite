@@ -6,7 +6,7 @@ import { expect, test } from "@playwright/test";
 
 import {
   activateMemberByEmail,
-  grantLocalBoard,
+  grantLocalBoardLead,
   seedGroup,
   seedGroupTransferRequest,
   uniqueEmail,
@@ -26,7 +26,7 @@ test("ein Vorstand mit offener Freigabe sieht Zahl und Hinweis", async ({ page }
   const boardEmail = uniqueEmail("board");
   await registerVerifyLogin(page, { email: boardEmail, firstName: "Bea", lastName: "Vorstand" });
   await createProfile(page, { firstName: "Bea", lastName: "Vorstand", groupId });
-  await grantLocalBoard(boardEmail, groupId);
+  await grantLocalBoardLead(boardEmail, groupId);
   await logout(page);
 
   // The account page's alert only lists group transfers and open reports

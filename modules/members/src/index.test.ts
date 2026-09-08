@@ -54,10 +54,6 @@ const PEASANT = {
   userId: "usr_peasant_actor",
   grants: [{ role: "member", groupId: null }] as ReadonlyArray<Grant>,
 };
-const localBoardOf = (userId: string, groupId: string) => ({
-  userId,
-  grants: [{ role: "local_board", groupId }] as ReadonlyArray<Grant>,
-});
 const leadOf = (userId: string, groupId: string) => ({
   userId,
   grants: [{ role: "local_board_lead", groupId }] as ReadonlyArray<Grant>,
@@ -152,36 +148,6 @@ describeIfDb("members integration", () => {
     expect(row?.status).toBe("active");
   });
 
-  it("local_board may approve only members of its own group", async () => {
-    await createGroup("grp_a", "aachen");
-    await createGroup("grp_b", "berlin");
-    await createUser("usr_in_a", "a@example.de");
-    await createUser("usr_in_b", "b@example.de");
-    const inA = await createProfile(t.db, {
-      userId: "usr_in_a",
-      firstName: "InA",
-      lastName: "x",
-      primaryGroupId: "grp_a",
-    });
-    const inB = await createProfile(t.db, {
-      userId: "usr_in_b",
-      firstName: "InB",
-      lastName: "x",
-      primaryGroupId: "grp_b",
-    });
-
-    const boardA = localBoardOf("usr_board_a", "grp_a");
-
-    // Same group → allowed.
-    const approved = await approveMember(t.db, inA.id, boardA);
-    expect(approved.status).toBe("active");
-
-    // Other group → forbidden.
-    await expect(approveMember(t.db, inB.id, boardA)).rejects.toMatchObject({
-      code: "FORBIDDEN",
-    });
-  });
-
   it("local_board_lead may approve only members of its own group (ADR 0013)", async () => {
     await createGroup("grp_a", "aachen");
     await createGroup("grp_b", "berlin");
@@ -219,15 +185,15 @@ describeIfDb("members integration", () => {
       firstName: "No",
       lastName: "Group",
     });
-    await expect(approveMember(t.db, m.id, localBoardOf("usr_x", "grp_a"))).rejects.toMatchObject({
+    await expect(approveMember(t.db, m.id, leadOf("usr_x", "grp_a"))).rejects.toMatchObject({
       code: "FORBIDDEN",
     });
     const ok = await approveMember(t.db, m.id, BOARD);
     expect(ok.status).toBe("active");
   });
 
-  /** Grants a real DB local_board seat to a throwaway member of `groupId`. */
-  async function seatLocalBoard(userId: string, groupId: string): Promise<void> {
+  /** Grants a real DB Lead seat to a throwaway member of `groupId`. */
+  async function seatLead(userId: string, groupId: string): Promise<void> {
     await createUser(userId, `${userId}@example.de`);
     const seat = await createProfile(t.db, {
       userId,
@@ -235,12 +201,12 @@ describeIfDb("members integration", () => {
       lastName: "Seat",
       primaryGroupId: groupId,
     });
-    await grantRole(t.db, seat.id, "local_board", BOARD, groupId);
+    await grantRole(t.db, seat.id, "local_board_lead", BOARD, groupId);
   }
 
   it("federal_board may NOT decide a join for a group that has a local board (ADR 0021)", async () => {
     await createGroup("grp_a", "aachen");
-    await seatLocalBoard("usr_seat_a", "grp_a");
+    await seatLead("usr_seat_a", "grp_a");
 
     await createUser("usr_join_a", "ja@example.de");
     const pending = await createProfile(t.db, {
@@ -260,7 +226,7 @@ describeIfDb("members integration", () => {
     });
 
     // The group's own board decides.
-    const approved = await approveMember(t.db, pending.id, localBoardOf("usr_lb_a", "grp_a"));
+    const approved = await approveMember(t.db, pending.id, leadOf("usr_lb_a", "grp_a"));
     expect(approved.status).toBe("active");
   });
 
@@ -288,7 +254,7 @@ describeIfDb("members integration", () => {
       lastName: "R",
       primaryGroupId: "grp_a",
     });
-    await grantRole(t.db, seat.id, "local_board", BOARD, "grp_a");
+    await grantRole(t.db, seat.id, "local_board_lead", BOARD, "grp_a");
 
     await createUser("usr_join_c", "jc@example.de");
     const pending = await createProfile(t.db, {
@@ -304,7 +270,7 @@ describeIfDb("members integration", () => {
     });
 
     // Seat vacated → fallback re-opens.
-    await revokeRole(t.db, seat.id, "local_board", BOARD, "grp_a");
+    await revokeRole(t.db, seat.id, "local_board_lead", BOARD, "grp_a");
     const approved = await approveMember(t.db, pending.id, BOARD);
     expect(approved.status).toBe("active");
   });
@@ -320,7 +286,7 @@ describeIfDb("members integration", () => {
     });
     // Approve while the group is board-less (fallback), then seat a board.
     await approveMember(t.db, m.id, BOARD);
-    await seatLocalBoard("usr_seat_n", "grp_a");
+    await seatLead("usr_seat_n", "grp_a");
 
     // The member is no longer pending, so this is not a join decision: federal
     // retains deactivation/alumni authority even though grp_a has a board.
@@ -349,12 +315,14 @@ describeIfDb("members integration", () => {
     await approveMember(t.db, m.id, BOARD);
 
     // Only federal_board may grant.
-    await expect(grantRole(t.db, m.id, "local_board", PEASANT, "grp_a")).rejects.toMatchObject({
-      code: "FORBIDDEN",
-    });
+    await expect(grantRole(t.db, m.id, "local_board_lead", PEASANT, "grp_a")).rejects.toMatchObject(
+      {
+        code: "FORBIDDEN",
+      },
+    );
 
-    // local_board requires a group; federal_board must be unscoped.
-    await expect(grantRole(t.db, m.id, "local_board", BOARD)).rejects.toMatchObject({
+    // local_board_lead requires a group; federal_board must be unscoped.
+    await expect(grantRole(t.db, m.id, "local_board_lead", BOARD)).rejects.toMatchObject({
       code: "VALIDATION",
     });
     await expect(grantRole(t.db, m.id, "federal_board", BOARD, "grp_a")).rejects.toMatchObject({
@@ -365,9 +333,9 @@ describeIfDb("members integration", () => {
     });
 
     // Grant is written and idempotent.
-    await grantRole(t.db, m.id, "local_board", BOARD, "grp_a");
-    await grantRole(t.db, m.id, "local_board", BOARD, "grp_a"); // idempotent
-    expect(await getGrants(t.db, m.id)).toEqual([{ role: "local_board", groupId: "grp_a" }]);
+    await grantRole(t.db, m.id, "local_board_lead", BOARD, "grp_a");
+    await grantRole(t.db, m.id, "local_board_lead", BOARD, "grp_a"); // idempotent
+    expect(await getGrants(t.db, m.id)).toEqual([{ role: "local_board_lead", groupId: "grp_a" }]);
 
     // The granted scope actually authorizes: usr_e now boards grp_a and can
     // approve a pending member of grp_a.
@@ -382,8 +350,8 @@ describeIfDb("members integration", () => {
     expect((await approveMember(t.db, pa.id, eActor)).status).toBe("active");
 
     // Revocation takes effect immediately (next read).
-    await revokeRole(t.db, m.id, "local_board", BOARD, "grp_a");
-    await revokeRole(t.db, m.id, "local_board", BOARD, "grp_a"); // idempotent
+    await revokeRole(t.db, m.id, "local_board_lead", BOARD, "grp_a");
+    await revokeRole(t.db, m.id, "local_board_lead", BOARD, "grp_a"); // idempotent
     expect(await getGrants(t.db, m.id)).toEqual([]);
 
     await createUser("usr_pending_a2", "pa2@example.de");
@@ -485,7 +453,7 @@ describeIfDb("members integration", () => {
     expect(scoped.active + scoped.pending).toBe(2);
   });
 
-  it("a local_board_lead grants local_board within its group, but not across groups or higher roles", async () => {
+  it("a local_board_lead grants page_editor within its group, but not across groups or higher roles", async () => {
     await createGroup("grp_a", "aachen");
     await createGroup("grp_b", "bonn");
     await createUser("usr_lead", "lead2@example.de");
@@ -511,28 +479,28 @@ describeIfDb("members integration", () => {
     // that board, not federal (ADR 0021) — the lead approves.
     await approveMember(t.db, member.id, leadActor);
 
-    // Lead CAN grant local_board within its own group...
-    await grantRole(t.db, member.id, "local_board", leadActor, "grp_a");
+    // Lead CAN grant page_editor within its own group...
+    await grantRole(t.db, member.id, "page_editor", leadActor, "grp_a");
     expect(await getGrants(t.db, member.id)).toContainEqual({
-      role: "local_board",
+      role: "page_editor",
       groupId: "grp_a",
     });
 
     // ...and CAN revoke it again.
-    await revokeRole(t.db, member.id, "local_board", leadActor, "grp_a");
+    await revokeRole(t.db, member.id, "page_editor", leadActor, "grp_a");
     expect(await getGrants(t.db, member.id)).not.toContainEqual({
-      role: "local_board",
+      role: "page_editor",
       groupId: "grp_a",
     });
 
-    // Lead CANNOT grant local_board in another group.
+    // Lead CANNOT grant page_editor in another group.
     await expect(
-      grantRole(t.db, member.id, "local_board", leadActor, "grp_b"),
+      grantRole(t.db, member.id, "page_editor", leadActor, "grp_b"),
     ).rejects.toMatchObject({ code: "FORBIDDEN" });
 
-    // Lead CANNOT revoke local_board in another group either.
+    // Lead CANNOT revoke page_editor in another group either.
     await expect(
-      revokeRole(t.db, member.id, "local_board", leadActor, "grp_b"),
+      revokeRole(t.db, member.id, "page_editor", leadActor, "grp_b"),
     ).rejects.toMatchObject({ code: "FORBIDDEN" });
 
     // Lead CANNOT appoint another lead, nor grant federal_board.
@@ -575,22 +543,6 @@ describeIfDb("members integration", () => {
     });
   });
 
-  it("a plain local_board member may NOT grant event_organizer", async () => {
-    await createGroup("grp_a", "aachen");
-    await createUser("usr_org2", "org2@example.de");
-    const m = await createProfile(t.db, {
-      userId: "usr_org2",
-      firstName: "O",
-      lastName: "y",
-      primaryGroupId: "grp_a",
-    });
-    await approveMember(t.db, m.id, BOARD);
-
-    await expect(
-      grantRole(t.db, m.id, "event_organizer", localBoardOf("usr_lb", "grp_a"), "grp_a"),
-    ).rejects.toMatchObject({ code: "FORBIDDEN" });
-  });
-
   it("a lead may grant/revoke page_editor scoped to its group (ADR 0026)", async () => {
     await createGroup("grp_a", "aachen");
     await createUser("usr_pe", "pe@example.de");
@@ -617,7 +569,7 @@ describeIfDb("members integration", () => {
     });
   });
 
-  it("a plain local_board member may NOT grant page_editor; nor may a foreign lead", async () => {
+  it("a foreign lead may NOT grant page_editor into a group it doesn't lead", async () => {
     await createGroup("grp_a", "aachen");
     await createUser("usr_pe2", "pe2@example.de");
     const m = await createProfile(t.db, {
@@ -628,9 +580,6 @@ describeIfDb("members integration", () => {
     });
     await approveMember(t.db, m.id, BOARD);
 
-    await expect(
-      grantRole(t.db, m.id, "page_editor", localBoardOf("usr_lb", "grp_a"), "grp_a"),
-    ).rejects.toMatchObject({ code: "FORBIDDEN" });
     await expect(
       grantRole(t.db, m.id, "page_editor", leadOf("usr_lead_b", "grp_b"), "grp_a"),
     ).rejects.toMatchObject({ code: "FORBIDDEN" });
@@ -683,11 +632,11 @@ describeIfDb("members integration", () => {
     });
     await approveMember(t.db, m.id, BOARD);
     await grantRole(t.db, m.id, "local_board_lead", BOARD, "grp_a");
-    await grantRole(t.db, m.id, "local_board", BOARD, "grp_a");
-    await revokeRole(t.db, m.id, "local_board", BOARD, "grp_a");
+    await grantRole(t.db, m.id, "event_organizer", BOARD, "grp_a");
+    await revokeRole(t.db, m.id, "event_organizer", BOARD, "grp_a");
 
     const holders = await listRoleHolders(t.db);
-    // Only ACTIVE board grants; the revoked local_board is gone.
+    // Only ACTIVE board grants; the revoked event_organizer is gone.
     expect(holders).toEqual([
       expect.objectContaining({
         memberId: m.id,
@@ -701,8 +650,8 @@ describeIfDb("members integration", () => {
     const audit = await listGrantAudit(t.db, {});
     // Newest-first; includes the revoked row with revokedAt set.
     expect(audit.length).toBe(2);
-    expect(audit.some((a) => a.role === "local_board" && a.revokedAt !== null)).toBe(true);
-    const revoked = audit.find((a) => a.role === "local_board" && a.revokedAt !== null);
+    expect(audit.some((a) => a.role === "event_organizer" && a.revokedAt !== null)).toBe(true);
+    const revoked = audit.find((a) => a.role === "event_organizer" && a.revokedAt !== null);
     expect(revoked?.revokedBy).toBe(BOARD.userId);
     expect(audit.every((a) => a.firstName === "Lena")).toBe(true);
 

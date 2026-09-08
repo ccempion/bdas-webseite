@@ -13,8 +13,7 @@ export const dynamic = "force-dynamic";
 export const metadata = { title: "Profil" };
 
 /** Master data of the lead's own group (#62). Gated to federal board and the
- *  group's `local_board_lead` — plain `local_board` delegates upward, matching
- *  the page-editing rule in ADR 0026. */
+ *  group's `local_board_lead`, matching the page-editing rule in ADR 0026. */
 export default async function GroupProfilePage({ params }: { params: { slug: string } }) {
   await requireLeadScope(params.slug);
   const group = await getGroupBySlug(getDb(), params.slug);

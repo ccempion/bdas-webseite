@@ -30,7 +30,7 @@ export {
   isRole,
   isFederalBoard,
   canManageGroup,
-  canGrantLocalBoard,
+  canGrantLocalRoles,
   canEditGroupPage,
   canDecideJoinRequest,
 } from "./roles";

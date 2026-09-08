@@ -37,7 +37,7 @@ describe("canManageAny", () => {
     const board = viewerFrom({
       user: { id: "u" },
       member: { status: "active", primaryGroupId: "grp_a" },
-      grants: [{ role: "local_board", groupId: "grp_a" }],
+      grants: [{ role: "local_board_lead", groupId: "grp_a" }],
     } as never);
     const organizer = viewerFrom({
       user: { id: "u" },

@@ -59,12 +59,12 @@ describe("roleChips", () => {
     const chips = roleChips([
       { role: "member", groupId: null },
       { role: "event_organizer", groupId: "grp_berlin" },
-      { role: "local_board", groupId: "grp_berlin" },
+      { role: "local_board_lead", groupId: "grp_berlin" },
     ]);
 
     expect(chips).toEqual([
       { label: "Organisator", accent: true },
-      { label: "Vorstand", accent: false },
+      { label: "Lead", accent: false },
     ]);
   });
 

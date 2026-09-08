@@ -1,9 +1,10 @@
 /**
- * Role grant / revoke (ADR 0007, amended by ADR 0013, extended by ADR 0026).
- * Writes scoped rows to `member_role_grants`. Federal board may grant any
- * role; a `local_board_lead` may grant/revoke `local_board`, `event_organizer`,
- * and `page_editor` within its own group only (see requireCanGrant).
- * `local_board`, `local_board_lead`, `event_organizer`, and `page_editor` are
+ * Role grant / revoke (ADR 0007, amended by ADR 0013, extended by ADR 0026,
+ * and by the local role redesign). Writes scoped rows to `member_role_grants`.
+ * Federal board may grant any role; a Lead (`local_board_lead`) may
+ * grant/revoke the group's delegate roles — `event_organizer`, `page_editor`,
+ * `file_manager`, `blogger` — within its own group only (see
+ * requireCanGrant). `local_board_lead` and all four delegate roles are
  * group-scoped; `federal_board` is unscoped.
  */
 import { and, eq, isNull, sql } from "drizzle-orm";
@@ -15,7 +16,7 @@ import { getEventBus } from "@bdas/events";
 import { createId } from "@bdas/id";
 
 import type { RoleGranted, RoleRevoked } from "../events";
-import { canGrantLocalBoard, isFederalBoard, isRole } from "../roles";
+import { canGrantLocalRoles, isFederalBoard, isRole } from "../roles";
 import { members, memberRoleGrants } from "../schema";
 import type { Member } from "../types";
 
@@ -25,19 +26,24 @@ import type { Actor } from "./status";
 export type Db = PostgresJsDatabase<Record<string, never>>;
 
 /**
- * Who may grant/revoke (ADR 0013, supersedes the federal-only rule; extended
- * by ADR 0026 to include `page_editor`):
- *  - `local_board`, `event_organizer`, `page_editor` → federal_board OR a local_board_lead of that group
- *  - everything else                   → federal_board only
+ * Who may grant/revoke (ADR 0013, extended by ADR 0026 and the local role
+ * redesign):
+ *  - `event_organizer`, `page_editor`, `file_manager`, `blogger` → federal_board OR the group's Lead
+ *  - everything else                                            → federal_board only
  *    (appointing leads and federal_board stays central; member/alumnus are
  *     edge grants the federation owns).
  * `role` must already be validated to a known Role and `groupId` to its scope.
  */
 function requireCanGrant(actor: Actor, role: Role, groupId: string | null): void {
-  if (role === "local_board" || role === "event_organizer" || role === "page_editor") {
-    if (canGrantLocalBoard(actor.grants, groupId)) return;
+  if (
+    role === "event_organizer" ||
+    role === "page_editor" ||
+    role === "file_manager" ||
+    role === "blogger"
+  ) {
+    if (canGrantLocalRoles(actor.grants, groupId)) return;
     throw new ForbiddenError(
-      "Nur der Bundesvorstand oder ein Vorstands-Lead dieser Gruppe darf diese Rolle vergeben.",
+      "Nur der Bundesvorstand oder der Lead dieser Gruppe darf diese Rolle vergeben.",
     );
   }
   if (!isFederalBoard(actor.grants)) {
@@ -52,15 +58,16 @@ function requireValidRole(role: string): asserts role is Role {
 }
 
 /**
- * local_board, local_board_lead, event_organizer and page_editor (ADR 0026)
- * are group-scoped; federal_board is unscoped.
+ * `local_board_lead`, `event_organizer`, `page_editor`, `file_manager`, and
+ * `blogger` are group-scoped; `federal_board` is unscoped.
  */
 function requireValidScope(role: Role, groupId: string | null): void {
   if (
-    (role === "local_board" ||
-      role === "local_board_lead" ||
+    (role === "local_board_lead" ||
       role === "event_organizer" ||
-      role === "page_editor") &&
+      role === "page_editor" ||
+      role === "file_manager" ||
+      role === "blogger") &&
     groupId === null
   ) {
     throw new ValidationError(`${role} erfordert eine Gruppe.`);

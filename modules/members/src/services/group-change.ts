@@ -298,7 +298,7 @@ export async function withdrawGroupChange(
 
 /**
  * The DESTINATION group's board decides (ADR 0022, applying ADR 0021's rule to
- * transfers): a `local_board`/`local_board_lead` scoped to `to_group_id`, with
+ * transfers): its Lead (`local_board_lead`) scoped to `to_group_id`, with
  * federal board as the fallback only when that group has no active board seat.
  * The origin group has no veto.
  *

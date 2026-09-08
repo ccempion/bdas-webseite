@@ -44,9 +44,7 @@ export async function getProfile(db: Db, userId: string): Promise<MemberProfile 
 /** Read authorization: the owner, or any board grant (local or federal). */
 export function canViewProfile(actor: ProfileActor, ownerUserId: string): boolean {
   if (actor.userId === ownerUserId) return true;
-  return actor.grants.some(
-    (g) => g.role === "federal_board" || g.role === "local_board" || g.role === "local_board_lead",
-  );
+  return actor.grants.some((g) => g.role === "federal_board" || g.role === "local_board_lead");
 }
 
 /**

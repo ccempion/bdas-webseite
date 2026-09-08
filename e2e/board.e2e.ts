@@ -11,7 +11,7 @@ import { expect, test } from "@playwright/test";
 
 import {
   deleteUserByEmail,
-  grantLocalBoard,
+  grantLocalBoardLead,
   memberStatusByEmail,
   seedGroup,
   uniqueEmail,
@@ -90,7 +90,7 @@ test("a local board member can approve a pending member of their group", async (
   const localEmail = uniqueEmail("local");
   await registerVerifyLogin(page, { email: localEmail });
   await createProfile(page, { firstName: "Lokal", lastName: "Vorstand" });
-  await grantLocalBoard(localEmail, groupId); // takes effect on next request (DB-read grants)
+  await grantLocalBoardLead(localEmail, groupId); // takes effect on next request (DB-read grants)
 
   // Accept the applicant from the group's queue.
   await page.goto(`/gruppe/${groupSlug}/bewerbungen`);

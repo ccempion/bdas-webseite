@@ -1,22 +1,21 @@
 /**
  * Issue #62 — the group's lead owns its master data.
  *
- * Covers the authorization boundary (lead in, plain local_board out) and the
- * banner drop target. Like `profile-photo-crop.e2e.ts`, the upload assertion
- * stops at the request that leaves the browser: object storage is not
- * configured in the E2E environment, so the signing route cannot succeed there.
+ * Covers the lead's authorization boundary and the banner drop target. Like
+ * `profile-photo-crop.e2e.ts`, the upload assertion stops at the request that
+ * leaves the browser: object storage is not configured in the E2E
+ * environment, so the signing route cannot succeed there.
  */
 import { expect, test } from "@playwright/test";
 
 import {
-  grantLocalBoard,
   grantLocalBoardLead,
   groupContactEmail,
   seedGroup,
   uniqueEmail,
   uniqueSlug,
 } from "./helpers/db";
-import { createProfile, logout, registerVerifyLogin } from "./helpers/flows";
+import { createProfile, registerVerifyLogin } from "./helpers/flows";
 
 // Smallest valid PNG; the banner field uploads what it is given, uncropped.
 const PNG = Buffer.from(
@@ -24,9 +23,7 @@ const PNG = Buffer.from(
   "base64",
 );
 
-test("the lead edits contact data and drops a banner; a plain local_board cannot", async ({
-  page,
-}) => {
+test("the lead edits contact data and drops a banner", async ({ page }) => {
   const slug = uniqueSlug("e2e-profil");
   const groupId = await seedGroup({
     slug,
@@ -35,16 +32,6 @@ test("the lead edits contact data and drops a banner; a plain local_board cannot
     status: "active",
   });
 
-  // A plain local_board member is bounced to the group overview.
-  const boardEmail = uniqueEmail("profil-board");
-  await registerVerifyLogin(page, { email: boardEmail });
-  await createProfile(page, {});
-  await grantLocalBoard(boardEmail, groupId);
-  await page.goto(`/gruppe/${slug}/profil`);
-  await expect(page).toHaveURL(new RegExp(`/gruppe/${slug}/overview$`));
-
-  // The lead gets the form.
-  await logout(page);
   const leadEmail = uniqueEmail("profil-lead");
   await registerVerifyLogin(page, { email: leadEmail });
   await createProfile(page, {});

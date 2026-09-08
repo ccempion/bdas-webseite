@@ -115,7 +115,7 @@ describeIfDb("notifications: the application mails", () => {
       VALUES ('mem_board', 'usr_board', 'Bo', 'Board', 'grp_a', 'active')`;
     await t.client`
       INSERT INTO member_role_grants (id, member_id, role, group_id, granted_by)
-      VALUES ('mrg_board', 'mem_board', 'local_board', 'grp_a', 'usr_seed')`;
+      VALUES ('mrg_board', 'mem_board', 'local_board_lead', 'grp_a', 'usr_seed')`;
   }
 
   async function seedRequest(

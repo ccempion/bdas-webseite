@@ -18,12 +18,13 @@ export const COOKIE_MAX_AGE_SECONDS = 60 * 60 * 24 * 7; // 7 days
 
 export type Role =
   | "member"
-  | "local_board"
   | "local_board_lead"
   | "federal_board"
   | "alumnus"
   | "event_organizer"
-  | "page_editor";
+  | "page_editor"
+  | "file_manager"
+  | "blogger";
 
 export type SsoClaims = {
   readonly iss: "bdas";

@@ -72,7 +72,6 @@ export default async function FederalRolesPage({
               title: "Lokale Vorstands-Leads",
               holders: holders.filter((h) => h.role === "local_board_lead"),
             },
-            { title: "Lokale Vorstände", holders: holders.filter((h) => h.role === "local_board") },
           ]}
           groupNames={groupNames}
           revalidatePath="/federal/roles"

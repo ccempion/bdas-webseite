@@ -4,7 +4,7 @@ import { canAdministerBoard, canSeeFederalScope, canSeeGroupScope } from "./acce
 import type { Grant } from "@bdas/members";
 
 const federal: Grant[] = [{ role: "federal_board", groupId: null }];
-const localAc: Grant[] = [{ role: "local_board", groupId: "grp_ac" }];
+const localAc: Grant[] = [{ role: "local_board_lead", groupId: "grp_ac" }];
 const member: Grant[] = [{ role: "member", groupId: null }];
 
 describe("board access predicates", () => {

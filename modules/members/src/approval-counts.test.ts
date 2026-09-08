@@ -34,7 +34,7 @@ const PLAIN = {
 const self = (userId: string) => ({ userId, grants: PLAIN.grants });
 const boardOf = (userId: string, groupId: string) => ({
   userId,
-  grants: [{ role: "local_board", groupId }] as ReadonlyArray<Grant>,
+  grants: [{ role: "local_board_lead", groupId }] as ReadonlyArray<Grant>,
 });
 
 describeIfDb("countPendingApprovals", () => {
@@ -179,7 +179,7 @@ describeIfDb("countPendingApplicationsByGroup", () => {
       firstName: "B",
       lastName: "A",
     });
-    await grantRole(t.db, board.id, "local_board", FEDERAL, "grp_a");
+    await grantRole(t.db, board.id, "local_board_lead", FEDERAL, "grp_a");
 
     const counts = await countPendingApplicationsByGroup(t.db, FEDERAL, ["grp_a"]);
 

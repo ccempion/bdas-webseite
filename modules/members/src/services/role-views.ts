@@ -9,13 +9,16 @@ export type Db = PostgresJsDatabase<Record<string, never>>;
 
 // Roles surfaced in the group roster + audit views. event_organizer is a
 // group-scoped events delegate (ADR 0017); it appears alongside the board roles.
-// page_editor is a group-scoped page-content delegate (ADR 0026).
+// page_editor is a group-scoped page-content delegate (ADR 0026). file_manager
+// and blogger are the two newest group-scoped delegates from the local role
+// redesign; local_board (the old plain board role) no longer exists.
 const ROSTER_ROLES = [
   "federal_board",
   "local_board_lead",
-  "local_board",
   "event_organizer",
   "page_editor",
+  "file_manager",
+  "blogger",
 ] as const;
 
 /** An active board grant joined with the holder's name, for the roster views. */

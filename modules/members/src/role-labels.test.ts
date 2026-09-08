@@ -8,7 +8,7 @@ describe("ROLE_LABELS", () => {
     for (const key of Object.keys(ROLE_LABELS)) {
       expect(isRole(key), `${key} is not a Role`).toBe(true);
     }
-    expect(Object.keys(ROLE_LABELS)).toHaveLength(7);
+    expect(Object.keys(ROLE_LABELS)).toHaveLength(8);
   });
 
   it("gives every role a non-empty German label", () => {
@@ -21,8 +21,16 @@ describe("ROLE_LABELS", () => {
   it("keeps the labels the board views already show", () => {
     expect(ROLE_LABELS.federal_board).toBe("Bundesvorstand");
     expect(ROLE_LABELS.local_board_lead).toBe("Lead");
-    expect(ROLE_LABELS.local_board).toBe("Vorstand");
     expect(ROLE_LABELS.event_organizer).toBe("Organisator");
     expect(ROLE_LABELS.page_editor).toBe("Seiten-Editor");
+  });
+
+  it("labels the two roles introduced by the local role redesign", () => {
+    expect(ROLE_LABELS.file_manager).toBe("Datei-Manager");
+    expect(ROLE_LABELS.blogger).toBe("Blogger");
+  });
+
+  it("local_board is no longer a role and has no label", () => {
+    expect(Object.keys(ROLE_LABELS)).not.toContain("local_board");
   });
 });

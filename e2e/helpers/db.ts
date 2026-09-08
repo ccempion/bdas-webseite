@@ -1,7 +1,7 @@
 /**
  * E2E test-data helper. Talks to the same Postgres the app uses (`DATABASE_URL`)
  * to do the things a browser can't: read the one-time verify/reset tokens the
- * app would have emailed, seed groups and a local_board grant, and clear rate
+ * app would have emailed, seed groups and a local_board_lead grant, and clear rate
  * limits so a shared-IP run doesn't trip the register/login limiters.
  *
  * This only touches test data in an ephemeral CI database — never production.
@@ -142,11 +142,6 @@ async function grantGroupRole(email: string, groupId: string, role: string): Pro
     VALUES (${`mrg_e2e_${rand()}`}, ${memberId}, ${role}, ${groupId}, 'e2e')`;
 }
 
-/** Grant local_board of a group to the member with this email. */
-export function grantLocalBoard(email: string, groupId: string): Promise<void> {
-  return grantGroupRole(email, groupId, "local_board");
-}
-
 /** Grant local_board_lead — the authority that owns the group's profile (#62). */
 export function grantLocalBoardLead(email: string, groupId: string): Promise<void> {
   return grantGroupRole(email, groupId, "local_board_lead");
@@ -167,7 +162,7 @@ export async function memberStatusByEmail(email: string): Promise<string | null>
  *  for tests that only need an active viewer (e.g. members_only visibility).
  *  Returns the member id. The member row is created by the /account Server
  *  Action just before this; poll briefly so we don't race its commit (same
- *  race `grantLocalBoard` above guards against). */
+ *  race `grantLocalBoardLead` above guards against). */
 export async function activateMemberByEmail(email: string): Promise<string> {
   let memberId: string | null = null;
   for (let i = 0; i < 20 && !memberId; i++) {

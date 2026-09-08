@@ -74,8 +74,8 @@ function actor(grants: Grant[], memberId = "mbr_board"): CurrentMember {
   };
 }
 
-const BOARD_A: Grant[] = [{ role: "local_board", groupId: "grp_a" }];
-const BOARD_B: Grant[] = [{ role: "local_board", groupId: "grp_b" }];
+const BOARD_A: Grant[] = [{ role: "local_board_lead", groupId: "grp_a" }];
+const BOARD_B: Grant[] = [{ role: "local_board_lead", groupId: "grp_b" }];
 const PLAIN: Grant[] = [{ role: "member", groupId: null }];
 
 /**

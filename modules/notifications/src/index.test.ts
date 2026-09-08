@@ -384,7 +384,7 @@ describeIfDb("notifications integration", () => {
     await getEventBus().publish({
       type: "members.role.granted",
       memberId: "mem_x",
-      role: "local_board",
+      role: "local_board_lead",
       groupId: "grp_a",
       actorUserId: "usr_lead",
       at: new Date(),

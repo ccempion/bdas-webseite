@@ -78,7 +78,7 @@ describe("loadApprovalCounts", () => {
   });
 
   it("zählt Meldungen nicht für einen lokalen Vorstand", async () => {
-    loadCurrentMember.mockResolvedValue(meWith(["local_board"]));
+    loadCurrentMember.mockResolvedValue(meWith(["local_board_lead"]));
     countPendingApprovals.mockResolvedValue({ applications: 1, groupTransfers: 0 });
     countOpenReports.mockResolvedValue(5);
 
@@ -148,7 +148,9 @@ describe("loadSidebarBadgeCounts", () => {
   it("fragt für einen lokalen Vorstand nur die Gruppen-Aufschlüsselung ab", async () => {
     countPendingApplicationsByGroup.mockResolvedValue(new Map([["grp_a", 3]]));
 
-    const out = await loadSidebarBadgeCounts(actorWith(["local_board"]), [groupScope("grp_a")]);
+    const out = await loadSidebarBadgeCounts(actorWith(["local_board_lead"]), [
+      groupScope("grp_a"),
+    ]);
 
     expect(out.federal).toBe(0);
     expect(out.byGroupId.get("grp_a")).toBe(3);

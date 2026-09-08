@@ -1,8 +1,7 @@
 /**
  * Authorization contract of the group-profile Server Action (#62). It is a
  * public endpoint, so it must be exactly as tight as the page that calls it:
- * federal board, or the group's own `local_board_lead`. A plain `local_board`
- * grant is not enough.
+ * federal board, or the group's own Lead (`local_board_lead`).
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -54,12 +53,6 @@ describe("updateGroupProfileAction", () => {
 
   it("rejects an anonymous caller", async () => {
     expect(await save()).toEqual({ ok: false, error: "Nicht angemeldet." });
-    expect(updateGroup).not.toHaveBeenCalled();
-  });
-
-  it("rejects a plain local_board of the group", async () => {
-    grants = [g("local_board", "grp_a")];
-    expect((await save()).ok).toBe(false);
     expect(updateGroup).not.toHaveBeenCalled();
   });
 

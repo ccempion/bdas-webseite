@@ -1,10 +1,10 @@
 /**
  * Status transitions. The actor must manage the member's group (ADR 0007):
- * federal_board for any member, local_board only for members of its own
+ * federal_board for any member, the group's Lead only for members of its own
  * group. The group is known only after the row is read, so the authorization
  * check lives inside the transaction.
  */
-import { and, eq, inArray, isNull } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import type { PostgresJsDatabase } from "drizzle-orm/postgres-js";
 
 import { ConflictError, ForbiddenError, NotFoundError } from "@bdas/errors";
@@ -25,9 +25,9 @@ export type Actor = {
 };
 
 /**
- * Does the group have at least one active local-board seat? Measured from
- * grants alone (ADR 0021) — a `local_board`/`local_board_lead` grant with
- * `revoked_at IS NULL` — regardless of the holder's own member status.
+ * Does the group have at least one active Lead seat? Measured from grants
+ * alone (ADR 0021) — a `local_board_lead` grant with `revoked_at IS NULL` —
+ * regardless of the holder's own member status.
  */
 export async function groupHasActiveLocalBoard(tx: Db, groupId: string): Promise<boolean> {
   const rows = await tx
@@ -37,7 +37,7 @@ export async function groupHasActiveLocalBoard(tx: Db, groupId: string): Promise
       and(
         eq(memberRoleGrants.groupId, groupId),
         isNull(memberRoleGrants.revokedAt),
-        inArray(memberRoleGrants.role, ["local_board", "local_board_lead"]),
+        eq(memberRoleGrants.role, "local_board_lead"),
       ),
     )
     .limit(1);
@@ -111,15 +111,14 @@ export async function approveMember(db: Db, memberId: string, actor: Actor): Pro
 }
 
 /**
- * Groups this actor is scoped to as a local board. `local_board_lead` manages
- * its group too (ADR 0013), so both roles count. Federal grants carry no
+ * Groups this actor is scoped to as Lead (ADR 0013). Federal grants carry no
  * groupId and are handled by `isFederalBoard` at each call site.
  */
 export function scopedGroupIds(actor: Actor): string[] {
   return actor.grants
     .filter(
-      (g): g is { role: "local_board" | "local_board_lead"; groupId: string } =>
-        (g.role === "local_board" || g.role === "local_board_lead") && g.groupId !== null,
+      (g): g is { role: "local_board_lead"; groupId: string } =>
+        g.role === "local_board_lead" && g.groupId !== null,
     )
     .map((g) => g.groupId);
 }

@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import type { GroupLocation } from "@bdas/groups";
 import { getDb } from "@bdas/db";
 import { getGroup, updateGroup } from "@bdas/groups";
-import { canGrantLocalBoard, getCurrentMember } from "@bdas/members";
+import { canGrantLocalRoles, getCurrentMember } from "@bdas/members";
 
 import { readSessionCookie } from "../../../lib/auth-cookie";
 
@@ -26,9 +26,9 @@ function safeRevalidate(path: string): void {
 
 /**
  * Update a group's master data. Gated to the federal board and the group's own
- * `local_board_lead` (`canGrantLocalBoard`, ADR 0013) — the same authority that
- * reaches `/gruppe/<slug>/profil`. A Server Action must never be looser than
- * the page that calls it.
+ * Lead (`canGrantLocalRoles`, ADR 0013) — the same authority that reaches
+ * `/gruppe/<slug>/profil`. A Server Action must never be looser than the page
+ * that calls it.
  *
  * `status` and `slug` are deliberately not part of the input: status stays with
  * the federal board, and the slug is the immutable public URL.
@@ -40,7 +40,7 @@ export async function updateGroupProfileAction(
 ): Promise<{ ok: boolean; error?: string }> {
   const me = await getCurrentMember(getDb(), readSessionCookie());
   if (!me) return { ok: false, error: "Nicht angemeldet." };
-  if (!canGrantLocalBoard(me.grants, groupId)) {
+  if (!canGrantLocalRoles(me.grants, groupId)) {
     return { ok: false, error: "Keine Berechtigung für diese Gruppe." };
   }
   try {
