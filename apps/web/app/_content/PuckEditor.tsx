@@ -39,7 +39,7 @@ export function PuckEditor({
   // Puck treats a new `metadata` identity as a change signal and re-renders the
   // whole canvas tree; `setError` in onPublish would otherwise do that on every
   // failed save.
-  const metadata = useMemo(() => ({ chrome }), [chrome]);
+  const metadata = useMemo(() => ({ chrome, slug }), [chrome, slug]);
 
   return (
     <div className="min-h-screen">
