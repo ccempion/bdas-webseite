@@ -5,6 +5,7 @@ import { PASSWORD_RULE_HINT } from "@bdas/auth";
 import { Card } from "@bdas/design-system";
 
 import { requireAuthFlag } from "../_auth/flag";
+import { newsletterEnabled } from "../_newsletter/flag";
 import { loadViewer } from "../_dashboard/session";
 import { legalUrls } from "../../lib/legal";
 import { RegistrierenForm } from "./RegistrierenForm";
@@ -26,7 +27,11 @@ export default async function RegistrierenPage() {
       </header>
 
       <Card flat className="p-6">
-        <RegistrierenForm privacyUrl={privacy} passwordHint={PASSWORD_RULE_HINT} />
+        <RegistrierenForm
+          privacyUrl={privacy}
+          passwordHint={PASSWORD_RULE_HINT}
+          newsletterOn={newsletterEnabled()}
+        />
       </Card>
 
       <p className="text-center text-sm text-bdas-ink-body">
