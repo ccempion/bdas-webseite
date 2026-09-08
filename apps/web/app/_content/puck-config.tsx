@@ -7,6 +7,7 @@ import { legalUrls } from "../../lib/legal";
 import { PublicFooterView } from "../_public/PublicFooterView";
 import { PublicHeaderView } from "../_public/PublicHeaderView";
 import type { CanvasChrome } from "./canvas-chrome";
+import { type Ausrichtung, ausrichtungFlex, ausrichtungText } from "./ausrichtung";
 import { type BildBreite, bildBreiteClass, normalizeBildBreite } from "./bild-breite";
 import { BildGroesseGriff } from "./BildGroesseGriff";
 import { FotoField } from "./FotoField";
@@ -16,6 +17,12 @@ import { RichTextField } from "./RichTextField";
 import { istLeererRichText, renderRichText } from "./rich-text";
 import { isExternalHref, safeHref } from "./href";
 import { BlockPlatzhalter } from "./BlockPlatzhalter";
+
+// Re-exported from their leaf module (see `ausrichtung.ts`): `puck-config.tsx`
+// stayed the import site for these three long before block components moved
+// into their own files, and every consumer still imports them from here.
+export { ausrichtungFlex, ausrichtungText } from "./ausrichtung";
+export type { Ausrichtung } from "./ausrichtung";
 
 type Person = {
   foto: string;
@@ -70,36 +77,6 @@ export type Breite = "schmal" | "breit" | "voll";
 
 export const breiteClass = (breite: Breite): string =>
   breite === "breit" ? "max-w-5xl" : breite === "voll" ? "" : "max-w-3xl";
-
-/** Per-block horizontal alignment (ADR 0023 palette). `links` is the default
- *  and is what every block rendered before the control existed. */
-export type Ausrichtung = "links" | "mittig" | "rechts";
-
-const AUSRICHTUNG_TEXT: Record<Ausrichtung, string> = {
-  links: "text-left",
-  mittig: "text-center",
-  rechts: "text-right",
-};
-
-const AUSRICHTUNG_FLEX: Record<Ausrichtung, string> = {
-  links: "justify-start",
-  mittig: "justify-center",
-  rechts: "justify-end",
-};
-
-/** Both lookups fall back to the `links` classes for a missing or unrecognised
- *  value: documents saved before this field existed carry no `ausrichtung`,
- *  and they must keep rendering exactly as they did. Class strings are
- *  literals — Tailwind's scanner never sees an interpolated class. */
-export const ausrichtungText = (a: Ausrichtung | undefined): string =>
-  a !== undefined && Object.hasOwn(AUSRICHTUNG_TEXT, a)
-    ? AUSRICHTUNG_TEXT[a]
-    : AUSRICHTUNG_TEXT.links;
-
-export const ausrichtungFlex = (a: Ausrichtung | undefined): string =>
-  a !== undefined && Object.hasOwn(AUSRICHTUNG_FLEX, a)
-    ? AUSRICHTUNG_FLEX[a]
-    : AUSRICHTUNG_FLEX.links;
 
 /** Marks the canvas chrome as decoration: not focusable, not in the
  *  accessibility tree, not clickable.
