@@ -712,12 +712,12 @@ describe("puckConfig", () => {
     }
   });
 
-  it("exactly the six intended blocks carry an Ausrichtung field", () => {
+  it("exactly the seven intended blocks carry an Ausrichtung field", () => {
     const mit = Object.entries(puckConfig.components)
       .filter(([, c]) => c?.fields && "ausrichtung" in c.fields)
       .map(([name]) => name)
       .sort();
-    expect(mit).toEqual(["Absatz", "Bild", "Button", "Fliesstext", "Ueberschrift", "Zitat"]);
+    expect(mit).toEqual(["Absatz", "Bild", "Button", "Fliesstext", "Hero", "Ueberschrift", "Zitat"]);
   });
 
   it("a document saved before Ausrichtung existed still renders left-aligned", () => {
@@ -1076,6 +1076,140 @@ describe("puckConfig", () => {
       const anzahl = puckConfig.components.Spalten?.fields?.anzahl;
       if (anzahl?.type !== "select") throw new Error("anzahl must be a select field");
       expect(anzahl.options.map((o) => o.value)).toEqual(["2", "3", "4", "1-2", "2-1"]);
+    });
+  });
+
+  describe("Hero block", () => {
+    it("is registered with the German label and its eight fields", () => {
+      const hero = puckConfig.components.Hero;
+      expect(hero?.label).toBe("Hero / Aufmacher");
+      expect(Object.keys(hero?.fields ?? {}).sort()).toEqual([
+        "ausrichtung",
+        "bild",
+        "buttonHref",
+        "buttonLabel",
+        "hintergrund",
+        "hoehe",
+        "ueberschrift",
+        "untertext",
+      ]);
+    });
+
+    it("offers exactly three backgrounds and three heights", () => {
+      const hintergrund = puckConfig.components.Hero?.fields?.hintergrund;
+      if (hintergrund?.type !== "select") throw new Error("hintergrund must be a select");
+      expect(hintergrund.options.map((o) => o.value)).toEqual(["hell", "akzent", "bild"]);
+
+      const hoehe = puckConfig.components.Hero?.fields?.hoehe;
+      if (hoehe?.type !== "select") throw new Error("hoehe must be a select");
+      expect(hoehe.options.map((o) => o.value)).toEqual(["kompakt", "mittel", "gross"]);
+    });
+
+    it("takes its image through the shared upload field", () => {
+      expect(puckConfig.components.Hero?.fields?.bild?.type).toBe("custom");
+    });
+
+    it("defaults to the light surface, mittel height and left alignment", () => {
+      expect(puckConfig.components.Hero?.defaultProps).toEqual({
+        ueberschrift: "Überschrift",
+        untertext: "",
+        hintergrund: "hell",
+        bild: "",
+        hoehe: "mittel",
+        ausrichtung: "links",
+        buttonLabel: "",
+        buttonHref: "",
+      });
+    });
+
+    it("renders the headline through the Hero component", () => {
+      const render = puckConfig.components.Hero?.render;
+      if (!render) throw new Error("Hero render missing");
+      const out = renderToStaticMarkup(
+        render({
+          ueberschrift: "Wer wir sind",
+          untertext: "",
+          hintergrund: "hell",
+          bild: "",
+          hoehe: "mittel",
+          ausrichtung: "links",
+          buttonLabel: "",
+          buttonHref: "",
+          puck: { isEditing: false },
+        } as never) as never,
+      );
+      expect(out).toContain("Wer wir sind");
+      expect(out).toContain("min-h-[24rem]");
+    });
+
+    it("shows a placeholder in the editor while headline, text and image are all empty", () => {
+      const render = puckConfig.components.Hero?.render;
+      if (!render) throw new Error("Hero render missing");
+      const out = renderToStaticMarkup(
+        render({
+          ueberschrift: "",
+          untertext: "",
+          hintergrund: "hell",
+          bild: "",
+          hoehe: "mittel",
+          ausrichtung: "links",
+          buttonLabel: "",
+          buttonHref: "",
+          puck: { isEditing: true },
+        } as never) as never,
+      );
+      expect(out).toContain("data-block-platzhalter");
+      expect(out).toContain("Noch kein Inhalt");
+    });
+
+    it("renders nothing at all on the public page while empty", () => {
+      const render = puckConfig.components.Hero?.render;
+      if (!render) throw new Error("Hero render missing");
+      const out = renderToStaticMarkup(
+        render({
+          ueberschrift: "",
+          untertext: "",
+          hintergrund: "akzent",
+          bild: "",
+          hoehe: "mittel",
+          ausrichtung: "links",
+          buttonLabel: "",
+          buttonHref: "",
+          puck: { isEditing: false },
+        } as never) as never,
+      );
+      expect(out).toBe("");
+    });
+
+    it("renders the real hero, not the placeholder, as soon as one field is filled", () => {
+      const render = puckConfig.components.Hero?.render;
+      if (!render) throw new Error("Hero render missing");
+      const out = renderToStaticMarkup(
+        render({
+          ueberschrift: "",
+          untertext: "",
+          hintergrund: "bild",
+          bild: "https://cdn.example/foto.webp",
+          hoehe: "kompakt",
+          ausrichtung: "links",
+          buttonLabel: "",
+          buttonHref: "",
+          puck: { isEditing: true },
+        } as never) as never,
+      );
+      expect(out).not.toContain("data-block-platzhalter");
+      expect(out).toContain("bg-bdas-hero-scrim");
+    });
+
+    it("a document saved before the Hero's props existed still renders", () => {
+      const render = puckConfig.components.Hero?.render;
+      if (!render) throw new Error("Hero render missing");
+      const out = renderToStaticMarkup(
+        render({ ueberschrift: "Alt", puck: { isEditing: false } } as never) as never,
+      );
+      expect(out).toContain("Alt");
+      expect(out).toContain("min-h-[24rem]");
+      expect(out).not.toContain("text-bdas-ink-on-brand");
     });
   });
 

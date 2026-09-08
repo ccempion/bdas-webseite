@@ -12,6 +12,7 @@ import { buttonKlasse } from "./button-klasse";
 import { type BildBreite, bildBreiteClass, normalizeBildBreite } from "./bild-breite";
 import { BildGroesseGriff } from "./BildGroesseGriff";
 import { FotoField } from "./FotoField";
+import { Hero, type HeroHintergrund, type HeroHoehe } from "./Hero";
 import { Organigramm } from "./Organigramm";
 import type { Kasten } from "./org-tree";
 import { RichTextField } from "./RichTextField";
@@ -69,6 +70,16 @@ type Blocks = {
   Organigramm: { kaesten: Kasten[] };
   Panel: { titel: string; variante: "standard" | "hervorgehoben" };
   Akkordeon: { eintraege: { frage: string; antwort: string }[] };
+  Hero: {
+    ueberschrift: string;
+    untertext: string;
+    hintergrund: HeroHintergrund;
+    bild: string;
+    hoehe: HeroHoehe;
+    ausrichtung: Ausrichtung;
+    buttonLabel: string;
+    buttonHref: string;
+  };
 };
 
 /** Content-column width. Carried on the page's root so the same value frames
@@ -673,6 +684,88 @@ export const puckConfig: Config<Blocks> = {
               </details>
             ))}
           </div>
+        );
+      },
+    },
+    Hero: {
+      label: "Hero / Aufmacher",
+      fields: {
+        ueberschrift: { type: "text", label: "Überschrift" },
+        untertext: { type: "textarea", label: "Untertext (optional)" },
+        hintergrund: {
+          type: "select",
+          label: "Hintergrund",
+          options: [
+            { label: "Helle Fläche", value: "hell" },
+            { label: "Akzentfarbe", value: "akzent" },
+            { label: "Bild", value: "bild" },
+          ],
+        },
+        bild: {
+          type: "custom",
+          label: "Hintergrundbild (nur bei Hintergrund „Bild“)",
+          render: ({ value, onChange }) => <FotoField value={value} onChange={onChange} />,
+        },
+        hoehe: {
+          type: "select",
+          label: "Höhe",
+          options: [
+            { label: "Kompakt", value: "kompakt" },
+            { label: "Mittel", value: "mittel" },
+            { label: "Groß", value: "gross" },
+          ],
+        },
+        ausrichtung: ausrichtungField,
+        buttonLabel: { type: "text", label: "Button-Beschriftung (optional)" },
+        buttonHref: { type: "text", label: "Button-Link (https://… oder /pfad)" },
+      },
+      defaultProps: {
+        ueberschrift: "Überschrift",
+        untertext: "",
+        hintergrund: "hell",
+        bild: "",
+        hoehe: "mittel",
+        ausrichtung: "links",
+        buttonLabel: "",
+        buttonHref: "",
+      },
+      // Empty means nothing at all on the public page — an empty coloured box
+      // is worse than no block. Same shape the `Bild` and `Button` blocks use:
+      // placeholder in the editor, `<></>` outside it. The placeholder is
+      // gated on `isEditing` because the structural sweep in the tests renders
+      // every block with `isEditing: false` and asserts none reaches a reader.
+      render: ({
+        ueberschrift,
+        untertext,
+        hintergrund,
+        bild,
+        hoehe,
+        ausrichtung,
+        buttonLabel,
+        buttonHref,
+        puck,
+      }) => {
+        if ((ueberschrift ?? "") === "" && (untertext ?? "") === "" && (bild ?? "") === "") {
+          return puck?.isEditing ? (
+            <BlockPlatzhalter
+              titel="Hero / Aufmacher"
+              hinweis="Noch kein Inhalt — Überschrift, Untertext oder Bild ergänzen."
+            />
+          ) : (
+            <></>
+          );
+        }
+        return (
+          <Hero
+            ueberschrift={ueberschrift}
+            untertext={untertext}
+            hintergrund={hintergrund}
+            bild={bild}
+            hoehe={hoehe}
+            ausrichtung={ausrichtung}
+            buttonLabel={buttonLabel}
+            buttonHref={buttonHref}
+          />
         );
       },
     },
