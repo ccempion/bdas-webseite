@@ -59,6 +59,7 @@ type Blocks = {
     anzahl: "2" | "3" | "4" | "1-2" | "2-1";
   };
   Organigramm: { kaesten: Kasten[] };
+  Panel: { titel: string; variante: "standard" | "hervorgehoben" };
 };
 
 /** Content-column width. Carried on the page's root so the same value frames
@@ -632,6 +633,33 @@ export const puckConfig: Config<Blocks> = {
         ) : (
           <Organigramm kaesten={kaesten} />
         ),
+    },
+    Panel: {
+      label: "Panel / Kasten",
+      fields: {
+        titel: { type: "text", label: "Titel (optional)" },
+        variante: {
+          type: "select",
+          label: "Variante",
+          options: [
+            { label: "Standard", value: "standard" },
+            { label: "Hervorgehoben", value: "hervorgehoben" },
+          ],
+        },
+      },
+      defaultProps: { titel: "", variante: "standard" },
+      render: ({ titel, variante, puck }) => (
+        <Card
+          className={
+            variante === "hervorgehoben"
+              ? "border-l-4 border-bdas-red p-6"
+              : "p-6"
+          }
+        >
+          {titel ? <p className="mb-3 font-semibold text-bdas-ink">{titel}</p> : null}
+          {puck.renderDropZone({ zone: "inhalt" })}
+        </Card>
+      ),
     },
   },
 };
