@@ -17,7 +17,9 @@ export type TransactionalTemplate =
   | "member_application_approved"
   | "member_application_declined"
   | "member_application_group_dissolved"
-  | "blog_post_reported";
+  | "blog_post_reported"
+  | "newsletter_confirm"
+  | "newsletter_already_subscribed";
 
 /** Which aspects of an event changed, for the `event_changed` email. */
 export type EventChangeKind = "time" | "location";
@@ -50,6 +52,11 @@ export type TemplateData = {
   readonly postUrl?: string | undefined;
   /** `blog_post_reported`: the reporter's optional free-text reason. */
   readonly reportReason?: string | undefined;
+  /** `newsletter_confirm`: the double-opt-in link. The only part of the mail
+   *  that varies — spec §8 no. 3 keeps everything else fixed. */
+  readonly confirmUrl?: string | undefined;
+  /** `newsletter_already_subscribed`: the permanent unsubscribe link. */
+  readonly unsubscribeUrl?: string | undefined;
 };
 
 /** Outcome of a send attempt, returned by sendTransactional. */

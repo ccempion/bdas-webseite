@@ -5,6 +5,7 @@ import React from "react";
 import logo from "../../public/bdas-logo.png";
 import instagramLogo from "../../public/instagram-logo.png";
 import linkedinLogo from "../../public/linkedin-logo.png";
+import { NewsletterSignupForm } from "../_newsletter/NewsletterSignupForm";
 
 const LINK = "hover:text-bdas-red hover:underline";
 
@@ -33,6 +34,7 @@ export function PublicFooterView({
   showEvents,
   showGroups,
   showFaq: _showFaq,
+  showNewsletter,
 }: {
   privacyUrl: string;
   imprintUrl: string;
@@ -40,10 +42,21 @@ export function PublicFooterView({
   showEvents: boolean;
   showGroups: boolean;
   showFaq: boolean;
+  showNewsletter: boolean;
 }) {
   const year = new Date().getFullYear();
   return (
     <footer className="mt-16 border-t border-bdas-soft bg-bdas-surface">
+      {showNewsletter ? (
+        <div className="mx-auto max-w-6xl px-4 pt-10">
+          <NewsletterSignupForm
+            source="footer"
+            sourcePath="/"
+            variant="brand"
+            hideOnPath="/newsletter"
+          />
+        </div>
+      ) : null}
       <div className="mx-auto grid max-w-6xl gap-8 px-4 py-10 text-sm text-bdas-ink-body sm:grid-cols-2 lg:grid-cols-4">
         <div className="flex flex-col gap-2">
           <Image src={logo} alt="BDAS" className="mb-1 h-12 w-auto self-start" />

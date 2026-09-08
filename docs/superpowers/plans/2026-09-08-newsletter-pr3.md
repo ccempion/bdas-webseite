@@ -103,7 +103,7 @@ Die Spec verweist Detailfragen ausdrücklich in den Implementierungsplan (§13.4
 
 Beide Mails gehen an eine Adresse, von der wir **nur die Adresse** kennen — kein Name, kein Konto. Deshalb `plainBody()` statt `body()`: keine Anrede, sondern ein direkter Einstieg. Die Tonalität ist F2, dieselbe wie auf den Flächen.
 
-- [ ] **Step 1: Failing test schreiben**
+- [x] **Step 1: Failing test schreiben**
 
 An `modules/notifications/src/templates.test.ts` anfügen:
 
@@ -151,12 +151,12 @@ describe("newsletter templates", () => {
 });
 ```
 
-- [ ] **Step 2: Test laufen lassen — er muss scheitern**
+- [x] **Step 2: Test laufen lassen — er muss scheitern**
 
 Run: `pnpm vitest run modules/notifications/src/templates.test.ts`
 Expected: FAIL — `"newsletter_confirm"` ist kein gültiger `TransactionalTemplate`.
 
-- [ ] **Step 3: Typen erweitern**
+- [x] **Step 3: Typen erweitern**
 
 `modules/notifications/src/types.ts` — die Union um zwei Werte ergänzen:
 
@@ -176,7 +176,7 @@ und `TemplateData` um zwei Felder erweitern (direkt nach `reportReason`):
   readonly unsubscribeUrl?: string | undefined;
 ```
 
-- [ ] **Step 4: Vorlagen schreiben**
+- [x] **Step 4: Vorlagen schreiben**
 
 `modules/notifications/src/templates.ts` — in `render()` die Destrukturierung oben erweitern:
 
@@ -236,12 +236,12 @@ function plainBody(
 }
 ```
 
-- [ ] **Step 5: Test laufen lassen — er muss bestehen**
+- [x] **Step 5: Test laufen lassen — er muss bestehen**
 
 Run: `pnpm vitest run modules/notifications/src/templates.test.ts`
 Expected: PASS
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add modules/notifications/src/types.ts modules/notifications/src/templates.ts modules/notifications/src/templates.test.ts
@@ -267,7 +267,7 @@ git commit -m "feat(notifications): newsletter confirmation and already-subscrib
 
 **Das Abmelde-Token in der `already_subscribed`-Mail.** Das Ereignis trägt es nicht — und das ist richtig so, denn es wird für Adressen veröffentlicht, deren Zeile der Publisher gar nicht anfassen soll. Der Handler baut den Link deshalb **nicht** aus einem Token, sondern zeigt auf `/newsletter/abmelden` ohne Parameter; die Seite fragt dort nach der Adresse. Ein Token an dieser Stelle wäre ein Abmeldeschlüssel in einer Mail, die jemand ausgelöst hat, der die Adresse nur eingetippt hat.
 
-- [ ] **Step 1: Abhängigkeit ergänzen**
+- [x] **Step 1: Abhängigkeit ergänzen**
 
 `modules/notifications/package.json` — in `dependencies`, alphabetisch vor `@bdas/storage` bzw. an die passende Stelle:
 
@@ -277,7 +277,7 @@ git commit -m "feat(notifications): newsletter confirmation and already-subscrib
 
 Danach `pnpm install` ausführen.
 
-- [ ] **Step 2: Failing test schreiben**
+- [x] **Step 2: Failing test schreiben**
 
 `modules/notifications/src/subscribers.newsletter.test.ts`:
 
@@ -363,12 +363,12 @@ describe.skipIf(!reachable)("newsletter bus handlers", () => {
 });
 ```
 
-- [ ] **Step 3: Test laufen lassen — er muss scheitern**
+- [x] **Step 3: Test laufen lassen — er muss scheitern**
 
 Run: `pnpm vitest run modules/notifications/src/subscribers.newsletter.test.ts`
 Expected: FAIL — es wird nichts versendet, `sent` bleibt leer.
 
-- [ ] **Step 4: Handler schreiben**
+- [x] **Step 4: Handler schreiben**
 
 `modules/notifications/src/subscribers.ts` — bei den übrigen Modul-Importen ergänzen:
 
@@ -418,12 +418,12 @@ subs.push(
 );
 ```
 
-- [ ] **Step 5: Test laufen lassen — er muss bestehen**
+- [x] **Step 5: Test laufen lassen — er muss bestehen**
 
 Run: `pnpm vitest run modules/notifications/src/subscribers.newsletter.test.ts`
 Expected: PASS (3 Tests)
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add modules/notifications package.json pnpm-lock.yaml
@@ -448,7 +448,7 @@ Spec §8 Nr. 1 verlangt zwei Deckel: **je Adresse** (1 Mail pro 15 Minuten, 3 pr
 
 **Der IP-Deckel unterdrückt nicht nur die Mail, er lehnt die Eintragung ab.** Das ist der Unterschied zum Adress-Deckel. Wer die Adresse eines anderen zum zweiten Mal einträgt, soll keine zweite Mail auslösen — die Zeile darf trotzdem entstehen. Wer aber von einer IP aus die sechste Adresse in einer Stunde einträgt, hat nichts Gutes vor, und dann soll auch keine Zeile entstehen. Nach außen bleibt die Antwort trotzdem identisch (§8 Nr. 4): Der Aufrufer bekommt `void`, kein Fehler.
 
-- [ ] **Step 1: Failing test schreiben**
+- [x] **Step 1: Failing test schreiben**
 
 An `modules/newsletter/src/services/subscribe-public.test.ts` innerhalb des bestehenden `describe`-Blocks anfügen:
 
@@ -507,12 +507,12 @@ it("does not apply the IP cap when no IP is known", async () => {
 });
 ```
 
-- [ ] **Step 2: Test laufen lassen — er muss scheitern**
+- [x] **Step 2: Test laufen lassen — er muss scheitern**
 
 Run: `pnpm vitest run modules/newsletter/src/services/subscribe-public.test.ts`
 Expected: FAIL — die sechste Zeile entsteht, `rows()` hat 6 statt 5 Einträge.
 
-- [ ] **Step 3: Deckel einbauen**
+- [x] **Step 3: Deckel einbauen**
 
 `modules/newsletter/src/services/subscribe.ts` — bei den Konstanten oben ergänzen:
 
@@ -542,12 +542,12 @@ if (ip) {
 }
 ```
 
-- [ ] **Step 4: Test laufen lassen — er muss bestehen**
+- [x] **Step 4: Test laufen lassen — er muss bestehen**
 
 Run: `pnpm vitest run modules/newsletter/src/services/subscribe-public.test.ts`
 Expected: PASS (9 Tests)
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add modules/newsletter/src/services/subscribe.ts modules/newsletter/src/services/subscribe-public.test.ts
@@ -573,7 +573,7 @@ Die Abmeldeseite muss **vor** dem Abmelden wissen, ob der Link überhaupt gilt u
 
 Die Funktion gibt **nur** die Adresse und den Status zurück, nie die ganze Zeile: Wer den Abmeldelink hat, soll sich abmelden können und sonst nichts erfahren.
 
-- [ ] **Step 1: Failing test schreiben**
+- [x] **Step 1: Failing test schreiben**
 
 An `modules/newsletter/src/services/confirm.test.ts` innerhalb des bestehenden `describe`-Blocks anfügen:
 
@@ -617,12 +617,12 @@ import {
 } from "./confirm";
 ```
 
-- [ ] **Step 2: Test laufen lassen — er muss scheitern**
+- [x] **Step 2: Test laufen lassen — er muss scheitern**
 
 Run: `pnpm vitest run modules/newsletter/src/services/confirm.test.ts`
 Expected: FAIL — `peekUnsubscribeToken` ist kein Export von `./confirm`.
 
-- [ ] **Step 3: Implementierung schreiben**
+- [x] **Step 3: Implementierung schreiben**
 
 `modules/newsletter/src/services/confirm.ts` — anfügen:
 
@@ -654,7 +654,7 @@ export async function peekUnsubscribeToken(
 }
 ```
 
-- [ ] **Step 4: Oberfläche erweitern**
+- [x] **Step 4: Oberfläche erweitern**
 
 `modules/newsletter/src/index.ts` — die confirm-Zeile ersetzen durch:
 
@@ -669,12 +669,12 @@ export {
 
 `modules/newsletter/src/index.test.ts` — in der erwarteten Namensliste `"peekUnsubscribeToken"` ergänzen (die Liste wird sortiert verglichen, die Position im Quelltext ist egal).
 
-- [ ] **Step 5: Tests laufen lassen — sie müssen bestehen**
+- [x] **Step 5: Tests laufen lassen — sie müssen bestehen**
 
 Run: `pnpm vitest run modules/newsletter`
 Expected: PASS
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add modules/newsletter/src
@@ -699,7 +699,7 @@ git commit -m "feat(newsletter): read-only peek at an unsubscribe token"
 
 **Die Antwortzeit.** §13.2 verlangt, dass auch die Dauer nichts verrät. Der Honeypot-Pfad kehrt sofort zurück, der echte Pfad fragt die Datenbank — das ist messbar unterschiedlich. Deshalb wartet der Honeypot-Pfad, bis dieselbe Zeit vergangen ist, die ein echter Durchlauf typischerweise braucht. Das ist keine Kryptografie und muss nicht exakt sein; es genügt, den Unterschied unter das Rauschen einer Netzwerkverbindung zu drücken.
 
-- [ ] **Step 1: Failing test schreiben**
+- [x] **Step 1: Failing test schreiben**
 
 `apps/web/app/_newsletter/public-actions.test.ts`:
 
@@ -797,12 +797,12 @@ describe("subscribePubliclyAction", () => {
 });
 ```
 
-- [ ] **Step 2: Test laufen lassen — er muss scheitern**
+- [x] **Step 2: Test laufen lassen — er muss scheitern**
 
 Run: `pnpm vitest run apps/web/app/_newsletter/public-actions.test.ts`
 Expected: FAIL — `./public-actions` existiert nicht.
 
-- [ ] **Step 3: Implementierung schreiben**
+- [x] **Step 3: Implementierung schreiben**
 
 `apps/web/app/_newsletter/public-actions.ts`:
 
@@ -886,12 +886,12 @@ export async function subscribePubliclyAction(
 }
 ```
 
-- [ ] **Step 4: Test laufen lassen — er muss bestehen**
+- [x] **Step 4: Test laufen lassen — er muss bestehen**
 
 Run: `pnpm vitest run apps/web/app/_newsletter/public-actions.test.ts`
 Expected: PASS (5 Tests)
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add apps/web/app/_newsletter/public-actions.ts apps/web/app/_newsletter/public-actions.test.ts
@@ -916,7 +916,7 @@ Ein Formular, zwei Einbauorte (Entscheidung 6). `variant="brand"` ist die H1-Ges
 
 Die vier Zustände aus §13.2 stecken in dieser Komponente: Ruhe, „Wird eingetragen …", Erfolg, Fehler. Der Erfolgstext ist der wortgleiche aus §13.2 für den öffentlichen Fall.
 
-- [ ] **Step 1: Merker schreiben**
+- [x] **Step 1: Merker schreiben**
 
 `apps/web/app/_newsletter/signup-marker.ts`:
 
@@ -948,7 +948,7 @@ export function hasSignedUp(): boolean {
 }
 ```
 
-- [ ] **Step 2: Komponente schreiben**
+- [x] **Step 2: Komponente schreiben**
 
 `apps/web/app/_newsletter/NewsletterSignupForm.tsx`:
 
@@ -1103,12 +1103,12 @@ export function NewsletterSignupForm({
 
 > **Zwei Hinweise zum Einbau.** `Input` wird aus `@bdas/design-system` exportiert (`core/design-system/src/index.ts:28`) und ist in `apps/web/app/registrieren/RegistrierenForm.tsx` im Einsatz — dort das Prop-Muster abschauen. Heißt eine Utility im Preset anders, gilt der **Preset-Name**: kein Inline-Wert und kein neuer Token (CLAUDE.md §7). Die Klasse `sr-only` ist Tailwind-Standard; sollte sie im Preset fehlen, setze das Label sichtbar, statt es zu entfernen.
 
-- [ ] **Step 3: Typecheck und Lint**
+- [x] **Step 3: Typecheck und Lint**
 
 Run: `pnpm typecheck && pnpm lint`
 Expected: PASS
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add apps/web/app/_newsletter/NewsletterSignupForm.tsx apps/web/app/_newsletter/signup-marker.ts
@@ -1131,7 +1131,7 @@ GET wirkt hier direkt (Entscheidung 1). Die drei Ergebnisse aus `ConfirmResult` 
 
 Die Seite ist `dynamic`, weil sie schreibt — Next darf sie nicht vorrendern.
 
-- [ ] **Step 1: Seite schreiben**
+- [x] **Step 1: Seite schreiben**
 
 `apps/web/app/newsletter/bestaetigen/page.tsx`:
 
@@ -1198,12 +1198,12 @@ export default async function NewsletterBestaetigenPage({
 }
 ```
 
-- [ ] **Step 2: Typecheck und Lint**
+- [x] **Step 2: Typecheck und Lint**
 
 Run: `pnpm typecheck && pnpm lint`
 Expected: PASS
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add apps/web/app/newsletter/bestaetigen/page.tsx
@@ -1229,7 +1229,7 @@ GET zeigt nur, POST wirkt (Entscheidung 1) — sonst meldet der erste Postfach-S
 
 Ohne Token zeigt die Seite den Weg über die Adresse: Die `already_subscribed`-Mail verlinkt bewusst ohne Token hierher (Task 2). Das Formular dort trägt die Adresse **nicht** aus, sondern verweist auf „Mein Konto" bzw. auf den Abmeldelink in der letzten Mail — eine Abmeldung allein per eingetippter Adresse wäre ein offener Endpunkt, mit dem jeder jeden austragen könnte.
 
-- [ ] **Step 1: Server Action schreiben**
+- [x] **Step 1: Server Action schreiben**
 
 `apps/web/app/newsletter/abmelden/actions.ts`:
 
@@ -1274,7 +1274,7 @@ export async function unsubscribeByTokenAction(
 }
 ```
 
-- [ ] **Step 2: Knopf schreiben**
+- [x] **Step 2: Knopf schreiben**
 
 `apps/web/app/newsletter/abmelden/UnsubscribeConfirm.tsx`:
 
@@ -1331,7 +1331,7 @@ export function UnsubscribeConfirm({ token, email }: { token: string; email: str
 }
 ```
 
-- [ ] **Step 3: Seite schreiben**
+- [x] **Step 3: Seite schreiben**
 
 `apps/web/app/newsletter/abmelden/page.tsx`:
 
@@ -1399,12 +1399,12 @@ export default async function NewsletterAbmeldenPage({
 }
 ```
 
-- [ ] **Step 4: Typecheck und Lint**
+- [x] **Step 4: Typecheck und Lint**
 
 Run: `pnpm typecheck && pnpm lint`
 Expected: PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add apps/web/app/newsletter/abmelden
@@ -1432,7 +1432,7 @@ A3: abgesetzte Karte **über** der Fußzeile, nicht als fünfte Spalte — in de
 
 **Zwei Stellen, an denen das Formular nicht erscheinen darf.** `PublicFooterView` hat zwei Aufrufer: die echte Seite und den Puck-Editor (`puck-config.tsx:202`). Im Editor-Canvas wäre ein funktionierendes Eintragungsfeld ein Unfall — jeder Redakteur, der die Vorschau ansieht, hätte ein scharfes Formular vor sich. Dort wird `showNewsletter={false}` fest gesetzt, nicht das Flag gelesen. Und auf `/newsletter` selbst trägt die Seite das Formular bereits; die Footer-Instanz bekommt `hideOnPath="/newsletter"` und verschwindet dort (Task 6).
 
-- [ ] **Step 1: Die eigene Seite schreiben**
+- [x] **Step 1: Die eigene Seite schreiben**
 
 `apps/web/app/newsletter/page.tsx`:
 
@@ -1465,7 +1465,7 @@ export default function NewsletterPage() {
 }
 ```
 
-- [ ] **Step 2: Failing test für den Footer schreiben**
+- [x] **Step 2: Failing test für den Footer schreiben**
 
 An `apps/web/app/_public/PublicFooterView.test.tsx` anfügen:
 
@@ -1503,12 +1503,12 @@ it("leaves the footer exactly as it was when the flag is off", () => {
 
 > Die vorhandenen Aufrufe in dieser Testdatei brauchen die neue Prop ebenfalls — ergänze `showNewsletter={false}` überall dort, wo `PublicFooterView` schon gerendert wird, sonst schlägt der Typecheck fehl.
 
-- [ ] **Step 3: Test laufen lassen — er muss scheitern**
+- [x] **Step 3: Test laufen lassen — er muss scheitern**
 
 Run: `pnpm vitest run apps/web/app/_public/PublicFooterView.test.tsx`
 Expected: FAIL — `showNewsletter` ist keine bekannte Prop.
 
-- [ ] **Step 4: Footer erweitern**
+- [x] **Step 4: Footer erweitern**
 
 `apps/web/app/_public/PublicFooterView.tsx` — Import ergänzen:
 
@@ -1556,12 +1556,12 @@ Der Editor zeigt eine Vorschau, kein scharfes Formular. Ein Redakteur, der die
 Seitenvorschau öffnet, soll sich nicht versehentlich eintragen können.
 ```
 
-- [ ] **Step 5: Test laufen lassen — er muss bestehen**
+- [x] **Step 5: Test laufen lassen — er muss bestehen**
 
 Run: `pnpm vitest run apps/web/app/_public && pnpm typecheck && pnpm lint`
 Expected: PASS
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add apps/web/app/newsletter/page.tsx apps/web/app/_public
@@ -1585,7 +1585,7 @@ ADR 0035 hat diese Fortschreibung ausdrücklich an **diesen** PR gehängt: Vorhe
 
 **Das ist ein Go-Live-Blocker, kein Merge-Blocker.** Der PR darf gemerged werden, solange das Flag aus ist. Sobald `BDAS_FLAG_NEWSLETTER` in Produktion angeht, muss der Abschnitt stehen — vorher erhebt niemand eine Adresse, danach sofort.
 
-- [ ] **Step 1: Baustein schreiben**
+- [x] **Step 1: Baustein schreiben**
 
 `docs/datenschutz/newsletter-textbaustein.md` — mit einem Kopf, der sagt, wohin er gehört und warum er nicht im Code steht:
 
@@ -1625,11 +1625,11 @@ löschen wir den Protokolleintrag spätestens nach drei Jahren. Löschst du dein
 Konto, entfallen Abonnement und Protokoll sofort mit.
 ```
 
-- [ ] **Step 2: Bestandsaufnahme fortschreiben**
+- [x] **Step 2: Bestandsaufnahme fortschreiben**
 
 `docs/datenschutz/datenschutz-bestandsaufnahme.html` — den Abschnitt aus Step 1 in der Struktur des Dokuments ergänzen (dieselbe Überschriftenebene und Auszeichnung wie die übrigen Verarbeitungszwecke; die Datei zuerst lesen und dem vorhandenen Muster folgen). Die Aufbewahrungsfrist von drei Jahren und die Klartext-IP gehören ausdrücklich hinein — sie sind die beiden Punkte, die eine Prüfung als Erstes sucht.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add docs/datenschutz
@@ -1659,7 +1659,7 @@ Der Lauf deckt die drei Behauptungen dieses PRs ab: Eine öffentliche Eintragung
 
 **Gotcha vor jedem lokalen E2E-Lauf:** `pnpm e2e` testet, was auch immer auf Port 3000 lauscht — unter Umständen ein alter Build aus einem anderen Worktree. Vor jedem Fehlerbericht `lsof -i :3000` prüfen.
 
-- [ ] **Step 1: Helfer schreiben**
+- [x] **Step 1: Helfer schreiben**
 
 An `e2e/helpers/db.ts` anfügen (das Muster der vorhandenen Helfer übernehmen — dieselbe `sql`-Verbindung, dieselbe Fehlerbehandlung):
 
@@ -1681,7 +1681,7 @@ export async function newsletterStatus(email: string): Promise<string | null> {
 }
 ```
 
-- [ ] **Step 2: E2E schreiben**
+- [x] **Step 2: E2E schreiben**
 
 `e2e/newsletter-public.e2e.ts`:
 
@@ -1752,24 +1752,24 @@ test.describe("newsletter, public capture", () => {
 });
 ```
 
-- [ ] **Step 3: E2E laufen lassen**
+- [x] **Step 3: E2E laufen lassen**
 
 Run: `lsof -i :3000` (muss leer sein oder der eigene Server), dann `pnpm db:up && pnpm db:migrate && pnpm --filter @bdas/web build`, dann `pnpm e2e newsletter-public`
 Expected: PASS (4 Specs)
 
-- [ ] **Step 4: Volllauf**
+- [x] **Step 4: Volllauf**
 
 Run: `pnpm vitest run && pnpm typecheck && pnpm lint && pnpm format:check`
 Expected: PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add e2e/newsletter-public.e2e.ts e2e/helpers/db.ts
 git commit -m "test(e2e): cover the public newsletter capture path"
 ```
 
-- [ ] **Step 6: PR 3 abnehmen**
+- [x] **Step 6: PR 3 abnehmen**
 
 Prüfliste, alles muss zutreffen:
 
@@ -1785,6 +1785,29 @@ Prüfliste, alles muss zutreffen:
 **Nicht Teil der Abnahme, aber Bedingung für das Anschalten in Produktion:** Der Datenschutz-Baustein aus Task 10 ist vom Bundesvorstand unter `/datenschutz/bearbeiten` eingepflegt. Der PR darf ohne das gemerged werden — das Flag darf ohne das nicht angehen (ADR 0035). Gehört als eigener Punkt in die PR-Beschreibung, damit es beim Go-Live nicht untergeht.
 
 ---
+
+---
+
+## Abweichungen bei der Umsetzung
+
+Drei Stellen, an denen der Plan nicht gehalten hat, jeweils mit dem Grund:
+
+1. **`HONEYPOT_FIELD` liegt in `apps/web/app/_newsletter/honeypot.ts`,** nicht in
+   `public-actions.ts`. Eine `"use server"`-Datei darf ausschließlich asynchrone
+   Funktionen exportieren; eine Konstante daneben bricht den Next-Build. Kein
+   Aufrufer merkt den Unterschied, der Import ist eine Zeile länger.
+2. **Der Footer-Test stubbt das Formular.** `NewsletterSignupForm` ist eine
+   Client-Komponente, deren `useFormState` den Action-Kontext von Next braucht —
+   im statischen Render von `PublicFooterView.test.tsx` gibt es den nicht. Der
+   Stub prüft genau das, wofür der Footer zuständig ist: dass die Karte
+   überhaupt hängt, mit der richtigen Quelle und mit `hideOnPath`.
+3. **Der Honeypot-E2E prüft die Rolle, nicht das Label.** `getByLabel` ist eine
+   DOM-Abfrage über `label`/`for` und findet das Feld unabhängig von
+   `aria-hidden` — die Behauptung „nicht im Accessibility-Baum" braucht eine
+   Rollenabfrage. Und `toBeHidden()` trifft es auch nicht: Das Feld bleibt
+   absichtlich ein echtes Textfeld (genau das füllt ein einfacher Bot aus) und
+   ist nur aus dem Bild geschoben, behält also seine eigene Layout-Box. Geprüft
+   wird deshalb `tabindex="-1"` plus eine Box links außerhalb des Sichtfelds.
 
 ## Was danach kommt
 

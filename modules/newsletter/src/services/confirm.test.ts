@@ -7,7 +7,12 @@ import { resetEventBus } from "@bdas/events";
 import { setAccountEmailResolver } from "../resolver";
 import { dbReachable, setupNewsletterDb } from "../test-db";
 import { hashToken } from "../tokens";
-import { confirmSubscription, unsubscribeAsUser, unsubscribeByToken } from "./confirm";
+import {
+  confirmSubscription,
+  peekUnsubscribeToken,
+  unsubscribeAsUser,
+  unsubscribeByToken,
+} from "./confirm";
 import { getSubscriptionForUser } from "./read";
 import { subscribeAsUser } from "./subscribe";
 
@@ -111,5 +116,31 @@ describe.skipIf(!reachable)("confirm and unsubscribe", () => {
 
   it("stays quiet when an account with no subscription unsubscribes", async () => {
     await expect(unsubscribeAsUser(t.db, { userId: "ghost" })).resolves.toBeUndefined();
+  });
+  it("peeks at a valid unsubscribe token without changing anything", async () => {
+    await seedPending();
+    await confirmSubscription(t.db, "conf");
+
+    const peek = await peekUnsubscribeToken(t.db, "unsub");
+    expect(peek).toEqual({ email: "a@example.org", alreadyUnsubscribed: false });
+
+    // Nothing changed — peeking is not unsubscribing.
+    const [row] = await t.client.unsafe(`SELECT status FROM newsletter_subscribers`);
+    expect(row!["status"]).toBe("subscribed");
+  });
+
+  it("reports an already-unsubscribed row so the page can say so", async () => {
+    await seedPending();
+    await confirmSubscription(t.db, "conf");
+    await unsubscribeByToken(t.db, "unsub");
+
+    expect(await peekUnsubscribeToken(t.db, "unsub")).toEqual({
+      email: "a@example.org",
+      alreadyUnsubscribed: true,
+    });
+  });
+
+  it("returns null for an unknown token", async () => {
+    expect(await peekUnsubscribeToken(t.db, "gibtsnicht")).toBeNull();
   });
 });

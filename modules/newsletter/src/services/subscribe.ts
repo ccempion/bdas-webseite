@@ -11,7 +11,12 @@ import { ValidationError } from "@bdas/errors";
 import { getEventBus } from "@bdas/events";
 
 import { recordConsent } from "../consent-log";
-import { CONFIRM_PATH, type AlreadySubscribed, type ConfirmationRequested } from "../events";
+import {
+  CONFIRM_PATH,
+  UNSUBSCRIBE_PATH,
+  type AlreadySubscribed,
+  type ConfirmationRequested,
+} from "../events";
 import { tryRateLimit } from "../rate-limit";
 import { resolveOne } from "../resolver";
 import { newsletterSubscribers } from "../schema";
@@ -115,6 +120,18 @@ const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MAIL_WINDOW_MS = 15 * 60 * 1000;
 const MAIL_DAY_MS = 24 * 60 * 60 * 1000;
 
+/**
+ * At most 5 signups per IP per hour (spec §8 no. 1).
+ *
+ * Unlike the per-address caps above, this one refuses the signup outright
+ * rather than only suppressing the mail. The address caps protect one stranger's
+ * inbox from a second mail, so the row may still be written; an IP working
+ * through a list of addresses is not a person being impatient, and nothing it
+ * submits should be recorded.
+ */
+const IP_LIMIT = 5;
+const IP_WINDOW_MS = 60 * 60 * 1000;
+
 export type SubscribePubliclyInput = {
   readonly email: string;
   readonly source: NewsletterSource;
@@ -133,6 +150,20 @@ export async function subscribePublicly(db: Db, input: SubscribePubliclyInput): 
   const email = input.email.trim().toLowerCase();
   if (!EMAIL_PATTERN.test(email)) {
     throw new ValidationError("Bitte gib eine gültige E-Mail-Adresse an.");
+  }
+
+  // Before the lookup, so an over-budget attempt does not even reveal how long
+  // one takes. Skipped when no IP is known — a server-side caller has none, and
+  // refusing those would break the path rather than protect it.
+  const ip = input.context?.ip?.trim();
+  if (ip) {
+    const withinIpBudget = await tryRateLimit(db, {
+      key: `nl:ip:${ip}`,
+      limit: IP_LIMIT,
+      windowMs: IP_WINDOW_MS,
+    });
+    // Identical answer either way (spec §8 no. 4): void, no error, no hint.
+    if (!withinIpBudget) return;
   }
 
   const [existing] = await db
@@ -159,6 +190,12 @@ export async function subscribePublicly(db: Db, input: SubscribePubliclyInput): 
   }
 
   const token = newToken();
+  // Re-minted on every public signup, including for a row that already has one:
+  // only the HASH is stored, so an existing row's plaintext is gone and a mail
+  // quoting it would carry a key nobody holds. Nothing live is invalidated — a
+  // `subscribed` row returned above, so this only ever touches a row that is
+  // pending, ended or declined.
+  const unsubToken = newToken();
   const expiresAt = new Date(Date.now() + CONFIRM_TTL_MS);
   let subscriberId: string;
 
@@ -170,6 +207,7 @@ export async function subscribePublicly(db: Db, input: SubscribePubliclyInput): 
         status: "pending",
         confirmTokenHash: hashToken(token),
         confirmExpiresAt: expiresAt,
+        unsubscribeTokenHash: hashToken(unsubToken),
         unsubscribedAt: null,
       })
       .where(eq(newsletterSubscribers.id, existing.id));
@@ -194,7 +232,7 @@ export async function subscribePublicly(db: Db, input: SubscribePubliclyInput): 
         status: "pending",
         confirmTokenHash: hashToken(token),
         confirmExpiresAt: expiresAt,
-        unsubscribeTokenHash: hashToken(newToken()),
+        unsubscribeTokenHash: hashToken(unsubToken),
         source: input.source,
         sourcePath: input.sourcePath ?? null,
         groupId: input.groupId ?? null,
@@ -218,6 +256,7 @@ export async function subscribePublicly(db: Db, input: SubscribePubliclyInput): 
     email,
     token,
     confirmUrl: `${base}${CONFIRM_PATH}?token=${encodeURIComponent(token)}`,
+    unsubscribeUrl: `${base}${UNSUBSCRIBE_PATH}?token=${encodeURIComponent(unsubToken)}`,
     at: new Date(),
   });
 }

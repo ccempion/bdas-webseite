@@ -9,6 +9,7 @@ export type RenderedEmail = {
 /** German transactional copy. One entry per TransactionalTemplate. */
 export function render(template: TransactionalTemplate, data: TemplateData): RenderedEmail {
   const { firstName, eventTitle, eventUrl, postTitle, postUrl, reportReason } = data;
+  const { confirmUrl, unsubscribeUrl } = data;
   // While the recipient is on the event, offer a link to manage/cancel it.
   const manage = eventUrl
     ? { label: "Du kannst dich jederzeit über die Veranstaltungsseite abmelden:", url: eventUrl }
@@ -116,6 +117,29 @@ export function render(template: TransactionalTemplate, data: TemplateData): Ren
         }. Bitte prüfe ihn im Blog-Bereich.`,
         postUrl ? { label: "Zum Beitrag:", url: postUrl } : undefined,
       );
+    case "newsletter_confirm":
+      return plainBody(
+        "BDAS — Bitte bestätige deine Anmeldung",
+        "schön, dass du dabei sein willst. Bestätige einmal kurz, dass diese Adresse dir gehört — dann bekommst du ein paar Mal im Jahr Neues aus dem Verband und den Hochschulgruppen.",
+        confirmUrl ? { label: "Anmeldung bestätigen:", url: confirmUrl } : undefined,
+        [
+          "Der Link gilt sieben Tage. Wenn du dich nicht angemeldet hast, ignoriere diese E-Mail einfach — ohne Bestätigung passiert nichts.",
+          // The only unsubscribe key an anonymous address ever receives. It
+          // also lets somebody who never signed up end the entry outright
+          // instead of merely ignoring it.
+          unsubscribeUrl ? `Wieder austragen kannst du dich hier: ${unsubscribeUrl}` : "",
+        ]
+          .filter(Boolean)
+          .join(" "),
+      );
+    case "newsletter_already_subscribed":
+      return plainBody(
+        "BDAS — Du bist schon dabei",
+        "jemand hat diese Adresse gerade für unseren Newsletter eingetragen. Du stehst schon auf der Liste, deshalb ändert sich nichts und du bekommst nichts doppelt.",
+        unsubscribeUrl
+          ? { label: "Wenn du nicht mehr dabei sein willst:", url: unsubscribeUrl }
+          : undefined,
+      );
   }
 }
 
@@ -125,6 +149,34 @@ function changeSummary(changes: ReadonlyArray<"time" | "location"> | undefined):
   if (parts.length === 0) return "die Veranstaltungsdaten";
   if (parts.length === 1) return parts[0]!;
   return `${parts.slice(0, -1).join(", ")} und ${parts[parts.length - 1]}`;
+}
+
+/**
+ * A transactional body WITHOUT a name in the salutation. The newsletter mails
+ * go to an address we know nothing else about — no member row, no name.
+ * `body()` would render "Hallo Gast", which reads worse than simply greeting
+ * without one.
+ */
+function plainBody(
+  subject: string,
+  line: string,
+  action?: { label: string; url: string },
+  footnote?: string,
+): RenderedEmail {
+  const actionText = action ? `\n\n${action.label}\n${action.url}` : "";
+  const footText = footnote ? `\n\n${footnote}` : "";
+  const text = `Hallo,\n\n${line}${actionText}${footText}\n\nViele Grüße\nDein BDAS-Team\n`;
+  const actionHtml = action
+    ? `<p>${escapeHtml(action.label)}<br><a href="${escapeHtml(action.url)}">${escapeHtml(action.url)}</a></p>`
+    : "";
+  const footHtml = footnote ? `<p>${escapeHtml(footnote)}</p>` : "";
+  const html =
+    `<p>Hallo,</p>` +
+    `<p>${escapeHtml(line)}</p>` +
+    actionHtml +
+    footHtml +
+    `<p>Viele Grüße<br>Dein BDAS-Team</p>`;
+  return { subject, text, html };
 }
 
 function escapeHtml(s: string): string {

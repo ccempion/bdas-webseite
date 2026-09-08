@@ -37,6 +37,11 @@ import type {
   RoleRevoked,
 } from "@bdas/members";
 import { getPostById, type PostReported } from "@bdas/blog";
+import {
+  UNSUBSCRIBE_PATH,
+  type AlreadySubscribed,
+  type ConfirmationRequested,
+} from "@bdas/newsletter";
 
 import { sendTransactional, sendTransactionalToGuest } from "./services/send";
 
@@ -314,6 +319,43 @@ export function registerNotificationSubscribers(db: Db, opts: { siteUrl?: string
             reportReason: e.reason ?? undefined,
           });
         }
+      }),
+    ),
+    // Newsletter (spec §3.2). The newsletter module never sends mail itself; it
+    // publishes and this module renders. The dependency runs
+    // notifications → newsletter only, so there is no cycle (rule 3).
+    getEventBus().subscribe<ConfirmationRequested>(
+      "newsletter.confirmation_requested",
+      safe<ConfirmationRequested>(async (e) => {
+        // Both URLs are built by the publisher, which alone holds the
+        // plaintext tokens — they exist nowhere else after minting. The
+        // unsubscribe link travels with the confirmation because this is the
+        // only mail an anonymous address ever gets: without it there is no way
+        // out short of owning an account.
+        await sendTransactionalToGuest(
+          db,
+          "newsletter_confirm",
+          { email: e.email },
+          { confirmUrl: e.confirmUrl, unsubscribeUrl: e.unsubscribeUrl },
+        );
+      }),
+    ),
+    getEventBus().subscribe<AlreadySubscribed>(
+      "newsletter.already_subscribed",
+      safe<AlreadySubscribed>(async (e) => {
+        // Deliberately no token: this mail is triggered by whoever typed the
+        // address, and a token would hand them an unsubscribe key for someone
+        // else's subscription. The page asks how to proceed instead.
+        await sendTransactionalToGuest(
+          db,
+          "newsletter_already_subscribed",
+          { email: e.email },
+          {
+            unsubscribeUrl: opts.siteUrl
+              ? `${opts.siteUrl.replace(/\/$/, "")}${UNSUBSCRIBE_PATH}`
+              : undefined,
+          },
+        );
       }),
     ),
   ];

@@ -264,3 +264,33 @@ export async function faqFeedbackByUserAndEntry(
     WHERE u.email_normalized = lower(${userEmail}) AND f.entry_id = ${entryId}`;
   return rows[0] ?? null;
 }
+
+/**
+ * Clear the newsletter throttles (its own table, owned by `modules/newsletter`,
+ * so `resetRateLimits` above does not reach it).
+ *
+ * The public signup is capped at five per IP per hour — and a whole Playwright
+ * run shares one IP. Without this the sixth signup of the hour is refused
+ * SILENTLY, by design: the page still says "Fast geschafft." while nothing is
+ * written, so the spec fails on the row and not on anything it can see.
+ */
+export async function resetNewsletterRateLimits(): Promise<void> {
+  await sql`DELETE FROM newsletter_rate_limits`;
+}
+
+/** Newsletter rows survive `deleteUserByEmail` when there is no account behind
+ *  the address at all, which is exactly the public-capture case. */
+export async function deleteNewsletterSubscriberByEmail(email: string): Promise<void> {
+  await sql`DELETE FROM newsletter_subscribers WHERE email = ${email.toLowerCase()}`;
+}
+
+/**
+ * The confirmation token is only ever stored hashed, so a spec cannot read it
+ * back and click it. It reads the status instead: the E2E asserts the visible
+ * outcome of the double opt-in, not the token itself.
+ */
+export async function newsletterStatus(email: string): Promise<string | null> {
+  const rows = await sql<{ status: string }[]>`
+    SELECT status FROM newsletter_subscribers WHERE email = ${email.toLowerCase()} LIMIT 1`;
+  return rows[0]?.status ?? null;
+}

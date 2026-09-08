@@ -21,6 +21,8 @@ type Extra = {
   readonly postTitle?: string | undefined;
   readonly postUrl?: string | undefined;
   readonly reportReason?: string | undefined;
+  readonly confirmUrl?: string | undefined;
+  readonly unsubscribeUrl?: string | undefined;
 };
 
 /** The resolved recipient: a member (memberId set) or a guest (memberId null). */
@@ -56,6 +58,8 @@ async function sendToRecipient(
     postTitle: extra.postTitle,
     postUrl: extra.postUrl,
     reportReason: extra.reportReason,
+    confirmUrl: extra.confirmUrl,
+    unsubscribeUrl: extra.unsubscribeUrl,
   };
   const email = render(template, data);
   const id = createId("ntfy");

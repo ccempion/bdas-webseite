@@ -5,6 +5,7 @@ import { getEventBus, resetEventBus, type AnyEvent } from "@bdas/events";
 
 import type { AlreadySubscribed, ConfirmationRequested } from "../events";
 import { dbReachable, setupNewsletterDb } from "../test-db";
+import { peekUnsubscribeToken, unsubscribeByToken } from "./confirm";
 import { subscribePublicly } from "./subscribe";
 
 const reachable = await dbReachable();
@@ -117,10 +118,120 @@ describe.skipIf(!reachable)("subscribePublicly", () => {
     expect(seen).toHaveLength(0);
   });
 
+  it("stops the sixth signup from one IP within the hour, silently", async () => {
+    const ctx = { ip: "203.0.113.55" };
+    for (let i = 1; i <= 5; i += 1) {
+      await subscribePublicly(t.db, {
+        email: `mensch${i}@example.org`,
+        source: "footer",
+        context: ctx,
+      });
+    }
+    expect(await rows()).toHaveLength(5);
+
+    // The sixth is refused — but the caller cannot tell (spec §8 no. 4).
+    await expect(
+      subscribePublicly(t.db, { email: "mensch6@example.org", source: "footer", context: ctx }),
+    ).resolves.toBeUndefined();
+    expect(await rows()).toHaveLength(5);
+  });
+
+  it("counts the IP budget across addresses, and leaves other IPs alone", async () => {
+    // Five different addresses from one IP exhaust the budget even though each
+    // address is seen for the first time — that is the point of the IP cap.
+    for (let i = 1; i <= 6; i += 1) {
+      await subscribePublicly(t.db, {
+        email: `a${i}@example.org`,
+        source: "footer",
+        context: { ip: "203.0.113.99" },
+      });
+    }
+    expect(await rows()).toHaveLength(5);
+
+    await subscribePublicly(t.db, {
+      email: "anders@example.org",
+      source: "footer",
+      context: { ip: "198.51.100.1" },
+    });
+    expect(await rows()).toHaveLength(6);
+  });
+
+  it("does not apply the IP cap when no IP is known", async () => {
+    // A server-side caller may have no IP at all; refusing everything then
+    // would break the path rather than protect it.
+    for (let i = 1; i <= 7; i += 1) {
+      await subscribePublicly(t.db, { email: `ohne${i}@example.org`, source: "footer" });
+    }
+    expect(await rows()).toHaveLength(7);
+  });
+
+  it("refuses over-budget attempts before touching the subscriber table", async () => {
+    const ctx = { ip: "203.0.113.77" };
+    for (let i = 1; i <= 5; i += 1) {
+      await subscribePublicly(t.db, { email: `b${i}@example.org`, source: "footer", context: ctx });
+    }
+    // An address that already exists must not be touched either once the IP is
+    // over budget — otherwise the cap would still leak "this address is known"
+    // through a changed token.
+    const before = await t.client.unsafe(
+      `SELECT confirm_token_hash FROM newsletter_subscribers WHERE email = 'b1@example.org'`,
+    );
+    await subscribePublicly(t.db, { email: "b1@example.org", source: "footer", context: ctx });
+    const after = await t.client.unsafe(
+      `SELECT confirm_token_hash FROM newsletter_subscribers WHERE email = 'b1@example.org'`,
+    );
+    expect(after[0]!["confirm_token_hash"]).toBe(before[0]!["confirm_token_hash"]);
+  });
+
   it("rejects an address that is not one", async () => {
     await expect(
       subscribePublicly(t.db, { email: "keine-adresse", source: "footer" }),
     ).rejects.toThrow();
     expect(await rows()).toHaveLength(0);
+  });
+  it("hands out a WORKING unsubscribe link with the confirmation mail", async () => {
+    // `unsubscribeByToken` calls itself "the only way out for an anonymous
+    // subscriber without an account" (spec §3.4). That is only true if the
+    // plaintext token actually reaches the person — minting it and dropping it
+    // on the floor leaves /newsletter/abmelden unreachable for everybody.
+    await subscribePublicly(t.db, {
+      email: "raus@example.org",
+      source: "footer",
+      context: { siteUrl: "https://bdas.de" },
+    });
+
+    const evt = seen[0] as ConfirmationRequested;
+    const token = new URL(evt.unsubscribeUrl).searchParams.get("token");
+    expect(evt.unsubscribeUrl).toBe(`https://bdas.de/newsletter/abmelden?token=${token}`);
+
+    // It is a real key, not decoration: it names the row and it ends it.
+    expect(await peekUnsubscribeToken(t.db, token!)).toEqual({
+      email: "raus@example.org",
+      alreadyUnsubscribed: false,
+    });
+    await unsubscribeByToken(t.db, token!);
+    expect(await peekUnsubscribeToken(t.db, token!)).toEqual({
+      email: "raus@example.org",
+      alreadyUnsubscribed: true,
+    });
+  });
+
+  it("re-mints the unsubscribe token when it revives an existing row", async () => {
+    // The stored hash has no recoverable plaintext, so a revived row would
+    // otherwise mail a link nobody holds the key for.
+    await subscribePublicly(t.db, { email: "wieder@example.org", source: "footer" });
+    await bypassThrottle();
+    await subscribePublicly(t.db, {
+      email: "wieder@example.org",
+      source: "footer",
+      context: { siteUrl: "https://bdas.de" },
+    });
+
+    const evt = seen[1] as ConfirmationRequested;
+    const token = new URL(evt.unsubscribeUrl).searchParams.get("token");
+    expect(await peekUnsubscribeToken(t.db, token!)).toEqual({
+      email: "wieder@example.org",
+      alreadyUnsubscribed: false,
+    });
   });
 });

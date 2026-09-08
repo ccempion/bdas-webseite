@@ -53,7 +53,7 @@ test("register → verify → login → logout → reset → re-login", async ({
   // Request a password reset, then complete it with the DB-read token.
   await resetRateLimits();
   await page.goto("/passwort-zuruecksetzen");
-  await page.getByLabel("E-Mail").fill(email);
+  await page.getByLabel("E-Mail", { exact: true }).fill(email);
   await page.getByRole("button", { name: "Link senden" }).click();
 
   // The reset token is written by the Server Action; poll to avoid a race.

@@ -662,6 +662,29 @@
       </li>
     </ul>
 
+    <h3>3.9 Newsletter (Modul <code>newsletter</code>)</h3>
+    <p>
+      <code>newsletter_subscribers</code> speichert die <strong>E-Mail-Adresse</strong>, den Status
+      (angefragt / eingetragen / abgemeldet / abgelehnt), die Erfassungsquelle und — sofern die
+      Person ein Konto hat — die Kontokennung. Die Bestätigungs- und Abmeldetoken liegen
+      ausschließlich <strong>gehasht</strong> vor.
+    </p>
+    <p>
+      <code>newsletter_consent_log</code> ist der Nachweis nach Art. 7 Abs. 1 DSGVO und speichert je
+      Ereignis (eingetragen, bestätigt, abgemeldet): Zeitpunkt, <strong>IP-Adresse im
+      Klartext</strong>, User-Agent und die Seite, auf der die Einwilligung erklärt wurde. Die IP
+      wird bewusst nicht gehasht — ein gehashter Wert wäre als Nachweis wertlos.
+      <code>newsletter_rate_limits</code> zählt Eintragungsversuche je IP-Adresse und je Adresse
+      gegen Missbrauch.
+    </p>
+    <p>
+      Die Erfassung ist <strong>zweistufig</strong>: Wer sich öffentlich einträgt, bekommt zuerst
+      eine Bestätigungsmail und steht erst nach dem Klick auf der Liste (Double-Opt-In). Wer
+      eingeloggt zustimmt, gilt sofort als eingetragen — die Adresse ist bei der Registrierung
+      bereits nachgewiesen worden. Versendet wird derzeit <strong>kein</strong> Newsletter; das
+      Modul erhebt und protokolliert nur (ADR 0035).
+    </p>
+
     <h2 class="page-break">4. Verarbeitungszwecke und Rechtsgrundlagen (Vorschlag)</h2>
     <div class="box">
       <p>
@@ -744,6 +767,16 @@
           <td>Redaktionelle Inhalte und Autorennennung</td>
           <td>Beiträge, verfassende Person</td>
           <td>Art. 6 Abs. 1 lit. f — Transparenz der Verbandskommunikation</td>
+        </tr>
+        <tr>
+          <td>Newsletter</td>
+          <td>E-Mail-Adresse, Status, Erfassungsquelle</td>
+          <td>Art. 6 Abs. 1 lit. a — Einwilligung, jederzeit widerrufbar</td>
+        </tr>
+        <tr>
+          <td>Nachweis der Newsletter-Einwilligung</td>
+          <td>Zeitpunkt, IP-Adresse im Klartext, User-Agent, Erfassungsseite</td>
+          <td>Art. 7 Abs. 1 — Rechenschaftspflicht; Speicherdauer festzulegen (Vorschlag: 3 Jahre)</td>
         </tr>
       </tbody>
     </table>
@@ -1157,6 +1190,14 @@
           </td>
         </tr>
         <tr>
+          <td>Newsletter-Einwilligungsprotokoll (IP im Klartext)</td>
+          <td><span class="tag tag-gap">unbegrenzt</span> — keine automatisierte Löschung</td>
+          <td>
+            3 Jahre nach dem Abmelden (Ende der regelmäßigen Verjährungsfrist); mit der Kontolöschung
+            sofort mit
+          </td>
+        </tr>
+        <tr>
           <td>Abgebrochene Uploads</td>
           <td><span class="tag tag-ok">24 Stunden</span></td>
           <td>—</td>
@@ -1269,9 +1310,14 @@
         E-Mail-Protokoll
       </li>
       <li>
-        <strong>Newsletter bzw. Rundmails</strong> und Benachrichtigungseinstellungen — derzeit
-        werden ausschließlich transaktionale E-Mails versendet, es gibt kein Abmelde-Verfahren, weil
-        es keine Werbe-E-Mails gibt
+        <strong>Newsletter-Versand</strong> — das Modul <code>newsletter</code> erhebt und
+        protokolliert Einwilligungen (siehe 3.9), <strong>versendet aber nichts</strong>. Der
+        Versandweg samt Abmeldelink in jeder Ausgabe steht noch aus. Bis dahin bleibt die
+        Abmeldung über den Link aus der Bestätigungsmail und über „Mein Konto“ erreichbar
+      </li>
+      <li>
+        <strong>Benachrichtigungseinstellungen</strong> — für transaktionale E-Mails gibt es
+        weiterhin kein Abmelde-Verfahren, weil es keine Werbe-E-Mails sind
       </li>
       <li>
         <strong>Gruppenbezogene Absenderadressen</strong> für E-Mails

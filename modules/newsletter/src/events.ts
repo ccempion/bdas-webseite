@@ -4,13 +4,19 @@
  * imports notifications (spec §2).
  */
 
-/** Carries the token IN PLAINTEXT — the only place it exists after minting.
- *  Consumers must not log the event verbatim. */
+/** Carries both tokens IN PLAINTEXT — the only place they exist after minting.
+ *  Consumers must not log the event verbatim.
+ *
+ *  `unsubscribeUrl` rides along because the confirmation mail is the ONLY
+ *  delivery this module ever makes to an anonymous address. If the key does not
+ *  travel with it, `/newsletter/abmelden` is unreachable for anyone without an
+ *  account, and "you can leave in one click" stops being true. */
 export type ConfirmationRequested = {
   readonly type: "newsletter.confirmation_requested";
   readonly email: string;
   readonly token: string;
   readonly confirmUrl: string;
+  readonly unsubscribeUrl: string;
   readonly at: Date;
 };
 

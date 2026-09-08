@@ -109,3 +109,29 @@ async function endSubscription(
     ...(context ? { context } : {}),
   });
 }
+
+/**
+ * Read-only lookup for the unsubscribe page (spec §3.4).
+ *
+ * The page must know whether the link is valid and which address it belongs to
+ * BEFORE it offers the button — otherwise it can neither ask "really?" nor name
+ * the address. `unsubscribeByToken` cannot answer that: it unsubscribes.
+ *
+ * Returns the address and nothing else. Whoever holds the link may unsubscribe;
+ * that does not entitle them to the row.
+ */
+export async function peekUnsubscribeToken(
+  db: Db,
+  token: string,
+): Promise<{ readonly email: string; readonly alreadyUnsubscribed: boolean } | null> {
+  const [row] = await db
+    .select({
+      email: newsletterSubscribers.email,
+      status: newsletterSubscribers.status,
+    })
+    .from(newsletterSubscribers)
+    .where(eq(newsletterSubscribers.unsubscribeTokenHash, hashToken(token)))
+    .limit(1);
+  if (!row) return null;
+  return { email: row.email, alreadyUnsubscribed: row.status === "unsubscribed" };
+}
