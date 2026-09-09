@@ -189,6 +189,8 @@ export const recipes = {
     "white surface, radius md, padding 8px, shadow dropdown, min-width 240px, border soft on three sides",
   accordion:
     "<details> styled as a card; on [open] add 4px left border in brand.red, shadow redGlow, summary text brand.red, '+' rotates 45deg into '×', body fades in via fadeSlideDown",
+  carousel:
+    "horizontal snap rail (snap-x snap-mandatory), one slide per view; dots radius full, active dot brand.red, colour transition durationQuick; arrow buttons follow liftHover and are disabled at both ends — no loop, no autoplay; the slide change is a native smooth scroll, so its duration belongs to the browser, not to a token",
   liftHover: "transform translateY(lift.sm or lift.md), shadow upgrade, durationSoft easing",
 } as const;
 
