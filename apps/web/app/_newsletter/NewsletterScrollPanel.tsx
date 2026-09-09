@@ -36,14 +36,30 @@ export function panelIsDue({
   pageHeight,
   viewportHeight,
   scrollY,
+  footerTop,
 }: {
   pageHeight: number;
   viewportHeight: number;
   scrollY: number;
+  /** The footer's distance from the top of the WINDOW, as
+   *  `getBoundingClientRect().top` gives it. `Infinity` when there is no
+   *  footer on the page at all. */
+  footerTop: number;
 }): boolean {
   if (pageHeight <= 0 || viewportHeight <= 0) return false;
   if (pageHeight < viewportHeight * MIN_PAGE_HEIGHT_FACTOR) return false;
-  return (scrollY + viewportHeight) / pageHeight >= SCROLL_DEPTH;
+  if ((scrollY + viewportHeight) / pageHeight < SCROLL_DEPTH) return false;
+
+  // And the other half of the rule: the panel goes away again the moment the
+  // footer comes into view. Without this it sits over the footer at the foot
+  // of the page and swallows its links — which is precisely what
+  // `public-shell.e2e.ts` ("leaves the foot of the page reachable") exists to
+  // catch, and what it caught.
+  //
+  // Measured against the real footer rather than a reserved strip of pixels:
+  // "the end of the page belongs to the footer" is then literally what the
+  // code checks, and it stays true when the footer grows.
+  return footerTop >= viewportHeight;
 }
 
 /**
@@ -54,6 +70,11 @@ export function panelIsDue({
  * fortnight — and hands that down as `state`. The browser says *when*. A panel
  * that decided its own visibility client-side would flash up for a subscriber
  * before the answer arrived.
+ *
+ * "When" is a band, not a threshold: it opens once half a long page has been
+ * seen and closes again as the footer comes into view. Both halves say the
+ * same thing — inline surfaces are for the middle of a page, the end belongs
+ * to the footer.
  *
  * `state === null` means never, and the mount already renders nothing in that
  * case; the guard is repeated here so the rule is testable where it is written.
@@ -75,14 +96,20 @@ export function NewsletterScrollPanel({ state }: { state: "guest" | "member" | n
       return;
     }
 
-    const measure = () =>
+    const measure = () => {
+      // The last one: the layout renders the site footer at the end of the
+      // body, and a page is free to carry a `<footer>` of its own inside its
+      // content.
+      const footer = [...document.querySelectorAll("footer")].pop();
       setDue(
         panelIsDue({
           pageHeight: document.documentElement.scrollHeight,
           viewportHeight: window.innerHeight,
           scrollY: window.scrollY,
+          footerTop: footer ? footer.getBoundingClientRect().top : Infinity,
         }),
       );
+    };
     measure();
     window.addEventListener("scroll", measure, { passive: true });
     window.addEventListener("resize", measure);
