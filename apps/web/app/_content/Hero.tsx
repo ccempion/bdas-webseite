@@ -7,8 +7,11 @@ import { isExternalHref, safeHref } from "./href";
 export type HeroHintergrund = "hell" | "akzent" | "bild";
 export type HeroHoehe = "kompakt" | "mittel" | "gross";
 
+export type HeroTitelEbene = "h1" | "h2";
+
 export type HeroProps = {
   ueberschrift: string;
+  titelEbene?: HeroTitelEbene | undefined;
   untertext: string;
   hintergrund: HeroHintergrund;
   bild: string;
@@ -46,8 +49,10 @@ const heroFlaeche = (h: HeroHintergrund | undefined): string =>
  * Opening section for a content page: headline, sub-text, optional button, on
  * one of three grounds.
  *
- * `<h2>`, not `<h1>`: the routes that carry a Hero render their own page `<h1>`
- * above the Puck content, and a second one is an accessibility regression.
+ * The headline is the page `<h1>` by default: content routes no longer render a
+ * title of their own, so the Hero is the top of the document (ADR 0038). Group
+ * pages keep a route-rendered `<h1>` (the group name) and therefore pass
+ * `titelEbene: "h2"` — a second `<h1>` there is an accessibility regression.
  *
  * Purely presentational and free of Puck types — the block wrapper in
  * `puck-config.tsx` owns the editor placeholder, so this file has no
@@ -55,6 +60,7 @@ const heroFlaeche = (h: HeroHintergrund | undefined): string =>
  */
 export function Hero({
   ueberschrift,
+  titelEbene,
   untertext,
   hintergrund,
   bild,
@@ -70,6 +76,7 @@ export function Hero({
   const href = safeHref(buttonHref ?? "");
   const label = (buttonLabel ?? "").trim();
   const hoeheKlasse = heroHoehe(hoehe);
+  const Titel = titelEbene === "h2" ? "h2" : "h1";
 
   return (
     // `isolate` opens a stacking context so the `-z-10` layers below sit behind
@@ -101,13 +108,13 @@ export function Hero({
         )}`}
       >
         {ueberschrift ? (
-          <h2
+          <Titel
             className={`text-3xl font-semibold sm:text-4xl ${
               dunkel ? "text-bdas-ink-on-brand" : "text-bdas-ink"
             }`}
           >
             {ueberschrift}
-          </h2>
+          </Titel>
         ) : null}
         {untertext ? (
           <p

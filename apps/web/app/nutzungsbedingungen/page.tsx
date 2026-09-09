@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 
 import { Render, type Data } from "@puckeditor/core";
 
@@ -10,6 +9,7 @@ import { isFederalBoard } from "@bdas/members";
 
 import { pageMetadata } from "../_content/canvas-chrome";
 import { breiteClass, normalizeContent, puckConfig } from "../_content/puck-config";
+import { SeiteBearbeitenLink } from "../_content/SeiteBearbeitenLink";
 import { loadCurrentMember } from "../_dashboard/session";
 
 export const dynamic = "force-dynamic";
@@ -25,8 +25,9 @@ export const metadata: Metadata = {
  * Governs use of the platform and is linked from the footer alongside the two
  * other legal routes, so it shares their exception: never gated behind a
  * feature flag on the render side. Content is authored entirely in the Puck
- * editor; when the content flag is off or no document exists yet, only the
- * header renders. The reviewed terms must be authored before launch.
+ * editor; when the content flag is off or no document exists yet, a short
+ * placeholder renders in its place — the page title itself is authored in the
+ * document (ADR 0038). The reviewed terms must be authored before launch.
  */
 export default async function NutzungsbedingungenPage() {
   const contentOn = isFlagOn("content");
@@ -36,28 +37,26 @@ export default async function NutzungsbedingungenPage() {
 
   return (
     <main className="py-12">
-      <div
-        className={`mx-auto flex w-full flex-col items-start gap-4 px-4 sm:flex-row sm:justify-between ${breiteClass("schmal")}`}
-      >
-        <h1 className="break-words text-3xl font-semibold text-bdas-ink">Nutzungsbedingungen</h1>
-        {canEdit ? (
-          <Link
-            href="/nutzungsbedingungen/bearbeiten"
-            className="inline-flex shrink-0 items-center rounded-bdas-sm border border-bdas-strong px-3 py-1.5 text-sm text-bdas-ink transition-colors duration-bdas-quick ease-bdas hover:bg-bdas-surface-hover"
-          >
-            Seite bearbeiten
-          </Link>
-        ) : null}
-      </div>
-      {page ? (
-        <div className="mt-6">
-          <Render
-            config={puckConfig}
-            data={normalizeContent(page.data as Data, "schmal")}
-            metadata={await pageMetadata("/nutzungsbedingungen")}
-          />
-        </div>
+      {canEdit ? (
+        <SeiteBearbeitenLink
+          href="/nutzungsbedingungen/bearbeiten"
+          breiteKlasse={breiteClass("schmal")}
+        />
       ) : null}
+      {page ? (
+        <Render
+          config={puckConfig}
+          data={normalizeContent(page.data as Data, "schmal")}
+          metadata={await pageMetadata("/nutzungsbedingungen")}
+        />
+      ) : (
+        // This route is never flag-gated and the page title now lives in the
+        // document (ADR 0038), so without this an unauthored legal page would
+        // be a blank <main>.
+        <p className={`mx-auto w-full px-4 text-bdas-ink-body ${breiteClass("schmal")}`}>
+          Diese Seite wird derzeit erstellt.
+        </p>
+      )}
     </main>
   );
 }

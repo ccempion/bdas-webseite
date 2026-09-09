@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 
 import { Render, type Data } from "@puckeditor/core";
 
@@ -10,6 +9,7 @@ import { isFederalBoard } from "@bdas/members";
 
 import { pageMetadata } from "../_content/canvas-chrome";
 import { breiteClass, normalizeContent, puckConfig } from "../_content/puck-config";
+import { SeiteBearbeitenLink } from "../_content/SeiteBearbeitenLink";
 import { loadCurrentMember } from "../_dashboard/session";
 
 export const dynamic = "force-dynamic";
@@ -24,8 +24,9 @@ export const metadata: Metadata = {
  * Datenschutzerklärung — hosted in-app (ADR 0009), board-editable via Puck
  * (ADR 0024). Legally required and therefore always reachable: it is never
  * gated behind a feature flag. Content is authored entirely in the Puck editor;
- * when the content flag is off or no document exists yet, only the header
- * renders. The reviewed Datenschutzerklärung must be authored before launch.
+ * when the content flag is off or no document exists yet, a short placeholder
+ * renders in its place — the page title itself is authored in the document
+ * (ADR 0038). The reviewed Datenschutzerklärung must be authored before launch.
  */
 export default async function DatenschutzPage() {
   const contentOn = isFlagOn("content");
@@ -35,28 +36,23 @@ export default async function DatenschutzPage() {
 
   return (
     <main className="py-12">
-      <div
-        className={`mx-auto flex w-full flex-col items-start gap-4 px-4 sm:flex-row sm:justify-between ${breiteClass("schmal")}`}
-      >
-        <h1 className="break-words text-3xl font-semibold text-bdas-ink">Datenschutzerklärung</h1>
-        {canEdit ? (
-          <Link
-            href="/datenschutz/bearbeiten"
-            className="inline-flex shrink-0 items-center rounded-bdas-sm border border-bdas-strong px-3 py-1.5 text-sm text-bdas-ink transition-colors duration-bdas-quick ease-bdas hover:bg-bdas-surface-hover"
-          >
-            Seite bearbeiten
-          </Link>
-        ) : null}
-      </div>
-      {page ? (
-        <div className="mt-6">
-          <Render
-            config={puckConfig}
-            data={normalizeContent(page.data as Data, "schmal")}
-            metadata={await pageMetadata("/datenschutz")}
-          />
-        </div>
+      {canEdit ? (
+        <SeiteBearbeitenLink href="/datenschutz/bearbeiten" breiteKlasse={breiteClass("schmal")} />
       ) : null}
+      {page ? (
+        <Render
+          config={puckConfig}
+          data={normalizeContent(page.data as Data, "schmal")}
+          metadata={await pageMetadata("/datenschutz")}
+        />
+      ) : (
+        // This route is never flag-gated and the page title now lives in the
+        // document (ADR 0038), so without this an unauthored legal page would
+        // be a blank <main>.
+        <p className={`mx-auto w-full px-4 text-bdas-ink-body ${breiteClass("schmal")}`}>
+          Diese Seite wird derzeit erstellt.
+        </p>
+      )}
     </main>
   );
 }

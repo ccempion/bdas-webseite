@@ -1467,6 +1467,172 @@ describe("puckConfig", () => {
       expect(out).toContain("grid-cols-2");
     });
   });
+  // The content routes stopped rendering a page <h1> of their own (ADR 0038):
+  // the title is authored in the document, so the document has to be able to
+  // carry one.
+  describe("Seitentitel im Dokument", () => {
+    it("Ueberschrift offers an h1 level and renders it at page-title size", () => {
+      const feld = puckConfig.components.Ueberschrift?.fields?.ebene;
+      const werte =
+        feld && "options" in feld
+          ? (feld.options as Array<{ value: unknown }>).map((o) => o.value)
+          : [];
+      expect(werte).toEqual(["h1", "h2", "h3"]);
+
+      const render = puckConfig.components.Ueberschrift?.render;
+      if (!render) throw new Error("Ueberschrift render missing");
+      const out = renderToStaticMarkup(
+        render({
+          text: "Impressum",
+          ebene: "h1",
+          ausrichtung: "links",
+          puck: {},
+        } as never) as never,
+      );
+      expect(out).toContain("<h1");
+      expect(out).toContain("text-3xl");
+      expect(out).toContain("Impressum");
+    });
+
+    it("Ueberschrift still defaults to h2 for a new block", () => {
+      expect(puckConfig.components.Ueberschrift?.defaultProps?.ebene).toBe("h2");
+    });
+
+    it("promotes only the first Hero — a second one stays an h2", () => {
+      const data = {
+        content: [
+          { type: "Hero", props: { id: "a", ueberschrift: "Oben" } },
+          { type: "Absatz", props: { id: "b", text: "Dazwischen" } },
+          { type: "Hero", props: { id: "c", ueberschrift: "Weiter unten" } },
+        ],
+        root: {},
+      } as unknown as Data;
+      const ebenen = normalizeContent(data, "schmal")
+        .content.filter((item) => item.type === "Hero")
+        .map((item) => (item.props as { titelEbene?: string }).titelEbene);
+      expect(ebenen).toEqual(["h1", "h2"]);
+    });
+
+    it("demotes an Überschrift h1 where the route owns the page title", () => {
+      const data = {
+        content: [{ type: "Ueberschrift", props: { id: "a", text: "Titel", ebene: "h1" } }],
+        root: {},
+      } as unknown as Data;
+      const ohne = normalizeContent(data, "schmal").content[0]?.props as { ebene?: string };
+      expect(ohne.ebene).toBe("h1");
+      const mit = normalizeContent(data, "schmal", { eigenerSeitentitel: true }).content[0]
+        ?.props as { ebene?: string };
+      expect(mit.ebene).toBe("h2");
+    });
+
+    it("leaves h2 and h3 Überschriften alone on a page that owns its title", () => {
+      const data = {
+        content: [
+          { type: "Ueberschrift", props: { id: "a", text: "Zwei", ebene: "h2" } },
+          { type: "Ueberschrift", props: { id: "b", text: "Drei", ebene: "h3" } },
+        ],
+        root: {},
+      } as unknown as Data;
+      const ebenen = normalizeContent(data, "schmal", { eigenerSeitentitel: true }).content.map(
+        (item) => (item.props as { ebene?: string }).ebene,
+      );
+      expect(ebenen).toEqual(["h2", "h3"]);
+    });
+
+    it("offers the h1 level everywhere but on a group page", () => {
+      const resolve = puckConfig.components.Ueberschrift?.resolveFields;
+      if (!resolve) throw new Error("Ueberschrift resolveFields missing");
+      const ebenen = async (slug: string) => {
+        const felder = await resolve({} as never, { metadata: { slug } } as never);
+        const feld = felder.ebene;
+        return feld && "options" in feld
+          ? (feld.options as Array<{ value: unknown }>).map((o) => o.value)
+          : [];
+      };
+      return Promise.all([ebenen("impressum"), ebenen("gruppen/berlin")]).then(
+        ([inhalt, gruppe]) => {
+          expect(inhalt).toEqual(["h1", "h2", "h3"]);
+          expect(gruppe).toEqual(["h2", "h3"]);
+        },
+      );
+    });
+
+    it("the h1 wraps a long unbroken title instead of overflowing", () => {
+      const render = puckConfig.components.Ueberschrift?.render;
+      if (!render) throw new Error("Ueberschrift render missing");
+      const out = renderToStaticMarkup(
+        render({ text: "Titel", ebene: "h1", ausrichtung: "links", puck: {} } as never) as never,
+      );
+      expect(out).toContain("break-words");
+    });
+
+    it("a Hero inserted after load follows the route's slug from metadata", () => {
+      const render = puckConfig.components.Hero?.render;
+      if (!render) throw new Error("Hero render missing");
+      const aufInhaltsseite = renderToStaticMarkup(
+        render({
+          ueberschrift: "Frisch eingefügt",
+          puck: { isEditing: true, metadata: { slug: "ueber-uns" } },
+        } as never) as never,
+      );
+      expect(aufInhaltsseite).toContain("<h1");
+      const aufGruppenseite = renderToStaticMarkup(
+        render({
+          ueberschrift: "Frisch eingefügt",
+          puck: { isEditing: true, metadata: { slug: "gruppen/berlin" } },
+        } as never) as never,
+      );
+      expect(aufGruppenseite).toContain("<h2");
+      expect(aufGruppenseite).not.toContain("<h1");
+    });
+
+    it("normalizeContent makes a Hero headline the page h1 by default", () => {
+      const data = {
+        content: [{ type: "Hero", props: { id: "a", ueberschrift: "Wer wir sind" } }],
+        root: {},
+      } as unknown as Data;
+      const hero = normalizeContent(data, "schmal").content[0]?.props as { titelEbene?: string };
+      expect(hero.titelEbene).toBe("h1");
+    });
+
+    it("normalizeContent demotes the Hero headline where the route owns the h1", () => {
+      const data = {
+        content: [{ type: "Hero", props: { id: "a", ueberschrift: "Wer wir sind" } }],
+        root: {},
+      } as unknown as Data;
+      const hero = normalizeContent(data, "schmal", { eigenerSeitentitel: true }).content[0]
+        ?.props as { titelEbene?: string };
+      expect(hero.titelEbene).toBe("h2");
+    });
+
+    it("normalizeContent overrides a stale titelEbene stored in the document", () => {
+      const data = {
+        content: [{ type: "Hero", props: { id: "a", ueberschrift: "Titel", titelEbene: "h1" } }],
+        root: {},
+      } as unknown as Data;
+      const hero = normalizeContent(data, "schmal", { eigenerSeitentitel: true }).content[0]
+        ?.props as { titelEbene?: string };
+      expect(hero.titelEbene).toBe("h2");
+    });
+
+    it("the Hero block passes the level through to the component", () => {
+      const render = puckConfig.components.Hero?.render;
+      if (!render) throw new Error("Hero render missing");
+      const alsH1 = renderToStaticMarkup(
+        render({ ueberschrift: "Titel", puck: { isEditing: false } } as never) as never,
+      );
+      expect(alsH1).toContain("<h1");
+      const alsH2 = renderToStaticMarkup(
+        render({
+          ueberschrift: "Titel",
+          titelEbene: "h2",
+          puck: { isEditing: false },
+        } as never) as never,
+      );
+      expect(alsH2).toContain("<h2");
+      expect(alsH2).not.toContain("<h1");
+    });
+  });
 
   describe("Newsletter block", () => {
     const render = (metadata: unknown) => {

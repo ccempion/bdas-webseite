@@ -24,7 +24,7 @@ test("the brand loader appears during a navigation and clears on arrival", async
   await expect(page.getByRole(LOADER.role, { name: LOADER.name })).toBeVisible();
 
   await page.unroute("**/impressum**");
-  await expect(page.getByRole("heading", { level: 1, name: "Impressum" })).toBeVisible();
+  await expect(page).toHaveTitle("Impressum · BDAS");
   await expect(page.getByRole(LOADER.role, { name: LOADER.name })).toBeHidden();
 });
 
@@ -32,6 +32,6 @@ test("a fast navigation never flashes the loader", async ({ page }) => {
   await page.goto("/");
 
   await page.getByRole("contentinfo").getByRole("link", { name: "Impressum" }).click();
-  await expect(page.getByRole("heading", { level: 1, name: "Impressum" })).toBeVisible();
+  await expect(page).toHaveTitle("Impressum · BDAS");
   await expect(page.getByRole(LOADER.role, { name: LOADER.name })).toBeHidden();
 });

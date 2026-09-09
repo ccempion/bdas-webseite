@@ -13,7 +13,7 @@ import { buttonKlasse } from "./button-klasse";
 import { type BildBreite, bildBreiteClass, normalizeBildBreite } from "./bild-breite";
 import { BildGroesseGriff } from "./BildGroesseGriff";
 import { FotoField } from "./FotoField";
-import { Hero, type HeroHintergrund, type HeroHoehe } from "./Hero";
+import { Hero, type HeroHintergrund, type HeroHoehe, type HeroTitelEbene } from "./Hero";
 import { type Karte, KartenRaster, type KartenSpalten } from "./KartenRaster";
 import { type Kennzahl, Kennzahlen } from "./Kennzahlen";
 import { Organigramm } from "./Organigramm";
@@ -32,7 +32,7 @@ type Person = {
 };
 
 type Blocks = {
-  Ueberschrift: { text: string; ebene: "h2" | "h3"; ausrichtung: Ausrichtung };
+  Ueberschrift: { text: string; ebene: "h1" | "h2" | "h3"; ausrichtung: Ausrichtung };
   Absatz: { text: string; ausrichtung: Ausrichtung };
   PersonenRaster: { personen: Person[] };
   Fliesstext: {
@@ -69,6 +69,8 @@ type Blocks = {
   Akkordeon: { eintraege: { frage: string; antwort: string }[] };
   Hero: {
     ueberschrift: string;
+    /** Not an editor field: `normalizeContent` sets it per route (ADR 0038). */
+    titelEbene?: HeroTitelEbene;
     untertext: string;
     hintergrund: HeroHintergrund;
     bild: string;
@@ -198,15 +200,40 @@ const breiteFieldOhneVoll = {
  *  Order matters: the width is seeded first because `transformProps` unwraps
  *  `data.root` to `data.root.props` when the incoming root has no `props` key,
  *  which would rewrite the document into the legacy root shape. */
-export function normalizeContent(data: Data, fallback: Breite): Data {
+/** `eigenerSeitentitel`: the route renders its own `<h1>` above the Puck
+ *  content (group pages carry the group name, ADR 0038). Everywhere else the
+ *  document is the top of the page, so a Hero headline becomes the `<h1>`. */
+export type NormalizeOptions = { eigenerSeitentitel?: boolean };
+
+export function normalizeContent(
+  data: Data,
+  fallback: Breite,
+  { eigenerSeitentitel = false }: NormalizeOptions = {},
+): Data {
   const props = (data.root?.props ?? {}) as Record<string, unknown>;
   const mitBreite =
     props.breite === "schmal" || props.breite === "breit" || props.breite === "voll"
       ? data
       : ({ ...data, root: { ...data.root, props: { ...props, breite: fallback } } } as Data);
 
+  // Exactly one <h1> per page. The first Hero in the document owns it; a second
+  // one, a Hero nested inside a column, and every Hero on a route that renders
+  // its own title stay <h2>.
+  const ersterHeroId = eigenerSeitentitel
+    ? undefined
+    : (mitBreite.content.find((item) => item.type === "Hero")?.props as { id?: string } | undefined)
+        ?.id;
+
   return transformProps(mitBreite, {
     Bild: (bild) => ({ ...bild, breite: normalizeBildBreite(bild.breite) }),
+    Hero: (hero) => ({
+      ...hero,
+      titelEbene: (ersterHeroId !== undefined && hero.id === ersterHeroId
+        ? "h1"
+        : "h2") as HeroTitelEbene,
+    }),
+    // A page title the route already renders itself must not repeat here.
+    Ueberschrift: (u) => (eigenerSeitentitel && u.ebene === "h1" ? { ...u, ebene: "h2" } : u),
   });
 }
 
@@ -219,6 +246,29 @@ export function normalizeContent(data: Data, fallback: Breite): Data {
  * spacing) so the editor preview matches the published page — without it, the
  * layout lives only in the route's `<main>` and the editor renders full-bleed.
  */
+/** Group pages own their `<h1>` (the group name); every other content route
+ *  leaves the page title to the document (ADR 0038). */
+export const istGruppenSlug = (slug: string | undefined): boolean =>
+  slug !== undefined && slug.startsWith("gruppen/");
+
+const EBENE_OPTIONEN = [
+  { label: "Seitentitel (h1)", value: "h1" },
+  { label: "Groß (h2)", value: "h2" },
+  { label: "Klein (h3)", value: "h3" },
+] as const;
+
+const ueberschriftEbene = {
+  type: "select",
+  label: "Ebene",
+  options: [...EBENE_OPTIONEN],
+} as const;
+
+const ueberschriftEbeneOhneH1 = {
+  type: "select",
+  label: "Ebene",
+  options: EBENE_OPTIONEN.filter((o) => o.value !== "h1").map((o) => ({ ...o })),
+} as const;
+
 export const puckConfig: Config<Blocks> = {
   root: {
     fields: {
@@ -288,19 +338,32 @@ export const puckConfig: Config<Blocks> = {
       label: "Überschrift",
       fields: {
         text: { type: "text", label: "Text" },
-        ebene: {
-          type: "select",
-          label: "Ebene",
-          options: [
-            { label: "Groß (h2)", value: "h2" },
-            { label: "Klein (h3)", value: "h3" },
-          ],
-        },
+        ebene: ueberschriftEbene,
         ausrichtung: ausrichtungField,
       },
       defaultProps: { text: "Überschrift", ebene: "h2", ausrichtung: "links" },
+      // Group pages render the group name as their own <h1> (ADR 0038), so the
+      // page-title level is not on offer there. `normalizeContent` demotes it
+      // anyway for a document that already carries one.
+      resolveFields: (_data, { metadata }) => ({
+        text: { type: "text", label: "Text" },
+        ebene: istGruppenSlug((metadata as { slug?: string } | undefined)?.slug)
+          ? ueberschriftEbeneOhneH1
+          : ueberschriftEbene,
+        ausrichtung: ausrichtungField,
+      }),
+      // `h1` is the page title the content routes no longer render themselves
+      // (ADR 0038); it carries the size that route heading used to have.
       render: ({ text, ebene, ausrichtung }) =>
-        ebene === "h3" ? (
+        ebene === "h1" ? (
+          <h1
+            className={`break-words text-3xl font-semibold text-bdas-ink ${ausrichtungText(
+              ausrichtung,
+            )}`}
+          >
+            {text}
+          </h1>
+        ) : ebene === "h3" ? (
           <h3 className={`text-xl font-semibold text-bdas-ink ${ausrichtungText(ausrichtung)}`}>
             {text}
           </h3>
@@ -739,6 +802,7 @@ export const puckConfig: Config<Blocks> = {
       // every block with `isEditing: false` and asserts none reaches a reader.
       render: ({
         ueberschrift,
+        titelEbene,
         untertext,
         hintergrund,
         bild,
@@ -766,9 +830,17 @@ export const puckConfig: Config<Blocks> = {
             <></>
           );
         }
+        // `normalizeContent` sets the level for everything the document was
+        // loaded with. A block dragged in after that has none, so fall back to
+        // what the route would do with it — in the canvas that is all the
+        // metadata is there for.
+        const ebene: HeroTitelEbene =
+          titelEbene ??
+          (istGruppenSlug((puck?.metadata as { slug?: string } | undefined)?.slug) ? "h2" : "h1");
         return (
           <Hero
             ueberschrift={ueberschrift}
+            titelEbene={ebene}
             untertext={untertext}
             hintergrund={hintergrund}
             bild={bild}

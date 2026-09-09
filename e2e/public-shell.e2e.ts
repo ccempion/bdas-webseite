@@ -105,7 +105,7 @@ test("visitor walks the public nav", async ({ page }) => {
   await mobileNav.getByText("Über uns").click();
   await page.getByRole("link", { name: "Kurzportrait" }).click();
   await page.waitForURL("**/ueber-uns");
-  await expect(page.getByRole("heading", { name: "Über uns" })).toBeVisible();
+  await expect(page).toHaveTitle("Über uns · BDAS");
 
   await page.goto("/unsere-arbeit");
   await expect(page.getByText("Ingenieurwesen & Technik")).toBeVisible();
