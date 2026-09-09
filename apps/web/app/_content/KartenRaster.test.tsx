@@ -64,6 +64,20 @@ describe("KartenRaster", () => {
     expect((out.match(/<p/g) ?? []).length).toBe(1);
   });
 
+  it("renders no text block at all for an image-only card", () => {
+    // The padded container would otherwise sit under the image as 48px of
+    // blank space with nothing in it.
+    const out = renderToStaticMarkup(
+      <KartenRaster
+        karten={[{ bild: "https://cdn.example/a.webp", titel: "", text: "" }]}
+        spalten="2"
+      />,
+    );
+    expect(out).toContain("<img");
+    // Not a bare `p-6` — `gap-6` on the grid contains it.
+    expect(out).not.toContain("flex flex-col gap-2 p-6");
+  });
+
   it("keeps line breaks in the card text", () => {
     const out = renderToStaticMarkup(
       <KartenRaster karten={[{ bild: "", titel: "T", text: "Eins\nZwei" }]} spalten="2" />,

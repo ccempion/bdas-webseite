@@ -7,9 +7,11 @@ export type Kennzahl = {
 
 /** Literal class strings — Tailwind's scanner never sees an interpolated
  *  class. The column count is derived from how many figures there are rather
- *  than offered as a field, so the board cannot leave a lopsided row behind.
- *  Two-across below `sm` from two figures up: a figure plus a short caption is
- *  narrow enough that a single column would waste a phone screen. */
+ *  than offered as a field, so a chosen count can never disagree with what the
+ *  block actually holds. It is not a balancing algorithm: five figures render
+ *  4+1, not 3+2. Two-across below `sm` from two figures up: a figure plus a
+ *  short caption is narrow enough that a single column would waste a phone
+ *  screen. */
 const KENNZAHLEN_GRID: Record<1 | 2 | 3 | 4, string> = {
   1: "grid gap-6",
   2: "grid grid-cols-2 gap-6",
@@ -36,13 +38,18 @@ export const kennzahlenGrid = (anzahl: number): string => {
  * `puck-config.tsx` owns the editor placeholder.
  */
 export function Kennzahlen({ werte }: { werte: Kennzahl[] }) {
-  const liste = werte ?? [];
+  // A blank entry is what Puck inserts the moment the board presses "+", and a
+  // trailing one is easy to leave behind. Rendered, it is an invisible cell
+  // that still counts: the figures around it reflow into an extra column, or a
+  // whole empty row appears under them. Dropping it costs nothing — an entry
+  // with neither a figure nor a caption has nothing to show.
+  const liste = (werte ?? []).filter((k) => (k.wert ?? "") !== "" || (k.beschriftung ?? "") !== "");
   return (
     <div className={kennzahlenGrid(liste.length)}>
       {liste.map((k, i) => (
         <div key={i} className="flex flex-col items-center gap-1 text-center">
-          <p className="text-3xl font-semibold text-bdas-ink">{k.wert}</p>
-          <p className="text-sm text-bdas-ink-muted">{k.beschriftung}</p>
+          {k.wert ? <p className="text-3xl font-semibold text-bdas-ink">{k.wert}</p> : null}
+          {k.beschriftung ? <p className="text-sm text-bdas-ink-muted">{k.beschriftung}</p> : null}
         </div>
       ))}
     </div>
