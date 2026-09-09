@@ -1,4 +1,5 @@
 import type { Scope } from "@bdas/dashboard-shell";
+import type { FlagName } from "@bdas/feature-flags";
 
 import type { SidebarBadgeCounts } from "../_dashboard/approvals";
 
@@ -11,6 +12,10 @@ export type NavItem = {
   /** Marks the one item per nav that carries the open-applications badge
    *  (issue #173) — "Ohne Gruppe" federation-wide, "Bewerbungen" per group. */
   readonly badge?: "applications";
+  /** The module flag this item's page belongs to. An item without one is
+   *  always visible; an item with one disappears while the flag is off, so a
+   *  404 is never a link away. */
+  readonly flag?: FlagName;
 };
 
 export const FEDERAL_NAV: ReadonlyArray<NavItem> = [
@@ -21,6 +26,7 @@ export const FEDERAL_NAV: ReadonlyArray<NavItem> = [
   { href: "/federal/groups", label: "Gruppen" },
   { href: "/federal/roles", label: "Rollen" },
   { href: "/federal/faq", label: "FAQ" },
+  { href: "/federal/newsletter", label: "Newsletter", flag: "newsletter" },
   { href: "/federal/files", label: "Dateien" },
 ];
 
@@ -35,6 +41,16 @@ export function groupNav(slug: string): ReadonlyArray<NavItem> {
     { href: `${base}/profil`, label: "Profil" },
     { href: `${base}/files`, label: "Dateien" },
   ];
+}
+
+/** The items to render, given the module flags that are on for this request.
+ *  The sidebar is a client component and cannot read `process.env`, so the
+ *  board layout resolves the flags and passes them down. */
+export function visibleNavItems(
+  items: ReadonlyArray<NavItem>,
+  enabledFlags: ReadonlyArray<FlagName>,
+): ReadonlyArray<NavItem> {
+  return items.filter((i) => i.flag === undefined || enabledFlags.includes(i.flag));
 }
 
 /** The scope a pathname belongs to: a `/gruppe/<slug>/…` path selects that

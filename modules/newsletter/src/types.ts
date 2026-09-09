@@ -57,8 +57,13 @@ export type SubscriberRow = {
   readonly status: SubscriptionStatus;
   readonly source: NewsletterSource;
   readonly sourcePath: string | null;
+  /** Provenance of the signup (spec §4), not the person's current group —
+   *  resolve that in the app layer from the account id below. */
   readonly groupId: string | null;
-  readonly hasAccount: boolean;
+  /** The account this row resolved through, or null for an anonymous row.
+   *  The id rather than a boolean: it is the join key every further column
+   *  (group, member data) hangs off, and it still answers "has an account?". */
+  readonly userId: string | null;
   readonly createdAt: Date;
   readonly confirmedAt: Date | null;
 };

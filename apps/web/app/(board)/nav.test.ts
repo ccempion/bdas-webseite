@@ -3,7 +3,14 @@ import { describe, expect, it } from "vitest";
 import type { Scope } from "@bdas/dashboard-shell";
 
 import type { SidebarBadgeCounts } from "../_dashboard/approvals";
-import { activeScope, badgeCountFor, FEDERAL_NAV, groupNav, isNavItemActive } from "./nav";
+import {
+  activeScope,
+  badgeCountFor,
+  FEDERAL_NAV,
+  groupNav,
+  isNavItemActive,
+  visibleNavItems,
+} from "./nav";
 
 const FEDERAL: Scope = { kind: "federal" };
 const AACHEN: Scope = { kind: "group", groupId: "grp_ac", slug: "aachen", name: "HG Aachen" };
@@ -51,6 +58,31 @@ describe("FEDERAL_NAV", () => {
   it("gives the federal scope the groupless pool", () => {
     expect(FEDERAL_NAV.map((i) => i.href)).toContain("/federal/pool");
     expect(FEDERAL_NAV.map((i) => i.href)).toContain("/federal/faq");
+  });
+
+  it("puts the newsletter behind FAQ, under its own flag", () => {
+    const hrefs = FEDERAL_NAV.map((i) => i.href);
+    expect(hrefs.indexOf("/federal/newsletter")).toBe(hrefs.indexOf("/federal/faq") + 1);
+    expect(FEDERAL_NAV.find((i) => i.href === "/federal/newsletter")?.flag).toBe("newsletter");
+  });
+});
+
+describe("visibleNavItems", () => {
+  it("hides a flagged item while its flag is off, so a 404 is never a link away", () => {
+    expect(visibleNavItems(FEDERAL_NAV, []).map((i) => i.href)).not.toContain(
+      "/federal/newsletter",
+    );
+  });
+
+  it("shows it once the flag is on", () => {
+    expect(visibleNavItems(FEDERAL_NAV, ["newsletter"]).map((i) => i.href)).toContain(
+      "/federal/newsletter",
+    );
+  });
+
+  it("leaves unflagged items alone either way", () => {
+    expect(visibleNavItems(FEDERAL_NAV, []).map((i) => i.href)).toContain("/federal/members");
+    expect(visibleNavItems(groupNav("berlin"), [])).toHaveLength(groupNav("berlin").length);
   });
 });
 

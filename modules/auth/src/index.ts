@@ -40,7 +40,7 @@ export { passwordSchema, PASSWORD_RULE_HINT, PASSWORD_MIN_LENGTH } from "./passw
 
 // GDPR consent + self-service export (ADR 0008).
 export { CONSENT_VERSION } from "./consent";
-export { getUserExport, type UserExport } from "./services/export";
+export { getUserEmails, getUserExport, type UserExport } from "./services/export";
 
 // SSO + cookie
 export {
