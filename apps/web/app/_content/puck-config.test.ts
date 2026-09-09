@@ -1672,4 +1672,57 @@ describe("puckConfig", () => {
       expect(render({})).toContain('data-offer="off"');
     });
   });
+  describe("CtaBanner block", () => {
+    const render = (props: Record<string, unknown>) => {
+      const r = puckConfig.components.CtaBanner?.render;
+      if (!r) throw new Error("CtaBanner render missing");
+      return renderToStaticMarkup(r(props as never) as never);
+    };
+
+    it("renders the accent banner from its default props", () => {
+      const defaults = puckConfig.components.CtaBanner?.defaultProps;
+      expect(defaults?.flaeche).toBe("akzent");
+      const out = render({ ...defaults, puck: { isEditing: false } });
+      expect(out).toContain("bg-bdas-red");
+      expect(out).toContain("Jetzt Mitglied werden");
+    });
+
+    it("renders a document saved without the surface prop", () => {
+      const out = render({
+        ueberschrift: "Mitmachen",
+        text: "",
+        buttonLabel: "",
+        buttonHref: "",
+        puck: { isEditing: false },
+      });
+      expect(out).toContain("bg-bdas-red");
+      expect(out).toContain("Mitmachen");
+    });
+
+    it("offers the two token surfaces and nothing else", () => {
+      const feld = puckConfig.components.CtaBanner?.fields?.flaeche;
+      const werte =
+        feld && "options" in feld
+          ? (feld.options as Array<{ value: unknown }>).map((o) => o.value)
+          : [];
+      expect(werte).toEqual(["akzent", "neutral"]);
+    });
+
+    it("is a placeholder in the editor and nothing at all on the page when empty", () => {
+      const leer = { ueberschrift: "", text: "", buttonLabel: "", buttonHref: "" };
+      expect(render({ ...leer, puck: { isEditing: true } })).toContain("data-block-platzhalter");
+      expect(render({ ...leer, puck: { isEditing: false } })).toBe("");
+    });
+
+    it("a button label without a usable link is not content", () => {
+      const out = render({
+        ueberschrift: "",
+        text: "",
+        buttonLabel: "Mitglied werden",
+        buttonHref: "javascript:alert(1)",
+        puck: { isEditing: false },
+      });
+      expect(out).toBe("");
+    });
+  });
 });
