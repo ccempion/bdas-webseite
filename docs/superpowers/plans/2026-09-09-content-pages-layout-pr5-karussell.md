@@ -116,11 +116,9 @@ EOF
 
 - [ ] **Step 1: Den fehlschlagenden Test schreiben**
 
-`apps/web/app/_content/Karussell.test.tsx`:
+`apps/web/app/_content/Karussell.test.tsx`. **Ohne `import React`** — in dieser Task steht noch kein JSX in der Datei, und ein ungenutzter Import fällt bei `pnpm lint` durch. Task 3 bringt ihn mit, wenn JSX dazukommt:
 
 ```tsx
-import React from "react";
-
 import { describe, expect, it } from "vitest";
 
 import { aktiveFolie } from "./Karussell";
@@ -162,12 +160,10 @@ Expected: FAIL — `Failed to resolve import "./Karussell"`.
 
 - [ ] **Step 3: Die Regel schreiben**
 
-`apps/web/app/_content/Karussell.tsx`:
+`apps/web/app/_content/Karussell.tsx`. Auch hier **noch kein `import React`** — die Regel ist reines TypeScript; Task 3 fügt den Import mit der Komponente hinzu. Das `"use client"` steht von Anfang an, weil die Datei ab Task 3 eine Client-Insel ist:
 
 ```tsx
 "use client";
-
-import React from "react";
 
 export type Folie = {
   bild: string;
@@ -242,7 +238,7 @@ An `apps/web/app/_content/Karussell.test.tsx` anhängen. Die Datei bekommt dafü
  */
 ```
 
-Die bestehenden Imports um `act`, `createRoot` und die Komponente erweitern:
+Die Imports um React (jetzt steht JSX in der Datei), `act`, `createRoot` und die Komponente erweitern:
 
 ```tsx
 import React, { act } from "react";
