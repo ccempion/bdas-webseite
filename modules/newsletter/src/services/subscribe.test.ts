@@ -4,7 +4,7 @@ import type { TestDb } from "@bdas/db/test";
 
 import { setAccountEmailResolver } from "../resolver";
 import { dbReachable, setupNewsletterDb } from "../test-db";
-import { getSubscriptionForUser } from "./read";
+import { getSubscriptionForAccount } from "./read";
 import { subscribeAsUser } from "./subscribe";
 
 const reachable = await dbReachable();
@@ -95,6 +95,8 @@ describe.skipIf(!reachable)("subscribeAsUser", () => {
     // A synthetic key keeps the NOT NULL/UNIQUE contract without inventing
     // an address that could collide with a real one.
     expect(sub.email).toBe("user:u9");
-    expect(await getSubscriptionForUser(t.db, "u9")).not.toBeNull();
+    expect(
+      await getSubscriptionForAccount(t.db, { userId: "u9", email: "u9@example.org" }),
+    ).not.toBeNull();
   });
 });

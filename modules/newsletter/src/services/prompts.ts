@@ -8,6 +8,7 @@ import { eq, sql } from "drizzle-orm";
 
 import type { Db } from "@bdas/db";
 
+import { accountMatch, type NewsletterAccount } from "../account-match";
 import { recordConsent } from "../consent-log";
 import { resolveOne } from "../resolver";
 import { newsletterPrompts, newsletterSubscribers } from "../schema";
@@ -87,19 +88,25 @@ export async function declineForUser(
  * Any subscriber row at all means the question has been answered — dabei,
  * waiting on a confirmation, opted out, or declined. Only `/account` reopens
  * the subject (spec §3.4).
+ *
+ * The dismissal counter stays keyed to the id alone: it records what this
+ * account clicked away, which is not something an anonymous row can carry.
  */
-export async function shouldPrompt(db: Db, userId: string): Promise<boolean> {
+export async function shouldPrompt(db: Db, account: NewsletterAccount): Promise<boolean> {
+  // Id *or* address (see `accountMatch`): a row created through a public form
+  // after the account was verified carries only the address, and interrupting
+  // its owner would be asking someone who has already answered.
   const [sub] = await db
     .select({ id: newsletterSubscribers.id })
     .from(newsletterSubscribers)
-    .where(eq(newsletterSubscribers.userId, userId))
+    .where(accountMatch(account))
     .limit(1);
   if (sub) return false;
 
   const [prompt] = await db
     .select()
     .from(newsletterPrompts)
-    .where(eq(newsletterPrompts.userId, userId))
+    .where(eq(newsletterPrompts.userId, account.userId))
     .limit(1);
   if (!prompt) return true;
   if (prompt.dismissCount >= MAX_DISMISSALS) return false;

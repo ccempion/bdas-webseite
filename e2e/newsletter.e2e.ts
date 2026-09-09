@@ -11,7 +11,12 @@
  */
 import { expect, test } from "@playwright/test";
 
-import { deleteUserByEmail } from "./helpers/db";
+import {
+  deleteNewsletterSubscriberByEmail,
+  deleteUserByEmail,
+  newsletterStatus,
+  resetNewsletterRateLimits,
+} from "./helpers/db";
 import { registerVerifyLogin } from "./helpers/flows";
 
 const unique = () => `nl-${Date.now()}-${Math.random().toString(36).slice(2, 7)}@example.org`;
@@ -88,6 +93,39 @@ test.describe("newsletter, signed-in surfaces", () => {
       await page.goto("/account");
       await expect(page.getByRole("heading", { name: "Bleib auf dem Laufenden" })).toHaveCount(0);
     } finally {
+      await deleteUserByEmail(email);
+    }
+  });
+  test("a form signup after verification still counts as subscribed everywhere", async ({
+    page,
+  }) => {
+    // The case reported from production: register first, sign up through the
+    // public footer form afterwards. The row then carries the address and no
+    // user id — `auth.user.verified` fired long before it existed — and every
+    // surface used to keep offering the newsletter to someone already on it.
+    const email = unique();
+    try {
+      await resetNewsletterRateLimits();
+      await registerVerifyLogin(page, { email });
+
+      await page.goto("/");
+      const form = page
+        .getByRole("contentinfo")
+        .getByRole("region", { name: "Bleib in Verbindung" });
+      await form.getByLabel("E-Mail-Adresse").fill(email);
+      await form.getByRole("button", { name: "Ich bin dabei" }).click();
+      await expect(page.getByText("Fast geschafft.")).toBeVisible();
+      expect(await newsletterStatus(email)).toBe("pending");
+
+      // No banner on /account …
+      await page.goto("/account");
+      await expect(page.getByRole("heading", { name: "Bleib auf dem Laufenden" })).toHaveCount(0);
+
+      // … and the switch sees the row instead of claiming "not subscribed".
+      await page.goto("/account/einstellungen");
+      await expect(page.getByText("Fast geschafft — bestätige noch den Link")).toBeVisible();
+    } finally {
+      await deleteNewsletterSubscriberByEmail(email);
       await deleteUserByEmail(email);
     }
   });

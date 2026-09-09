@@ -12,6 +12,7 @@ import { eq } from "drizzle-orm";
 import type { Db } from "@bdas/db";
 import { NotFoundError } from "@bdas/errors";
 
+import { accountMatch, type NewsletterAccount } from "../account-match";
 import { recordConsent } from "../consent-log";
 import { newsletterSubscribers } from "../schema";
 import { hashToken } from "../tokens";
@@ -73,14 +74,25 @@ export async function unsubscribeByToken(
  *  without one is a stale page, not an error worth showing. */
 export async function unsubscribeAsUser(
   db: Db,
-  input: { readonly userId: string; readonly context?: ConsentContext | undefined },
+  input: NewsletterAccount & { readonly context?: ConsentContext | undefined },
 ): Promise<void> {
-  const [row] = await db
-    .select()
-    .from(newsletterSubscribers)
-    .where(eq(newsletterSubscribers.userId, input.userId))
-    .limit(1);
+  // Id *or* address (see `accountMatch`). Matching on the id alone left the
+  // one person who most needs this unable to use it: someone who signed up
+  // through a public form after their account was verified has a row with no
+  // user id, so the switch under Mein Konto never found it.
+  const [row] = await db.select().from(newsletterSubscribers).where(accountMatch(input)).limit(1);
   if (!row || row.status === "unsubscribed") return;
+
+  // Ending it is also the moment to attach it. A read must not write, but this
+  // is already a write, and leaving the row unattached would mean the account
+  // and the row keep disagreeing about who owns the address.
+  if (row.userId === null) {
+    await db
+      .update(newsletterSubscribers)
+      .set({ userId: input.userId })
+      .where(eq(newsletterSubscribers.id, row.id));
+  }
+
   await endSubscription(db, row.id, row.source, row.sourcePath, input.context);
 }
 

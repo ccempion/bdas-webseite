@@ -31,9 +31,11 @@ function consentContext() {
   };
 }
 
-async function currentUserId(): Promise<string | null> {
+/** The signed-in account as the newsletter module recognises it: id AND
+ *  address. A subscription can be keyed to either — see `accountMatch`. */
+async function currentAccount(): Promise<{ userId: string; email: string } | null> {
   const user = await getCurrentUser(getDb(), readSessionCookie());
-  return user?.id ?? null;
+  return user ? { userId: user.id, email: user.email } : null;
 }
 
 /** One-click subscribe for a signed-in account. No confirmation mail (§3.1). */
@@ -44,15 +46,20 @@ export async function subscribeMeAction(
   if (!newsletterEnabled()) return { error: GENERIC_ERROR };
   bootNewsletter();
 
-  const userId = await currentUserId();
-  if (!userId) return { error: GENERIC_ERROR };
+  const account = await currentAccount();
+  if (!account) return { error: GENERIC_ERROR };
 
   // The surface names itself; an unknown value is a bug, not user input.
   const source = String(formData.get("source") ?? "konto") as NewsletterSource;
   const sourcePath = String(formData.get("sourcePath") ?? "") || null;
 
   try {
-    await subscribeAsUser(getDb(), { userId, source, sourcePath, context: consentContext() });
+    await subscribeAsUser(getDb(), {
+      userId: account.userId,
+      source,
+      sourcePath,
+      context: consentContext(),
+    });
   } catch (err) {
     console.error("[newsletter] subscribeAsUser failed:", err);
     return { error: GENERIC_ERROR };
@@ -74,11 +81,11 @@ export async function unsubscribeMeAction(
   if (!newsletterEnabled()) return { error: GENERIC_ERROR };
   bootNewsletter();
 
-  const userId = await currentUserId();
-  if (!userId) return { error: GENERIC_ERROR };
+  const account = await currentAccount();
+  if (!account) return { error: GENERIC_ERROR };
 
   try {
-    await unsubscribeAsUser(getDb(), { userId, context: consentContext() });
+    await unsubscribeAsUser(getDb(), { ...account, context: consentContext() });
   } catch (err) {
     console.error("[newsletter] unsubscribeAsUser failed:", err);
     return { error: GENERIC_ERROR };
@@ -97,11 +104,11 @@ export async function dismissPromptAction(
   if (!newsletterEnabled()) return { error: GENERIC_ERROR };
   bootNewsletter();
 
-  const userId = await currentUserId();
-  if (!userId) return { error: GENERIC_ERROR };
+  const account = await currentAccount();
+  if (!account) return { error: GENERIC_ERROR };
 
   try {
-    await declineForUser(getDb(), { userId, context: consentContext() });
+    await declineForUser(getDb(), { userId: account.userId, context: consentContext() });
   } catch (err) {
     console.error("[newsletter] declineForUser failed:", err);
     return { error: GENERIC_ERROR };

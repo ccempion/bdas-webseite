@@ -5,6 +5,7 @@ import { NotFoundError } from "@bdas/errors";
 import { resetEventBus } from "@bdas/events";
 
 import { setAccountEmailResolver } from "../resolver";
+import { newsletterSubscribers } from "../schema";
 import { dbReachable, setupNewsletterDb } from "../test-db";
 import { hashToken } from "../tokens";
 import {
@@ -13,7 +14,7 @@ import {
   unsubscribeAsUser,
   unsubscribeByToken,
 } from "./confirm";
-import { getSubscriptionForUser } from "./read";
+import { getSubscriptionForAccount } from "./read";
 import { subscribeAsUser } from "./subscribe";
 
 const reachable = await dbReachable();
@@ -104,9 +105,9 @@ describe.skipIf(!reachable)("confirm and unsubscribe", () => {
 
   it("unsubscribes an account and logs it", async () => {
     await subscribeAsUser(t.db, { userId: "u1", source: "konto" });
-    await unsubscribeAsUser(t.db, { userId: "u1" });
+    await unsubscribeAsUser(t.db, { userId: "u1", email: "u1@example.org" });
 
-    const sub = await getSubscriptionForUser(t.db, "u1");
+    const sub = await getSubscriptionForAccount(t.db, { userId: "u1", email: "u1@example.org" });
     expect(sub!.status).toBe("unsubscribed");
     const log = await t.client.unsafe(
       `SELECT event FROM newsletter_consent_log ORDER BY occurred_at`,
@@ -115,7 +116,9 @@ describe.skipIf(!reachable)("confirm and unsubscribe", () => {
   });
 
   it("stays quiet when an account with no subscription unsubscribes", async () => {
-    await expect(unsubscribeAsUser(t.db, { userId: "ghost" })).resolves.toBeUndefined();
+    await expect(
+      unsubscribeAsUser(t.db, { userId: "ghost", email: "ghost@example.org" }),
+    ).resolves.toBeUndefined();
   });
   it("peeks at a valid unsubscribe token without changing anything", async () => {
     await seedPending();
@@ -142,5 +145,27 @@ describe.skipIf(!reachable)("confirm and unsubscribe", () => {
 
   it("returns null for an unknown token", async () => {
     expect(await peekUnsubscribeToken(t.db, "gibtsnicht")).toBeNull();
+  });
+  it("ends and adopts an anonymous row that carries the account's address", async () => {
+    // Without this, someone who signed up through a public form after their
+    // account was verified could not switch the newsletter off at all: the
+    // switch never saw their row.
+    await t.db.insert(newsletterSubscribers).values({
+      id: "nls_orphan",
+      email: "u7@example.org",
+      status: "subscribed",
+      unsubscribeTokenHash: "h_orphan",
+      source: "footer",
+    });
+
+    await unsubscribeAsUser(t.db, { userId: "u7", email: "U7@Example.org" });
+
+    const [row] = await t.client.unsafe(
+      `SELECT status, user_id FROM newsletter_subscribers WHERE id = 'nls_orphan'`,
+    );
+    expect(row!["status"]).toBe("unsubscribed");
+    // Ending it is also the moment to attach it, so the account and the row
+    // stop disagreeing about who owns the address.
+    expect(row!["user_id"]).toBe("u7");
   });
 });

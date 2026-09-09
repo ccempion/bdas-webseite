@@ -122,7 +122,9 @@ export default async function AccountPage({
 
   // Gated by the flag helper, never by requireNewsletterFlag(): a notFound()
   // here would take the whole account page away over a side feature.
-  const showNewsletterPrompt = newsletterEnabled() ? await shouldPrompt(db, me.user.id) : false;
+  const showNewsletterPrompt = newsletterEnabled()
+    ? await shouldPrompt(db, { userId: me.user.id, email: me.user.email })
+    : false;
 
   // Built once and placed in both layout branches: only one branch ever
   // renders, so the banner still appears exactly once. Mounted whenever the

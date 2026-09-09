@@ -1,5 +1,5 @@
 import { getDb } from "@bdas/db";
-import { getSubscriptionForUser } from "@bdas/newsletter";
+import { getSubscriptionForAccount, type NewsletterAccount } from "@bdas/newsletter";
 
 import { subscribeMeAction, unsubscribeMeAction } from "./actions";
 
@@ -26,8 +26,12 @@ async function unsubscribeFromToggle(formData: FormData): Promise<void> {
  * (spec §3.4). A server component: the switch posts a Server Action and the
  * page re-renders, so no client state is needed.
  */
-export async function NewsletterToggle({ userId }: { userId: string }) {
-  const sub = await getSubscriptionForUser(getDb(), userId);
+export async function NewsletterToggle({ account }: { account: NewsletterAccount }) {
+  // The account's address as well as its id: a row signed up through a public
+  // form after the account was verified carries only the address, and the
+  // switch used to be blind to it — it showed "not subscribed" and could not
+  // switch anything off.
+  const sub = await getSubscriptionForAccount(getDb(), account);
   const on = sub?.status === "subscribed";
   const pending = sub?.status === "pending";
 
