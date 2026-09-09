@@ -1,4 +1,4 @@
-import { getUserExport } from "@bdas/auth";
+import { getUserEmails } from "@bdas/auth";
 import { getDb, type Db } from "@bdas/db";
 import { registerNewsletterSubscribers, setAccountEmailResolver } from "@bdas/newsletter";
 
@@ -16,22 +16,13 @@ export function bootNewsletter(): void {
   if (booted) return;
   if (!newsletterEnabled()) return; // not latched — a flag-off boot must not permanently disable wiring
 
+  // One query for the whole page, which is what the batched signature always
+  // promised. It used to loop `getUserExport` per id — fine while the only
+  // caller resolved the one signed-in account, a query per subscriber once
+  // the board list arrived.
   setAccountEmailResolver({
-    async resolve(db: Db, userIds: readonly string[]): Promise<Map<string, string>> {
-      // `@bdas/auth` exposes only a single-user reader today. PR 2 resolves
-      // exactly one id per request (the signed-in account), so this is one
-      // query. BEFORE PR 5 ships the board list, auth needs a real batch read
-      // (`getUserEmails(db, ids)`) — hundreds of rows through this loop would
-      // be a textbook N+1, which is the very thing the batch signature exists
-      // to prevent.
-      const pairs = await Promise.all(
-        userIds.map(async (id) => {
-          const user = await getUserExport(db, id);
-          return user ? ([id, user.email] as const) : null;
-        }),
-      );
-      return new Map(pairs.filter((p): p is readonly [string, string] => p !== null));
-    },
+    resolve: (db: Db, userIds: readonly string[]): Promise<Map<string, string>> =>
+      getUserEmails(db, userIds),
   });
 
   registerNewsletterSubscribers(getDb());
