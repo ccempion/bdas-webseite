@@ -1725,4 +1725,59 @@ describe("puckConfig", () => {
       expect(out).toBe("");
     });
   });
+
+  describe("Karussell block", () => {
+    const render = (props: Record<string, unknown>) => {
+      const r = puckConfig.components.Karussell?.render;
+      if (!r) throw new Error("Karussell render missing");
+      return renderToStaticMarkup(r(props as never) as never);
+    };
+
+    it("starts empty and headingless", () => {
+      const defaults = puckConfig.components.Karussell?.defaultProps;
+      expect(defaults?.ueberschrift).toBe("");
+      expect(defaults?.folien).toEqual([]);
+    });
+
+    it("is a placeholder in the editor and nothing at all on the page when empty", () => {
+      const leer = { ueberschrift: "", folien: [] };
+      expect(render({ ...leer, puck: { isEditing: true } })).toContain("data-block-platzhalter");
+      expect(render({ ...leer, puck: { isEditing: false } })).toBe("");
+    });
+
+    it("renders the slides it was given", () => {
+      const out = render({
+        ueberschrift: "Unsere Werte",
+        folien: [
+          { bild: "", titel: "Solidarität", text: "Wir stehen füreinander ein." },
+          { bild: "", titel: "Vielfalt", text: "Wir sind viele." },
+        ],
+        puck: { isEditing: false },
+      });
+      expect(out).toContain("Unsere Werte");
+      expect(out).toContain("Solidarität");
+      expect(out).toContain("Vielfalt");
+      expect(out).toContain("snap-x");
+    });
+
+    it("renders a document saved before the heading field existed", () => {
+      // Every page saved by PR1–PR4 carries slides without an `ueberschrift`.
+      const out = render({
+        folien: [{ bild: "", titel: "Solidarität", text: "" }],
+        puck: { isEditing: false },
+      });
+      expect(out).toContain("Solidarität");
+      expect(out).toContain('aria-label="Karussell"');
+    });
+
+    it("summarises a slide by its title in the editor's list", () => {
+      const feld = puckConfig.components.Karussell?.fields?.folien;
+      const summary =
+        feld && "getItemSummary" in feld
+          ? (feld.getItemSummary as (f: { titel: string }) => string)
+          : undefined;
+      expect(summary?.({ titel: "Solidarität" })).toBe("Solidarität");
+      expect(summary?.({ titel: "" })).toBe("Neue Folie");
+    });
+  });
 });

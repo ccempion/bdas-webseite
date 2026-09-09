@@ -15,6 +15,7 @@ import { BildGroesseGriff } from "./BildGroesseGriff";
 import { FotoField } from "./FotoField";
 import { Hero, type HeroHintergrund, type HeroHoehe, type HeroTitelEbene } from "./Hero";
 import { CtaBanner, type CtaFlaeche } from "./CtaBanner";
+import { type Folie, Karussell } from "./Karussell";
 import { type Karte, KartenRaster, type KartenSpalten } from "./KartenRaster";
 import { type Kennzahl, Kennzahlen } from "./Kennzahlen";
 import { Organigramm } from "./Organigramm";
@@ -81,6 +82,7 @@ type Blocks = {
     buttonHref: string;
   };
   KartenRaster: { karten: Karte[]; spalten: KartenSpalten };
+  Karussell: { ueberschrift: string; folien: Folie[] };
   Kennzahlen: { werte: Kennzahl[] };
   CtaBanner: {
     ueberschrift: string;
@@ -918,6 +920,34 @@ export const puckConfig: Config<Blocks> = {
           <BlockPlatzhalter titel="Kennzahlen" hinweis="Noch keine Kennzahlen hinzugefügt." />
         ) : (
           <Kennzahlen werte={werte} />
+        ),
+    },
+    Karussell: {
+      label: "Karussell",
+      fields: {
+        ueberschrift: { type: "text", label: "Überschrift (optional)" },
+        folien: {
+          type: "array",
+          label: "Folien",
+          arrayFields: {
+            bild: {
+              type: "custom",
+              label: "Bild (optional)",
+              render: ({ value, onChange }) => <FotoField value={value} onChange={onChange} />,
+            },
+            titel: { type: "text", label: "Titel" },
+            text: { type: "textarea", label: "Text" },
+          },
+          defaultItemProps: { bild: "", titel: "", text: "" },
+          getItemSummary: (f) => f.titel || "Neue Folie",
+        },
+      },
+      defaultProps: { ueberschrift: "", folien: [] },
+      render: ({ ueberschrift, folien, puck }) =>
+        (folien ?? []).length === 0 && puck?.isEditing ? (
+          <BlockPlatzhalter titel="Karussell" hinweis="Noch keine Folien hinzugefügt." />
+        ) : (
+          <Karussell ueberschrift={ueberschrift} folien={folien} />
         ),
     },
     CtaBanner: {
