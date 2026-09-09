@@ -3,8 +3,10 @@ import { listGroups } from "@bdas/groups";
 import { listMembers } from "@bdas/members";
 import { countSubscribers, listSubscribers } from "@bdas/newsletter";
 
-import { requireNewsletterFlag } from "../../../_newsletter/flag";
+import { groupNamesByUserId } from "../../../../lib/member-groups";
+import { bootNewsletter } from "../../../../lib/newsletter-bootstrap";
 import { requireFederalScope } from "../../../_dashboard/session";
+import { requireNewsletterFlag } from "../../../_newsletter/flag";
 import { Tile } from "../../_components/Tile";
 import { SubscriberTable } from "./SubscriberTable";
 
@@ -14,6 +16,10 @@ export const metadata = { title: "Newsletter" };
 export default async function FederalNewsletterPage() {
   requireNewsletterFlag();
   await requireFederalScope();
+  // Wires the account-email resolver: `instrumentation.ts` is bundled apart
+  // from this route, so without it every address would silently fall back to
+  // the stored duplicate key.
+  bootNewsletter();
 
   const db = getDb();
   // Tiles and table come out of the same pipeline (`listSubscribers` and
@@ -26,17 +32,7 @@ export default async function FederalNewsletterPage() {
     listGroups(db),
   ]);
 
-  // The person's CURRENT group, not the row's `groupId` — that field records
-  // where a signup came from (spec §4) and nothing writes it yet. Resolved
-  // here rather than in the module so `modules/newsletter` keeps no dependency
-  // on `modules/members` (rule 1).
-  const groupNameById = new Map(groups.map((g) => [g.id, g.name]));
-  const groupNames = Object.fromEntries(
-    members.flatMap((m) => {
-      const name = m.primaryGroupId === null ? undefined : groupNameById.get(m.primaryGroupId);
-      return name === undefined ? [] : [[m.userId, name] as const];
-    }),
-  );
+  const groupNames = Object.fromEntries(groupNamesByUserId(members, groups));
 
   return (
     <section className="flex flex-col gap-5">
