@@ -1,15 +1,21 @@
 /**
  * Blog module (spec 2026-07-22, ADR 0027). Drives the §23 user-facing flows:
- * an active member or alumnus authors a post (ADR 0030 — `canAuthor()`; a
- * `pending` member is redirected away from `/blog/neu`), the feed + single
- * page render it, visibility is enforced server-side (a "Nur Mitglieder" post
- * never reaches an anonymous visitor), and only the author (or federal board)
- * may moderate.
+ * a Blogger authors a post (ADR 0037 — `canAuthorPost()`; a `pending` member,
+ * or an active member/alumnus with no qualifying role, is redirected away
+ * from `/blog/neu`), the feed + single page render it, visibility is
+ * enforced server-side (a "Nur Mitglieder" post never reaches an anonymous
+ * visitor), and only the author (or federal board) may moderate.
+ *
+ * Reading and writing COMMENTS is a separate, unrestricted rule
+ * (`canComment()`, unchanged by ADR 0037): any active member or alumnus, no
+ * role required — see "a member comments on a post" below, which
+ * deliberately does NOT grant its commenter any special role.
  *
  * `registerVerifyLogin` creates a member with `status: "pending"`, so any
- * user who goes on to author a post is explicitly activated afterwards via
- * `activateMemberByEmail` — otherwise `writePost`'s first action would find
- * no form (redirected back to /blog by `requirePostAuthor()`).
+ * user who goes on to author a post is explicitly activated via
+ * `activateMemberByEmail` AND granted `blogger` via `activateBlogAuthor`
+ * — otherwise `writePost`'s first action would find no form (redirected
+ * back to /blog by `requirePostAuthor()`).
  *
  * Requires BDAS_FLAG_BLOG=true in the e2e env (CI + playwright.config webServer).
  * Content is authored through the real Tiptap editor: we type into the
@@ -20,8 +26,20 @@ import { expect, test, type Page } from "@playwright/test";
 
 import type { PostCategory } from "@bdas/blog";
 
-import { activateMemberByEmail, uniqueEmail } from "./helpers/db";
+import { activateMemberByEmail, seedRoleGrant, uniqueEmail } from "./helpers/db";
 import { logout, registerVerifyLogin } from "./helpers/flows";
+
+/**
+ * Activate the member and grant `blogger` — the minimal role that can author
+ * a post since ADR 0037 restricted blog authoring away from "any active
+ * member or alumnus" (that rule now governs commenting only, via
+ * `canComment`). `groupId: null` is fine: blog posts carry no group and
+ * `canAuthorPost` never inspects a grant's scope, only its role.
+ */
+async function activateBlogAuthor(email: string): Promise<void> {
+  const memberId = await activateMemberByEmail(email);
+  await seedRoleGrant(memberId, "blogger", null);
+}
 
 /** Fill the post form (title + body + category + visibility) and publish; returns the slug. */
 async function writePost(
@@ -60,7 +78,7 @@ test.describe("blog", () => {
   }) => {
     const email = uniqueEmail("blog-author");
     await registerVerifyLogin(page, { email });
-    await activateMemberByEmail(email);
+    await activateBlogAuthor(email);
 
     const title = `Testbeitrag ${Date.now()}`;
     const body = "Dies ist der Textkörper des Beitrags.";
@@ -80,7 +98,7 @@ test.describe("blog", () => {
   }) => {
     const email = uniqueEmail("blog-secret");
     await registerVerifyLogin(page, { email });
-    await activateMemberByEmail(email);
+    await activateBlogAuthor(email);
 
     const publicTitle = `Öffentlich ${Date.now()}`;
     await writePost(page, { title: publicTitle, body: "Für alle sichtbar." });
@@ -112,7 +130,7 @@ test.describe("blog", () => {
   test("the author sees moderation controls; a different member does not", async ({ page }) => {
     const authorEmail = uniqueEmail("blog-owner");
     await registerVerifyLogin(page, { email: authorEmail });
-    await activateMemberByEmail(authorEmail);
+    await activateBlogAuthor(authorEmail);
 
     const title = `Mein Beitrag ${Date.now()}`;
     const slug = await writePost(page, { title, body: "Ursprünglicher Text." });
@@ -147,7 +165,7 @@ test.describe("blog", () => {
   test("dropping an image into the post editor calls the signing route", async ({ page }) => {
     const email = uniqueEmail("blog-drop");
     await registerVerifyLogin(page, { email });
-    await activateMemberByEmail(email);
+    await activateBlogAuthor(email);
 
     await page.goto("/blog/neu");
     const editor = page.locator('.ProseMirror[contenteditable="true"]');
@@ -191,7 +209,7 @@ test.describe("blog", () => {
   test("dropping a PDF into the post editor never reaches the server", async ({ page }) => {
     const email = uniqueEmail("blog-drop-bad");
     await registerVerifyLogin(page, { email });
-    await activateMemberByEmail(email);
+    await activateBlogAuthor(email);
 
     await page.goto("/blog/neu");
     const editor = page.locator('.ProseMirror[contenteditable="true"]');
@@ -232,7 +250,7 @@ test.describe("blog", () => {
   test("category filter narrows the feed", async ({ page }) => {
     const email = uniqueEmail("blog-category");
     await registerVerifyLogin(page, { email });
-    await activateMemberByEmail(email);
+    await activateBlogAuthor(email);
 
     const groupTitle = `Gruppenleben ${Date.now()}`;
     await writePost(page, {
@@ -258,7 +276,7 @@ test.describe("blog", () => {
   }) => {
     const authorEmail = uniqueEmail("blog-reported-author");
     await registerVerifyLogin(page, { email: authorEmail });
-    await activateMemberByEmail(authorEmail);
+    await activateBlogAuthor(authorEmail);
     const title = `Gemeldet ${Date.now()}`;
     await writePost(page, { title, body: "Fragwürdiger Inhalt." });
 
@@ -279,7 +297,7 @@ test.describe("blog", () => {
   test("a member comments on a post, sees it, and deletes it", async ({ page }) => {
     const email = uniqueEmail("blog-comment");
     await registerVerifyLogin(page, { email });
-    await activateMemberByEmail(email);
+    await activateBlogAuthor(email);
 
     const slug = await writePost(page, {
       title: "Kommentierbarer Beitrag",
@@ -321,7 +339,7 @@ test.describe("blog", () => {
   test("a signed-out visitor never sees the comments region", async ({ page }) => {
     const email = uniqueEmail("blog-comment-guest");
     await registerVerifyLogin(page, { email });
-    await activateMemberByEmail(email);
+    await activateBlogAuthor(email);
 
     const slug = await writePost(page, {
       title: "Öffentlicher Beitrag ohne Kommentare",
