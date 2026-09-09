@@ -8,12 +8,14 @@ import { getDb } from "@bdas/db";
 import { Alert, Card } from "@bdas/design-system";
 import { listUpcomingEvents } from "@bdas/events-module";
 import { isFlagOn } from "@bdas/feature-flags";
+import { folderFileCounts, listFolders, type Folder } from "@bdas/files";
 import { getGroupBySlug } from "@bdas/groups";
 import { canEditGroupPage } from "@bdas/members";
 import { contentMediaPublicUrl } from "@bdas/storage";
 
 import { breiteClass, normalizeContent, puckConfig } from "../../_content/puck-config";
 import { loadCurrentMember } from "../../_dashboard/session";
+import { FolderIndex } from "../../_files/FolderIndex";
 import { requireGroupsFlag } from "../../_groups/flag";
 import { viewerFrom } from "../../../lib/event-viewer";
 import { formatDateTime } from "../../../lib/format";
@@ -41,6 +43,22 @@ export default async function GruppeDetailPage({ params }: { params: { slug: str
   const upcoming = isFlagOn("events")
     ? await listUpcomingEvents(getDb(), viewerFrom(me), { groupId: group.id })
     : [];
+
+  const filesOn = isFlagOn("files");
+  let groupFolders: Folder[] = [];
+  let folderCounts: Record<string, number> = {};
+  if (filesOn && me?.member) {
+    groupFolders = (await listFolders(getDb(), me)).filter(
+      (f) => f.groupId === group.id && f.parentId === null,
+    );
+    if (groupFolders.length > 0) {
+      folderCounts = await folderFileCounts(
+        getDb(),
+        groupFolders.map((f) => f.id),
+        me,
+      );
+    }
+  }
 
   // Group pages read at `schmal` width; the chrome below and the Puck `<Render>`
   // (whose root supplies the same container) must share it so they align.
@@ -152,6 +170,32 @@ export default async function GruppeDetailPage({ params }: { params: { slug: str
             </Link>
           ))}
         </section>
+      ) : null}
+
+      {filesOn ? (
+        me ? (
+          groupFolders.length > 0 ? (
+            <section className={`mx-auto mt-6 flex w-full flex-col gap-3 px-4 ${width}`}>
+              <h2 className="text-lg font-semibold text-bdas-ink">Dateien</h2>
+              <FolderIndex
+                folders={groupFolders}
+                groupNames={{ [group.id]: group.name }}
+                counts={folderCounts}
+                hrefBase="/dateien"
+              />
+            </section>
+          ) : null
+        ) : (
+          <section className={`mx-auto mt-6 flex w-full flex-col gap-3 px-4 ${width}`}>
+            <h2 className="text-lg font-semibold text-bdas-ink">Dateien</h2>
+            <Alert variant="info">
+              Als Mitglied siehst du hier die Dateien deiner Gruppe.{" "}
+              <Link href="/anmelden" className="text-bdas-red hover:underline">
+                Anmelden
+              </Link>
+            </Alert>
+          </section>
+        )
       ) : null}
     </main>
   );
