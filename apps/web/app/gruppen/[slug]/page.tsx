@@ -13,6 +13,7 @@ import { getGroupBySlug } from "@bdas/groups";
 import { canEditGroupPage } from "@bdas/members";
 import { contentMediaPublicUrl } from "@bdas/storage";
 
+import { pageMetadata } from "../../_content/canvas-chrome";
 import { breiteClass, normalizeContent, puckConfig } from "../../_content/puck-config";
 import { loadCurrentMember } from "../../_dashboard/session";
 import { FolderIndex } from "../../_files/FolderIndex";
@@ -106,7 +107,11 @@ export default async function GruppeDetailPage({ params }: { params: { slug: str
 
       {page ? (
         <div className="mt-6">
-          <Render config={puckConfig} data={normalizeContent(page.data as Data, "schmal")} />
+          <Render
+            config={puckConfig}
+            data={normalizeContent(page.data as Data, "schmal")}
+            metadata={await pageMetadata(`/gruppen/${params.slug}`)}
+          />
         </div>
       ) : null}
 

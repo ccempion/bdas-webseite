@@ -8,6 +8,7 @@ import { getDb } from "@bdas/db";
 import { isFlagOn } from "@bdas/feature-flags";
 import { isFederalBoard } from "@bdas/members";
 
+import { pageMetadata } from "../../_content/canvas-chrome";
 import { breiteClass, normalizeContent, puckConfig } from "../../_content/puck-config";
 import { loadCurrentMember } from "../../_dashboard/session";
 import { requirePublicShellFlag } from "../../_public/flag";
@@ -53,7 +54,11 @@ export default async function BdajPage() {
       </div>
       {page ? (
         <div className="mt-6">
-          <Render config={puckConfig} data={normalizeContent(page.data as Data, "schmal")} />
+          <Render
+            config={puckConfig}
+            data={normalizeContent(page.data as Data, "schmal")}
+            metadata={await pageMetadata("/ueber-uns/bdaj")}
+          />
         </div>
       ) : null}
     </main>

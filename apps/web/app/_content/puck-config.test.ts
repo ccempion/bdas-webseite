@@ -12,6 +12,19 @@ vi.mock("next/image", () => ({
     React.createElement("img", { alt, className }),
 }));
 
+// The offer itself is covered next to it (app/_newsletter/NewsletterOffer.test.tsx)
+// and is built on `useFormState`, which throws outside an action context. What
+// belongs here is the block's own job: reading the state out of metadata.
+vi.mock("../_newsletter/NewsletterOffer", () => ({
+  NewsletterOffer: (p: { state: string; source: string; sourcePath: string; heading: string }) =>
+    React.createElement("div", {
+      "data-offer": p.state,
+      "data-source": p.source,
+      "data-source-path": p.sourcePath,
+      "data-heading": p.heading,
+    }),
+}));
+
 import { legalUrls } from "../../lib/legal";
 import { ausrichtungFlex, ausrichtungText } from "./ausrichtung";
 import { akkordeonKeys, breiteClass, normalizeContent, puckConfig } from "./puck-config";
@@ -1452,6 +1465,45 @@ describe("puckConfig", () => {
       expect(out).toContain("500+");
       expect(out).toContain("Hochschulgruppen");
       expect(out).toContain("grid-cols-2");
+    });
+  });
+
+  describe("Newsletter block", () => {
+    const render = (metadata: unknown) => {
+      const r = puckConfig.components.Newsletter?.render;
+      if (!r) throw new Error("Newsletter render missing");
+      return renderToStaticMarkup(
+        r({ ueberschrift: "Bleib in Verbindung", puck: { metadata } } as never) as never,
+      );
+    };
+
+    const chrome = (newsletter: string) => ({
+      chrome: { navItems: [], events: false, groups: false, faq: false, newsletter },
+      path: "/ueber-uns",
+    });
+
+    it("shows an inert stand-in in the editor, never a live form", () => {
+      const out = render(chrome("editor"));
+      expect(out).toContain("Newsletter-Anmeldung");
+      expect(out).not.toContain("data-offer");
+    });
+
+    it("hands the visitor state and the page path to the offer", () => {
+      const out = render(chrome("guest"));
+      expect(out).toContain('data-offer="guest"');
+      expect(out).toContain('data-source="puck_block"');
+      expect(out).toContain('data-source-path="/ueber-uns"');
+    });
+
+    it("passes the block's heading through", () => {
+      expect(render(chrome("member"))).toContain('data-heading="Bleib in Verbindung"');
+    });
+
+    it("falls back to off when metadata never arrives", () => {
+      // A `<Render>` call site that forgot the metadata must show nothing at
+      // all — showing the signed-out field to a subscriber would be worse.
+      expect(render(undefined)).toContain('data-offer="off"');
+      expect(render({})).toContain('data-offer="off"');
     });
   });
 });

@@ -9,6 +9,7 @@ import { getDb } from "@bdas/db";
 import { isFlagOn } from "@bdas/feature-flags";
 import { isFederalBoard } from "@bdas/members";
 
+import { pageMetadata } from "../../_content/canvas-chrome";
 import { type Breite, breiteClass, normalizeContent, puckConfig } from "../../_content/puck-config";
 import { loadCurrentMember } from "../../_dashboard/session";
 import { requirePublicShellFlag } from "../../_public/flag";
@@ -52,7 +53,11 @@ export default async function BsrPage() {
       </div>
       {page ? (
         <div className="mt-6">
-          <Render config={puckConfig} data={normalizeContent(page.data as Data, BREITE)} />
+          <Render
+            config={puckConfig}
+            data={normalizeContent(page.data as Data, BREITE)}
+            metadata={await pageMetadata("/ueber-uns/bundessprecherinnenrat")}
+          />
         </div>
       ) : (
         <p className={`mx-auto mt-6 w-full px-4 text-bdas-ink-body ${width}`}>
