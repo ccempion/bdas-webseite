@@ -13,14 +13,8 @@ vi.mock("next/image", () => ({
 }));
 
 import { legalUrls } from "../../lib/legal";
-import {
-  akkordeonKeys,
-  ausrichtungFlex,
-  ausrichtungText,
-  breiteClass,
-  normalizeContent,
-  puckConfig,
-} from "./puck-config";
+import { ausrichtungFlex, ausrichtungText } from "./ausrichtung";
+import { akkordeonKeys, breiteClass, normalizeContent, puckConfig } from "./puck-config";
 
 /** The nav the server derives and passes through metadata. Flags are off in the
  *  test environment, so this is deliberately richer than anything `navItems()`
@@ -1187,6 +1181,74 @@ describe("puckConfig", () => {
         } as never) as never,
       );
       expect(out).toBe("");
+    });
+
+    it("ignores a leftover image when the background no longer uses it", () => {
+      const render = puckConfig.components.Hero?.render;
+      if (!render) throw new Error("Hero render missing");
+      // The board uploaded a photo, then switched back to the accent ground and
+      // cleared the text. `FotoField` has no remove action, so the stale URL
+      // stays on the block — it must not keep an otherwise empty Hero alive as
+      // a tall coloured box on the public page.
+      const props = {
+        ueberschrift: "",
+        untertext: "",
+        hintergrund: "akzent",
+        bild: "https://cdn.example/verwaist.webp",
+        hoehe: "mittel",
+        ausrichtung: "links",
+        buttonLabel: "",
+        buttonHref: "",
+      };
+      expect(
+        renderToStaticMarkup(render({ ...props, puck: { isEditing: false } } as never) as never),
+      ).toBe("");
+      expect(
+        renderToStaticMarkup(render({ ...props, puck: { isEditing: true } } as never) as never),
+      ).toContain("data-block-platzhalter");
+    });
+
+    it("treats a usable button as content on its own", () => {
+      const render = puckConfig.components.Hero?.render;
+      if (!render) throw new Error("Hero render missing");
+      const out = renderToStaticMarkup(
+        render({
+          ueberschrift: "",
+          untertext: "",
+          hintergrund: "akzent",
+          bild: "",
+          hoehe: "mittel",
+          ausrichtung: "links",
+          buttonLabel: "Jetzt Mitglied werden",
+          buttonHref: "/mitglied-werden",
+          puck: { isEditing: false },
+        } as never) as never,
+      );
+      expect(out).toContain('href="/mitglied-werden"');
+      expect(out).toContain("Jetzt Mitglied werden");
+    });
+
+    it("stays empty when the button's link is unusable", () => {
+      const render = puckConfig.components.Hero?.render;
+      if (!render) throw new Error("Hero render missing");
+      // `safeHref` rejects it, so the Hero would render a frame around a button
+      // that never appears. Empty is the honest state.
+      const props = {
+        ueberschrift: "",
+        untertext: "",
+        hintergrund: "akzent",
+        bild: "",
+        hoehe: "mittel",
+        ausrichtung: "links",
+        buttonLabel: "Klick mich",
+        buttonHref: "javascript:alert(1)",
+      };
+      expect(
+        renderToStaticMarkup(render({ ...props, puck: { isEditing: false } } as never) as never),
+      ).toBe("");
+      expect(
+        renderToStaticMarkup(render({ ...props, puck: { isEditing: true } } as never) as never),
+      ).toContain("data-block-platzhalter");
     });
 
     it("renders the real hero, not the placeholder, as soon as one field is filled", () => {
