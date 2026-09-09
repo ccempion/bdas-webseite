@@ -12,29 +12,31 @@ import { registerVerifyLogin } from "./helpers/flows";
 
 const FEDERAL_EMAIL = "federal@e2e.bdas.test";
 
-/** Every board-editable content page: public path + its <h1>. */
+/** Every board-editable content page: public path + its document title.
+ *  There is no route-rendered <h1> any more — the title is authored in the
+ *  document itself (ADR 0038). */
 const EDITABLE_PAGES = [
   {
     name: "BSR",
     path: "/ueber-uns/bundessprecherinnenrat",
-    heading: "Bundessprecher*innenrat",
+    titel: "Bundessprecher*innenrat · BDAS",
   },
   {
     name: "BDAJ",
     path: "/ueber-uns/bdaj",
-    heading: "Bund der Alevitischen Jugendlichen (BDAJ)",
+    titel: "Bund der Alevitischen Jugendlichen (BDAJ) · BDAS",
   },
   {
     name: "Verbandsstruktur",
     path: "/ueber-uns/verbandsstruktur",
-    heading: "Verbandsstruktur",
+    titel: "Verbandsstruktur · BDAS",
   },
-  { name: "Impressum", path: "/impressum", heading: "Impressum" },
-  { name: "Datenschutz", path: "/datenschutz", heading: "Datenschutzerklärung" },
+  { name: "Impressum", path: "/impressum", titel: "Impressum · BDAS" },
+  { name: "Datenschutz", path: "/datenschutz", titel: "Datenschutzerklärung · BDAS" },
   {
     name: "Nutzungsbedingungen",
     path: "/nutzungsbedingungen",
-    heading: "Nutzungsbedingungen",
+    titel: "Nutzungsbedingungen · BDAS",
   },
 ] as const;
 
@@ -42,7 +44,11 @@ test.describe("content pages", () => {
   for (const p of EDITABLE_PAGES) {
     test(`visitor sees the ${p.name} page without an edit button`, async ({ page }) => {
       await page.goto(p.path);
-      await expect(page.getByRole("heading", { level: 1, name: p.heading })).toBeVisible();
+      await expect(page).toHaveTitle(p.titel);
+      // The route no longer prints a heading of its own: an empty document is
+      // an empty page, and the board authors the title as a Hero or an
+      // Überschrift (h1) block.
+      await expect(page.getByRole("heading", { level: 1 })).toHaveCount(0);
       await expect(page.getByRole("link", { name: "Seite bearbeiten" })).toHaveCount(0);
     });
 

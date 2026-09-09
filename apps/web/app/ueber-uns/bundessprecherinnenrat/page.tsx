@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { Render, type Data } from "@puckeditor/core";
@@ -10,6 +9,7 @@ import { isFlagOn } from "@bdas/feature-flags";
 import { isFederalBoard } from "@bdas/members";
 
 import { type Breite, breiteClass, normalizeContent, puckConfig } from "../../_content/puck-config";
+import { SeiteBearbeitenLink } from "../../_content/SeiteBearbeitenLink";
 import { loadCurrentMember } from "../../_dashboard/session";
 import { requirePublicShellFlag } from "../../_public/flag";
 
@@ -35,27 +35,16 @@ export default async function BsrPage() {
 
   return (
     <main className="py-12">
-      <div
-        className={`mx-auto flex w-full flex-col items-start gap-4 px-4 sm:flex-row sm:justify-between ${width}`}
-      >
-        <h1 className="break-words text-3xl font-semibold text-bdas-ink">
-          Bundessprecher*innenrat
-        </h1>
-        {canEdit ? (
-          <Link
-            href="/ueber-uns/bundessprecherinnenrat/bearbeiten"
-            className="inline-flex shrink-0 items-center rounded-bdas-sm border border-bdas-strong px-3 py-1.5 text-sm text-bdas-ink transition-colors duration-bdas-quick ease-bdas hover:bg-bdas-surface-hover"
-          >
-            Seite bearbeiten
-          </Link>
-        ) : null}
-      </div>
+      {canEdit ? (
+        <SeiteBearbeitenLink
+          href="/ueber-uns/bundessprecherinnenrat/bearbeiten"
+          breiteKlasse={width}
+        />
+      ) : null}
       {page ? (
-        <div className="mt-6">
-          <Render config={puckConfig} data={normalizeContent(page.data as Data, BREITE)} />
-        </div>
+        <Render config={puckConfig} data={normalizeContent(page.data as Data, BREITE)} />
       ) : (
-        <p className={`mx-auto mt-6 w-full px-4 text-bdas-ink-body ${width}`}>
+        <p className={`mx-auto w-full px-4 text-bdas-ink-body ${width}`}>
           Inhalte folgen in Kürze.
         </p>
       )}

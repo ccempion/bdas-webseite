@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 
 import { Render, type Data } from "@puckeditor/core";
 
@@ -9,6 +8,7 @@ import { isFlagOn } from "@bdas/feature-flags";
 import { isFederalBoard } from "@bdas/members";
 
 import { breiteClass, normalizeContent, puckConfig } from "../../_content/puck-config";
+import { SeiteBearbeitenLink } from "../../_content/SeiteBearbeitenLink";
 import { loadCurrentMember } from "../../_dashboard/session";
 import { requirePublicShellFlag } from "../../_public/flag";
 
@@ -35,23 +35,14 @@ export default async function VerbandsstrukturPage() {
 
   return (
     <main className="py-12">
-      <div
-        className={`mx-auto flex w-full flex-col items-start gap-4 px-4 sm:flex-row sm:justify-between ${breiteClass("breit")}`}
-      >
-        <h1 className="break-words text-3xl font-semibold text-bdas-ink">Verbandsstruktur</h1>
-        {canEdit ? (
-          <Link
-            href="/ueber-uns/verbandsstruktur/bearbeiten"
-            className="inline-flex shrink-0 items-center rounded-bdas-sm border border-bdas-strong px-3 py-1.5 text-sm text-bdas-ink transition-colors duration-bdas-quick ease-bdas hover:bg-bdas-surface-hover"
-          >
-            Seite bearbeiten
-          </Link>
-        ) : null}
-      </div>
+      {canEdit ? (
+        <SeiteBearbeitenLink
+          href="/ueber-uns/verbandsstruktur/bearbeiten"
+          breiteKlasse={breiteClass("breit")}
+        />
+      ) : null}
       {page ? (
-        <div className="mt-6">
-          <Render config={puckConfig} data={normalizeContent(page.data as Data, "breit")} />
-        </div>
+        <Render config={puckConfig} data={normalizeContent(page.data as Data, "breit")} />
       ) : null}
     </main>
   );

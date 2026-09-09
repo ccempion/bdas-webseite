@@ -33,9 +33,15 @@ export function PuckEditor({
 }) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
+  // Group pages render the group name as their own <h1>, so a Hero headline
+  // there is an <h2> — mirror that in the canvas rather than previewing a
+  // heading level the public page will not use (ADR 0038).
   const data = useMemo(
-    () => normalizeContent(initialData, defaultBreite),
-    [initialData, defaultBreite],
+    () =>
+      normalizeContent(initialData, defaultBreite, {
+        eigenerSeitentitel: slug.startsWith("gruppen/"),
+      }),
+    [initialData, defaultBreite, slug],
   );
   // Puck treats a new `metadata` identity as a change signal and re-renders the
   // whole canvas tree; `setError` in onPublish would otherwise do that on every

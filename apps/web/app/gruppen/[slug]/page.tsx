@@ -110,7 +110,12 @@ export default async function GruppeDetailPage({ params }: { params: { slug: str
 
       {page ? (
         <div className="mt-6">
-          <Render config={puckConfig} data={normalizeContent(page.data as Data, "schmal")} />
+          {/* The group name above is the page <h1>, so a Hero headline in the
+              document stays an <h2> (ADR 0038). */}
+          <Render
+            config={puckConfig}
+            data={normalizeContent(page.data as Data, "schmal", { eigenerSeitentitel: true })}
+          />
         </div>
       ) : null}
 

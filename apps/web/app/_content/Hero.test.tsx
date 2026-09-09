@@ -27,6 +27,20 @@ describe("Hero", () => {
     expect(out).not.toContain("text-bdas-ink-on-brand");
   });
 
+  // The routes that carry a Hero no longer render a title of their own
+  // (ADR 0038), so the headline is the page <h1> unless it is told otherwise.
+  it("renders the headline as the page h1 by default", () => {
+    const out = render({});
+    expect(out).toContain("<h1");
+    expect(out).not.toContain("<h2");
+  });
+
+  it("renders an h2 where the page already has its own h1", () => {
+    const out = render({ titelEbene: "h2" });
+    expect(out).toContain("<h2");
+    expect(out).not.toContain("<h1");
+  });
+
   it("uses the brand-red surface and on-brand text for the accent background", () => {
     const out = render({ hintergrund: "akzent" });
     expect(out).toContain("bg-bdas-red");
