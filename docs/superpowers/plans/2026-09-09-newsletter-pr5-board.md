@@ -133,19 +133,19 @@ attachment`, `text/csv; charset=utf-8`. Ein Download ist ein GET auf eine
 
 **Produces:** `getUserEmails(db, ids: readonly string[]): Promise<Map<string, string>>`
 
-- [ ] **Schritt 1: Failing test** — drei Ids, davon eine unbekannte: Die Map
+- [x] **Schritt 1: Failing test** — drei Ids, davon eine unbekannte: Die Map
       enthält zwei Einträge, die unbekannte fehlt (nicht `undefined` als Wert).
       Leeres Array → leere Map **ohne** Abfrage, weil `inArray(x, [])` je nach
       Treiber `false` oder einen Syntaxfehler ergibt.
-- [ ] **Schritt 2:** Implementieren mit `inArray(authUsers.id, ids)`, eine
+- [x] **Schritt 2:** Implementieren mit `inArray(authUsers.id, ids)`, eine
       Abfrage. `emailDisplay` wie `getUserExport`, nicht `emailNormalized` —
       angezeigt wird, was die Person selbst geschrieben hat.
-- [ ] **Schritt 3:** `index.ts` erweitern.
-- [ ] **Schritt 4:** `newsletter-bootstrap.ts` — die `Promise.all`-Schleife
+- [x] **Schritt 3:** `index.ts` erweitern.
+- [x] **Schritt 4:** `newsletter-bootstrap.ts` — die `Promise.all`-Schleife
       durch den einen Aufruf ersetzen und den veralteten Kommentar entfernen.
       Der Resolver ist damit das, was seine Signatur immer versprochen hat.
-- [ ] **Schritt 5:** `pnpm vitest run modules/auth apps/web/lib && pnpm typecheck && pnpm lint`
-- [ ] **Schritt 6: Commit** — `perf(auth): read account addresses in one query, not one each`
+- [x] **Schritt 5:** `pnpm vitest run modules/auth apps/web/lib && pnpm typecheck && pnpm lint`
+- [x] **Schritt 6: Commit** — `perf(auth): read account addresses in one query, not one each`
 
 ### Task 2: CSV als reine Funktion
 
@@ -154,28 +154,28 @@ attachment`, `text/csv; charset=utf-8`. Ein Download ist ein GET auf eine
 Zuerst, weil sie ohne Seite und ohne Route testbar ist — und weil die
 Feinheiten hier sitzen, nicht in der Route.
 
-- [ ] **Schritt 1: Failing test** — Kopfzeile; ein Feld mit Komma,
+- [x] **Schritt 1: Failing test** — Kopfzeile; ein Feld mit Komma,
       Anführungszeichen und Zeilenumbruch wird korrekt gequotet (`""` als
       Escape); Datumsangaben als ISO-8601; `null` wird zu leer, nicht zu
       `"null"`; das Ergebnis beginnt mit dem BOM (Entscheidung 5).
-- [ ] **Schritt 2:** Implementieren. Spalten: `email`, `status`, `source`,
+- [x] **Schritt 2:** Implementieren. Spalten: `email`, `status`, `source`,
       `source_path`, `group` (aufgelöster Name), `has_account`, `created_at`,
       `confirmed_at`. Nicht die roh gespeicherte `group_id` — die ist Herkunft,
       heute leer, und in einer Tabellenkalkulation wäre eine Spalte voller
       Fremdschlüssel wertlos. Nicht `id` und nicht `user_id`: interne
       Schlüssel, die außerhalb nichts bedeuten.
-- [ ] **Schritt 3: Commit** — `feat(newsletter): the subscriber list as a file a spreadsheet can read`
+- [x] **Schritt 3: Commit** — `feat(newsletter): the subscriber list as a file a spreadsheet can read`
 
 ### Task 3: Die Seite
 
 **Files:** `page.tsx`, `SubscriberTable.tsx` + Test, `nav.ts` + Test
 
-- [ ] **Schritt 1: Failing test** für `SubscriberTable` — die vier Statusfilter
+- [x] **Schritt 1: Failing test** für `SubscriberTable` — die vier Statusfilter
       und die Suche wählen die erwarteten Zeilen; die Suche trifft
       Teilzeichenketten unabhängig von Groß- und Kleinschreibung; „Alle" zeigt
       alles. Muster: `MembersTable`, gerendert über `renderToStaticMarkup`,
       Interaktion über happy-dom wo nötig.
-- [ ] **Schritt 2:** `page.tsx` — `requireNewsletterFlag()`,
+- [x] **Schritt 2:** `page.tsx` — `requireNewsletterFlag()`,
       `requireFederalScope()`, dann `listSubscribers(db, {})`,
       `countSubscribers(db)`, `listMembers(db, {})` und `listGroups(db)`
       parallel. Aus den letzten beiden eine Karte `userId → Gruppenname`, wie
@@ -185,39 +185,39 @@ Feinheiten hier sitzen, nicht in der Route.
       die Tabelle stammen aus derselben Pipeline** (`loadDeduped`), können sich
       also nicht widersprechen — das ist der Grund, warum `countSubscribers`
       existiert und nicht vier `COUNT(*)`.
-- [ ] **Schritt 3:** `SubscriberTable.tsx` — Client, Filter im Speicher.
+- [x] **Schritt 3:** `SubscriberTable.tsx` — Client, Filter im Speicher.
       Spalten: Adresse, Status, Quelle, Gruppe, Konto?, Eingetragen am. Statusfilter
       als `FilterChip` (vorhandenes Primitiv), Suche als `Input`.
       Export-Knopf als gewöhnlicher Link auf die Route.
-- [ ] **Schritt 4:** Nav-Eintrag `{ href: "/federal/newsletter", label: "Newsletter" }`
+- [x] **Schritt 4:** Nav-Eintrag `{ href: "/federal/newsletter", label: "Newsletter" }`
       hinter „FAQ", plus Zeile in `nav.test.ts`.
-- [ ] **Schritt 5: Commit** — `feat(newsletter): the board can see who is on the list`
+- [x] **Schritt 5: Commit** — `feat(newsletter): the board can see who is on the list`
 
 ### Task 4: Die Export-Route
 
 **Files:** `export.csv/route.ts`
 
-- [ ] **Schritt 1:** Handler nach dem Muster von `roster.csv`: Flag, Sitzung,
+- [x] **Schritt 1:** Handler nach dem Muster von `roster.csv`: Flag, Sitzung,
       `canSeeFederalScope` — jede Verweigerung als `404`, nie als Redirect
       (Entscheidung 4).
-- [ ] **Schritt 2:** `listSubscribers(db, {})` → `subscribersToCsv` →
+- [x] **Schritt 2:** `listSubscribers(db, {})` → `subscribersToCsv` →
       `content-disposition: attachment; filename="newsletter-<datum>.csv"`.
-- [ ] **Schritt 3:** Typecheck, Lint.
-- [ ] **Schritt 4: Commit** — `feat(newsletter): the list as a download, for the board only`
+- [x] **Schritt 3:** Typecheck, Lint.
+- [x] **Schritt 4: Commit** — `feat(newsletter): the list as a download, for the board only`
 
 ### Task 5: E2E und Abnahme
 
-- [ ] **Schritt 1:** `e2e/newsletter-board.e2e.ts` — ein Bundesvorstand sieht
+- [x] **Schritt 1:** `e2e/newsletter-board.e2e.ts` — ein Bundesvorstand sieht
       eine eingetragene Adresse in der Liste und die Kennzahl stimmt; ein
       einfaches Mitglied bekommt auf `/federal/newsletter` **und** auf
       `/federal/newsletter/export.csv` eine 404; der Export liefert
       `text/csv` und enthält die Adresse. `resetNewsletterRateLimits()`
       voranstellen.
-- [ ] **Schritt 2: Volle Suite**, mit ausgeschlossenen Worktrees:
+- [x] **Schritt 2: Volle Suite**, mit ausgeschlossenen Worktrees:
       `pnpm vitest run --exclude '**/worktrees/**' && pnpm typecheck && pnpm lint && pnpm format:check`,
       dann `pnpm --filter @bdas/web build && pnpm e2e`.
-- [ ] **Schritt 3: Abnahme** - Flag aus: `/federal/newsletter` ist 404, der Nav-Eintrag verschwindet, kein Board-Bereich ist kaputt. - Ein Nicht-Board-Konto kommt an keine der beiden URLs. - Kennzahlen und Tabelle widersprechen sich nicht. - Eine Person mit Konto erscheint mit ihrer **aktuellen** Kontoadresse, nicht mit dem gespeicherten Dublettenschlüssel. - Zwei Zeilen auf dieselbe aufgelöste Adresse erscheinen einmal, die Zeile mit Konto gewinnt (§4). - Ein Abonnent mit Konto zeigt seine Gruppe; wechselt er die Gruppe, zeigt die Liste die neue. - Eine anonyme Zeile zeigt bei Gruppe einen Gedankenstrich und stürzt nicht ab. - Die CSV öffnet sich in Excel mit korrekten Umlauten. - Kein Inline-Hex, -Radius, -Schatten, keine Inline-Dauer.
-- [ ] **Schritt 4: Commit + PR.** `/security-review` anfordern: Der PR ist
+- [x] **Schritt 3: Abnahme** - Flag aus: `/federal/newsletter` ist 404, der Nav-Eintrag verschwindet, kein Board-Bereich ist kaputt. - Ein Nicht-Board-Konto kommt an keine der beiden URLs. - Kennzahlen und Tabelle widersprechen sich nicht. - Eine Person mit Konto erscheint mit ihrer **aktuellen** Kontoadresse, nicht mit dem gespeicherten Dublettenschlüssel. - Zwei Zeilen auf dieselbe aufgelöste Adresse erscheinen einmal, die Zeile mit Konto gewinnt (§4). - Ein Abonnent mit Konto zeigt seine Gruppe; wechselt er die Gruppe, zeigt die Liste die neue. - Eine anonyme Zeile zeigt bei Gruppe einen Gedankenstrich und stürzt nicht ab. - Die CSV öffnet sich in Excel mit korrekten Umlauten. - Kein Inline-Hex, -Radius, -Schatten, keine Inline-Dauer.
+- [x] **Schritt 4: Commit + PR.** `/security-review` anfordern: Der PR ist
       weder auth noch payments noch files und fällt damit nicht unter die
       Regel aus CLAUDE.md §4 — aber er stellt eine Liste personenbezogener
       Daten als Datei bereit, und das ist die Art von Fläche, für die die Regel
