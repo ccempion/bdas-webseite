@@ -48,8 +48,12 @@ export default async function GruppeDetailPage({ params }: { params: { slug: str
   let groupFolders: Folder[] = [];
   let folderCounts: Record<string, number> = {};
   if (filesOn && me?.member) {
+    // Group-scoped roots (this group's Mitglieder/Vorstand folders) plus the
+    // federation-wide "Alle Mitglieder" singleton (members_all, groupId null)
+    // — every member can read it, so it belongs on every group's page too.
+    // Bundesvorstand (federal_board) stays out here; access there is TBD.
     groupFolders = (await listFolders(getDb(), me)).filter(
-      (f) => f.groupId === group.id && f.parentId === null,
+      (f) => f.parentId === null && (f.groupId === group.id || f.scope === "members_all"),
     );
     if (groupFolders.length > 0) {
       folderCounts = await folderFileCounts(
