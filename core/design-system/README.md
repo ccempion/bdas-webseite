@@ -74,7 +74,7 @@ the equivalent components across the app. Names refer to tokens in
   never loops and never advances on its own. The slide change is a native
   smooth scroll: its duration is the browser's, which is why no motion token
   names it. Two deliberate departures from the original proposal are recorded
-  in ADR 0039.
+  in ADR 0040.
 - **Brand field (H1 eye-catcher)** — a full `brand.red` surface with
   `ink.onBrand` text and an `on-brand` (white) button; `radii.md`, shadow
   `cardResting`, hover lift `lift.sm` + `cardLiftMd` over `durationSoft`.

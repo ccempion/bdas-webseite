@@ -12,7 +12,7 @@
 
 ## Global Constraints
 
-- **Keine neue Laufzeit-Abhängigkeit.** Spec §8 sah `embla-carousel-react` über die shadcn-CLI vor; dieser Weg existiert im Repo nicht (keine `components.json`, die Primitives in `core/design-system/src/components/` sind Handarbeit). Die Abweichung wird in Task 5 als ADR 0039 festgehalten.
+- **Keine neue Laufzeit-Abhängigkeit.** Spec §8 sah `embla-carousel-react` über die shadcn-CLI vor; dieser Weg existiert im Repo nicht (keine `components.json`, die Primitives in `core/design-system/src/components/` sind Handarbeit). Die Abweichung wird in Task 5 als ADR 0040 festgehalten.
 - **Kein Autoplay, kein Loop** (Spec §6). Am Anfang und am Ende sind die Pfeile `disabled`.
 - **Kein Hex, kein Radius, keine Dauer ad hoc** (CLAUDE.md §7). Alles über Tailwind-Klassen, die auf `core/design-system`-Tokens zeigen (`bg-bdas-red`, `text-bdas-ink`, `text-bdas-ink-body`, `rounded-full`).
 - **Kein `dangerouslySetInnerHTML`, keine Freitext-Styling-Props** (Spec §6, letzter Absatz).
@@ -31,7 +31,7 @@
 | `apps/web/app/_content/Karussell.test.tsx`                 | Regeln (node) und Verdrahtung (happy-dom)                                                    |
 | `apps/web/app/_content/puck-config.tsx`                    | Block-Typ, Felder, Registrierung, Leerzustand                                                |
 | `apps/web/app/_content/puck-config.test.ts`                | der Block im Katalog                                                                         |
-| `docs/decisions/0039-karussell-ohne-neue-abhaengigkeit.md` | warum kein embla, und die zwei Rezept-Abweichungen von §7                                    |
+| `docs/decisions/0040-karussell-ohne-neue-abhaengigkeit.md` | warum kein embla, und die zwei Rezept-Abweichungen von §7                                    |
 
 Regeln und Komponente teilen sich `Karussell.tsx`, weil das Haus es so hält: `kartenGrid` steht in `KartenRaster.tsx`, `panelIsDue` in `NewsletterScrollPanel.tsx`. Eine eigene Regeldatei wäre eine Erfindung ohne Vorbild.
 
@@ -73,7 +73,7 @@ In `core/design-system/README.md`, im Abschnitt „Component recipes", nach dem 
   never loops and never advances on its own. The slide change is a native
   smooth scroll: its duration is the browser's, which is why no motion token
   names it. Two deliberate departures from the original proposal are recorded
-  in ADR 0039.
+  in ADR 0040.
 ```
 
 - [ ] **Step 3: Prüfen, dass nichts kaputt ist**
@@ -765,11 +765,11 @@ EOF
 
 ---
 
-## Task 5: ADR 0039 und Gesamtabnahme
+## Task 5: ADR 0040 und Gesamtabnahme
 
 **Files:**
 
-- Create: `docs/decisions/0039-karussell-ohne-neue-abhaengigkeit.md`
+- Create: `docs/decisions/0040-karussell-ohne-neue-abhaengigkeit.md`
 
 **Interfaces:**
 
@@ -778,10 +778,10 @@ EOF
 
 - [ ] **Step 1: Die ADR schreiben**
 
-`docs/decisions/0039-karussell-ohne-neue-abhaengigkeit.md`:
+`docs/decisions/0040-karussell-ohne-neue-abhaengigkeit.md`:
 
 ```markdown
-# ADR 0039 — Karussell ohne neue Abhängigkeit
+# ADR 0040 — Karussell ohne neue Abhängigkeit
 
 - **Status:** Angenommen
 - **Datum:** 2026-09-09
@@ -856,9 +856,9 @@ Expected: alles grün. Der Build ist hier kein Ritual: `Karussell.tsx` ist der e
 - [ ] **Step 4: Commit**
 
 ```bash
-git add docs/decisions/0039-karussell-ohne-neue-abhaengigkeit.md
+git add docs/decisions/0040-karussell-ohne-neue-abhaengigkeit.md
 git commit -m "$(cat <<'EOF'
-docs: ADR 0039 — Karussell ohne neue Abhängigkeit
+docs: ADR 0040 — Karussell ohne neue Abhängigkeit
 
 Hält fest, warum die in Spec §8 vorgesehene Abhängigkeit nicht kam: Der
 shadcn-CLI-Weg existiert im Repo nicht, und embla hätte die Tastatur-Navigation
