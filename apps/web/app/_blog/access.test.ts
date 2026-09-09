@@ -37,7 +37,7 @@ vi.mock("../_profile/photo-url", () => ({
 
 import type { CurrentMember } from "@bdas/members";
 
-import { canAuthor, resolveAuthor, resolveAuthors } from "./access";
+import { canAuthorPost, canComment, resolveAuthor, resolveAuthors } from "./access";
 
 function memberWithStatus(status: "pending" | "active" | "inactive" | "alumnus"): CurrentMember {
   return {
@@ -57,25 +57,43 @@ function memberWithStatus(status: "pending" | "active" | "inactive" | "alumnus")
   };
 }
 
-describe("canAuthor", () => {
+function memberWithGrants(grants: CurrentMember["grants"]): CurrentMember {
+  return {
+    user: { id: "usr_1", email: "a@bdas.de", status: "active", roles: [], sessionId: "sess_1" },
+    member: {
+      id: "mem_1",
+      userId: "usr_1",
+      firstName: "Ada",
+      lastName: "Lovelace",
+      primaryGroupId: "grp_a",
+      status: "active",
+      joinedAt: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    },
+    grants,
+  };
+}
+
+describe("canComment", () => {
   it("allows an active member", () => {
-    expect(canAuthor(memberWithStatus("active"))).toBe(true);
+    expect(canComment(memberWithStatus("active"))).toBe(true);
   });
 
   it("allows an alumnus", () => {
-    expect(canAuthor(memberWithStatus("alumnus"))).toBe(true);
+    expect(canComment(memberWithStatus("alumnus"))).toBe(true);
   });
 
   it("rejects a pending member", () => {
-    expect(canAuthor(memberWithStatus("pending"))).toBe(false);
+    expect(canComment(memberWithStatus("pending"))).toBe(false);
   });
 
   it("rejects an inactive member", () => {
-    expect(canAuthor(memberWithStatus("inactive"))).toBe(false);
+    expect(canComment(memberWithStatus("inactive"))).toBe(false);
   });
 
   it("rejects a signed-out visitor", () => {
-    expect(canAuthor(null)).toBe(false);
+    expect(canComment(null)).toBe(false);
   });
 
   it("rejects a signed-in user with no member profile yet", () => {
@@ -84,7 +102,70 @@ describe("canAuthor", () => {
       member: null,
       grants: [],
     };
-    expect(canAuthor(me)).toBe(false);
+    expect(canComment(me)).toBe(false);
+  });
+});
+
+describe("canAuthorPost", () => {
+  it("allows federal_board", () => {
+    expect(canAuthorPost(memberWithGrants([{ role: "federal_board", groupId: null }]))).toBe(true);
+  });
+
+  it("allows local_board_lead (Lead)", () => {
+    expect(canAuthorPost(memberWithGrants([{ role: "local_board_lead", groupId: "grp_a" }]))).toBe(
+      true,
+    );
+  });
+
+  it("allows event_organizer (Event-Manager)", () => {
+    expect(canAuthorPost(memberWithGrants([{ role: "event_organizer", groupId: "grp_a" }]))).toBe(
+      true,
+    );
+  });
+
+  it("allows blogger", () => {
+    expect(canAuthorPost(memberWithGrants([{ role: "blogger", groupId: "grp_a" }]))).toBe(true);
+  });
+
+  it("rejects an active member with no qualifying grant — the ADR 0030 default no longer applies", () => {
+    expect(canAuthorPost(memberWithStatus("active"))).toBe(false);
+  });
+
+  it("rejects an alumnus with no qualifying grant", () => {
+    expect(canAuthorPost(memberWithStatus("alumnus"))).toBe(false);
+  });
+
+  it("rejects file_manager and page_editor — neither is a blog-authoring role", () => {
+    expect(canAuthorPost(memberWithGrants([{ role: "file_manager", groupId: "grp_a" }]))).toBe(
+      false,
+    );
+    expect(canAuthorPost(memberWithGrants([{ role: "page_editor", groupId: "grp_a" }]))).toBe(
+      false,
+    );
+  });
+
+  it("rejects a signed-out visitor", () => {
+    expect(canAuthorPost(null)).toBe(false);
+  });
+});
+
+describe("ADR 0037: posting is restricted, commenting is preserved", () => {
+  it("a plain active member (no board/blog role) can NO LONGER post, but CAN STILL comment", () => {
+    const plainActiveMember = memberWithStatus("active");
+    expect(canAuthorPost(plainActiveMember)).toBe(false);
+    expect(canComment(plainActiveMember)).toBe(true);
+  });
+
+  it("a plain alumnus can NO LONGER post, but CAN STILL comment", () => {
+    const plainAlumnus = memberWithStatus("alumnus");
+    expect(canAuthorPost(plainAlumnus)).toBe(false);
+    expect(canComment(plainAlumnus)).toBe(true);
+  });
+
+  it("a blogger CAN post — that grant exists for exactly this", () => {
+    const blogger = memberWithGrants([{ role: "blogger", groupId: "grp_a" }]);
+    expect(canAuthorPost(blogger)).toBe(true);
+    expect(canComment(blogger)).toBe(true); // still an active member underneath
   });
 });
 

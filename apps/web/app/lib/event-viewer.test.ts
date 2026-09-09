@@ -28,6 +28,17 @@ describe("canManageAny", () => {
     ).toBe(false);
   });
 
+  it("is false for a blogger grant — blogger has no event authority", () => {
+    const blogger = viewerFrom({
+      user: { id: "usr_1" },
+      member: { status: "active", primaryGroupId: "grp_a" },
+      grants: [{ role: "blogger", groupId: "grp_a" }],
+    } as never);
+    expect(canManageAny(blogger)).toBe(false);
+    expect(blogger.boardGroupIds).toEqual([]);
+    expect(blogger.organizerGroupIds).toEqual([]);
+  });
+
   it("is true for federal, local board, and event organizers", () => {
     const federal = viewerFrom({
       user: { id: "u" },

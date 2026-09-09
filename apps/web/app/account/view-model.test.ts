@@ -63,7 +63,7 @@ describe("roleChips", () => {
     ]);
 
     expect(chips).toEqual([
-      { label: "Organisator", accent: true },
+      { label: "Event-Manager", accent: true },
       { label: "Lead", accent: false },
     ]);
   });
@@ -74,6 +74,6 @@ describe("roleChips", () => {
       { role: "event_organizer", groupId: "grp_potsdam" },
     ]);
 
-    expect(chips).toEqual([{ label: "Organisator", accent: true }]);
+    expect(chips).toEqual([{ label: "Event-Manager", accent: true }]);
   });
 });

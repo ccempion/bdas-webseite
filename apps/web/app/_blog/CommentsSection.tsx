@@ -3,7 +3,7 @@ import { getDb } from "@bdas/db";
 import { Card } from "@bdas/design-system";
 import type { CurrentMember } from "@bdas/members";
 
-import { blogViewer, canAuthor, resolveAuthors } from "./access";
+import { blogViewer, canComment, resolveAuthors } from "./access";
 import { AuthorAvatar } from "./AuthorAvatar";
 import { CommentForm } from "./CommentForm";
 import { DeleteCommentButton } from "./DeleteCommentButton";
@@ -13,10 +13,11 @@ import { formatDate } from "../../lib/format";
  * Member discussion under a post. Renders nothing at all for guests and
  * non-members — a post's share link must never expose the comments region
  * (blog spec 2026-07-26, requirement 5). Eligibility to read matches
- * eligibility to write: active member or alumnus (ADR 0030, reused by 0033).
+ * eligibility to write: active member or alumnus (ADR 0030, reused by 0033;
+ * unaffected by ADR 0037's authoring restriction — see canComment).
  */
 export async function CommentsSection({ post, me }: { post: Post; me: CurrentMember | null }) {
-  if (!canAuthor(me)) return null;
+  if (!canComment(me)) return null;
 
   const comments = await listComments(getDb(), post.id);
   const authors = await resolveAuthors(

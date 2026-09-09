@@ -21,8 +21,11 @@ describe("ROLE_LABELS", () => {
   it("keeps the labels the board views already show", () => {
     expect(ROLE_LABELS.federal_board).toBe("Bundesvorstand");
     expect(ROLE_LABELS.local_board_lead).toBe("Lead");
-    expect(ROLE_LABELS.event_organizer).toBe("Organisator");
     expect(ROLE_LABELS.page_editor).toBe("Seiten-Editor");
+  });
+
+  it("relabels event_organizer as Event-Manager (ADR 0037) — same DB value, new blog-authoring rights", () => {
+    expect(ROLE_LABELS.event_organizer).toBe("Event-Manager");
   });
 
   it("labels the two roles introduced by the local role redesign", () => {

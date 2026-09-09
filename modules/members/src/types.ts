@@ -61,7 +61,7 @@ export const ROLE_LABELS: Record<Role, string> = {
   alumnus: "Alumnus",
   local_board_lead: "Lead",
   federal_board: "Bundesvorstand",
-  event_organizer: "Organisator",
+  event_organizer: "Event-Manager",
   page_editor: "Seiten-Editor",
   file_manager: "Datei-Manager",
   blogger: "Blogger",
