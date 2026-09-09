@@ -23,7 +23,8 @@ export const metadata: Metadata = {
  * Impressum — hosted in-app (ADR 0009), board-editable via Puck (ADR 0024).
  * Legally required and therefore always reachable: it is never gated behind a
  * feature flag. Content is authored entirely in the Puck editor; when the
- * content flag is off or no document exists yet, only the header renders. The
+ * content flag is off or no document exists yet, a short placeholder renders in
+ * its place — the page title itself is authored in the document (ADR 0038). The
  * reviewed Impressum (§ 5 DDG / § 18 MStV) must be authored before launch.
  */
 export default async function ImpressumPage() {
@@ -39,7 +40,14 @@ export default async function ImpressumPage() {
       ) : null}
       {page ? (
         <Render config={puckConfig} data={normalizeContent(page.data as Data, "schmal")} />
-      ) : null}
+      ) : (
+        // This route is never flag-gated and the page title now lives in the
+        // document (ADR 0038), so without this an unauthored legal page would
+        // be a blank <main>.
+        <p className={`mx-auto w-full px-4 text-bdas-ink-body ${breiteClass("schmal")}`}>
+          Diese Seite wird derzeit erstellt.
+        </p>
+      )}
     </main>
   );
 }

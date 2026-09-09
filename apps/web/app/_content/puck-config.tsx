@@ -214,11 +214,24 @@ export function normalizeContent(
       ? data
       : ({ ...data, root: { ...data.root, props: { ...props, breite: fallback } } } as Data);
 
-  const titelEbene: HeroTitelEbene = eigenerSeitentitel ? "h2" : "h1";
+  // Exactly one <h1> per page. The first Hero in the document owns it; a second
+  // one, a Hero nested inside a column, and every Hero on a route that renders
+  // its own title stay <h2>.
+  const ersterHeroId = eigenerSeitentitel
+    ? undefined
+    : (mitBreite.content.find((item) => item.type === "Hero")?.props as { id?: string } | undefined)
+        ?.id;
 
   return transformProps(mitBreite, {
     Bild: (bild) => ({ ...bild, breite: normalizeBildBreite(bild.breite) }),
-    Hero: (hero) => ({ ...hero, titelEbene }),
+    Hero: (hero) => ({
+      ...hero,
+      titelEbene: (ersterHeroId !== undefined && hero.id === ersterHeroId
+        ? "h1"
+        : "h2") as HeroTitelEbene,
+    }),
+    // A page title the route already renders itself must not repeat here.
+    Ueberschrift: (u) => (eigenerSeitentitel && u.ebene === "h1" ? { ...u, ebene: "h2" } : u),
   });
 }
 
@@ -231,6 +244,29 @@ export function normalizeContent(
  * spacing) so the editor preview matches the published page — without it, the
  * layout lives only in the route's `<main>` and the editor renders full-bleed.
  */
+/** Group pages own their `<h1>` (the group name); every other content route
+ *  leaves the page title to the document (ADR 0038). */
+export const istGruppenSlug = (slug: string | undefined): boolean =>
+  slug !== undefined && slug.startsWith("gruppen/");
+
+const EBENE_OPTIONEN = [
+  { label: "Seitentitel (h1)", value: "h1" },
+  { label: "Groß (h2)", value: "h2" },
+  { label: "Klein (h3)", value: "h3" },
+] as const;
+
+const ueberschriftEbene = {
+  type: "select",
+  label: "Ebene",
+  options: [...EBENE_OPTIONEN],
+} as const;
+
+const ueberschriftEbeneOhneH1 = {
+  type: "select",
+  label: "Ebene",
+  options: EBENE_OPTIONEN.filter((o) => o.value !== "h1").map((o) => ({ ...o })),
+} as const;
+
 export const puckConfig: Config<Blocks> = {
   root: {
     fields: {
@@ -300,23 +336,29 @@ export const puckConfig: Config<Blocks> = {
       label: "Überschrift",
       fields: {
         text: { type: "text", label: "Text" },
-        ebene: {
-          type: "select",
-          label: "Ebene",
-          options: [
-            { label: "Seitentitel (h1)", value: "h1" },
-            { label: "Groß (h2)", value: "h2" },
-            { label: "Klein (h3)", value: "h3" },
-          ],
-        },
+        ebene: ueberschriftEbene,
         ausrichtung: ausrichtungField,
       },
       defaultProps: { text: "Überschrift", ebene: "h2", ausrichtung: "links" },
+      // Group pages render the group name as their own <h1> (ADR 0038), so the
+      // page-title level is not on offer there. `normalizeContent` demotes it
+      // anyway for a document that already carries one.
+      resolveFields: (_data, { metadata }) => ({
+        text: { type: "text", label: "Text" },
+        ebene: istGruppenSlug((metadata as { slug?: string } | undefined)?.slug)
+          ? ueberschriftEbeneOhneH1
+          : ueberschriftEbene,
+        ausrichtung: ausrichtungField,
+      }),
       // `h1` is the page title the content routes no longer render themselves
       // (ADR 0038); it carries the size that route heading used to have.
       render: ({ text, ebene, ausrichtung }) =>
         ebene === "h1" ? (
-          <h1 className={`text-3xl font-semibold text-bdas-ink ${ausrichtungText(ausrichtung)}`}>
+          <h1
+            className={`break-words text-3xl font-semibold text-bdas-ink ${ausrichtungText(
+              ausrichtung,
+            )}`}
+          >
             {text}
           </h1>
         ) : ebene === "h3" ? (
@@ -786,10 +828,17 @@ export const puckConfig: Config<Blocks> = {
             <></>
           );
         }
+        // `normalizeContent` sets the level for everything the document was
+        // loaded with. A block dragged in after that has none, so fall back to
+        // what the route would do with it — in the canvas that is all the
+        // metadata is there for.
+        const ebene: HeroTitelEbene =
+          titelEbene ??
+          (istGruppenSlug((puck?.metadata as { slug?: string } | undefined)?.slug) ? "h2" : "h1");
         return (
           <Hero
             ueberschrift={ueberschrift}
-            titelEbene={titelEbene}
+            titelEbene={ebene}
             untertext={untertext}
             hintergrund={hintergrund}
             bild={bild}

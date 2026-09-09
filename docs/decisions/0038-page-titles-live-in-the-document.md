@@ -31,11 +31,19 @@ Schrift­größe und eine Position, die der Hero direkt darunter wiederholt.
 - **Der `Überschrift`-Block bekommt die Ebene `h1` („Seitentitel")** in der
   Größe, die der Routen-`<h1>` hatte (`text-3xl`). Default für neue Blöcke
   bleibt `h2`.
-- **Die Hero-Überschrift ist standardmäßig der `<h1>` der Seite.** Wo die Route
-  selbst einen Titel rendert (Gruppenseiten), stuft `normalizeContent` sie über
-  die Option `eigenerSeitentitel` auf `h2` zurück. Die Ebene ist kein
-  Editorfeld: Sie folgt der Route, nicht der Redaktion, sonst entstehen Seiten
-  mit zwei oder null `<h1>`.
+- **Die Hero-Überschrift ist standardmäßig der `<h1>` der Seite** — genauer: die
+  des _ersten_ Heros im Dokument. Jeder weitere Hero und jeder in einer Spalte
+  verschachtelte bleibt `h2`. Wo die Route selbst einen Titel rendert
+  (Gruppenseiten), stuft `normalizeContent` alle über die Option
+  `eigenerSeitentitel` auf `h2`. Die Ebene ist kein Editorfeld: Sie folgt der
+  Route, nicht der Redaktion, sonst entstehen Seiten mit zwei oder null `<h1>`.
+- **Auf Gruppenseiten bietet der `Überschrift`-Block die Ebene `h1` gar nicht
+  erst an** (`resolveFields` über den Slug, wie die `voll`-Breite in ADR 0036);
+  ein Dokument, das sie schon trägt, wird beim Rendern auf `h2` gestuft.
+- **Die drei Rechtstexte bekommen einen Leerzustand.** Impressum, Datenschutz
+  und Nutzungsbedingungen sind nie flag-gegated und damit erreichbar, bevor
+  jemand sie geschrieben hat; ohne Routen-Überschrift wäre die Seite sonst
+  vollständig leer. Statt eines Titels rendert dort ein kurzer Hinweis.
 
 ## Consequences
 
@@ -46,8 +54,9 @@ Schrift­größe und eine Position, die der Hero direkt darunter wiederholt.
 - Eine leere Seite ist danach wirklich leer. `<title>` (und damit Tab, Suche und
   Verlauf) kommt weiterhin aus dem Routen-Metadata-Block, nicht aus dem
   Dokument — die Seite ist also nie namenlos, nur sichtbar titellos.
-- Die Zusicherung „genau ein `<h1>` pro Seite" ist nicht mehr technisch
-  erzwungen: Wer zwei `Überschrift (h1)`-Blöcke ablegt, bekommt zwei. Sie wird
-  in den E2E-Tests der Inhaltsseiten geprüft, nicht im Editor verhindert.
+- Die Zusicherung „genau ein `<h1>` pro Seite" ist für Heros technisch
+  erzwungen (nur der erste wird befördert), für den `Überschrift`-Block nicht:
+  Wer zwei `Überschrift (h1)`-Blöcke ablegt, bekommt zwei. Die E2E-Tests der
+  Inhaltsseiten prüfen die Obergrenze, der Editor verhindert sie nicht.
 - Der Editor-Canvas normalisiert mit derselben Regel (Gruppen-Slug ⇒ `h2`),
   damit die Vorschau die Ebene der öffentlichen Seite zeigt.

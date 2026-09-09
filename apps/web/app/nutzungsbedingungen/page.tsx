@@ -24,8 +24,9 @@ export const metadata: Metadata = {
  * Governs use of the platform and is linked from the footer alongside the two
  * other legal routes, so it shares their exception: never gated behind a
  * feature flag on the render side. Content is authored entirely in the Puck
- * editor; when the content flag is off or no document exists yet, only the
- * header renders. The reviewed terms must be authored before launch.
+ * editor; when the content flag is off or no document exists yet, a short
+ * placeholder renders in its place — the page title itself is authored in the
+ * document (ADR 0038). The reviewed terms must be authored before launch.
  */
 export default async function NutzungsbedingungenPage() {
   const contentOn = isFlagOn("content");
@@ -43,7 +44,14 @@ export default async function NutzungsbedingungenPage() {
       ) : null}
       {page ? (
         <Render config={puckConfig} data={normalizeContent(page.data as Data, "schmal")} />
-      ) : null}
+      ) : (
+        // This route is never flag-gated and the page title now lives in the
+        // document (ADR 0038), so without this an unauthored legal page would
+        // be a blank <main>.
+        <p className={`mx-auto w-full px-4 text-bdas-ink-body ${breiteClass("schmal")}`}>
+          Diese Seite wird derzeit erstellt.
+        </p>
+      )}
     </main>
   );
 }
