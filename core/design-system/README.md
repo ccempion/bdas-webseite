@@ -66,6 +66,15 @@ the equivalent components across the app. Names refer to tokens in
   - summary color → `brand.red`, hairline divider under summary
   - `+` rotates 45° into `×` (also turns `brand.red`)
   - body fades in via `keyframes.fadeSlideDown`
+- **Carousel** — a horizontal snap rail (`snap-x snap-mandatory`) showing one
+  slide per view; the browser supplies swipe, momentum and arrow keys. Dots use
+  `radii.full` (the scale reserves it for "markers, dots"), the active one in
+  `brand.red` with a `motion.durationQuick` colour transition. Arrow buttons
+  follow **liftHover** and are disabled at the first and last slide — the rail
+  never loops and never advances on its own. The slide change is a native
+  smooth scroll: its duration is the browser's, which is why no motion token
+  names it. Two deliberate departures from the original proposal are recorded
+  in ADR 0039.
 - **Brand field (H1 eye-catcher)** — a full `brand.red` surface with
   `ink.onBrand` text and an `on-brand` (white) button; `radii.md`, shadow
   `cardResting`, hover lift `lift.sm` + `cardLiftMd` over `durationSoft`.
