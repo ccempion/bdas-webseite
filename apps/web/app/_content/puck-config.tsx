@@ -13,6 +13,7 @@ import { type BildBreite, bildBreiteClass, normalizeBildBreite } from "./bild-br
 import { BildGroesseGriff } from "./BildGroesseGriff";
 import { FotoField } from "./FotoField";
 import { Hero, type HeroHintergrund, type HeroHoehe } from "./Hero";
+import { type Karte, KartenRaster, type KartenSpalten } from "./KartenRaster";
 import { Organigramm } from "./Organigramm";
 import type { Kasten } from "./org-tree";
 import { RichTextField } from "./RichTextField";
@@ -74,6 +75,7 @@ type Blocks = {
     buttonLabel: string;
     buttonHref: string;
   };
+  KartenRaster: { karten: Karte[]; spalten: KartenSpalten };
 };
 
 /** Content-column width. Carried on the page's root so the same value frames
@@ -773,6 +775,42 @@ export const puckConfig: Config<Blocks> = {
           />
         );
       },
+    },
+    KartenRaster: {
+      label: "Karten-Raster",
+      fields: {
+        karten: {
+          type: "array",
+          label: "Karten",
+          arrayFields: {
+            bild: {
+              type: "custom",
+              label: "Bild / Icon (optional)",
+              render: ({ value, onChange }) => <FotoField value={value} onChange={onChange} />,
+            },
+            titel: { type: "text", label: "Titel" },
+            text: { type: "textarea", label: "Text" },
+          },
+          defaultItemProps: { bild: "", titel: "", text: "" },
+          getItemSummary: (k) => k.titel || "Neue Karte",
+        },
+        spalten: {
+          type: "select",
+          label: "Spalten",
+          options: [
+            { label: "2 Spalten", value: "2" },
+            { label: "3 Spalten", value: "3" },
+            { label: "4 Spalten", value: "4" },
+          ],
+        },
+      },
+      defaultProps: { karten: [], spalten: "3" },
+      render: ({ karten, spalten, puck }) =>
+        (karten ?? []).length === 0 && puck?.isEditing ? (
+          <BlockPlatzhalter titel="Karten-Raster" hinweis="Noch keine Karten hinzugefügt." />
+        ) : (
+          <KartenRaster karten={karten} spalten={spalten} />
+        ),
     },
   },
 };

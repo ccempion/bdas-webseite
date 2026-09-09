@@ -1348,4 +1348,60 @@ describe("puckConfig", () => {
       expect(eintraege.getItemSummary({ frage: "", antwort: "" }, 0)).toBe("Neuer Eintrag");
     });
   });
+  describe("KartenRaster block", () => {
+    it("is registered with the German label and two fields", () => {
+      const block = puckConfig.components.KartenRaster;
+      expect(block?.label).toBe("Karten-Raster");
+      expect(Object.keys(block?.fields ?? {}).sort()).toEqual(["karten", "spalten"]);
+    });
+
+    it("each card carries an image, a title and a text", () => {
+      const karten = puckConfig.components.KartenRaster?.fields?.karten;
+      if (karten?.type !== "array") throw new Error("karten must be an array field");
+      expect(Object.keys(karten.arrayFields).sort()).toEqual(["bild", "text", "titel"]);
+      expect(karten.arrayFields.bild?.type).toBe("custom");
+    });
+
+    it("summarises a card by its title with a German fallback", () => {
+      const karten = puckConfig.components.KartenRaster?.fields?.karten;
+      if (karten?.type !== "array" || !karten.getItemSummary) {
+        throw new Error("array field with getItemSummary expected");
+      }
+      expect(karten.getItemSummary({ bild: "", titel: "Beratung", text: "" }, 0)).toBe("Beratung");
+      expect(karten.getItemSummary({ bild: "", titel: "", text: "" }, 0)).toBe("Neue Karte");
+    });
+
+    it("offers 2, 3 and 4 columns and defaults to 3", () => {
+      const spalten = puckConfig.components.KartenRaster?.fields?.spalten;
+      if (spalten?.type !== "select") throw new Error("spalten must be a select field");
+      expect(spalten.options.map((o) => o.value)).toEqual(["2", "3", "4"]);
+      expect(puckConfig.components.KartenRaster?.defaultProps).toEqual({
+        karten: [],
+        spalten: "3",
+      });
+    });
+
+    it("shows a placeholder in the editor when empty", () => {
+      const render = puckConfig.components.KartenRaster?.render;
+      if (!render) throw new Error("KartenRaster render missing");
+      const out = renderToStaticMarkup(
+        render({ karten: [], spalten: "3", puck: { isEditing: true } } as never) as never,
+      );
+      expect(out).toContain("Noch keine Karten");
+    });
+
+    it("renders the cards through the component", () => {
+      const render = puckConfig.components.KartenRaster?.render;
+      if (!render) throw new Error("KartenRaster render missing");
+      const out = renderToStaticMarkup(
+        render({
+          karten: [{ bild: "", titel: "Beratung", text: "Wir beraten." }],
+          spalten: "4",
+          puck: { isEditing: false },
+        } as never) as never,
+      );
+      expect(out).toContain("Beratung");
+      expect(out).toContain("lg:grid-cols-4");
+    });
+  });
 });
