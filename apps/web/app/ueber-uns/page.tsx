@@ -7,6 +7,7 @@ import { getDb } from "@bdas/db";
 import { isFlagOn } from "@bdas/feature-flags";
 import { isFederalBoard } from "@bdas/members";
 
+import { pageMetadata } from "../_content/canvas-chrome";
 import { breiteClass, normalizeContent, puckConfig } from "../_content/puck-config";
 import { SeiteBearbeitenLink } from "../_content/SeiteBearbeitenLink";
 import { loadCurrentMember } from "../_dashboard/session";
@@ -36,7 +37,11 @@ export default async function KurzportraitPage() {
         <SeiteBearbeitenLink href="/ueber-uns/bearbeiten" breiteKlasse={breiteClass("schmal")} />
       ) : null}
       {page ? (
-        <Render config={puckConfig} data={normalizeContent(page.data as Data, "schmal")} />
+        <Render
+          config={puckConfig}
+          data={normalizeContent(page.data as Data, "schmal")}
+          metadata={await pageMetadata("/ueber-uns")}
+        />
       ) : (
         <div className={`mx-auto flex w-full flex-col gap-6 px-4 ${breiteClass("schmal")}`}>
           {/* Platzhaltertext — bearbeitbar durch den Bundessprecher*innenrat (Spec §8). */}

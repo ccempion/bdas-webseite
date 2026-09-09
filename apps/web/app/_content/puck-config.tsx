@@ -4,6 +4,7 @@ import React from "react";
 import { Card } from "@bdas/design-system";
 
 import { legalUrls } from "../../lib/legal";
+import { NewsletterOffer } from "../_newsletter/NewsletterOffer";
 import { PublicFooterView } from "../_public/PublicFooterView";
 import { PublicHeaderView } from "../_public/PublicHeaderView";
 import type { CanvasChrome } from "./canvas-chrome";
@@ -80,6 +81,7 @@ type Blocks = {
   };
   KartenRaster: { karten: Karte[]; spalten: KartenSpalten };
   Kennzahlen: { werte: Kennzahl[] };
+  Newsletter: { ueberschrift: string };
 };
 
 /** Content-column width. Carried on the page's root so the same value frames
@@ -909,6 +911,42 @@ export const puckConfig: Config<Blocks> = {
         ) : (
           <Kennzahlen werte={werte} />
         ),
+    },
+    Newsletter: {
+      label: "Newsletter-Anmeldung",
+      fields: {
+        ueberschrift: { type: "text", label: "Überschrift" },
+      },
+      defaultProps: { ueberschrift: "Bleib in Verbindung" },
+      render: ({ ueberschrift, puck }) => {
+        // Same reason as the canvas chrome above: this runs in a client tree
+        // with no flags, no session and no database, so the server hands the
+        // decision down through metadata. `<Render>` gets it from
+        // `pageMetadata()`, `<Puck>` from `canvasChrome()`.
+        const meta = puck?.metadata as { chrome?: CanvasChrome; path?: string } | undefined;
+        const state = meta?.chrome?.newsletter ?? "off";
+
+        // The editor gets a stand-in, never a live form — a board member
+        // opening the preview must not be able to sign themselves up, and an
+        // empty block would leave them unsure the drop worked.
+        if (state === "editor") {
+          return (
+            <BlockPlatzhalter
+              titel="Newsletter-Anmeldung"
+              hinweis="Auf der veröffentlichten Seite steht hier das Anmeldefeld."
+            />
+          );
+        }
+
+        return (
+          <NewsletterOffer
+            state={state}
+            source="puck_block"
+            sourcePath={meta?.path ?? ""}
+            heading={ueberschrift}
+          />
+        );
+      },
     },
   },
 };

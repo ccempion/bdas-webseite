@@ -8,6 +8,7 @@ import { getDb } from "@bdas/db";
 import { isFlagOn } from "@bdas/feature-flags";
 import { isFederalBoard } from "@bdas/members";
 
+import { pageMetadata } from "../../_content/canvas-chrome";
 import { type Breite, breiteClass, normalizeContent, puckConfig } from "../../_content/puck-config";
 import { SeiteBearbeitenLink } from "../../_content/SeiteBearbeitenLink";
 import { loadCurrentMember } from "../../_dashboard/session";
@@ -42,7 +43,11 @@ export default async function BsrPage() {
         />
       ) : null}
       {page ? (
-        <Render config={puckConfig} data={normalizeContent(page.data as Data, BREITE)} />
+        <Render
+          config={puckConfig}
+          data={normalizeContent(page.data as Data, BREITE)}
+          metadata={await pageMetadata("/ueber-uns/bundessprecherinnenrat")}
+        />
       ) : (
         <p className={`mx-auto w-full px-4 text-bdas-ink-body ${width}`}>
           Inhalte folgen in Kürze.

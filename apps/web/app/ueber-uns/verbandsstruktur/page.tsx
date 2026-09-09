@@ -7,6 +7,7 @@ import { getDb } from "@bdas/db";
 import { isFlagOn } from "@bdas/feature-flags";
 import { isFederalBoard } from "@bdas/members";
 
+import { pageMetadata } from "../../_content/canvas-chrome";
 import { breiteClass, normalizeContent, puckConfig } from "../../_content/puck-config";
 import { SeiteBearbeitenLink } from "../../_content/SeiteBearbeitenLink";
 import { loadCurrentMember } from "../../_dashboard/session";
@@ -42,7 +43,11 @@ export default async function VerbandsstrukturPage() {
         />
       ) : null}
       {page ? (
-        <Render config={puckConfig} data={normalizeContent(page.data as Data, "breit")} />
+        <Render
+          config={puckConfig}
+          data={normalizeContent(page.data as Data, "breit")}
+          metadata={await pageMetadata("/ueber-uns/verbandsstruktur")}
+        />
       ) : null}
     </main>
   );

@@ -7,6 +7,7 @@ import { getDb } from "@bdas/db";
 import { isFlagOn } from "@bdas/feature-flags";
 import { isFederalBoard } from "@bdas/members";
 
+import { pageMetadata } from "../_content/canvas-chrome";
 import { breiteClass, normalizeContent, puckConfig } from "../_content/puck-config";
 import { SeiteBearbeitenLink } from "../_content/SeiteBearbeitenLink";
 import { loadCurrentMember } from "../_dashboard/session";
@@ -43,7 +44,11 @@ export default async function NutzungsbedingungenPage() {
         />
       ) : null}
       {page ? (
-        <Render config={puckConfig} data={normalizeContent(page.data as Data, "schmal")} />
+        <Render
+          config={puckConfig}
+          data={normalizeContent(page.data as Data, "schmal")}
+          metadata={await pageMetadata("/nutzungsbedingungen")}
+        />
       ) : (
         // This route is never flag-gated and the page title now lives in the
         // document (ADR 0038), so without this an unauthored legal page would

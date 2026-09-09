@@ -8,8 +8,17 @@ import { registerGuestAction, type GuestRegState } from "./actions";
 
 const initial: GuestRegState = {};
 
-/** Public sign-up for non-members on events that opted into guest registration. */
-export function GuestRegisterForm({ eventId }: { eventId: string }) {
+/** Public sign-up for non-members on events that opted into guest registration.
+ *
+ *  `showNewsletter` is passed in rather than read here: this is a client
+ *  component, and a feature flag never reaches the browser. */
+export function GuestRegisterForm({
+  eventId,
+  showNewsletter = false,
+}: {
+  eventId: string;
+  showNewsletter?: boolean;
+}) {
   const [state, action] = useFormState(registerGuestAction, initial);
 
   if (state.ok) {
@@ -47,6 +56,23 @@ export function GuestRegisterForm({ eventId }: { eventId: string }) {
           .
         </span>
       </label>
+
+      {/* Never pre-ticked and never `required`: the consent must not ride along
+          with another decision, and the registration works fully without it
+          (spec §6, Art. 7 (4) GDPR). */}
+      {showNewsletter ? (
+        <label className="flex items-start gap-2 text-sm text-bdas-ink-body">
+          <input type="checkbox" name="newsletter" className="mt-1" />
+          <span>
+            Schick mir ein paar Mal im Jahr den BDAS-Newsletter. Abbestellen kannst du jederzeit,
+            mehr dazu in der{" "}
+            <a href="/datenschutz" className="text-bdas-red hover:underline">
+              Datenschutzerklärung
+            </a>
+            .
+          </span>
+        </label>
+      ) : null}
 
       <SubmitButton />
     </form>
