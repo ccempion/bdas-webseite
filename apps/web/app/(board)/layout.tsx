@@ -5,9 +5,12 @@ import { getDb } from "@bdas/db";
 import { boardScopes } from "@bdas/dashboard-shell";
 import { listGroups } from "@bdas/groups";
 
+import type { FlagName } from "@bdas/feature-flags";
+
 import { loadSidebarBadgeCounts } from "../_dashboard/approvals";
 import { requireDashboardFlag } from "../_dashboard/flag";
 import { requireBoardAccess } from "../_dashboard/session";
+import { newsletterEnabled } from "../_newsletter/flag";
 import { Sidebar } from "./Sidebar";
 
 // Board pages read the per-request session + DB; never statically prerender.
@@ -29,12 +32,16 @@ export default async function BoardLayout({ children }: { children: ReactNode })
     scopes,
   );
 
+  // Only the flags the nav asks about: the sidebar has no business knowing
+  // the rest of the flag state.
+  const enabledFlags: FlagName[] = newsletterEnabled() ? ["newsletter"] : [];
+
   return (
     // Stacks under `md`: a fixed 240px rail beside the content leaves ~120px of
     // usable column on a phone, which crushes every card and puts its controls
     // under the sticky header.
     <div className="mx-auto flex min-h-[calc(100vh-var(--header-h,0px))] w-full max-w-7xl flex-col md:flex-row">
-      <Sidebar scopes={scopes} badgeCounts={badgeCounts} />
+      <Sidebar scopes={scopes} badgeCounts={badgeCounts} enabledFlags={enabledFlags} />
       <main className="min-w-0 flex-1 p-4 md:p-6">{children}</main>
     </div>
   );

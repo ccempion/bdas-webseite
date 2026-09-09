@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 import type { Scope } from "@bdas/dashboard-shell";
+import type { FlagName } from "@bdas/feature-flags";
 import { Badge } from "@bdas/design-system";
 
 import type { SidebarBadgeCounts } from "../_dashboard/approvals";
@@ -14,6 +15,7 @@ import {
   FEDERAL_NAV,
   groupNav,
   isNavItemActive,
+  visibleNavItems,
   type NavItem,
 } from "./nav";
 
@@ -30,14 +32,18 @@ function labelFor(active: Scope): string {
 export function Sidebar({
   scopes,
   badgeCounts,
+  enabledFlags,
 }: {
   scopes: Scope[];
   badgeCounts: SidebarBadgeCounts;
+  /** Module flags that are on for this request — resolved by the layout,
+   *  because `process.env` does not exist out here. */
+  enabledFlags: FlagName[];
 }) {
   const pathname = usePathname();
   const active = activeScope(scopes, pathname);
   if (!active) return null;
-  const items = navFor(active);
+  const items = visibleNavItems(navFor(active), enabledFlags);
   return (
     <nav className="flex w-full shrink-0 flex-col gap-1 border-b border-bdas-soft bg-bdas-surface p-3 md:w-60 md:border-b-0 md:border-r">
       <div className="mb-2">
