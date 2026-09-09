@@ -53,8 +53,7 @@ export default async function GruppeDetailPage({ params }: { params: { slug: str
     // — every member can read it, so it belongs on every group's page too.
     // Bundesvorstand (federal_board) stays out here; access there is TBD.
     groupFolders = (await listFolders(getDb(), me)).filter(
-      (f) =>
-        f.parentId === null && (f.groupId === group.id || f.scope === "members_all"),
+      (f) => f.parentId === null && (f.groupId === group.id || f.scope === "members_all"),
     );
     if (groupFolders.length > 0) {
       folderCounts = await folderFileCounts(
