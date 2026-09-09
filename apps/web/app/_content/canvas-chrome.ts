@@ -2,7 +2,7 @@ import { getDb } from "@bdas/db";
 import { isFlagOn } from "@bdas/feature-flags";
 
 import { faqEnabled } from "../../lib/faq/enabled";
-import { readSessionCookie } from "../../lib/auth-cookie";
+import { loadViewer } from "../_dashboard/session";
 import { newsletterEnabled } from "../_newsletter/flag";
 import { readNewsletterViewerState, type NewsletterViewerState } from "../_newsletter/viewer-state";
 import { navItems, type NavItem } from "../_public/nav-items";
@@ -63,7 +63,7 @@ export async function pageMetadata(path: string): Promise<{ chrome: CanvasChrome
   return {
     chrome: {
       ...canvasChrome(),
-      newsletter: await readNewsletterViewerState(getDb(), readSessionCookie()),
+      newsletter: await readNewsletterViewerState(getDb(), await loadViewer()),
     },
     path,
   };

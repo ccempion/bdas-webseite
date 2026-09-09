@@ -10,6 +10,7 @@ import { SiteHeader } from "../components/SiteHeader";
 import { PublicHeader } from "./_public/PublicHeader";
 import { PublicFooter } from "./_public/PublicFooter";
 import { FaqHelpMount } from "./_faq/FaqHelpMount";
+import { NewsletterScrollPanelMount } from "./_newsletter/NewsletterScrollPanelMount";
 import { WindowDropGuard } from "./_upload/WindowDropGuard";
 import { legalUrls } from "../lib/legal";
 
@@ -53,6 +54,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           <SiteFooter privacyUrl={privacy} imprintUrl={imprint} termsUrl={terms} />
         )}
         <FaqHelpMount />
+        <NewsletterScrollPanelMount />
         <CookieNotice privacyUrl={privacy} />
       </body>
     </html>
