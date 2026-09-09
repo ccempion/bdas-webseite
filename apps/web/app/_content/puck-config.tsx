@@ -14,6 +14,7 @@ import { BildGroesseGriff } from "./BildGroesseGriff";
 import { FotoField } from "./FotoField";
 import { Hero, type HeroHintergrund, type HeroHoehe } from "./Hero";
 import { type Karte, KartenRaster, type KartenSpalten } from "./KartenRaster";
+import { type Kennzahl, Kennzahlen } from "./Kennzahlen";
 import { Organigramm } from "./Organigramm";
 import type { Kasten } from "./org-tree";
 import { RichTextField } from "./RichTextField";
@@ -76,6 +77,7 @@ type Blocks = {
     buttonHref: string;
   };
   KartenRaster: { karten: Karte[]; spalten: KartenSpalten };
+  Kennzahlen: { werte: Kennzahl[] };
 };
 
 /** Content-column width. Carried on the page's root so the same value frames
@@ -810,6 +812,30 @@ export const puckConfig: Config<Blocks> = {
           <BlockPlatzhalter titel="Karten-Raster" hinweis="Noch keine Karten hinzugefügt." />
         ) : (
           <KartenRaster karten={karten} spalten={spalten} />
+        ),
+    },
+    Kennzahlen: {
+      label: "Kennzahlen",
+      fields: {
+        werte: {
+          type: "array",
+          label: "Kennzahlen",
+          arrayFields: {
+            // Free text, not a number field: "500+" and "seit 1994" are the
+            // point of the block (spec §6).
+            wert: { type: "text", label: "Wert (z. B. „500+“)" },
+            beschriftung: { type: "text", label: "Beschriftung" },
+          },
+          defaultItemProps: { wert: "", beschriftung: "" },
+          getItemSummary: (k) => k.wert || "Neue Kennzahl",
+        },
+      },
+      defaultProps: { werte: [] },
+      render: ({ werte, puck }) =>
+        (werte ?? []).length === 0 && puck?.isEditing ? (
+          <BlockPlatzhalter titel="Kennzahlen" hinweis="Noch keine Kennzahlen hinzugefügt." />
+        ) : (
+          <Kennzahlen werte={werte} />
         ),
     },
   },

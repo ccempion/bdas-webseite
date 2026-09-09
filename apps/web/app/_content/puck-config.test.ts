@@ -1404,4 +1404,54 @@ describe("puckConfig", () => {
       expect(out).toContain("lg:grid-cols-4");
     });
   });
+  describe("Kennzahlen block", () => {
+    it("is registered with the German label and a single array field", () => {
+      const block = puckConfig.components.Kennzahlen;
+      expect(block?.label).toBe("Kennzahlen");
+      expect(Object.keys(block?.fields ?? {})).toEqual(["werte"]);
+      expect(block?.defaultProps).toEqual({ werte: [] });
+    });
+
+    it("each entry carries a free-text value and a caption", () => {
+      const werte = puckConfig.components.Kennzahlen?.fields?.werte;
+      if (werte?.type !== "array") throw new Error("werte must be an array field");
+      expect(Object.keys(werte.arrayFields).sort()).toEqual(["beschriftung", "wert"]);
+      expect(werte.arrayFields.wert?.type).toBe("text");
+    });
+
+    it("summarises an entry by its value with a German fallback", () => {
+      const werte = puckConfig.components.Kennzahlen?.fields?.werte;
+      if (werte?.type !== "array" || !werte.getItemSummary) {
+        throw new Error("array field with getItemSummary expected");
+      }
+      expect(werte.getItemSummary({ wert: "500+", beschriftung: "Mitglieder" }, 0)).toBe("500+");
+      expect(werte.getItemSummary({ wert: "", beschriftung: "" }, 0)).toBe("Neue Kennzahl");
+    });
+
+    it("shows a placeholder in the editor when empty", () => {
+      const render = puckConfig.components.Kennzahlen?.render;
+      if (!render) throw new Error("Kennzahlen render missing");
+      const out = renderToStaticMarkup(
+        render({ werte: [], puck: { isEditing: true } } as never) as never,
+      );
+      expect(out).toContain("Noch keine Kennzahlen");
+    });
+
+    it("renders the figures through the component", () => {
+      const render = puckConfig.components.Kennzahlen?.render;
+      if (!render) throw new Error("Kennzahlen render missing");
+      const out = renderToStaticMarkup(
+        render({
+          werte: [
+            { wert: "500+", beschriftung: "Mitglieder" },
+            { wert: "12", beschriftung: "Hochschulgruppen" },
+          ],
+          puck: { isEditing: false },
+        } as never) as never,
+      );
+      expect(out).toContain("500+");
+      expect(out).toContain("Hochschulgruppen");
+      expect(out).toContain("grid-cols-2");
+    });
+  });
 });
