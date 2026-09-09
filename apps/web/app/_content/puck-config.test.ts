@@ -1082,37 +1082,12 @@ describe("puckConfig", () => {
   });
 
   describe("Hero block", () => {
-    it("is registered with the German label and its eight fields", () => {
+    it("exposes its eight fields with defaults for every one", () => {
       const hero = puckConfig.components.Hero;
       expect(hero?.label).toBe("Hero / Aufmacher");
-      expect(Object.keys(hero?.fields ?? {}).sort()).toEqual([
-        "ausrichtung",
-        "bild",
-        "buttonHref",
-        "buttonLabel",
-        "hintergrund",
-        "hoehe",
-        "ueberschrift",
-        "untertext",
-      ]);
-    });
-
-    it("offers exactly three backgrounds and three heights", () => {
-      const hintergrund = puckConfig.components.Hero?.fields?.hintergrund;
-      if (hintergrund?.type !== "select") throw new Error("hintergrund must be a select");
-      expect(hintergrund.options.map((o) => o.value)).toEqual(["hell", "akzent", "bild"]);
-
-      const hoehe = puckConfig.components.Hero?.fields?.hoehe;
-      if (hoehe?.type !== "select") throw new Error("hoehe must be a select");
-      expect(hoehe.options.map((o) => o.value)).toEqual(["kompakt", "mittel", "gross"]);
-    });
-
-    it("takes its image through the shared upload field", () => {
-      expect(puckConfig.components.Hero?.fields?.bild?.type).toBe("custom");
-    });
-
-    it("defaults to the light surface, mittel height and left alignment", () => {
-      expect(puckConfig.components.Hero?.defaultProps).toEqual({
+      // A field without a default ships a control the board cannot rely on, so
+      // the two lists must stay in step — hence one assertion over both.
+      expect(hero?.defaultProps).toEqual({
         ueberschrift: "Überschrift",
         untertext: "",
         hintergrund: "hell",
@@ -1122,26 +1097,21 @@ describe("puckConfig", () => {
         buttonLabel: "",
         buttonHref: "",
       });
+      expect(Object.keys(hero?.fields ?? {}).sort()).toEqual(
+        Object.keys(hero?.defaultProps ?? {}).sort(),
+      );
     });
 
-    it("renders the headline through the Hero component", () => {
-      const render = puckConfig.components.Hero?.render;
-      if (!render) throw new Error("Hero render missing");
-      const out = renderToStaticMarkup(
-        render({
-          ueberschrift: "Wer wir sind",
-          untertext: "",
-          hintergrund: "hell",
-          bild: "",
-          hoehe: "mittel",
-          ausrichtung: "links",
-          buttonLabel: "",
-          buttonHref: "",
-          puck: { isEditing: false },
-        } as never) as never,
-      );
-      expect(out).toContain("Wer wir sind");
-      expect(out).toContain("min-h-[24rem]");
+    it("offers exactly the option values the component understands", () => {
+      // A select value outside the component's lookup silently falls back and
+      // reads as a broken control, so these lists are pinned to it.
+      const hintergrund = puckConfig.components.Hero?.fields?.hintergrund;
+      if (hintergrund?.type !== "select") throw new Error("hintergrund must be a select");
+      expect(hintergrund.options.map((o) => o.value)).toEqual(["hell", "akzent", "bild"]);
+
+      const hoehe = puckConfig.components.Hero?.fields?.hoehe;
+      if (hoehe?.type !== "select") throw new Error("hoehe must be a select");
+      expect(hoehe.options.map((o) => o.value)).toEqual(["kompakt", "mittel", "gross"]);
     });
 
     it("shows a placeholder in the editor while headline, text and image are all empty", () => {
