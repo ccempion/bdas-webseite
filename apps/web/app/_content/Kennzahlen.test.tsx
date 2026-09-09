@@ -51,6 +51,29 @@ describe("Kennzahlen", () => {
     expect(out).not.toContain("text-bdas-red");
   });
 
+  it("skips a blank entry instead of reflowing the row around an invisible cell", () => {
+    // What Puck inserts when the board presses "+" on the array. Counting it
+    // would push a single figure into a two-column layout and leave a gap
+    // nobody can see; a trailing blank in a published document would add a
+    // whole empty row under the figures.
+    const out = renderToStaticMarkup(
+      <Kennzahlen
+        werte={[
+          { wert: "500+", beschriftung: "Mitglieder" },
+          { wert: "", beschriftung: "" },
+        ]}
+      />,
+    );
+    expect(out).not.toContain("grid-cols-2");
+    expect((out.match(/<p/g) ?? []).length).toBe(2);
+  });
+
+  it("omits an empty caption rather than rendering an empty element", () => {
+    const out = renderToStaticMarkup(<Kennzahlen werte={[{ wert: "500+", beschriftung: "" }]} />);
+    expect(out).toContain("500+");
+    expect((out.match(/<p/g) ?? []).length).toBe(1);
+  });
+
   it("survives a document saved without the array", () => {
     const out = renderToStaticMarkup(<Kennzahlen werte={undefined as never} />);
     expect(out).toContain("grid");

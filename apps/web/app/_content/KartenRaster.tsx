@@ -32,9 +32,12 @@ export const kartenGrid = (spalten: KartenSpalten | undefined): string =>
  * Uniform cards side by side — "Unsere Angebote" and the like.
  *
  * The image is decoration (`alt=""`): the title beside it carries the meaning,
- * so an alt text would be announced twice. Index keys are right here because a
- * card holds no DOM state a reorder could strand — unlike `Akkordeon`, whose
- * `<details>` open state is exactly that.
+ * so an alt text would be announced twice. A card with neither a title nor a
+ * text drops the padded container entirely rather than parking blank space
+ * under the image — it then carries nothing for assistive tech either, which
+ * is the honest reading of an image the board gave no words to. Index keys are
+ * right here because a card holds no DOM state a reorder could strand — unlike
+ * `Akkordeon`, whose `<details>` open state is exactly that.
  *
  * Purely presentational and free of Puck types — the block wrapper in
  * `puck-config.tsx` owns the editor placeholder.
@@ -47,10 +50,12 @@ export function KartenRaster({ karten, spalten }: { karten: Karte[]; spalten: Ka
           {k.bild ? (
             <img src={k.bild} alt="" aria-hidden className="aspect-video w-full object-cover" />
           ) : null}
-          <div className="flex flex-col gap-2 p-6">
-            {k.titel ? <p className="font-semibold text-bdas-ink">{k.titel}</p> : null}
-            {k.text ? <p className="whitespace-pre-line text-bdas-ink-body">{k.text}</p> : null}
-          </div>
+          {k.titel || k.text ? (
+            <div className="flex flex-col gap-2 p-6">
+              {k.titel ? <p className="font-semibold text-bdas-ink">{k.titel}</p> : null}
+              {k.text ? <p className="whitespace-pre-line text-bdas-ink-body">{k.text}</p> : null}
+            </div>
+          ) : null}
         </Card>
       ))}
     </div>
