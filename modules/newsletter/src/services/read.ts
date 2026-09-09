@@ -87,14 +87,14 @@ async function loadDeduped(db: Db): Promise<SubscriberRow[]> {
       source: r.source as NewsletterSource,
       sourcePath: r.sourcePath,
       groupId: r.groupId,
-      hasAccount: r.userId !== null,
+      userId: r.userId,
       createdAt: r.createdAt,
       confirmedAt: r.confirmedAt,
     };
     const seen = byEmail.get(email);
     // The account row wins: its address is the one that keeps following the
     // person (spec §4). Otherwise the newer row stays — rows arrive desc.
-    if (!seen || (row.hasAccount && !seen.hasAccount)) byEmail.set(email, row);
+    if (!seen || (row.userId !== null && seen.userId === null)) byEmail.set(email, row);
   }
   return [...byEmail.values()];
 }

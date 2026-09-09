@@ -59,7 +59,7 @@ describe.skipIf(!reachable)("newsletter read services", () => {
     });
     const [row] = await listSubscribers(t.db);
     expect(row?.email).toBe("neu@example.org");
-    expect(row?.hasAccount).toBe(true);
+    expect(row?.userId).toBe("u1");
   });
 
   it("falls back to the stored key when the account is unresolvable", async () => {
