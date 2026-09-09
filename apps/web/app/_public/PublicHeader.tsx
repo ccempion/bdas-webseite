@@ -26,14 +26,9 @@ export async function PublicHeader() {
   const myGroup =
     group && group.status !== "archived" ? { slug: group.slug, name: group.name } : undefined;
 
-  // Files access is per member-kind, independent of the group page; flag-gate it
-  // so the item never renders while BDAS_FLAG_FILES is off (no dead link).
-  const showFiles = Boolean(me?.member) && isFlagOn("files");
-
   const items = navItems({
     isLoggedIn: Boolean(me),
     ...(myGroup ? { myGroup } : {}),
-    showFiles,
   });
 
   return (

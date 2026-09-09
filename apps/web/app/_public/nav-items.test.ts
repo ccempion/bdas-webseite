@@ -7,10 +7,9 @@ function byLabel(items: NavItem[], label: string): NavItem | undefined {
 }
 
 describe("navItems", () => {
-  it("omits the group link and Dateien by default", () => {
+  it("omits the group link by default", () => {
     const items = navItems();
     expect(byLabel(items, "BDAS Köln")).toBeUndefined();
-    expect(byLabel(items, "Dateien")).toBeUndefined();
   });
 
   it("adds the member's own group as a flat link when myGroup is given", () => {
@@ -18,14 +17,6 @@ describe("navItems", () => {
     expect(byLabel(items, "BDAS Köln")).toEqual({
       label: "BDAS Köln",
       href: "/gruppen/koeln",
-    });
-  });
-
-  it("adds a Dateien leaf only when showFiles is true", () => {
-    expect(byLabel(navItems({ showFiles: false }), "Dateien")).toBeUndefined();
-    expect(byLabel(navItems({ showFiles: true }), "Dateien")).toMatchObject({
-      label: "Dateien",
-      href: "/dateien",
     });
   });
 

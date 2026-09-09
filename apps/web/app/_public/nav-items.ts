@@ -5,16 +5,14 @@ export type NavItem = NavLeaf | { label: string; children: NavLeaf[] };
 
 /** Top navigation. Computed per-request so flags apply. Signed-out visitors get
  *  a "Gruppen" link to browse all groups; signed-in members instead get a link
- *  to their own local group (plus a "Dateien" item). The caller owns the
- *  session + flags and passes the derived values in. */
+ *  to their own local group. The caller owns the session + flags and passes
+ *  the derived values in. */
 export function navItems({
   isLoggedIn = false,
   myGroup,
-  showFiles = false,
 }: {
   isLoggedIn?: boolean;
   myGroup?: { slug: string; name: string };
-  showFiles?: boolean;
 } = {}): NavItem[] {
   const items: NavItem[] = [
     {
@@ -41,6 +39,5 @@ export function navItems({
   if (myGroup) {
     items.push({ label: myGroup.name, href: `/gruppen/${myGroup.slug}` });
   }
-  if (showFiles) items.push({ label: "Dateien", href: "/dateien" });
   return items;
 }
