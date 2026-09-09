@@ -14,6 +14,7 @@ import { type BildBreite, bildBreiteClass, normalizeBildBreite } from "./bild-br
 import { BildGroesseGriff } from "./BildGroesseGriff";
 import { FotoField } from "./FotoField";
 import { Hero, type HeroHintergrund, type HeroHoehe, type HeroTitelEbene } from "./Hero";
+import { CtaBanner, type CtaFlaeche } from "./CtaBanner";
 import { type Karte, KartenRaster, type KartenSpalten } from "./KartenRaster";
 import { type Kennzahl, Kennzahlen } from "./Kennzahlen";
 import { Organigramm } from "./Organigramm";
@@ -81,6 +82,13 @@ type Blocks = {
   };
   KartenRaster: { karten: Karte[]; spalten: KartenSpalten };
   Kennzahlen: { werte: Kennzahl[] };
+  CtaBanner: {
+    ueberschrift: string;
+    text: string;
+    buttonLabel: string;
+    buttonHref: string;
+    flaeche: CtaFlaeche;
+  };
   Newsletter: { ueberschrift: string };
 };
 
@@ -911,6 +919,55 @@ export const puckConfig: Config<Blocks> = {
         ) : (
           <Kennzahlen werte={werte} />
         ),
+    },
+    CtaBanner: {
+      label: "CTA-Banner",
+      fields: {
+        ueberschrift: { type: "text", label: "Überschrift" },
+        text: { type: "textarea", label: "Text (optional)" },
+        buttonLabel: { type: "text", label: "Button-Beschriftung (optional)" },
+        buttonHref: { type: "text", label: "Button-Link (https://… oder /pfad)" },
+        flaeche: {
+          type: "select",
+          label: "Hintergrund",
+          options: [
+            { label: "Akzentfarbe", value: "akzent" },
+            { label: "Neutrale Fläche", value: "neutral" },
+          ],
+        },
+      },
+      defaultProps: {
+        ueberschrift: "Jetzt Mitglied werden",
+        text: "",
+        buttonLabel: "",
+        buttonHref: "",
+        flaeche: "akzent",
+      },
+      render: ({ ueberschrift, text, buttonLabel, buttonHref, flaeche, puck }) => {
+        // Same emptiness rule as `Hero`: a label without a safe href is not
+        // content, because `CtaBanner` drops the button in that case and an
+        // empty coloured band is worse than no block at all.
+        const hatButton = (buttonLabel ?? "").trim() !== "" && safeHref(buttonHref ?? "") !== null;
+        if ((ueberschrift ?? "") === "" && (text ?? "") === "" && !hatButton) {
+          return puck?.isEditing ? (
+            <BlockPlatzhalter
+              titel="CTA-Banner"
+              hinweis="Noch kein Inhalt — Überschrift, Text oder Button ergänzen."
+            />
+          ) : (
+            <></>
+          );
+        }
+        return (
+          <CtaBanner
+            ueberschrift={ueberschrift}
+            text={text}
+            buttonLabel={buttonLabel}
+            buttonHref={buttonHref}
+            flaeche={flaeche}
+          />
+        );
+      },
     },
     Newsletter: {
       label: "Newsletter-Anmeldung",
