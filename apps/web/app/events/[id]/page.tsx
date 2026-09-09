@@ -11,6 +11,7 @@ import { requireEventsFlag } from "../../_events/flag";
 import { readSessionCookie } from "../../../lib/auth-cookie";
 import { viewerFrom } from "../../../lib/event-viewer";
 import { formatDateTime } from "../../../lib/format";
+import { newsletterEnabled } from "../../_newsletter/flag";
 import { GuestRegisterForm } from "./GuestRegisterForm";
 import { RegisterControls } from "./RegisterControls";
 
@@ -137,7 +138,7 @@ export default async function EventDetailPage({ params }: { params: { id: string
           />
         ) : guestRegistrationOpen ? (
           <div className="flex flex-col gap-3">
-            <GuestRegisterForm eventId={event.id} />
+            <GuestRegisterForm eventId={event.id} showNewsletter={newsletterEnabled()} />
             {!me ? (
               <p className="text-sm text-bdas-ink-muted">
                 Bereits Mitglied?{" "}

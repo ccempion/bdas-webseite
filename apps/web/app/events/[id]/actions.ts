@@ -9,6 +9,7 @@ import { isFlagOn } from "@bdas/feature-flags";
 import { getCurrentMember } from "@bdas/members";
 
 import { readSessionCookie } from "../../../lib/auth-cookie";
+import { subscribePubliclyAction } from "../../_newsletter/public-actions";
 
 export type RegState = {
   readonly error?: string;
@@ -61,14 +62,33 @@ export async function registerGuestAction(
   if (!EMAIL_RE.test(email)) return { error: "Bitte gib eine gültige E-Mail-Adresse an." };
   if (!consent) return { error: "Bitte stimme der Verarbeitung deiner Daten zu." };
 
+  let result;
   try {
-    const result = await registerGuest(getDb(), eventId, { name, email });
-    revalidate(eventId);
-    return { ok: true, waitlisted: result.status === "waitlisted" };
+    result = await registerGuest(getDb(), eventId, { name, email });
   } catch (err) {
     if (isAppError(err)) return { error: err.message };
     throw err;
   }
+
+  // Only now, and in its own try/catch. The tick is a second, independent
+  // consent (spec §6): a failed registration must leave no newsletter row
+  // behind, and a newsletter that is down must not cost anyone their place at
+  // the event. Reuses the public action so the consent log, the flag and the
+  // identical answer of §8 no. 4 stay in one place.
+  if (formData.get("newsletter") === "on") {
+    try {
+      const signup = new FormData();
+      signup.set("email", email);
+      signup.set("source", "event_gast");
+      signup.set("sourcePath", `/events/${eventId}`);
+      await subscribePubliclyAction({}, signup);
+    } catch (err) {
+      console.error("[newsletter] guest registration signup failed:", err);
+    }
+  }
+
+  revalidate(eventId);
+  return { ok: true, waitlisted: result.status === "waitlisted" };
 }
 
 export async function cancelAction(_prev: RegState, formData: FormData): Promise<RegState> {
