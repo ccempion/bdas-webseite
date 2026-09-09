@@ -118,9 +118,7 @@ export function Karussell({ ueberschrift, folien }: { ueberschrift: string; foli
             {f.titel || f.text ? (
               <div className="flex flex-col gap-2 sm:flex-1">
                 {f.titel ? <p className="font-semibold text-bdas-ink">{f.titel}</p> : null}
-                {f.text ? (
-                  <p className="whitespace-pre-line text-bdas-ink-body">{f.text}</p>
-                ) : null}
+                {f.text ? <p className="whitespace-pre-line text-bdas-ink-body">{f.text}</p> : null}
               </div>
             ) : null}
           </li>

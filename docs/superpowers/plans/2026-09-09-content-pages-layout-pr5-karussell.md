@@ -23,15 +23,15 @@
 
 ## File Structure
 
-| Datei | Verantwortung |
-| --- | --- |
-| `core/design-system/src/tokens.ts` | `recipes.carousel` — die eine Stelle, die sagt, wie ein Karussell im BDAS-System aussieht |
-| `core/design-system/README.md` | dieselbe Regel in Prosa, im Abschnitt „Component recipes" |
-| `apps/web/app/_content/Karussell.tsx` | die reinen Regeln **und** die Client-Komponente; rein präsentational, kennt keine Puck-Typen |
-| `apps/web/app/_content/Karussell.test.tsx` | Regeln (node) und Verdrahtung (happy-dom) |
-| `apps/web/app/_content/puck-config.tsx` | Block-Typ, Felder, Registrierung, Leerzustand |
-| `apps/web/app/_content/puck-config.test.ts` | der Block im Katalog |
-| `docs/decisions/0039-karussell-ohne-neue-abhaengigkeit.md` | warum kein embla, und die zwei Rezept-Abweichungen von §7 |
+| Datei                                                      | Verantwortung                                                                                |
+| ---------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| `core/design-system/src/tokens.ts`                         | `recipes.carousel` — die eine Stelle, die sagt, wie ein Karussell im BDAS-System aussieht    |
+| `core/design-system/README.md`                             | dieselbe Regel in Prosa, im Abschnitt „Component recipes"                                    |
+| `apps/web/app/_content/Karussell.tsx`                      | die reinen Regeln **und** die Client-Komponente; rein präsentational, kennt keine Puck-Typen |
+| `apps/web/app/_content/Karussell.test.tsx`                 | Regeln (node) und Verdrahtung (happy-dom)                                                    |
+| `apps/web/app/_content/puck-config.tsx`                    | Block-Typ, Felder, Registrierung, Leerzustand                                                |
+| `apps/web/app/_content/puck-config.test.ts`                | der Block im Katalog                                                                         |
+| `docs/decisions/0039-karussell-ohne-neue-abhaengigkeit.md` | warum kein embla, und die zwei Rezept-Abweichungen von §7                                    |
 
 Regeln und Komponente teilen sich `Karussell.tsx`, weil das Haus es so hält: `kartenGrid` steht in `KartenRaster.tsx`, `panelIsDue` in `NewsletterScrollPanel.tsx`. Eine eigene Regeldatei wäre eine Erfindung ohne Vorbild.
 
@@ -42,10 +42,12 @@ Regeln und Komponente teilen sich `Karussell.tsx`, weil das Haus es so hält: `k
 Spec §7 verlangt, das Rezept zu beschließen, **bevor** ein Block es konsumiert. Diese Task hat bewusst keinen Unit-Test — sie liefert einen Token-String und einen README-Absatz; ihr Tor sind `typecheck`, `lint`, `format:check` und das Review.
 
 **Files:**
+
 - Modify: `core/design-system/src/tokens.ts` (im `recipes`-Objekt, nach `accordion`)
 - Modify: `core/design-system/README.md` (Abschnitt „Component recipes", nach dem Accordion-Eintrag)
 
 **Interfaces:**
+
 - Consumes: nichts
 - Produces: `recipes.carousel: string` — Task 3 und Task 5 zitieren es
 
@@ -105,10 +107,12 @@ EOF
 ## Task 2: Die reinen Regeln
 
 **Files:**
+
 - Create: `apps/web/app/_content/Karussell.tsx`
 - Create: `apps/web/app/_content/Karussell.test.tsx`
 
 **Interfaces:**
+
 - Consumes: nichts
 - Produces:
   - `export type Folie = { bild: string; titel: string; text: string }`
@@ -217,10 +221,12 @@ EOF
 ## Task 3: Die Komponente
 
 **Files:**
+
 - Modify: `apps/web/app/_content/Karussell.tsx`
 - Modify: `apps/web/app/_content/Karussell.test.tsx`
 
 **Interfaces:**
+
 - Consumes: `aktiveFolie`, `Folie` aus Task 2
 - Produces: `export function Karussell({ ueberschrift, folien }: { ueberschrift: string; folien: Folie[] }): JSX.Element | null`
 
@@ -284,7 +290,9 @@ describe("Karussell, server-rendered", () => {
     expect(mit).toContain('alt=""');
     expect(mit).toContain("aria-hidden");
 
-    const ohne = renderToStaticMarkup(<Karussell ueberschrift="" folien={[folie("Solidarität")]} />);
+    const ohne = renderToStaticMarkup(
+      <Karussell ueberschrift="" folien={[folie("Solidarität")]} />,
+    );
     expect(ohne).not.toContain("<img");
   });
 
@@ -296,7 +304,9 @@ describe("Karussell, server-rendered", () => {
     expect(mit).toContain("Unsere Werte");
     expect(mit).not.toContain('aria-label="Karussell"');
 
-    const ohne = renderToStaticMarkup(<Karussell ueberschrift="" folien={[folie("Solidarität")]} />);
+    const ohne = renderToStaticMarkup(
+      <Karussell ueberschrift="" folien={[folie("Solidarität")]} />,
+    );
     expect(ohne).toContain('aria-label="Karussell"');
     expect(ohne).not.toContain("aria-labelledby");
   });
@@ -315,7 +325,9 @@ describe("Karussell, server-rendered", () => {
 
   it("survives a document saved without the array", () => {
     expect(
-      renderToStaticMarkup(<Karussell ueberschrift={undefined as never} folien={undefined as never} />),
+      renderToStaticMarkup(
+        <Karussell ueberschrift={undefined as never} folien={undefined as never} />,
+      ),
     ).toBe("");
   });
 });
@@ -510,9 +522,7 @@ export function Karussell({ ueberschrift, folien }: { ueberschrift: string; foli
             {f.titel || f.text ? (
               <div className="flex flex-col gap-2 sm:flex-1">
                 {f.titel ? <p className="font-semibold text-bdas-ink">{f.titel}</p> : null}
-                {f.text ? (
-                  <p className="whitespace-pre-line text-bdas-ink-body">{f.text}</p>
-                ) : null}
+                {f.text ? <p className="whitespace-pre-line text-bdas-ink-body">{f.text}</p> : null}
               </div>
             ) : null}
           </li>
@@ -600,10 +610,12 @@ EOF
 ## Task 4: Der Block im Puck-Katalog
 
 **Files:**
+
 - Modify: `apps/web/app/_content/puck-config.tsx`
 - Modify: `apps/web/app/_content/puck-config.test.ts`
 
 **Interfaces:**
+
 - Consumes: `Karussell`, `Folie` aus Task 3; `FotoField`, `BlockPlatzhalter` (bestehend)
 - Produces: `puckConfig.components.Karussell` mit `defaultProps: { ueberschrift: "", folien: [] }`
 
@@ -612,60 +624,60 @@ EOF
 An `apps/web/app/_content/puck-config.test.ts` anhängen, **innerhalb** des äußersten `describe`-Blocks (also vor der letzten schließenden `});`), im Stil des `CtaBanner`-Blocks direkt darüber:
 
 ```tsx
-  describe("Karussell block", () => {
-    const render = (props: Record<string, unknown>) => {
-      const r = puckConfig.components.Karussell?.render;
-      if (!r) throw new Error("Karussell render missing");
-      return renderToStaticMarkup(r(props as never) as never);
-    };
+describe("Karussell block", () => {
+  const render = (props: Record<string, unknown>) => {
+    const r = puckConfig.components.Karussell?.render;
+    if (!r) throw new Error("Karussell render missing");
+    return renderToStaticMarkup(r(props as never) as never);
+  };
 
-    it("starts empty and headingless", () => {
-      const defaults = puckConfig.components.Karussell?.defaultProps;
-      expect(defaults?.ueberschrift).toBe("");
-      expect(defaults?.folien).toEqual([]);
-    });
-
-    it("is a placeholder in the editor and nothing at all on the page when empty", () => {
-      const leer = { ueberschrift: "", folien: [] };
-      expect(render({ ...leer, puck: { isEditing: true } })).toContain("data-block-platzhalter");
-      expect(render({ ...leer, puck: { isEditing: false } })).toBe("");
-    });
-
-    it("renders the slides it was given", () => {
-      const out = render({
-        ueberschrift: "Unsere Werte",
-        folien: [
-          { bild: "", titel: "Solidarität", text: "Wir stehen füreinander ein." },
-          { bild: "", titel: "Vielfalt", text: "Wir sind viele." },
-        ],
-        puck: { isEditing: false },
-      });
-      expect(out).toContain("Unsere Werte");
-      expect(out).toContain("Solidarität");
-      expect(out).toContain("Vielfalt");
-      expect(out).toContain("snap-x");
-    });
-
-    it("renders a document saved before the heading field existed", () => {
-      // Every page saved by PR1–PR4 carries slides without an `ueberschrift`.
-      const out = render({
-        folien: [{ bild: "", titel: "Solidarität", text: "" }],
-        puck: { isEditing: false },
-      });
-      expect(out).toContain("Solidarität");
-      expect(out).toContain('aria-label="Karussell"');
-    });
-
-    it("summarises a slide by its title in the editor's list", () => {
-      const feld = puckConfig.components.Karussell?.fields?.folien;
-      const summary =
-        feld && "getItemSummary" in feld
-          ? (feld.getItemSummary as (f: { titel: string }) => string)
-          : undefined;
-      expect(summary?.({ titel: "Solidarität" })).toBe("Solidarität");
-      expect(summary?.({ titel: "" })).toBe("Neue Folie");
-    });
+  it("starts empty and headingless", () => {
+    const defaults = puckConfig.components.Karussell?.defaultProps;
+    expect(defaults?.ueberschrift).toBe("");
+    expect(defaults?.folien).toEqual([]);
   });
+
+  it("is a placeholder in the editor and nothing at all on the page when empty", () => {
+    const leer = { ueberschrift: "", folien: [] };
+    expect(render({ ...leer, puck: { isEditing: true } })).toContain("data-block-platzhalter");
+    expect(render({ ...leer, puck: { isEditing: false } })).toBe("");
+  });
+
+  it("renders the slides it was given", () => {
+    const out = render({
+      ueberschrift: "Unsere Werte",
+      folien: [
+        { bild: "", titel: "Solidarität", text: "Wir stehen füreinander ein." },
+        { bild: "", titel: "Vielfalt", text: "Wir sind viele." },
+      ],
+      puck: { isEditing: false },
+    });
+    expect(out).toContain("Unsere Werte");
+    expect(out).toContain("Solidarität");
+    expect(out).toContain("Vielfalt");
+    expect(out).toContain("snap-x");
+  });
+
+  it("renders a document saved before the heading field existed", () => {
+    // Every page saved by PR1–PR4 carries slides without an `ueberschrift`.
+    const out = render({
+      folien: [{ bild: "", titel: "Solidarität", text: "" }],
+      puck: { isEditing: false },
+    });
+    expect(out).toContain("Solidarität");
+    expect(out).toContain('aria-label="Karussell"');
+  });
+
+  it("summarises a slide by its title in the editor's list", () => {
+    const feld = puckConfig.components.Karussell?.fields?.folien;
+    const summary =
+      feld && "getItemSummary" in feld
+        ? (feld.getItemSummary as (f: { titel: string }) => string)
+        : undefined;
+    expect(summary?.({ titel: "Solidarität" })).toBe("Solidarität");
+    expect(summary?.({ titel: "" })).toBe("Neue Folie");
+  });
+});
 ```
 
 - [ ] **Step 2: Test laufen lassen, Fehlschlag bestätigen**
@@ -756,9 +768,11 @@ EOF
 ## Task 5: ADR 0039 und Gesamtabnahme
 
 **Files:**
+
 - Create: `docs/decisions/0039-karussell-ohne-neue-abhaengigkeit.md`
 
 **Interfaces:**
+
 - Consumes: alles davor
 - Produces: nichts, was Code liest
 

@@ -78,7 +78,9 @@ describe("Karussell, server-rendered", () => {
     expect(mit).toContain('alt=""');
     expect(mit).toContain("aria-hidden");
 
-    const ohne = renderToStaticMarkup(<Karussell ueberschrift="" folien={[folie("Solidarität")]} />);
+    const ohne = renderToStaticMarkup(
+      <Karussell ueberschrift="" folien={[folie("Solidarität")]} />,
+    );
     expect(ohne).not.toContain("<img");
   });
 
@@ -90,7 +92,9 @@ describe("Karussell, server-rendered", () => {
     expect(mit).toContain("Unsere Werte");
     expect(mit).not.toContain('aria-label="Karussell"');
 
-    const ohne = renderToStaticMarkup(<Karussell ueberschrift="" folien={[folie("Solidarität")]} />);
+    const ohne = renderToStaticMarkup(
+      <Karussell ueberschrift="" folien={[folie("Solidarität")]} />,
+    );
     expect(ohne).toContain('aria-label="Karussell"');
     expect(ohne).not.toContain("aria-labelledby");
   });
@@ -109,7 +113,9 @@ describe("Karussell, server-rendered", () => {
 
   it("survives a document saved without the array", () => {
     expect(
-      renderToStaticMarkup(<Karussell ueberschrift={undefined as never} folien={undefined as never} />),
+      renderToStaticMarkup(
+        <Karussell ueberschrift={undefined as never} folien={undefined as never} />,
+      ),
     ).toBe("");
   });
 });
