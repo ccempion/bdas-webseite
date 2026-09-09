@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 
 import { Render, type Data } from "@puckeditor/core";
 
@@ -10,6 +9,7 @@ import { isFederalBoard } from "@bdas/members";
 
 import { pageMetadata } from "../_content/canvas-chrome";
 import { breiteClass, normalizeContent, puckConfig } from "../_content/puck-config";
+import { SeiteBearbeitenLink } from "../_content/SeiteBearbeitenLink";
 import { loadCurrentMember } from "../_dashboard/session";
 import { requirePublicShellFlag } from "../_public/flag";
 
@@ -33,29 +33,17 @@ export default async function KurzportraitPage() {
 
   return (
     <main className="py-12">
-      <div
-        className={`mx-auto flex w-full flex-col items-start gap-4 px-4 sm:flex-row sm:justify-between ${breiteClass("schmal")}`}
-      >
-        <h1 className="text-3xl font-semibold text-bdas-ink">Über uns</h1>
-        {canEdit ? (
-          <Link
-            href="/ueber-uns/bearbeiten"
-            className="inline-flex shrink-0 items-center rounded-bdas-sm border border-bdas-strong px-3 py-1.5 text-sm text-bdas-ink transition-colors duration-bdas-quick ease-bdas hover:bg-bdas-surface-hover"
-          >
-            Seite bearbeiten
-          </Link>
-        ) : null}
-      </div>
+      {canEdit ? (
+        <SeiteBearbeitenLink href="/ueber-uns/bearbeiten" breiteKlasse={breiteClass("schmal")} />
+      ) : null}
       {page ? (
-        <div className="mt-6">
-          <Render
-            config={puckConfig}
-            data={normalizeContent(page.data as Data, "schmal")}
-            metadata={await pageMetadata("/ueber-uns")}
-          />
-        </div>
+        <Render
+          config={puckConfig}
+          data={normalizeContent(page.data as Data, "schmal")}
+          metadata={await pageMetadata("/ueber-uns")}
+        />
       ) : (
-        <div className={`mx-auto mt-6 flex w-full flex-col gap-6 px-4 ${breiteClass("schmal")}`}>
+        <div className={`mx-auto flex w-full flex-col gap-6 px-4 ${breiteClass("schmal")}`}>
           {/* Platzhaltertext — bearbeitbar durch den Bundessprecher*innenrat (Spec §8). */}
           <p className="text-bdas-ink-body">
             Der Bund der Alevitischen Studierenden in Deutschland (BDAS) ist der Zusammenschluss

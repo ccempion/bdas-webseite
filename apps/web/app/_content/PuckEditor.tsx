@@ -12,7 +12,7 @@ import { Alert } from "@bdas/design-system";
 import type { CanvasChrome } from "./canvas-chrome";
 import { ContentSlugContext } from "./content-slug-context";
 import { PreviewToggle } from "./PreviewToggle";
-import { type Breite, normalizeContent, puckConfig } from "./puck-config";
+import { type Breite, istGruppenSlug, normalizeContent, puckConfig } from "./puck-config";
 
 /** Full-page Puck editor. Publish = save-is-live (spec §1): PUT the document,
  *  then return to the public page. */
@@ -33,9 +33,17 @@ export function PuckEditor({
 }) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
+  // Group pages render the group name as their own <h1>, so a Hero headline
+  // there is an <h2> — mirror that in the canvas rather than previewing a
+  // heading level the public page will not use (ADR 0038). This covers the
+  // document as loaded; a block dragged in afterwards gets the same treatment
+  // from the block's own render, which reads the slug back out of `metadata`.
   const data = useMemo(
-    () => normalizeContent(initialData, defaultBreite),
-    [initialData, defaultBreite],
+    () =>
+      normalizeContent(initialData, defaultBreite, {
+        eigenerSeitentitel: istGruppenSlug(slug),
+      }),
+    [initialData, defaultBreite, slug],
   );
   // Puck treats a new `metadata` identity as a change signal and re-renders the
   // whole canvas tree; `setError` in onPublish would otherwise do that on every
