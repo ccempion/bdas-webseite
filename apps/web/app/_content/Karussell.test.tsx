@@ -61,7 +61,11 @@ describe("Karussell, server-rendered", () => {
   it("offers no controls before it is alive", () => {
     // Arrows and dots do nothing without JavaScript. A rail that can still be
     // swiped and scrolled by hand is the honest fallback; dead buttons are not.
-    const out = renderToStaticMarkup(<Karussell ueberschrift="" folien={[folie("Eins")]} />);
+    // Two slides, so an absent <button> is attributable to the mount gate
+    // alone — one slide would suppress controls on its own either way.
+    const out = renderToStaticMarkup(
+      <Karussell ueberschrift="" folien={[folie("Eins"), folie("Zwei")]} />,
+    );
     expect(out).not.toContain("<button");
     expect(out).toContain("snap-x");
   });
@@ -109,6 +113,8 @@ describe("Karussell, server-rendered", () => {
     ).toBe("");
   });
 });
+
+(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 describe("Karussell, alive in a DOM", () => {
   let host: HTMLDivElement;
