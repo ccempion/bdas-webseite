@@ -20,12 +20,6 @@ import { istLeererRichText, renderRichText } from "./rich-text";
 import { isExternalHref, safeHref } from "./href";
 import { BlockPlatzhalter } from "./BlockPlatzhalter";
 
-// Re-exported from their leaf module (see `ausrichtung.ts`): `puck-config.tsx`
-// stayed the import site for these three long before block components moved
-// into their own files, and every consumer still imports them from here.
-export { ausrichtungFlex, ausrichtungText } from "./ausrichtung";
-export type { Ausrichtung } from "./ausrichtung";
-
 type Person = {
   foto: string;
   name: string;
@@ -748,11 +742,19 @@ export const puckConfig: Config<Blocks> = {
         buttonHref,
         puck,
       }) => {
-        if ((ueberschrift ?? "") === "" && (untertext ?? "") === "" && (bild ?? "") === "") {
+        // The image only counts while the background actually uses it. It
+        // cannot be cleared through `FotoField`, so a photo the board uploaded
+        // and then switched away from would otherwise keep an empty Hero alive
+        // as a tall coloured box. The button counts only when it would render:
+        // `Hero` drops a label without a safe href, and a frame around an
+        // invisible button is not content.
+        const hatBild = hintergrund === "bild" && (bild ?? "") !== "";
+        const hatButton = (buttonLabel ?? "").trim() !== "" && safeHref(buttonHref ?? "") !== null;
+        if ((ueberschrift ?? "") === "" && (untertext ?? "") === "" && !hatBild && !hatButton) {
           return puck?.isEditing ? (
             <BlockPlatzhalter
               titel="Hero / Aufmacher"
-              hinweis="Noch kein Inhalt — Überschrift, Untertext oder Bild ergänzen."
+              hinweis="Noch kein Inhalt — Überschrift, Untertext, Bild oder Button ergänzen."
             />
           ) : (
             <></>

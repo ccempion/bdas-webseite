@@ -13,14 +13,8 @@ vi.mock("next/image", () => ({
 }));
 
 import { legalUrls } from "../../lib/legal";
-import {
-  akkordeonKeys,
-  ausrichtungFlex,
-  ausrichtungText,
-  breiteClass,
-  normalizeContent,
-  puckConfig,
-} from "./puck-config";
+import { ausrichtungFlex, ausrichtungText } from "./ausrichtung";
+import { akkordeonKeys, breiteClass, normalizeContent, puckConfig } from "./puck-config";
 
 /** The nav the server derives and passes through metadata. Flags are off in the
  *  test environment, so this is deliberately richer than anything `navItems()`
@@ -1088,37 +1082,12 @@ describe("puckConfig", () => {
   });
 
   describe("Hero block", () => {
-    it("is registered with the German label and its eight fields", () => {
+    it("exposes its eight fields with defaults for every one", () => {
       const hero = puckConfig.components.Hero;
       expect(hero?.label).toBe("Hero / Aufmacher");
-      expect(Object.keys(hero?.fields ?? {}).sort()).toEqual([
-        "ausrichtung",
-        "bild",
-        "buttonHref",
-        "buttonLabel",
-        "hintergrund",
-        "hoehe",
-        "ueberschrift",
-        "untertext",
-      ]);
-    });
-
-    it("offers exactly three backgrounds and three heights", () => {
-      const hintergrund = puckConfig.components.Hero?.fields?.hintergrund;
-      if (hintergrund?.type !== "select") throw new Error("hintergrund must be a select");
-      expect(hintergrund.options.map((o) => o.value)).toEqual(["hell", "akzent", "bild"]);
-
-      const hoehe = puckConfig.components.Hero?.fields?.hoehe;
-      if (hoehe?.type !== "select") throw new Error("hoehe must be a select");
-      expect(hoehe.options.map((o) => o.value)).toEqual(["kompakt", "mittel", "gross"]);
-    });
-
-    it("takes its image through the shared upload field", () => {
-      expect(puckConfig.components.Hero?.fields?.bild?.type).toBe("custom");
-    });
-
-    it("defaults to the light surface, mittel height and left alignment", () => {
-      expect(puckConfig.components.Hero?.defaultProps).toEqual({
+      // A field without a default ships a control the board cannot rely on, so
+      // the two lists must stay in step — hence one assertion over both.
+      expect(hero?.defaultProps).toEqual({
         ueberschrift: "Überschrift",
         untertext: "",
         hintergrund: "hell",
@@ -1128,26 +1097,21 @@ describe("puckConfig", () => {
         buttonLabel: "",
         buttonHref: "",
       });
+      expect(Object.keys(hero?.fields ?? {}).sort()).toEqual(
+        Object.keys(hero?.defaultProps ?? {}).sort(),
+      );
     });
 
-    it("renders the headline through the Hero component", () => {
-      const render = puckConfig.components.Hero?.render;
-      if (!render) throw new Error("Hero render missing");
-      const out = renderToStaticMarkup(
-        render({
-          ueberschrift: "Wer wir sind",
-          untertext: "",
-          hintergrund: "hell",
-          bild: "",
-          hoehe: "mittel",
-          ausrichtung: "links",
-          buttonLabel: "",
-          buttonHref: "",
-          puck: { isEditing: false },
-        } as never) as never,
-      );
-      expect(out).toContain("Wer wir sind");
-      expect(out).toContain("min-h-[24rem]");
+    it("offers exactly the option values the component understands", () => {
+      // A select value outside the component's lookup silently falls back and
+      // reads as a broken control, so these lists are pinned to it.
+      const hintergrund = puckConfig.components.Hero?.fields?.hintergrund;
+      if (hintergrund?.type !== "select") throw new Error("hintergrund must be a select");
+      expect(hintergrund.options.map((o) => o.value)).toEqual(["hell", "akzent", "bild"]);
+
+      const hoehe = puckConfig.components.Hero?.fields?.hoehe;
+      if (hoehe?.type !== "select") throw new Error("hoehe must be a select");
+      expect(hoehe.options.map((o) => o.value)).toEqual(["kompakt", "mittel", "gross"]);
     });
 
     it("shows a placeholder in the editor while headline, text and image are all empty", () => {
@@ -1187,6 +1151,74 @@ describe("puckConfig", () => {
         } as never) as never,
       );
       expect(out).toBe("");
+    });
+
+    it("ignores a leftover image when the background no longer uses it", () => {
+      const render = puckConfig.components.Hero?.render;
+      if (!render) throw new Error("Hero render missing");
+      // The board uploaded a photo, then switched back to the accent ground and
+      // cleared the text. `FotoField` has no remove action, so the stale URL
+      // stays on the block — it must not keep an otherwise empty Hero alive as
+      // a tall coloured box on the public page.
+      const props = {
+        ueberschrift: "",
+        untertext: "",
+        hintergrund: "akzent",
+        bild: "https://cdn.example/verwaist.webp",
+        hoehe: "mittel",
+        ausrichtung: "links",
+        buttonLabel: "",
+        buttonHref: "",
+      };
+      expect(
+        renderToStaticMarkup(render({ ...props, puck: { isEditing: false } } as never) as never),
+      ).toBe("");
+      expect(
+        renderToStaticMarkup(render({ ...props, puck: { isEditing: true } } as never) as never),
+      ).toContain("data-block-platzhalter");
+    });
+
+    it("treats a usable button as content on its own", () => {
+      const render = puckConfig.components.Hero?.render;
+      if (!render) throw new Error("Hero render missing");
+      const out = renderToStaticMarkup(
+        render({
+          ueberschrift: "",
+          untertext: "",
+          hintergrund: "akzent",
+          bild: "",
+          hoehe: "mittel",
+          ausrichtung: "links",
+          buttonLabel: "Jetzt Mitglied werden",
+          buttonHref: "/mitglied-werden",
+          puck: { isEditing: false },
+        } as never) as never,
+      );
+      expect(out).toContain('href="/mitglied-werden"');
+      expect(out).toContain("Jetzt Mitglied werden");
+    });
+
+    it("stays empty when the button's link is unusable", () => {
+      const render = puckConfig.components.Hero?.render;
+      if (!render) throw new Error("Hero render missing");
+      // `safeHref` rejects it, so the Hero would render a frame around a button
+      // that never appears. Empty is the honest state.
+      const props = {
+        ueberschrift: "",
+        untertext: "",
+        hintergrund: "akzent",
+        bild: "",
+        hoehe: "mittel",
+        ausrichtung: "links",
+        buttonLabel: "Klick mich",
+        buttonHref: "javascript:alert(1)",
+      };
+      expect(
+        renderToStaticMarkup(render({ ...props, puck: { isEditing: false } } as never) as never),
+      ).toBe("");
+      expect(
+        renderToStaticMarkup(render({ ...props, puck: { isEditing: true } } as never) as never),
+      ).toContain("data-block-platzhalter");
     });
 
     it("renders the real hero, not the placeholder, as soon as one field is filled", () => {
