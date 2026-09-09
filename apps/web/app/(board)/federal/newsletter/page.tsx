@@ -37,7 +37,9 @@ export default async function FederalNewsletterPage() {
   return (
     <section className="flex flex-col gap-5">
       <h1 className="text-2xl font-semibold text-bdas-ink">Newsletter</h1>
-      <div className="flex flex-wrap gap-3">
+      {/* Marked for the acceptance spec, which checks a tile against the rows
+          the table shows for the same status. */}
+      <div data-newsletter-tiles className="flex flex-wrap gap-3">
         <Tile value={String(counts.subscribed)} label="Abonniert" />
         <Tile value={String(counts.pending)} label="Ausstehend" />
         <Tile value={String(counts.unsubscribed)} label="Abgemeldet" />

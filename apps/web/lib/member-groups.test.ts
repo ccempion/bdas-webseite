@@ -11,6 +11,8 @@ const member = (over: Partial<Member> & { userId: string }): Member => ({
   primaryGroupId: null,
   status: "active",
   joinedAt: null,
+  createdAt: new Date("2026-01-01T00:00:00.000Z"),
+  updatedAt: new Date("2026-01-01T00:00:00.000Z"),
   ...over,
 });
 
