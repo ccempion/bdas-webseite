@@ -5,7 +5,7 @@ import type { TestDb } from "@bdas/db/test";
 import { setAccountEmailResolver } from "../resolver";
 import { newsletterSubscribers } from "../schema";
 import { dbReachable, setupNewsletterDb } from "../test-db";
-import { countSubscribers, listSubscribers } from "./read";
+import { countSubscribers, getSubscriptionForAccount, listSubscribers } from "./read";
 
 const reachable = await dbReachable();
 
@@ -124,5 +124,36 @@ describe.skipIf(!reachable)("newsletter read services", () => {
     // nls_s2 and nls_s3 collapse into one.
     expect(counts).toEqual({ pending: 1, subscribed: 2, unsubscribed: 1, declined: 1 });
     expect((await listSubscribers(t.db, { status: "subscribed" })).length).toBe(counts.subscribed);
+  });
+  describe("getSubscriptionForAccount", () => {
+    it("finds the row linked to the account", async () => {
+      await add({ id: "nls_linked", email: "linked@example.org", userId: "u1" });
+      const sub = await getSubscriptionForAccount(t.db, {
+        userId: "u1",
+        email: "linked@example.org",
+      });
+      expect(sub?.id).toBe("nls_linked");
+    });
+
+    it("finds an anonymous row that carries the account's address", async () => {
+      // The case that showed the signup form to someone already on the list:
+      // signing up through a public form AFTER the account was verified
+      // leaves a row that never learns the user id.
+      await add({ id: "nls_orphan", email: "orphan@example.org", userId: null });
+      const sub = await getSubscriptionForAccount(t.db, {
+        userId: "u1",
+        email: "  Orphan@Example.org  ",
+      });
+      expect(sub?.id).toBe("nls_orphan");
+    });
+
+    it("does not reach a row belonging to somebody else", async () => {
+      await add({ id: "nls_other", email: "other@example.org", userId: "u2" });
+      const sub = await getSubscriptionForAccount(t.db, {
+        userId: "u1",
+        email: "mine@example.org",
+      });
+      expect(sub).toBeNull();
+    });
   });
 });

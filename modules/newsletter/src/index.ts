@@ -21,10 +21,11 @@ export {
 } from "./services/confirm";
 export {
   countSubscribers,
-  getSubscriptionForUser,
+  getSubscriptionForAccount,
   listSubscribers,
   type SubscriberFilter,
 } from "./services/read";
+export { type NewsletterAccount } from "./account-match";
 export {
   declineForUser,
   shouldPrompt,

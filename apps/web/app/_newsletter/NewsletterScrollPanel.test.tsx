@@ -114,6 +114,7 @@ function placeFooter(top: number): void {
 
 beforeEach(() => {
   window.sessionStorage.clear();
+  window.localStorage.clear();
   dismissPromptAction.mockClear();
   setPage(4000, 0);
   container = document.createElement("div");
@@ -198,5 +199,13 @@ describe("NewsletterScrollPanel", () => {
     });
     expect(panel()).toBeNull();
     expect(dismissPromptAction).toHaveBeenCalledTimes(1);
+  });
+  it("never opens for a browser that has already signed up", () => {
+    // The offer inside hides itself in that case, so without this the panel
+    // was an empty card with nothing in it but a dismiss button.
+    window.localStorage.setItem("bdas-newsletter-signed-up", "1");
+    render("guest");
+    scroll(1200);
+    expect(panel()).toBeNull();
   });
 });

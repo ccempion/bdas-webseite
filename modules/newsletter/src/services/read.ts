@@ -1,7 +1,8 @@
-import { desc, eq } from "drizzle-orm";
+import { desc } from "drizzle-orm";
 
 import type { Db } from "@bdas/db";
 
+import { accountMatch, type NewsletterAccount } from "../account-match";
 import { getAccountEmailResolver } from "../resolver";
 import { newsletterSubscribers } from "../schema";
 import type {
@@ -27,14 +28,20 @@ export function rowToSubscription(r: typeof newsletterSubscribers.$inferSelect):
   };
 }
 
-/** The account's subscription, whatever its status — the caller decides what
- *  a `declined` or `unsubscribed` row means for its surface. */
-export async function getSubscriptionForUser(db: Db, userId: string): Promise<Subscription | null> {
-  const [row] = await db
-    .select()
-    .from(newsletterSubscribers)
-    .where(eq(newsletterSubscribers.userId, userId))
-    .limit(1);
+/**
+ * The account's subscription, whatever its status — the caller decides what a
+ * `declined` or `unsubscribed` row means for its surface.
+ *
+ * Matches on the id *or* the address (see `accountMatch`). Matching on the id
+ * alone was the bug: a row created through a public form after the account was
+ * verified never gets one, so its owner was told they were not subscribed and
+ * shown the signup form again.
+ */
+export async function getSubscriptionForAccount(
+  db: Db,
+  account: NewsletterAccount,
+): Promise<Subscription | null> {
+  const [row] = await db.select().from(newsletterSubscribers).where(accountMatch(account)).limit(1);
   return row ? rowToSubscription(row) : null;
 }
 

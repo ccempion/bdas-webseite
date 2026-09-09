@@ -6,6 +6,7 @@ import { confirmSubscription } from "@bdas/newsletter";
 
 import { bootNewsletter } from "../../../lib/newsletter-bootstrap";
 import { requireNewsletterFlag } from "../../_newsletter/flag";
+import { MarkSignedUp } from "../../_newsletter/MarkSignedUp";
 
 export const metadata = { title: "Newsletter bestätigen" };
 
@@ -28,6 +29,13 @@ export default async function NewsletterBestaetigenPage({
   return (
     <main className="mx-auto flex max-w-md flex-col gap-6 px-4 py-12">
       <h1 className="text-2xl font-semibold text-bdas-ink">Newsletter</h1>
+
+      {/* Both outcomes mean this person is on the list, so this browser can
+          stop offering them the newsletter — signing up on one device and
+          confirming on another used to leave the second one still asking. */}
+      {result.status === "confirmed" || result.status === "already_confirmed" ? (
+        <MarkSignedUp />
+      ) : null}
 
       {result.status === "confirmed" ? (
         <Alert variant="success" title="Du bist dabei">

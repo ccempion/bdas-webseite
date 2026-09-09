@@ -43,7 +43,7 @@ export default async function AccountSettingsPage() {
       {newsletterEnabled() ? (
         <Card flat className="p-6">
           <h2 className="mb-4 text-lg font-semibold text-bdas-ink">E-Mail-Benachrichtigungen</h2>
-          <NewsletterToggle userId={me.user.id} />
+          <NewsletterToggle account={{ userId: me.user.id, email: me.user.email }} />
         </Card>
       ) : (
         /* Reserved. Position and name are fixed now so that shipping the

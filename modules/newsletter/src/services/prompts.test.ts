@@ -24,13 +24,16 @@ describe.skipIf(!reachable)("newsletter prompts", () => {
     await t.cleanup();
   });
 
+  /** The account shape the prompt reader now takes: id and address. */
+  const acc = (userId: string) => ({ userId, email: `${userId}@example.org` });
+
   it("prompts an account that has never answered", async () => {
-    expect(await shouldPrompt(t.db, "u1")).toBe(true);
+    expect(await shouldPrompt(t.db, acc("u1"))).toBe(true);
   });
 
   it("stays quiet for the fortnight after a dismissal", async () => {
     await declineForUser(t.db, { userId: "u1" });
-    expect(await shouldPrompt(t.db, "u1")).toBe(false);
+    expect(await shouldPrompt(t.db, acc("u1"))).toBe(false);
   });
 
   it("asks again once the fortnight is over", async () => {
@@ -38,7 +41,7 @@ describe.skipIf(!reachable)("newsletter prompts", () => {
     await t.db
       .update(newsletterPrompts)
       .set({ lastDismissedAt: new Date(Date.now() - PROMPT_INTERVAL_MS - 1000) });
-    expect(await shouldPrompt(t.db, "u1")).toBe(true);
+    expect(await shouldPrompt(t.db, acc("u1"))).toBe(true);
   });
 
   it("goes quiet for good after three dismissals and records `declined`", async () => {
@@ -54,7 +57,7 @@ describe.skipIf(!reachable)("newsletter prompts", () => {
 
     // Not a re-prompt candidate even after the interval elapses.
     await t.db.update(newsletterPrompts).set({ lastDismissedAt: new Date(0) });
-    expect(await shouldPrompt(t.db, "u1")).toBe(false);
+    expect(await shouldPrompt(t.db, acc("u1"))).toBe(false);
   });
 
   it("never overwrites an existing answer with `declined`", async () => {
@@ -84,7 +87,7 @@ describe.skipIf(!reachable)("newsletter prompts", () => {
         unsubscribeTokenHash: `h_${status}`,
         source: "konto",
       });
-      expect(await shouldPrompt(t.db, userId)).toBe(false);
+      expect(await shouldPrompt(t.db, acc(userId))).toBe(false);
     }
   });
 
@@ -97,5 +100,18 @@ describe.skipIf(!reachable)("newsletter prompts", () => {
     for (let i = 0; i < MAX_DISMISSALS; i += 1) await declineForUser(t.db, { userId: "u9" });
     const [row] = await t.db.select().from(newsletterSubscribers);
     expect(row?.email).toBe("user:u9");
+  });
+  it("stays quiet when only the address is on the list, not the id", async () => {
+    // Signed up through a public form after the account was verified: the row
+    // carries the address and no user id. Asking again would be asking someone
+    // who has already answered.
+    await t.db.insert(newsletterSubscribers).values({
+      id: "nls_orphan",
+      email: "u9@example.org",
+      status: "subscribed",
+      unsubscribeTokenHash: "h_orphan",
+      source: "footer",
+    });
+    expect(await shouldPrompt(t.db, acc("u9"))).toBe(false);
   });
 });

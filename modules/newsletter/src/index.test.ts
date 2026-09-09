@@ -15,7 +15,7 @@ describe("newsletter public surface", () => {
         "confirmSubscription",
         "countSubscribers",
         "declineForUser",
-        "getSubscriptionForUser",
+        "getSubscriptionForAccount",
         "listSubscribers",
         "peekUnsubscribeToken",
         "registerNewsletterSubscribers",

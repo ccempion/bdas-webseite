@@ -1,5 +1,5 @@
 import type { Db } from "@bdas/db";
-import { getSubscriptionForUser, shouldPrompt } from "@bdas/newsletter";
+import { getSubscriptionForAccount, shouldPrompt } from "@bdas/newsletter";
 
 import { newsletterEnabled } from "./flag";
 
@@ -22,15 +22,21 @@ export type NewsletterViewerState = "guest" | "member" | "done" | "off";
  * every content page, and `loadViewer()` is `cache()`d per request, so passing
  * its result costs no second session read. A signed-out visitor costs no query
  * at all.
+ *
+ * The address travels with the id because a subscription can be keyed to
+ * either — see `accountMatch` in the module.
  */
 export async function readNewsletterViewerState(
   db: Db,
-  viewer: { readonly id: string } | null,
+  viewer: { readonly id: string; readonly email: string } | null,
 ): Promise<NewsletterViewerState> {
   if (!newsletterEnabled()) return "off";
   if (!viewer) return "guest";
 
-  const subscription = await getSubscriptionForUser(db, viewer.id);
+  const subscription = await getSubscriptionForAccount(db, {
+    userId: viewer.id,
+    email: viewer.email,
+  });
   return subscription ? "done" : "member";
 }
 
@@ -49,9 +55,9 @@ export async function readNewsletterViewerState(
  */
 export async function readScrollPanelState(
   db: Db,
-  viewer: { readonly id: string } | null,
+  viewer: { readonly id: string; readonly email: string } | null,
 ): Promise<"guest" | "member" | null> {
   if (!newsletterEnabled()) return null;
   if (!viewer) return "guest";
-  return (await shouldPrompt(db, viewer.id)) ? "member" : null;
+  return (await shouldPrompt(db, { userId: viewer.id, email: viewer.email })) ? "member" : null;
 }

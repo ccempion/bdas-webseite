@@ -5,6 +5,7 @@ import React, { useEffect, useState, useTransition } from "react";
 
 import { dismissPromptAction } from "./actions";
 import { hasDismissed, markDismissed } from "./dismiss-marker";
+import { hasSignedUp } from "./signup-marker";
 import { NewsletterOffer } from "./NewsletterOffer";
 
 /**
@@ -89,9 +90,13 @@ export function NewsletterScrollPanel({ state }: { state: "guest" | "member" | n
 
   useEffect(() => {
     if (quiet) return;
-    // Read after mount, never during render: `sessionStorage` does not exist on
+    // Read after mount, never during render: browser storage does not exist on
     // the server and the mismatch would be a hydration error.
-    if (hasDismissed()) {
+    //
+    // `hasSignedUp` as well as `hasDismissed`: the offer inside hides itself
+    // once this browser has signed up, but the panel around it did not, so
+    // someone already on the list got an empty card with nothing but a ×.
+    if (hasDismissed() || hasSignedUp()) {
       setDismissed(true);
       return;
     }
