@@ -51,6 +51,20 @@ async function makePageLong(page: Page): Promise<void> {
  * stretches the body to exactly one window, so three are out of reach whatever
  * the page happens to contain.
  */
+/**
+ * Scroll to the start of the band the panel lives in: the moment half the page
+ * has been seen. Deliberately the earliest valid position, which is also the
+ * one furthest from the footer — a position chosen by eye ("60 % down") sits
+ * near the footer's edge on a four-window page, and the panel then unmounts
+ * mid-click as soon as anything nudges the page.
+ */
+async function scrollIntoBand(page: Page): Promise<void> {
+  await page.evaluate(() => {
+    const { scrollHeight } = document.documentElement;
+    window.scrollTo(0, scrollHeight * 0.5 - window.innerHeight + 20);
+  });
+}
+
 async function makePageShort(page: Page): Promise<void> {
   const width = page.viewportSize()?.width ?? 412;
   const pageHeight = await page.evaluate(() => document.documentElement.scrollHeight);
@@ -69,7 +83,7 @@ test.describe("newsletter, the offensive surfaces", () => {
     // At the top of the page the offer belongs to the footer, not here.
     await expect(panel(page)).toHaveCount(0);
 
-    await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight * 0.6));
+    await scrollIntoBand(page);
     await expect(panel(page)).toBeVisible();
     await expect(panel(page).getByRole("button", { name: "Ich bin dabei" })).toBeVisible();
 
@@ -80,8 +94,27 @@ test.describe("newsletter, the offensive surfaces", () => {
     // just as far, must not bring it back.
     await page.reload();
     await makePageLong(page);
-    await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight * 0.9));
+    // Back to the same spot that just showed it, so the absence can only be
+    // the session marker and not the footer rule.
+    await scrollIntoBand(page);
     await expect(panel(page)).toHaveCount(0);
+  });
+
+  test("the scroll panel gives the foot of the page back to the footer", async ({ page }) => {
+    // The regression that turned main red: at the very bottom the panel sat
+    // over the footer and swallowed its links, which is exactly what
+    // public-shell.e2e.ts ("leaves the foot of the page reachable") forbids.
+    await page.goto("/");
+    await makePageLong(page);
+
+    await scrollIntoBand(page);
+    await expect(panel(page)).toBeVisible();
+
+    await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+    await expect(panel(page)).toHaveCount(0);
+    // Not merely invisible — the footer's links must actually be clickable.
+    await page.getByRole("contentinfo").getByRole("link", { name: "Impressum" }).click();
+    await page.waitForURL("**/impressum");
   });
 
   test("the scroll panel never opens on a page barely taller than the window", async ({ page }) => {

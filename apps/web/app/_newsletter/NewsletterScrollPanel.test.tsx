@@ -30,10 +30,19 @@ import {
 describe("panelIsDue", () => {
   const VIEWPORT = 800;
 
+  /** The footer is out of sight unless a case says otherwise. */
+  const due = (o: { pageHeight: number; scrollY: number; footerTop?: number }) =>
+    panelIsDue({
+      pageHeight: o.pageHeight,
+      viewportHeight: VIEWPORT,
+      scrollY: o.scrollY,
+      footerTop: o.footerTop ?? Infinity,
+    });
+
   it("never fires on a page shorter than three windows, however far it is scrolled", () => {
     const pageHeight = VIEWPORT * MIN_PAGE_HEIGHT_FACTOR - 1;
     for (const scrollY of [0, 100, pageHeight - VIEWPORT]) {
-      expect(panelIsDue({ pageHeight, viewportHeight: VIEWPORT, scrollY })).toBe(false);
+      expect(due({ pageHeight, scrollY })).toBe(false);
     }
   });
 
@@ -41,8 +50,19 @@ describe("panelIsDue", () => {
     const pageHeight = VIEWPORT * 4;
     // Half of four windows is two; one window is already on screen, so the
     // scroll position that gets there is one window down.
-    expect(panelIsDue({ pageHeight, viewportHeight: VIEWPORT, scrollY: VIEWPORT - 1 })).toBe(false);
-    expect(panelIsDue({ pageHeight, viewportHeight: VIEWPORT, scrollY: VIEWPORT })).toBe(true);
+    expect(due({ pageHeight, scrollY: VIEWPORT - 1 })).toBe(false);
+    expect(due({ pageHeight, scrollY: VIEWPORT })).toBe(true);
+  });
+
+  it("gives the page back the moment the footer comes into view", () => {
+    // The half that was missing, and that let the panel sit over the footer
+    // and swallow its links at the foot of a long page.
+    const pageHeight = VIEWPORT * 4;
+    // Exactly at the fold nothing of the footer is on screen yet, so that is
+    // still the panel's page; one pixel further and it is not.
+    expect(due({ pageHeight, scrollY: VIEWPORT * 2, footerTop: VIEWPORT })).toBe(true);
+    expect(due({ pageHeight, scrollY: VIEWPORT * 2, footerTop: VIEWPORT - 1 })).toBe(false);
+    expect(due({ pageHeight, scrollY: VIEWPORT * 2, footerTop: 0 })).toBe(false);
   });
 
   it("leaves room below the trigger so the footer card is out of sight", () => {
@@ -55,7 +75,7 @@ describe("panelIsDue", () => {
   });
 
   it("says no rather than dividing by a zero-height page", () => {
-    expect(panelIsDue({ pageHeight: 0, viewportHeight: 0, scrollY: 0 })).toBe(false);
+    expect(due({ pageHeight: 0, scrollY: 0 })).toBe(false);
   });
 });
 
@@ -82,6 +102,16 @@ function scroll(to: number) {
 
 const panel = () => container.querySelector("[data-newsletter-panel]");
 
+let footer: HTMLElement | null = null;
+
+/** A footer whose position we can move. happy-dom returns an all-zero
+ *  `getBoundingClientRect`, which would read as "footer at the very top" and
+ *  hide the panel everywhere — so the rect is stubbed rather than laid out. */
+function placeFooter(top: number): void {
+  footer ??= document.body.appendChild(document.createElement("footer"));
+  footer.getBoundingClientRect = () => ({ top, height: 400 }) as DOMRect;
+}
+
 beforeEach(() => {
   window.sessionStorage.clear();
   dismissPromptAction.mockClear();
@@ -94,6 +124,8 @@ beforeEach(() => {
 afterEach(() => {
   act(() => root.unmount());
   container.remove();
+  footer?.remove();
+  footer = null;
 });
 
 function render(state: "guest" | "member" | null) {
@@ -121,6 +153,20 @@ describe("NewsletterScrollPanel", () => {
     expect(panel()).toBeNull();
     scroll(1200);
     expect(panel()).not.toBeNull();
+  });
+
+  it("clears out again when the footer scrolls into view", () => {
+    // The wiring, not just the rule: the panel has to find the footer and
+    // measure it. Without this it sat over the footer at the foot of a long
+    // page and ate its links.
+    placeFooter(3000);
+    render("guest");
+    scroll(1200);
+    expect(panel()).not.toBeNull();
+
+    placeFooter(700);
+    scroll(2800);
+    expect(panel()).toBeNull();
   });
 
   it("shows a guest the public offer and an account the one-click one", () => {
