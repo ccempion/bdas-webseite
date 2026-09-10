@@ -1,9 +1,10 @@
 /**
  * @vitest-environment happy-dom
  *
- * The active-slide rule is pure and is tested as one. What needs a DOM is the
- * wiring around it: that the controls appear only once the component is alive,
- * and that a click on an arrow or a dot moves the rail rather than the page.
+ * The active-slide rule is pure and is tested in `karussell-darstellung.test.ts`.
+ * What needs a DOM is the wiring around it: that the controls appear only once
+ * the component is alive, and that a click on an arrow or a dot moves the rail
+ * rather than the page.
  */
 
 import React, { act } from "react";
@@ -12,36 +13,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { aktiveFolie, Karussell, type Folie } from "./Karussell";
-
-describe("aktiveFolie", () => {
-  it("names the slide that fills the rail", () => {
-    expect(aktiveFolie(0, 400, 5)).toBe(0);
-    expect(aktiveFolie(400, 400, 5)).toBe(1);
-    expect(aktiveFolie(1600, 400, 5)).toBe(4);
-  });
-
-  it("rounds to the nearer slide while a scroll is still settling", () => {
-    expect(aktiveFolie(180, 400, 5)).toBe(0);
-    expect(aktiveFolie(220, 400, 5)).toBe(1);
-  });
-
-  it("clamps at both ends, so an overscroll bounce names no slide that is not there", () => {
-    expect(aktiveFolie(-1000, 400, 5)).toBe(0);
-    expect(aktiveFolie(99_999, 400, 5)).toBe(4);
-  });
-
-  it("answers zero before the rail has a width", () => {
-    // First render, and every test environment without a layout engine:
-    // clientWidth is 0 and the division would be Infinity or NaN.
-    expect(aktiveFolie(0, 0, 3)).toBe(0);
-    expect(aktiveFolie(250, 0, 3)).toBe(0);
-  });
-
-  it("answers zero for an empty rail rather than a negative index", () => {
-    expect(aktiveFolie(0, 400, 0)).toBe(0);
-  });
-});
+import { Karussell, type Folie } from "./Karussell";
 
 const folie = (titel: string, bild = ""): Folie => ({
   bild,
