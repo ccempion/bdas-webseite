@@ -1,9 +1,10 @@
 /**
  * @vitest-environment happy-dom
  *
- * The active-slide rule is pure and is tested as one. What needs a DOM is the
- * wiring around it: that the controls appear only once the component is alive,
- * and that a click on an arrow or a dot moves the rail rather than the page.
+ * The active-slide rule is pure and is tested in `karussell-darstellung.test.ts`.
+ * What needs a DOM is the wiring around it: that the controls appear only once
+ * the component is alive, and that a click on an arrow or a dot moves the rail
+ * rather than the page.
  */
 
 import React, { act } from "react";
@@ -12,36 +13,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { aktiveFolie, Karussell, type Folie } from "./Karussell";
-
-describe("aktiveFolie", () => {
-  it("names the slide that fills the rail", () => {
-    expect(aktiveFolie(0, 400, 5)).toBe(0);
-    expect(aktiveFolie(400, 400, 5)).toBe(1);
-    expect(aktiveFolie(1600, 400, 5)).toBe(4);
-  });
-
-  it("rounds to the nearer slide while a scroll is still settling", () => {
-    expect(aktiveFolie(180, 400, 5)).toBe(0);
-    expect(aktiveFolie(220, 400, 5)).toBe(1);
-  });
-
-  it("clamps at both ends, so an overscroll bounce names no slide that is not there", () => {
-    expect(aktiveFolie(-1000, 400, 5)).toBe(0);
-    expect(aktiveFolie(99_999, 400, 5)).toBe(4);
-  });
-
-  it("answers zero before the rail has a width", () => {
-    // First render, and every test environment without a layout engine:
-    // clientWidth is 0 and the division would be Infinity or NaN.
-    expect(aktiveFolie(0, 0, 3)).toBe(0);
-    expect(aktiveFolie(250, 0, 3)).toBe(0);
-  });
-
-  it("answers zero for an empty rail rather than a negative index", () => {
-    expect(aktiveFolie(0, 400, 0)).toBe(0);
-  });
-});
+import { Karussell, type Folie } from "./Karussell";
 
 const folie = (titel: string, bild = ""): Folie => ({
   bild,
@@ -129,6 +101,100 @@ describe("Karussell, server-rendered", () => {
         <Karussell ueberschrift={undefined as never} folien={undefined as never} />,
       ),
     ).toBe("");
+  });
+
+  it("stays flat unless the board asked for Coverflow", () => {
+    const out = renderToStaticMarkup(
+      <Karussell ueberschrift="" folien={[folie("A"), folie("B"), folie("C")]} />,
+    );
+    expect(out).not.toContain("perspective");
+  });
+
+  it("builds the 3-D scene once Coverflow is chosen", () => {
+    const out = renderToStaticMarkup(
+      <Karussell
+        ueberschrift=""
+        darstellung="coverflow"
+        folien={[folie("A"), folie("B"), folie("C")]}
+      />,
+    );
+    expect(out).toContain("perspective:1200px");
+  });
+
+  it("falls back to flat below three slides", () => {
+    const out = renderToStaticMarkup(
+      <Karussell ueberschrift="" darstellung="coverflow" folien={[folie("A"), folie("B")]} />,
+    );
+    expect(out).not.toContain("perspective");
+  });
+
+  it("falls back to flat inside the editor, to keep drag and drop honest", () => {
+    const out = renderToStaticMarkup(
+      <Karussell
+        ueberschrift=""
+        darstellung="coverflow"
+        imEditor
+        folien={[folie("A"), folie("B"), folie("C")]}
+      />,
+    );
+    expect(out).not.toContain("perspective");
+  });
+
+  it("loads the first image eagerly and the rest only when approached", () => {
+    // Coverflow shows several slides at once, so every image would otherwise
+    // be fetched on load. Six 1080px photos on a phone is the case this
+    // guards against.
+    const out = renderToStaticMarkup(
+      <Karussell
+        ueberschrift=""
+        darstellung="coverflow"
+        folien={[
+          folie("A", "https://cdn.example/a.webp"),
+          folie("B", "https://cdn.example/b.webp"),
+          folie("C", "https://cdn.example/c.webp"),
+        ]}
+      />,
+    );
+    expect((out.match(/loading="lazy"/g) ?? []).length).toBe(2);
+    expect((out.match(/loading="eager"/g) ?? []).length).toBe(1);
+  });
+
+  it("puts the caption under the rail by default, for the centred slide only", () => {
+    const out = renderToStaticMarkup(
+      <Karussell
+        ueberschrift=""
+        darstellung="coverflow"
+        beschriftung="unter"
+        folien={[folie("Erste"), folie("Zweite"), folie("Dritte")]}
+      />,
+    );
+    expect((out.match(/Erste in einem Satz\./g) ?? []).length).toBe(1);
+    expect(out).not.toContain("Zweite in einem Satz.");
+  });
+
+  it("drops the caption entirely when the board asked for none", () => {
+    const out = renderToStaticMarkup(
+      <Karussell
+        ueberschrift=""
+        darstellung="coverflow"
+        beschriftung="keine"
+        folien={[folie("Erste"), folie("Zweite"), folie("Dritte")]}
+      />,
+    );
+    expect(out).not.toContain("Erste");
+  });
+
+  it("lays the caption over every image when asked to", () => {
+    const out = renderToStaticMarkup(
+      <Karussell
+        ueberschrift=""
+        darstellung="coverflow"
+        beschriftung="auf"
+        folien={[folie("Erste"), folie("Zweite"), folie("Dritte")]}
+      />,
+    );
+    expect(out).toContain("Erste");
+    expect(out).toContain("Zweite");
   });
 });
 
@@ -218,5 +284,39 @@ describe("Karussell, alive in a DOM", () => {
     expect(punkte[2]?.getAttribute("aria-current")).toBe("true");
     expect(punkte[0]?.getAttribute("aria-current")).toBeNull();
     expect(buttons("Nächste Folie")[0]?.disabled).toBe(true);
+  });
+
+  it("grows an overlay button per off-centre slide once alive", () => {
+    // The image itself is never re-parented — the button is a sibling laid
+    // over it — so hydration does not restart an in-flight image load. The
+    // selector is the assertion: `img + button` matches only while the button
+    // is the image's next sibling, and goes red the moment a refactor wraps
+    // the image instead. Hence real image URLs; without them there is no
+    // `<img>` and nothing to be a sibling of.
+    // Three slides and its own render, because Coverflow needs a middle and
+    // the shared `mount` helper only ever asks for the flat presentation.
+    act(() => {
+      root.render(
+        <Karussell
+          ueberschrift=""
+          darstellung="coverflow"
+          folien={[
+            folie("Eins", "https://cdn.example/a.webp"),
+            folie("Zwei", "https://cdn.example/b.webp"),
+            folie("Drei", "https://cdn.example/c.webp"),
+          ]}
+        />,
+      );
+    });
+
+    const geschwister = [
+      ...host.querySelectorAll("li > img + [data-karussell-sprung]"),
+    ] as HTMLButtonElement[];
+    expect(geschwister).toHaveLength(3);
+    // One per slide, the centred one inert — so exactly the off-centre pair
+    // can be jumped to.
+    expect(geschwister.filter((b) => !b.disabled)).toHaveLength(2);
+    // And nothing is wrapped: no button anywhere has an image inside it.
+    expect(host.querySelectorAll("[data-karussell-sprung] img")).toHaveLength(0);
   });
 });

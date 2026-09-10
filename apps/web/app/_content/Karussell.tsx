@@ -2,6 +2,18 @@
 
 import React from "react";
 
+import { coverflow } from "@bdas/design-system";
+
+import {
+  aktiveFolie,
+  coverflowStil,
+  effektiveDarstellung,
+  istBeschriftung,
+  relativeLage,
+  type Beschriftung,
+  type Darstellung,
+} from "./karussell-darstellung";
+
 export type Folie = {
   bild: string;
   titel: string;
@@ -9,22 +21,23 @@ export type Folie = {
 };
 
 /**
- * Which slide fills the rail right now, from the rail's own two numbers.
+ * The slide pitch — one slide's width plus the gap to the next — read off the
+ * first two slides. A rail no browser has laid out yet reports nothing, and
+ * then its own width is the honest stand-in: in the flat presentation the two
+ * numbers are the same anyway.
  *
- * Every slide is exactly one rail-width wide (`w-full shrink-0`), so this is
- * division rather than measurement — no observer, no element rectangles, and
- * therefore a pure function that a test can pin down without a layout engine.
- * `panelIsDue` in `NewsletterScrollPanel.tsx` is the same idea: the rule is
- * testable where it is written, and the DOM only supplies the numbers.
- *
- * Total over the degenerate cases: a rail that has not been laid out yet has
- * width 0, and an empty rail has no slide to name.
+ * Deliberately no `ResizeObserver`. The three call sites — mount, scroll and a
+ * `resize` listener — cover every way the number can change, and happy-dom
+ * does not bring the observer along.
  */
-export function aktiveFolie(scrollLeft: number, breite: number, anzahl: number): number {
-  if (breite <= 0 || anzahl <= 0) return 0;
-  const index = Math.round(scrollLeft / breite);
-  return Math.min(Math.max(index, 0), anzahl - 1);
-}
+const abstandVon = (el: HTMLUListElement): number => {
+  const kinder = el.children;
+  const gemessen =
+    kinder.length >= 2
+      ? (kinder[1] as HTMLElement).offsetLeft - (kinder[0] as HTMLElement).offsetLeft
+      : ((kinder[0] as HTMLElement | undefined)?.offsetWidth ?? 0);
+  return gemessen || el.clientWidth;
+};
 
 /**
  * A rail of slides the reader clicks through — "Werte", "Persönlichkeiten".
@@ -35,9 +48,13 @@ export function aktiveFolie(scrollLeft: number, breite: number, anzahl: number):
  * is alive: a control that does nothing is worse than no control, while the
  * rail underneath stays readable and scrollable without any script at all.
  *
- * One slide fills the view. That is the whole difference to `KartenRaster`,
- * which puts its cards side by side — here one thing at a time is the point,
- * which is why there is no "slides per view" field to get wrong.
+ * Two presentations. Flat is the original: one slide fills the view, side by
+ * side with its text from `sm` up. Coverflow narrows the slide, pads the rail
+ * so the first and last can still reach the middle, and tilts the neighbours
+ * away from the viewer. The tilt interpolates from the live scroll position
+ * rather than from the active index, so the deck follows the finger instead of
+ * snapping over when the index flips — which is why `scrollLeft` is state here
+ * and the active slide is derived from it.
  *
  * The image is decoration (`alt=""`): the title beside it carries the meaning.
  * A heading, when the board gives one, names the region for assistive tech; a
@@ -47,32 +64,83 @@ export function aktiveFolie(scrollLeft: number, breite: number, anzahl: number):
  * Purely presentational and free of Puck types — the block wrapper in
  * `puck-config.tsx` owns the editor placeholder.
  */
-export function Karussell({ ueberschrift, folien }: { ueberschrift: string; folien: Folie[] }) {
+export function Karussell({
+  ueberschrift,
+  folien,
+  darstellung,
+  beschriftung,
+  imEditor,
+}: {
+  ueberschrift: string;
+  folien: Folie[];
+  darstellung?: Darstellung | undefined;
+  beschriftung?: Beschriftung | undefined;
+  imEditor?: boolean | undefined;
+}) {
   const liste = folien ?? [];
   const schiene = React.useRef<HTMLUListElement>(null);
-  const [aktiv, setAktiv] = React.useState(0);
+  const rahmen = React.useRef<number | null>(null);
+  const reduziert = React.useRef(false);
+  const [scrollLeft, setScrollLeft] = React.useState(0);
+  const [abstand, setAbstand] = React.useState(0);
   const [lebendig, setLebendig] = React.useState(false);
   const titelId = React.useId();
 
-  React.useEffect(() => setLebendig(true), []);
+  React.useEffect(() => {
+    reduziert.current = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const miss = () => {
+      const el = schiene.current;
+      if (!el) return;
+      setAbstand(abstandVon(el));
+      setScrollLeft(el.scrollLeft);
+    };
+    miss();
+    setLebendig(true);
+    window.addEventListener("resize", miss);
+    return () => {
+      window.removeEventListener("resize", miss);
+      if (rahmen.current !== null) cancelAnimationFrame(rahmen.current);
+      rahmen.current = null;
+    };
+  }, []);
 
   if (liste.length === 0) return null;
 
+  const art = effektiveDarstellung(darstellung, liste.length, imEditor ?? false);
+  const raeumlich = art === "coverflow";
+  // Documents saved before this field exists hand back `undefined`.
+  const platzierung = istBeschriftung(beschriftung) ? beschriftung : "unter";
+  const aktiv = aktiveFolie(scrollLeft, abstand, liste.length);
+  const zentral = liste[aktiv];
   const bedienbar = lebendig && liste.length > 1;
+
+  const lies = () => {
+    const el = schiene.current;
+    if (!el) return;
+    setAbstand(abstandVon(el));
+    setScrollLeft(el.scrollLeft);
+  };
+  // A finger fires `scroll` far more often than the screen repaints. The first
+  // event of a frame is read straight away — a tilt that lags the finger is
+  // the whole thing this presentation is for — and every further event in the
+  // same frame is folded into one trailing read.
+  const beimScrollen = () => {
+    if (rahmen.current !== null) return;
+    lies();
+    rahmen.current = requestAnimationFrame(() => {
+      rahmen.current = null;
+      lies();
+    });
+  };
   const gehZu = (index: number) => {
     const el = schiene.current;
     if (!el) return;
-    el.scrollTo({ left: index * el.clientWidth, behavior: "smooth" });
+    el.scrollTo({ left: index * abstandVon(el), behavior: "smooth" });
   };
   const schiebe = (richtung: -1 | 1) => {
     const el = schiene.current;
     if (!el) return;
-    el.scrollBy({ left: richtung * el.clientWidth, behavior: "smooth" });
-  };
-  const beimScrollen = () => {
-    const el = schiene.current;
-    if (!el) return;
-    setAktiv(aktiveFolie(el.scrollLeft, el.clientWidth, liste.length));
+    el.scrollBy({ left: richtung * abstandVon(el), behavior: "smooth" });
   };
 
   // The card recipe's hover, on a round button — `Card.tsx` spells the same
@@ -105,31 +173,112 @@ export function Karussell({ ueberschrift, folien }: { ueberschrift: string; foli
         ref={schiene}
         tabIndex={0}
         onScroll={beimScrollen}
-        className="flex snap-x snap-mandatory gap-6 overflow-x-auto"
+        // Tilted slides stand taller than the rail; `overflow-x-auto` would
+        // clip them top and bottom without the padding.
+        className={`flex snap-x snap-mandatory gap-6 overflow-x-auto${raeumlich ? " py-8" : ""}`}
+        {...(raeumlich
+          ? {
+              style: {
+                perspective: `${coverflow.perspective}px`,
+                paddingInline: `${(100 - coverflow.slideWidthPct) / 2}%`,
+              },
+            }
+          : {})}
       >
         {liste.map((f, i) => (
           <li
             key={i}
             aria-label={`Folie ${i + 1} von ${liste.length}`}
-            className="w-full shrink-0 snap-center sm:flex sm:items-center sm:gap-6"
+            className={
+              raeumlich
+                ? "relative shrink-0 snap-center transition-none [transform-style:preserve-3d]"
+                : "w-full shrink-0 snap-center sm:flex sm:items-center sm:gap-6"
+            }
+            {...(raeumlich
+              ? {
+                  style: {
+                    // Not `slideWidthPct` — the rail's `paddingInline` already
+                    // took the peek out of its content box, and a flex item's
+                    // percentage resolves against that. 100% of it *is*
+                    // `slideWidthPct` of the rail, which is what puts slide i
+                    // at exactly `i * pitch` the way `relativeLage` assumes.
+                    width: "100%",
+                    ...coverflowStil(relativeLage(scrollLeft, abstand, i), reduziert.current),
+                  },
+                }
+              : {})}
           >
-            {f.bild ? (
-              <img
-                src={f.bild}
-                alt=""
-                aria-hidden
-                className="mb-4 aspect-video w-full rounded-bdas object-cover sm:mb-0 sm:w-1/2"
-              />
-            ) : null}
-            {f.titel || f.text ? (
-              <div className="flex flex-col gap-2 sm:flex-1">
-                {f.titel ? <p className="font-semibold text-bdas-ink">{f.titel}</p> : null}
-                {f.text ? <p className="whitespace-pre-line text-bdas-ink-body">{f.text}</p> : null}
-              </div>
-            ) : null}
+            {raeumlich ? (
+              <>
+                {f.bild ? (
+                  // Coverflow keeps several slides on screen at once, so
+                  // without this every photo in the deck is fetched on load.
+                  <img
+                    src={f.bild}
+                    alt=""
+                    aria-hidden
+                    loading={i === 0 ? "eager" : "lazy"}
+                    decoding="async"
+                    className="aspect-video w-full rounded-bdas object-cover"
+                  />
+                ) : null}
+                {platzierung === "auf" && (f.titel || f.text) ? (
+                  <div className="absolute inset-x-0 bottom-0 flex flex-col gap-1 rounded-b-bdas bg-bdas-hero-scrim p-4">
+                    {f.titel ? (
+                      <p className="font-semibold text-bdas-ink-on-brand">{f.titel}</p>
+                    ) : null}
+                    {f.text ? (
+                      <p className="whitespace-pre-line text-bdas-ink-on-brand">{f.text}</p>
+                    ) : null}
+                  </div>
+                ) : null}
+                {lebendig ? (
+                  // A sibling laid over the image, never a wrapper: re-parenting
+                  // the `<img>` at hydration restarts an in-flight load.
+                  <button
+                    type="button"
+                    data-karussell-sprung
+                    aria-label={`Zu Folie ${i + 1} von ${liste.length} springen`}
+                    disabled={i === aktiv}
+                    onClick={() => gehZu(i)}
+                    className="absolute inset-0 rounded-bdas disabled:pointer-events-none"
+                  />
+                ) : null}
+              </>
+            ) : (
+              <>
+                {f.bild ? (
+                  <img
+                    src={f.bild}
+                    alt=""
+                    aria-hidden
+                    className="mb-4 aspect-video w-full rounded-bdas object-cover sm:mb-0 sm:w-1/2"
+                  />
+                ) : null}
+                {f.titel || f.text ? (
+                  <div className="flex flex-col gap-2 sm:flex-1">
+                    {f.titel ? <p className="font-semibold text-bdas-ink">{f.titel}</p> : null}
+                    {f.text ? (
+                      <p className="whitespace-pre-line text-bdas-ink-body">{f.text}</p>
+                    ) : null}
+                  </div>
+                ) : null}
+              </>
+            )}
           </li>
         ))}
       </ul>
+
+      {raeumlich && platzierung === "unter" && (zentral?.titel || zentral?.text) ? (
+        // Keyed on the active slide so the caption fades in on every change
+        // instead of swapping its text mid-sentence.
+        <div key={aktiv} className="flex animate-bdas-fade-slide-up flex-col gap-2 text-center">
+          {zentral.titel ? <p className="font-semibold text-bdas-ink">{zentral.titel}</p> : null}
+          {zentral.text ? (
+            <p className="whitespace-pre-line text-bdas-ink-body">{zentral.text}</p>
+          ) : null}
+        </div>
+      ) : null}
 
       {bedienbar ? (
         <div className="flex items-center justify-center gap-4">

@@ -120,6 +120,31 @@ export const motion = {
   },
 } as const;
 
+/**
+ * The carousel's Coverflow presentation. Plain numbers rather than CSS
+ * strings: the slide tilt is interpolated from a fractional distance, so the
+ * consumer has to do arithmetic with these and then attach the unit.
+ */
+export const coverflow = {
+  /** Depth of the 3-D scene, in px, set on the rail. */
+  perspective: 1200,
+  /** Tilt in degrees of a slide one full slot off centre. */
+  tiltDeg: 38,
+  /** Scale of a slide one full slot off centre. */
+  scale: 0.82,
+  /** Opacity of a slide one full slot off centre. */
+  opacity: 0.55,
+  /** Slots from centre beyond which nothing gets more extreme — the deck
+   *  reads as three cards however many slides the board added. */
+  maxSlots: 2,
+  /** Width of one slide as a percentage of the rail, leaving the rest to the
+   *  two neighbours peeking in. Also fixes the rail's side padding, so the
+   *  first and last slide can still reach the centre. */
+  slideWidthPct: 70,
+} as const;
+
+export type Coverflow = typeof coverflow;
+
 export const typography = {
   /**
    * Sizes that appear repeatedly in the source CSS. Sprint 1 may add a
@@ -191,6 +216,8 @@ export const recipes = {
     "<details> styled as a card; on [open] add 4px left border in brand.red, shadow redGlow, summary text brand.red, '+' rotates 45deg into '×', body fades in via fadeSlideDown",
   carousel:
     "horizontal snap rail (snap-x snap-mandatory), one slide per view; dots radius full, active dot brand.red, colour transition durationQuick; arrow buttons follow liftHover and are disabled at both ends — no loop, no autoplay; the slide change is a native smooth scroll, so its duration belongs to the browser, not to a token",
+  coverflowCarousel:
+    "carousel in its Coverflow presentation: rail gets coverflow.perspective, each slide is coverflow.slideWidthPct wide and snaps to centre; a slide's tilt, scale and opacity interpolate continuously from its fractional distance to the centre, clamped at coverflow.maxSlots — so the deck reads as three cards at any slide count. Neighbours carry a transparent overlay button that centres them. Under prefers-reduced-motion the tilt and scale drop out and only the opacity remains. Falls back to the flat carousel below three slides and inside the Puck editor",
   liftHover: "transform translateY(lift.sm or lift.md), shadow upgrade, durationSoft easing",
 } as const;
 

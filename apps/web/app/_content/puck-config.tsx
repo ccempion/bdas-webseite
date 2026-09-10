@@ -15,6 +15,7 @@ import { BildGroesseGriff } from "./BildGroesseGriff";
 import { FotoField } from "./FotoField";
 import { Hero, type HeroHintergrund, type HeroHoehe, type HeroTitelEbene } from "./Hero";
 import { CtaBanner, type CtaFlaeche } from "./CtaBanner";
+import type { Beschriftung, Darstellung } from "./karussell-darstellung";
 import { type Folie, Karussell } from "./Karussell";
 import { type Karte, KartenRaster, type KartenSpalten } from "./KartenRaster";
 import { type Kennzahl, Kennzahlen } from "./Kennzahlen";
@@ -82,7 +83,12 @@ type Blocks = {
     buttonHref: string;
   };
   KartenRaster: { karten: Karte[]; spalten: KartenSpalten };
-  Karussell: { ueberschrift: string; folien: Folie[] };
+  Karussell: {
+    ueberschrift: string;
+    folien: Folie[];
+    darstellung: Darstellung;
+    beschriftung: Beschriftung;
+  };
   Kennzahlen: { werte: Kennzahl[] };
   CtaBanner: {
     ueberschrift: string;
@@ -926,6 +932,23 @@ export const puckConfig: Config<Blocks> = {
       label: "Karussell",
       fields: {
         ueberschrift: { type: "text", label: "Überschrift (optional)" },
+        darstellung: {
+          type: "select",
+          label: "Darstellung",
+          options: [
+            { label: "Klassisch", value: "klassisch" },
+            { label: "Coverflow (3D)", value: "coverflow" },
+          ],
+        },
+        beschriftung: {
+          type: "select",
+          label: "Titel und Text",
+          options: [
+            { label: "Unter dem Karussell", value: "unter" },
+            { label: "Auf dem Bild", value: "auf" },
+            { label: "Ausblenden", value: "keine" },
+          ],
+        },
         folien: {
           type: "array",
           label: "Folien",
@@ -942,12 +965,36 @@ export const puckConfig: Config<Blocks> = {
           getItemSummary: (f) => f.titel || "Neue Folie",
         },
       },
-      defaultProps: { ueberschrift: "", folien: [] },
-      render: ({ ueberschrift, folien, puck }) =>
+      // The caption placement only means anything in Coverflow — the flat
+      // presentation has always put the text beside the image. Asking the
+      // board a question that changes nothing is worse than not asking.
+      resolveFields: (data, { fields }) => {
+        if (data.props?.darstellung !== "coverflow") {
+          const { beschriftung: _weg, ...rest } = fields;
+          // Puck's `Fields<Props>` type requires every prop to keep a field —
+          // hiding one is still a supported runtime pattern, just not one the
+          // type captures, so the omission is asserted here rather than typed.
+          return rest as typeof fields;
+        }
+        return fields;
+      },
+      defaultProps: {
+        ueberschrift: "",
+        darstellung: "klassisch",
+        beschriftung: "unter",
+        folien: [],
+      },
+      render: ({ ueberschrift, darstellung, beschriftung, folien, puck }) =>
         (folien ?? []).length === 0 && puck?.isEditing ? (
           <BlockPlatzhalter titel="Karussell" hinweis="Noch keine Folien hinzugefügt." />
         ) : (
-          <Karussell ueberschrift={ueberschrift} folien={folien} />
+          <Karussell
+            ueberschrift={ueberschrift}
+            folien={folien}
+            darstellung={darstellung}
+            beschriftung={beschriftung}
+            imEditor={puck?.isEditing ?? false}
+          />
         ),
     },
     CtaBanner: {
