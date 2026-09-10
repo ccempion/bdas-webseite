@@ -30,18 +30,18 @@
 
 ## Dateien im Überblick
 
-| Datei | Verantwortung |
-|---|---|
-| `core/design-system/src/tokens.ts` | **Ändern.** Neue Token-Gruppe `coverflow` + Rezept-Eintrag. |
-| `core/design-system/src/index.ts` | **Ändern.** `coverflow` exportieren. |
-| `core/design-system/README.md` | **Ändern.** Coverflow im Karussell-Abschnitt beschreiben. |
-| `docs/decisions/0041-karussell-coverflow-darstellung.md` | **Neu.** Warum eine Variante statt eines zweiten Bausteins, warum der Editor flach bleibt. |
-| `apps/web/app/_content/karussell-darstellung.ts` | **Neu.** Reine Geometrie: aktive Folie, relative Lage, 3D-Stil, Darstellungswahl. Kein DOM, kein React-State. |
-| `apps/web/app/_content/karussell-darstellung.test.ts` | **Neu.** Unit-Tests dazu. |
-| `apps/web/app/_content/Karussell.tsx` | **Ändern.** Verdrahtung: Scroll-Position, Overlay-Schaltflächen, Bildunterschriften. |
-| `apps/web/app/_content/Karussell.test.tsx` | **Ändern.** Import von `aktiveFolie` umziehen; Tests für die neuen Darstellungen. |
-| `apps/web/app/_content/puck-config.tsx` | **Ändern.** Zwei Felder, `resolveFields`, Editor erzwingt klassisch. |
-| `apps/web/app/_content/puck-config.test.ts` | **Ändern.** Feld- und Editor-Verhalten. |
+| Datei                                                    | Verantwortung                                                                                                 |
+| -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| `core/design-system/src/tokens.ts`                       | **Ändern.** Neue Token-Gruppe `coverflow` + Rezept-Eintrag.                                                   |
+| `core/design-system/src/index.ts`                        | **Ändern.** `coverflow` exportieren.                                                                          |
+| `core/design-system/README.md`                           | **Ändern.** Coverflow im Karussell-Abschnitt beschreiben.                                                     |
+| `docs/decisions/0041-karussell-coverflow-darstellung.md` | **Neu.** Warum eine Variante statt eines zweiten Bausteins, warum der Editor flach bleibt.                    |
+| `apps/web/app/_content/karussell-darstellung.ts`         | **Neu.** Reine Geometrie: aktive Folie, relative Lage, 3D-Stil, Darstellungswahl. Kein DOM, kein React-State. |
+| `apps/web/app/_content/karussell-darstellung.test.ts`    | **Neu.** Unit-Tests dazu.                                                                                     |
+| `apps/web/app/_content/Karussell.tsx`                    | **Ändern.** Verdrahtung: Scroll-Position, Overlay-Schaltflächen, Bildunterschriften.                          |
+| `apps/web/app/_content/Karussell.test.tsx`               | **Ändern.** Import von `aktiveFolie` umziehen; Tests für die neuen Darstellungen.                             |
+| `apps/web/app/_content/puck-config.tsx`                  | **Ändern.** Zwei Felder, `resolveFields`, Editor erzwingt klassisch.                                          |
+| `apps/web/app/_content/puck-config.test.ts`              | **Ändern.** Feld- und Editor-Verhalten.                                                                       |
 
 ---
 
@@ -50,12 +50,14 @@
 Das Fundament: alle Zahlen, die der Effekt braucht, bekommen einen Namen. Ohne diese Task müsste Task 2 Werte erfinden, was CLAUDE.md §7 verbietet.
 
 **Files:**
+
 - Modify: `core/design-system/src/tokens.ts`
 - Modify: `core/design-system/src/index.ts:8-21`
 - Modify: `core/design-system/README.md:69-76`
 - Create: `docs/decisions/0041-karussell-coverflow-darstellung.md`
 
 **Interfaces:**
+
 - Consumes: nichts.
 - Produces: `import { coverflow } from "@bdas/design-system"` mit den Feldern `perspective: number`, `tiltDeg: number`, `scale: number`, `opacity: number`, `maxSlots: number`, `slideWidthPct: number`. Alles Zahlen ohne Einheit — die Einheit hängt Task 2 an, damit sich mit den Werten rechnen lässt.
 
@@ -167,12 +169,14 @@ EOF
 Alles, was sich ausrechnen lässt, ohne den Browser zu fragen. happy-dom hat keine Layout-Engine — `clientWidth` ist dort 0 und `getBoundingClientRect()` liefert Nullen. Deshalb ist jede messende Logik hier eine reine Funktion, die Zahlen entgegennimmt; die Komponente in Task 3 liefert die Zahlen und wird selbst kaum noch getestet.
 
 **Files:**
+
 - Create: `apps/web/app/_content/karussell-darstellung.ts`
 - Create: `apps/web/app/_content/karussell-darstellung.test.ts`
 - Modify: `apps/web/app/_content/Karussell.tsx` (nur: `aktiveFolie` entfernen)
 - Modify: `apps/web/app/_content/Karussell.test.tsx` (nur: Import umziehen)
 
 **Interfaces:**
+
 - Consumes: `coverflow` aus `@bdas/design-system` (Task 1).
 - Produces:
   - `type Darstellung = "klassisch" | "coverflow"`
@@ -451,6 +455,7 @@ Kein Re-Export aus `Karussell.tsx`. CLAUDE.md §6 verbietet Verträglichkeits-Br
 - [ ] **Step 6: Test-Import umziehen**
 
 In `apps/web/app/_content/Karussell.test.tsx`:
+
 - Zeile 15 wird zu `import { Karussell, type Folie } from "./Karussell";`
 - Der komplette `describe("aktiveFolie", …)`-Block (Zeilen 17–44) wird **gelöscht** — er lebt jetzt in `karussell-darstellung.test.ts`.
 - Der einleitende Dateikommentar (Zeilen 1–7) sagt „The active-slide rule is pure and is tested as one." Das stimmt weiterhin, nur woanders. Den Satz anpassen zu: „The active-slide rule is pure and is tested in `karussell-darstellung.test.ts`."
@@ -495,12 +500,15 @@ EOF
 Hier wird verdrahtet. Der Zustand schrumpft von zwei Werten (`aktiv`, `lebendig`) auf zwei andere (`scrollLeft`, `lebendig`) — die aktive Folie wird ab jetzt abgeleitet, nicht gespeichert, sonst könnten die beiden auseinanderlaufen.
 
 **Files:**
+
 - Modify: `apps/web/app/_content/Karussell.tsx`
 - Modify: `apps/web/app/_content/Karussell.test.tsx`
 
 **Interfaces:**
+
 - Consumes: alles aus `./karussell-darstellung` (Task 2), `coverflow` aus `@bdas/design-system` (Task 1).
 - Produces: `Karussell` nimmt zwei neue optionale Props entgegen:
+
   ```ts
   export function Karussell({
     ueberschrift,
@@ -514,8 +522,9 @@ Hier wird verdrahtet. Der Zustand schrumpft von zwei Werten (`aktiv`, `lebendig`
     darstellung?: Darstellung | undefined;
     beschriftung?: Beschriftung | undefined;
     imEditor?: boolean | undefined;
-  })
+  });
   ```
+
   Alle drei optional, damit bestehende Aufrufe und Tests unverändert weiterlaufen. Task 4 reicht sie aus Puck durch.
 
 - [ ] **Step 1: Die fehlschlagenden Tests schreiben**
@@ -523,111 +532,110 @@ Hier wird verdrahtet. Der Zustand schrumpft von zwei Werten (`aktiv`, `lebendig`
 In `apps/web/app/_content/Karussell.test.tsx` am Ende des `describe("Karussell, server-rendered", …)`-Blocks ergänzen:
 
 ```tsx
-  it("stays flat unless the board asked for Coverflow", () => {
-    const out = renderToStaticMarkup(
-      <Karussell ueberschrift="" folien={[folie("A"), folie("B"), folie("C")]} />,
-    );
-    expect(out).not.toContain("perspective");
-  });
+it("stays flat unless the board asked for Coverflow", () => {
+  const out = renderToStaticMarkup(
+    <Karussell ueberschrift="" folien={[folie("A"), folie("B"), folie("C")]} />,
+  );
+  expect(out).not.toContain("perspective");
+});
 
-  it("builds the 3-D scene once Coverflow is chosen", () => {
-    const out = renderToStaticMarkup(
-      <Karussell
-        ueberschrift=""
-        darstellung="coverflow"
-        folien={[folie("A"), folie("B"), folie("C")]}
-      />,
-    );
-    expect(out).toContain("perspective:1200px");
-  });
+it("builds the 3-D scene once Coverflow is chosen", () => {
+  const out = renderToStaticMarkup(
+    <Karussell
+      ueberschrift=""
+      darstellung="coverflow"
+      folien={[folie("A"), folie("B"), folie("C")]}
+    />,
+  );
+  expect(out).toContain("perspective:1200px");
+});
 
-  it("falls back to flat below three slides", () => {
-    const out = renderToStaticMarkup(
-      <Karussell ueberschrift="" darstellung="coverflow" folien={[folie("A"), folie("B")]} />,
-    );
-    expect(out).not.toContain("perspective");
-  });
+it("falls back to flat below three slides", () => {
+  const out = renderToStaticMarkup(
+    <Karussell ueberschrift="" darstellung="coverflow" folien={[folie("A"), folie("B")]} />,
+  );
+  expect(out).not.toContain("perspective");
+});
 
-  it("falls back to flat inside the editor, to keep drag and drop honest", () => {
-    const out = renderToStaticMarkup(
-      <Karussell
-        ueberschrift=""
-        darstellung="coverflow"
-        imEditor
-        folien={[folie("A"), folie("B"), folie("C")]}
-      />,
-    );
-    expect(out).not.toContain("perspective");
-  });
+it("falls back to flat inside the editor, to keep drag and drop honest", () => {
+  const out = renderToStaticMarkup(
+    <Karussell
+      ueberschrift=""
+      darstellung="coverflow"
+      imEditor
+      folien={[folie("A"), folie("B"), folie("C")]}
+    />,
+  );
+  expect(out).not.toContain("perspective");
+});
 
-  it("loads the first image eagerly and the rest only when approached", () => {
-    // Coverflow shows several slides at once, so every image would otherwise
-    // be fetched on load. Six 1080px photos on a phone is the case this
-    // guards against.
-    const out = renderToStaticMarkup(
-      <Karussell
-        ueberschrift=""
-        darstellung="coverflow"
-        folien={[
-          folie("A", "https://cdn.example/a.webp"),
-          folie("B", "https://cdn.example/b.webp"),
-          folie("C", "https://cdn.example/c.webp"),
-        ]}
-      />,
-    );
-    expect((out.match(/loading="lazy"/g) ?? []).length).toBe(2);
-    expect((out.match(/loading="eager"/g) ?? []).length).toBe(1);
-  });
+it("loads the first image eagerly and the rest only when approached", () => {
+  // Coverflow shows several slides at once, so every image would otherwise
+  // be fetched on load. Six 1080px photos on a phone is the case this
+  // guards against.
+  const out = renderToStaticMarkup(
+    <Karussell
+      ueberschrift=""
+      darstellung="coverflow"
+      folien={[
+        folie("A", "https://cdn.example/a.webp"),
+        folie("B", "https://cdn.example/b.webp"),
+        folie("C", "https://cdn.example/c.webp"),
+      ]}
+    />,
+  );
+  expect((out.match(/loading="lazy"/g) ?? []).length).toBe(2);
+  expect((out.match(/loading="eager"/g) ?? []).length).toBe(1);
+});
 
-  it("puts the caption under the rail by default, for the centred slide only", () => {
-    const out = renderToStaticMarkup(
-      <Karussell
-        ueberschrift=""
-        darstellung="coverflow"
-        beschriftung="unter"
-        folien={[folie("Erste"), folie("Zweite"), folie("Dritte")]}
-      />,
-    );
-    expect((out.match(/Erste in einem Satz\./g) ?? []).length).toBe(1);
-    expect(out).not.toContain("Zweite in einem Satz.");
-  });
+it("puts the caption under the rail by default, for the centred slide only", () => {
+  const out = renderToStaticMarkup(
+    <Karussell
+      ueberschrift=""
+      darstellung="coverflow"
+      beschriftung="unter"
+      folien={[folie("Erste"), folie("Zweite"), folie("Dritte")]}
+    />,
+  );
+  expect((out.match(/Erste in einem Satz\./g) ?? []).length).toBe(1);
+  expect(out).not.toContain("Zweite in einem Satz.");
+});
 
-  it("drops the caption entirely when the board asked for none", () => {
-    const out = renderToStaticMarkup(
-      <Karussell
-        ueberschrift=""
-        darstellung="coverflow"
-        beschriftung="keine"
-        folien={[folie("Erste"), folie("Zweite"), folie("Dritte")]}
-      />,
-    );
-    expect(out).not.toContain("Erste");
-  });
+it("drops the caption entirely when the board asked for none", () => {
+  const out = renderToStaticMarkup(
+    <Karussell
+      ueberschrift=""
+      darstellung="coverflow"
+      beschriftung="keine"
+      folien={[folie("Erste"), folie("Zweite"), folie("Dritte")]}
+    />,
+  );
+  expect(out).not.toContain("Erste");
+});
 
-  it("lays the caption over every image when asked to", () => {
-    const out = renderToStaticMarkup(
-      <Karussell
-        ueberschrift=""
-        darstellung="coverflow"
-        beschriftung="auf"
-        folien={[folie("Erste"), folie("Zweite"), folie("Dritte")]}
-      />,
-    );
-    expect(out).toContain("Erste");
-    expect(out).toContain("Zweite");
-  });
+it("lays the caption over every image when asked to", () => {
+  const out = renderToStaticMarkup(
+    <Karussell
+      ueberschrift=""
+      darstellung="coverflow"
+      beschriftung="auf"
+      folien={[folie("Erste"), folie("Zweite"), folie("Dritte")]}
+    />,
+  );
+  expect(out).toContain("Erste");
+  expect(out).toContain("Zweite");
+});
 ```
 
 Und im `describe("Karussell, alive in a DOM", …)`-Block ergänzen:
 
 ```tsx
-  it("grows an overlay button per off-centre slide once alive", () => {
-    // The image itself is never re-parented — the button is a sibling laid
-    // over it — so hydration does not restart an in-flight image load.
-    const knoepfe = () =>
-      Array.from(container.querySelectorAll("[data-karussell-sprung]")).length;
-    expect(knoepfe()).toBeGreaterThan(0);
-  });
+it("grows an overlay button per off-centre slide once alive", () => {
+  // The image itself is never re-parented — the button is a sibling laid
+  // over it — so hydration does not restart an in-flight image load.
+  const knoepfe = () => Array.from(container.querySelectorAll("[data-karussell-sprung]")).length;
+  expect(knoepfe()).toBeGreaterThan(0);
+});
 ```
 
 **Hinweis an die ausführende Person:** die Hilfsvariablen `container`, `root` und das `beforeEach`/`afterEach`-Gerüst dieses Blocks sind bereits vorhanden (Zeilen 125–150 der heutigen Datei). Vor dem Schreiben dieses Tests die vorhandene `beforeEach` lesen und die Folienzahl so wählen, dass Coverflow greift (mindestens drei) — gegebenenfalls einen eigenen kleinen Render innerhalb des Tests aufsetzen, statt das gemeinsame Gerüst umzubauen.
@@ -647,6 +655,7 @@ Erwartet: FAIL — `perspective` fehlt, `loading` fehlt, Beschriftungen fehlen.
 1. **Zustand.** `const [scrollLeft, setScrollLeft] = React.useState(0)` und `const [abstand, setAbstand] = React.useState(0)` ersetzen das bisherige `aktiv`. `lebendig` bleibt. Die aktive Folie wird abgeleitet: `const aktiv = aktiveFolie(scrollLeft, abstand, liste.length)`.
 
 2. **Messen ohne Beobachter.** Den Folienabstand aus den ersten beiden `<li>` lesen:
+
    ```ts
    const messeAbstand = (el: HTMLUListElement): number => {
      const kinder = el.children;
@@ -656,6 +665,7 @@ Erwartet: FAIL — `perspective` fehlt, `loading` fehlt, Beschriftungen fehlen.
      return (kinder[0] as HTMLElement | undefined)?.offsetWidth ?? 0;
    };
    ```
+
    Aufrufen im Mount-Effekt, im Scroll-Handler und in einem `resize`-Listener auf `window`. **Kein `ResizeObserver`** — happy-dom bringt ihn nicht zuverlässig mit, und drei Aufrufstellen genügen.
 
 3. **Flüssiges Mitdrehen.** Der Scroll-Handler darf nicht pro Ereignis neu rendern. Mit `requestAnimationFrame` entprellen: eine Ref hält die laufende Bild-Anforderung, der Handler plant höchstens eine ein und liest darin `scrollLeft` und den Abstand. Die Ref im Aufräumschritt des Effekts mit `cancelAnimationFrame` freigeben.
@@ -663,16 +673,20 @@ Erwartet: FAIL — `perspective` fehlt, `loading` fehlt, Beschriftungen fehlen.
 4. **Reduzierte Bewegung.** `const reduziert = React.useRef(false)` und im Mount-Effekt `reduziert.current = window.matchMedia("(prefers-reduced-motion: reduce)").matches` — exakt das Muster aus `apps/web/app/_public/landing/HeroSlideshow.tsx:14-18`. Beim ersten Rendern auf dem Server ist der Wert `false`; das ist richtig so, denn dort gibt es keine Bewegung zu reduzieren.
 
 5. **Blättern.** `gehZu` und `schiebe` rechnen ab jetzt mit `abstand` statt `el.clientWidth`:
+
    ```ts
-   const gehZu = (index: number) => schiene.current?.scrollTo({ left: index * abstand, behavior: "smooth" });
-   const schiebe = (richtung: -1 | 1) => schiene.current?.scrollBy({ left: richtung * abstand, behavior: "smooth" });
+   const gehZu = (index: number) =>
+     schiene.current?.scrollTo({ left: index * abstand, behavior: "smooth" });
+   const schiebe = (richtung: -1 | 1) =>
+     schiene.current?.scrollBy({ left: richtung * abstand, behavior: "smooth" });
    ```
 
 6. **Die Schiene.** In Coverflow bekommt das `<ul>` `style={{ perspective: `${coverflow.perspective}px`, paddingInline: `${(100 - coverflow.slideWidthPct) / 2}%` }}` und zusätzlich die Klasse `py-8` — gedrehte Folien ragen nach oben und unten heraus, und `overflow-x-auto` würde sie sonst kappen. In der klassischen Darstellung bleibt alles wie heute. Die Klasse `min-w-0` auf dem `<section>` **muss erhalten bleiben**: sie verhindert, dass der Baustein in einem `Spalten`-Block die Handy-Seite sprengt (der Kommentar dort erklärt es).
 
 7. **Die Folie.** In Coverflow trägt das `<li>` `style={{ width: `${coverflow.slideWidthPct}%`, ...coverflowStil(relativeLage(scrollLeft, abstand, i), reduziert.current) }}` und die Klassen `relative shrink-0 snap-center transition-none`. `w-full` und das `sm:flex`-Nebeneinander entfallen hier — das ist die klassische Anordnung. Für `transform-style` und weiche Kanten zusätzlich `[transform-style:preserve-3d]` setzen.
 
-8. **Die Sprung-Schaltfläche.** Nur wenn `lebendig` **und** Coverstyle aktiv: als Geschwister *neben* dem `<img>`, nicht darum herum:
+8. **Die Sprung-Schaltfläche.** Nur wenn `lebendig` **und** Coverstyle aktiv: als Geschwister _neben_ dem `<img>`, nicht darum herum:
+
    ```tsx
    <button
      type="button"
@@ -683,15 +697,18 @@ Erwartet: FAIL — `perspective` fehlt, `loading` fehlt, Beschriftungen fehlen.
      className="absolute inset-0 rounded-bdas disabled:pointer-events-none"
    />
    ```
+
    Das Bild wird dadurch nie umgehängt und ein laufender Ladevorgang nie neu gestartet. Vor der Hydrierung entsteht keine Schaltfläche — der bestehende Test „offers no controls before it is alive" bleibt gültig.
 
 9. **Bilder.** `loading={i === 0 ? "eager" : "lazy"}` und `decoding="async"`. Feste Maße sind nicht nötig, `aspect-video` reserviert den Platz bereits.
 
 10. **Beschriftungen.** Der Wert wird zuerst abgesichert, denn Dokumente, die vor diesem Feld gespeichert wurden, liefern `undefined`:
-   ```ts
-   const platzierung = istBeschriftung(beschriftung) ? beschriftung : "unter";
-   ```
-   Bei `keine` entfallen Titel und Text vollständig. Bei `auf` liegen sie in jeder Folie absolut über dem Bild, mit `bg-bdas-hero-scrim` als Abdunklung — dieses Token existiert und wird schon von `Hero.tsx:102` genutzt. Bei `unter` steht unter der Schiene nur der Text der aktiven Folie, mit `key={aktiv}` und der Klasse `animate-bdas-fade-slide-up`, damit der Wechsel nicht hart springt; auch dieses Token existiert bereits.
+
+```ts
+const platzierung = istBeschriftung(beschriftung) ? beschriftung : "unter";
+```
+
+Bei `keine` entfallen Titel und Text vollständig. Bei `auf` liegen sie in jeder Folie absolut über dem Bild, mit `bg-bdas-hero-scrim` als Abdunklung — dieses Token existiert und wird schon von `Hero.tsx:102` genutzt. Bei `unter` steht unter der Schiene nur der Text der aktiven Folie, mit `key={aktiv}` und der Klasse `animate-bdas-fade-slide-up`, damit der Wechsel nicht hart springt; auch dieses Token existiert bereits.
 
 11. **Die klassische Darstellung bleibt Zeile für Zeile, wie sie ist.** Die bestehenden 14 Tests sind der Beleg. Wenn einer davon rot wird, ist das ein Fehler im Umbau, keine erwartete Änderung.
 
@@ -733,11 +750,13 @@ EOF
 ### Task 4: Die Felder im Editor
 
 **Files:**
+
 - Modify: `apps/web/app/_content/puck-config.tsx:85` (Typ `Blocks`)
 - Modify: `apps/web/app/_content/puck-config.tsx:925-952` (Block `Karussell`)
 - Modify: `apps/web/app/_content/puck-config.test.ts`
 
 **Interfaces:**
+
 - Consumes: `Karussell` mit den drei neuen Props (Task 3), `Darstellung`/`Beschriftung` (Task 2).
 - Produces: nichts für spätere Tasks.
 
@@ -889,7 +908,7 @@ Den `Karussell`-Eintrag (Zeilen 925–952) ersetzen. Reihenfolge der Felder: Üb
 pnpm exec vitest run apps/web/app/_content/puck-config.test.ts
 ```
 
-Erwartet: PASS. Schlägt ein *bestehender* Test fehl, liegt das fast sicher an einer Momentaufnahme der Feldliste — dann die Erwartung um die beiden neuen Felder ergänzen, nicht die Felder wieder entfernen.
+Erwartet: PASS. Schlägt ein _bestehender_ Test fehl, liegt das fast sicher an einer Momentaufnahme der Feldliste — dann die Erwartung um die beiden neuen Felder ergänzen, nicht die Felder wieder entfernen.
 
 - [ ] **Step 6: Alle drei Testdateien, Typecheck, Lint, Format**
 
@@ -923,9 +942,11 @@ EOF
 Der Effekt ist visuell; Vitest kann ihn nicht beurteilen, weil happy-dom nicht rechnet. Diese Task erzeugt die Belege, die der Nutzer sehen will, und prüft insbesondere, dass die Handy-Breite heil bleibt — genau dort wurde am 2026-09-10 ein Überlauf behoben (`min-w-0`, PR #221), und Coverflow fasst dieselbe Stelle an.
 
 **Files:**
+
 - Keine Änderungen am Repository. Das Prüfskript liegt unter `/tmp` und wird am Ende gelöscht.
 
 **Interfaces:**
+
 - Consumes: den fertigen Stand aus Tasks 1–4.
 - Produces: zwei Screenshots und eine Messtabelle für den Nutzer.
 
@@ -954,10 +975,14 @@ Die Live-Inhalte liegen in der Datenbank, nicht im Repository; lokal ist `/ueber
 Ein Playwright-Skript nach `/tmp/coverflow-probe.mjs` schreiben. Playwright liegt nicht im Wurzelverzeichnis; der Import muss auf den pnpm-Pfad zeigen:
 
 ```js
-import { chromium, devices } from "/Users/bojack/Documents/Projects/Bdas_website/node_modules/.pnpm/playwright@1.60.0/node_modules/playwright/index.mjs";
+import {
+  chromium,
+  devices,
+} from "/Users/bojack/Documents/Projects/Bdas_website/node_modules/.pnpm/playwright@1.60.0/node_modules/playwright/index.mjs";
 ```
 
 Das Skript soll für iPhone 13 (390 px) und für 1280 px Breite jeweils:
+
 - `document.documentElement.scrollWidth` und `window.innerWidth` auslesen,
 - die Breite des `[aria-roledescription="Karussell"]`-Abschnitts und einer Folie messen,
 - einen Screenshot ablegen (`/tmp/coverflow-390.png`, `/tmp/coverflow-1280.png`).
