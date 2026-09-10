@@ -288,7 +288,11 @@ describe("Karussell, alive in a DOM", () => {
 
   it("grows an overlay button per off-centre slide once alive", () => {
     // The image itself is never re-parented — the button is a sibling laid
-    // over it — so hydration does not restart an in-flight image load.
+    // over it — so hydration does not restart an in-flight image load. The
+    // selector is the assertion: `img + button` matches only while the button
+    // is the image's next sibling, and goes red the moment a refactor wraps
+    // the image instead. Hence real image URLs; without them there is no
+    // `<img>` and nothing to be a sibling of.
     // Three slides and its own render, because Coverflow needs a middle and
     // the shared `mount` helper only ever asks for the flat presentation.
     act(() => {
@@ -296,11 +300,23 @@ describe("Karussell, alive in a DOM", () => {
         <Karussell
           ueberschrift=""
           darstellung="coverflow"
-          folien={[folie("Eins"), folie("Zwei"), folie("Drei")]}
+          folien={[
+            folie("Eins", "https://cdn.example/a.webp"),
+            folie("Zwei", "https://cdn.example/b.webp"),
+            folie("Drei", "https://cdn.example/c.webp"),
+          ]}
         />,
       );
     });
-    const knoepfe = () => Array.from(host.querySelectorAll("[data-karussell-sprung]")).length;
-    expect(knoepfe()).toBeGreaterThan(0);
+
+    const geschwister = [
+      ...host.querySelectorAll("li > img + [data-karussell-sprung]"),
+    ] as HTMLButtonElement[];
+    expect(geschwister).toHaveLength(3);
+    // One per slide, the centred one inert — so exactly the off-centre pair
+    // can be jumped to.
+    expect(geschwister.filter((b) => !b.disabled)).toHaveLength(2);
+    // And nothing is wrapped: no button anywhere has an image inside it.
+    expect(host.querySelectorAll("[data-karussell-sprung] img")).toHaveLength(0);
   });
 });

@@ -197,7 +197,12 @@ export function Karussell({
             {...(raeumlich
               ? {
                   style: {
-                    width: `${coverflow.slideWidthPct}%`,
+                    // Not `slideWidthPct` — the rail's `paddingInline` already
+                    // took the peek out of its content box, and a flex item's
+                    // percentage resolves against that. 100% of it *is*
+                    // `slideWidthPct` of the rail, which is what puts slide i
+                    // at exactly `i * pitch` the way `relativeLage` assumes.
+                    width: "100%",
                     ...coverflowStil(relativeLage(scrollLeft, abstand, i), reduziert.current),
                   },
                 }
