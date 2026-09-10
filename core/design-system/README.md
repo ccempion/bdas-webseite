@@ -75,6 +75,15 @@ the equivalent components across the app. Names refer to tokens in
   smooth scroll: its duration is the browser's, which is why no motion token
   names it. Two deliberate departures from the original proposal are recorded
   in ADR 0040.
+- **Carousel, Coverflow presentation** — the same rail, tilted into 3-D. The
+  rail carries `coverflow.perspective`; each slide is `coverflow.slideWidthPct`
+  of the rail wide and snaps to centre, so both neighbours peek in. Tilt, scale
+  and opacity interpolate from a slide's fractional distance to the centre and
+  stop getting more extreme past `coverflow.maxSlots` — the deck reads as three
+  cards whatever the slide count. Neighbours carry a transparent overlay button
+  that brings them to the centre. Under `prefers-reduced-motion` only the
+  opacity survives. Below three slides, and inside the Puck editor, it falls
+  back to the flat carousel.
 - **Brand field (H1 eye-catcher)** — a full `brand.red` surface with
   `ink.onBrand` text and an `on-brand` (white) button; `radii.md`, shadow
   `cardResting`, hover lift `lift.sm` + `cardLiftMd` over `durationSoft`.

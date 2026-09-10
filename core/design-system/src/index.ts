@@ -7,6 +7,7 @@ export const DESIGN_SYSTEM_VERSION = "0.0.0";
 
 export {
   colors,
+  coverflow,
   radii,
   shadows,
   motion,
@@ -14,6 +15,7 @@ export {
   keyframes,
   recipes,
   type Colors,
+  type Coverflow,
   type Radii,
   type Shadows,
   type Motion,
