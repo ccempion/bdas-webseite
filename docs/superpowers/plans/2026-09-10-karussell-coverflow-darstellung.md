@@ -461,7 +461,7 @@ In `apps/web/app/_content/Karussell.test.tsx`:
 pnpm exec vitest run apps/web/app/_content/karussell-darstellung.test.ts apps/web/app/_content/Karussell.test.tsx
 ```
 
-Erwartet: PASS. `Karussell.test.tsx` hat jetzt 14 Tests (19 minus die 5 umgezogenen), `karussell-darstellung.test.ts` hat 22.
+Erwartet: PASS. `Karussell.test.tsx` hat jetzt 14 Tests (19 minus die 5 umgezogenen), `karussell-darstellung.test.ts` hat 23.
 
 - [ ] **Step 8: Typecheck, Lint, Format**
 
