@@ -84,10 +84,16 @@ export function Karussell({ ueberschrift, folien }: { ueberschrift: string; foli
     "disabled:pointer-events-none disabled:opacity-40";
 
   return (
+    // `min-w-0` is load-bearing, not decoration. Dropped into a `Spalten` block
+    // this section becomes a grid item, where `min-width: auto` resolves to the
+    // content-based minimum — the rail's *whole* max-content width, every slide
+    // side by side. The track then grows to fit it and the page overflows the
+    // phone. The rail's own `overflow-x-auto` zeroes only its own minimum; the
+    // section in between passes the max-content size straight up.
     <section
       aria-roledescription="Karussell"
       {...(ueberschrift ? { "aria-labelledby": titelId } : { "aria-label": "Karussell" })}
-      className="flex flex-col gap-4"
+      className="flex min-w-0 flex-col gap-4"
     >
       {ueberschrift ? (
         <p id={titelId} className="font-semibold text-bdas-ink">

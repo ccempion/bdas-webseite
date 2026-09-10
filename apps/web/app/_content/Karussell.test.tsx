@@ -70,6 +70,18 @@ describe("Karussell, server-rendered", () => {
     expect(out).toContain("snap-x");
   });
 
+  it("keeps the section from growing to the width of all its slides", () => {
+    // In a `Spalten` block the section is a grid item, and `min-width: auto`
+    // there means "as wide as your content" — the whole rail laid out flat,
+    // which pushed the track to 775px inside a 358px phone column and forced
+    // the page to zoom out. Asserted as a class because jsdom has no layout;
+    // the point is that a refactor cannot quietly drop it again.
+    const out = renderToStaticMarkup(
+      <Karussell ueberschrift="" folien={[folie("Eins"), folie("Zwei")]} />,
+    );
+    expect(out).toMatch(/<section[^>]*class="[^"]*\bmin-w-0\b/);
+  });
+
   it("shows an image only when the slide has one, and marks it decorative", () => {
     const mit = renderToStaticMarkup(
       <Karussell ueberschrift="" folien={[folie("Solidarität", "https://cdn.example/a.webp")]} />,
