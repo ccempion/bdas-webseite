@@ -1780,4 +1780,46 @@ describe("puckConfig", () => {
       expect(summary?.({ titel: "" })).toBe("Neue Folie");
     });
   });
+
+  describe("Karussell block", () => {
+    const feld = (name: string) =>
+      (puckConfig.components.Karussell.fields as Record<string, { options?: { value: string }[] }>)[
+        name
+      ];
+
+    it("offers both presentations, classic first", () => {
+      expect(feld("darstellung")!.options?.map((o) => o.value)).toEqual(["klassisch", "coverflow"]);
+    });
+
+    it("defaults to classic, so published pages do not change under the board", () => {
+      expect(puckConfig.components.Karussell.defaultProps?.darstellung).toBe("klassisch");
+    });
+
+    it("offers the three caption placements", () => {
+      expect(feld("beschriftung")!.options?.map((o) => o.value)).toEqual(["unter", "auf", "keine"]);
+    });
+
+    it("hides the caption field while the presentation is classic", () => {
+      const resolve = puckConfig.components.Karussell.resolveFields;
+      expect(resolve).toBeDefined();
+      const felder = resolve!(
+        {
+          props: { id: "x", darstellung: "klassisch", beschriftung: "unter", folien: [] },
+        } as never,
+        { fields: puckConfig.components.Karussell.fields } as never,
+      );
+      expect(Object.keys(felder as Record<string, unknown>)).not.toContain("beschriftung");
+    });
+
+    it("shows the caption field once Coverflow is chosen", () => {
+      const resolve = puckConfig.components.Karussell.resolveFields;
+      const felder = resolve!(
+        {
+          props: { id: "x", darstellung: "coverflow", beschriftung: "unter", folien: [] },
+        } as never,
+        { fields: puckConfig.components.Karussell.fields } as never,
+      );
+      expect(Object.keys(felder as Record<string, unknown>)).toContain("beschriftung");
+    });
+  });
 });
