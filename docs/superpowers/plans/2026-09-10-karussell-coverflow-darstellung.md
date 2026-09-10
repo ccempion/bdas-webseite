@@ -179,7 +179,7 @@ Alles, was sich ausrechnen lässt, ohne den Browser zu fragen. happy-dom hat kei
   - `type Beschriftung = "unter" | "auf" | "keine"`
   - `aktiveFolie(scrollLeft: number, abstand: number, anzahl: number): number`
   - `relativeLage(scrollLeft: number, abstand: number, index: number): number`
-  - `coverflowStil(lage: number, reduziert: boolean): React.CSSProperties`
+  - `coverflowStil(lage: number, reduziert: boolean): CSSProperties`
   - `effektiveDarstellung(darstellung: Darstellung | undefined, anzahl: number, imEditor: boolean): Darstellung`
   - `istBeschriftung(wert: unknown): wert is Beschriftung`
 
@@ -343,7 +343,7 @@ Erwartet: FAIL, `Failed to resolve import "./karussell-darstellung"`.
 ```ts
 import { coverflow } from "@bdas/design-system";
 
-import type React from "react";
+import type { CSSProperties } from "react";
 
 export type Darstellung = "klassisch" | "coverflow";
 export type Beschriftung = "unter" | "auf" | "keine";
@@ -392,7 +392,7 @@ export function relativeLage(scrollLeft: number, abstand: number, index: number)
  * Under reduced motion the tilt and the scale drop out entirely — a fade is
  * information, a spinning deck is decoration.
  */
-export function coverflowStil(lage: number, reduziert: boolean): React.CSSProperties {
+export function coverflowStil(lage: number, reduziert: boolean): CSSProperties {
   const gekappt = Math.max(Math.min(lage, coverflow.maxSlots), -coverflow.maxSlots);
   const betrag = Math.min(Math.abs(gekappt), 1);
   const deckkraft = 1 - betrag * (1 - coverflow.opacity);
@@ -588,7 +588,7 @@ In `apps/web/app/_content/Karussell.test.tsx` am Ende des `describe("Karussell, 
         folien={[folie("Erste"), folie("Zweite"), folie("Dritte")]}
       />,
     );
-    expect((out.match(/Erste/g) ?? []).length).toBe(1);
+    expect((out.match(/Erste in einem Satz\./g) ?? []).length).toBe(1);
     expect(out).not.toContain("Zweite in einem Satz.");
   });
 
@@ -769,7 +769,7 @@ describe("Karussell block", () => {
     expect(resolve).toBeDefined();
     const felder = resolve!(
       { props: { id: "x", darstellung: "klassisch", beschriftung: "unter", folien: [] } },
-      {} as never,
+      { fields: puckConfig.components.Karussell.fields } as never,
     );
     expect(Object.keys(felder)).not.toContain("beschriftung");
   });
@@ -778,7 +778,7 @@ describe("Karussell block", () => {
     const resolve = puckConfig.components.Karussell.resolveFields;
     const felder = resolve!(
       { props: { id: "x", darstellung: "coverflow", beschriftung: "unter", folien: [] } },
-      {} as never,
+      { fields: puckConfig.components.Karussell.fields } as never,
     );
     expect(Object.keys(felder)).toContain("beschriftung");
   });
