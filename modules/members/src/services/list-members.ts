@@ -1,7 +1,7 @@
-import { and, asc, eq, ilike, or, type SQL } from "drizzle-orm";
+import { and, asc, eq, ilike, isNull, or, type SQL } from "drizzle-orm";
 import type { PostgresJsDatabase } from "drizzle-orm/postgres-js";
 
-import { members } from "../schema";
+import { members, memberRoleGrants } from "../schema";
 import type { Member, MemberStatus } from "../types";
 
 import { row2member } from "./get";
@@ -35,4 +35,28 @@ export async function listMembers(db: Db, q: MemberQuery = {}): Promise<Member[]
     .where(conds.length ? and(...conds) : undefined)
     .orderBy(asc(members.lastName), asc(members.firstName));
   return rows.map(row2member);
+}
+
+/**
+ * IDs aller Mitglieder mit aktivem `alumnus`-Grant (ADR 0043). `groupId`
+ * filtert über `members.primary_group_id` — gefragt ist „wer in dieser Gruppe
+ * ist Alumnus", nicht „wessen Grant trägt diese Gruppe im Scope": der Scope
+ * ist laut ADR eine Herkunftsangabe und kann von der heutigen Gruppe
+ * abweichen.
+ */
+export async function listAlumnusIds(
+  db: Db,
+  q: { readonly groupId?: string } = {},
+): Promise<string[]> {
+  const conds: SQL[] = [
+    eq(memberRoleGrants.role, "alumnus"),
+    isNull(memberRoleGrants.revokedAt) as SQL,
+  ];
+  if (q.groupId) conds.push(eq(members.primaryGroupId, q.groupId));
+  const rows = await db
+    .selectDistinct({ memberId: memberRoleGrants.memberId })
+    .from(memberRoleGrants)
+    .innerJoin(members, eq(members.id, memberRoleGrants.memberId))
+    .where(and(...conds));
+  return rows.map((r) => r.memberId);
 }

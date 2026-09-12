@@ -30,6 +30,7 @@ describeIfDb("groupless pool", () => {
       ["usr_3", "3@example.de"],
       ["usr_4", "4@example.de"],
       ["usr_5", "5@example.de"],
+      ["usr_6", "6@example.de"],
     ]) {
       await createUser(t, id!, email!);
     }
@@ -58,6 +59,16 @@ describeIfDb("groupless pool", () => {
       INSERT INTO members (id, user_id, first_name, last_name, primary_group_id, status, joined_at)
       VALUES ('mem_5', 'usr_5', 'Eva', 'Alumna', NULL, 'alumnus', now())
     `;
+    // aktiv und gruppenlos, aber per Grant als Alumnus gekennzeichnet —
+    // das ist der Zustand, in den die Migration alle Alumni überführt
+    await t.client`
+      INSERT INTO members (id, user_id, first_name, last_name, primary_group_id, status, joined_at)
+      VALUES ('mem_6', 'usr_6', 'Fritz', 'Fertig', NULL, 'active', now())
+    `;
+    await t.client`
+      INSERT INTO member_role_grants (id, member_id, role, group_id, granted_by)
+      VALUES ('mrg_6', 'mem_6', 'alumnus', NULL, 'system')
+    `;
   });
 
   afterEach(async () => {
@@ -82,6 +93,11 @@ describeIfDb("groupless pool", () => {
   it("excludes alumni — they are not looking", async () => {
     const pool = await listGrouplessMembers(t.db, FEDERAL);
     expect(pool.map((p) => p.member.id)).not.toContain("mem_5");
+  });
+
+  it("excludes members carrying an alumnus grant, whatever their status", async () => {
+    const pool = await listGrouplessMembers(t.db, FEDERAL);
+    expect(pool.map((p) => p.member.id)).not.toContain("mem_6");
   });
 
   it("is empty for a local board", async () => {
