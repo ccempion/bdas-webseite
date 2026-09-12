@@ -10,7 +10,7 @@
 
 Die Plattform kennt heute zwei Nutzerklassen mit Account: BDAS-Mitglieder und (auf dem Papier) BDAJ-Funktionär\*innen. Die Frage „welche Nutzertypen brauchen wir zusätzlich" hat vier Kandidaten ergeben — BDAJ-Funktionär\*innen, weitere Partnerorganisationen, Alumni und Interessierte ohne Hochschulgruppe. Die Analyse hat gezeigt, dass diese vier nicht vier Features sind, sondern zwei Fragen:
 
-1. **Alumni sind keine eigene Nutzerklasse.** Sie behalten eine Hochschulgruppe, stehen in deren Mitgliederliste und sind dort lediglich gekennzeichnet. Das ist eine Markierung auf einem normalen Mitglied — und die Markierung existiert im Code bereits doppelt, als `MemberStatus` *und* als `Role`. Das ist PR A: eine Dublette löschen, kein Feature bauen.
+1. **Alumni sind keine eigene Nutzerklasse.** Sie behalten eine Hochschulgruppe, stehen in deren Mitgliederliste und sind dort lediglich gekennzeichnet. Das ist eine Markierung auf einem normalen Mitglied — und die Markierung existiert im Code bereits doppelt, als `MemberStatus` _und_ als `Role`. Das ist PR A: eine Dublette löschen, kein Feature bauen.
 
 2. **BDAJ-Funktionär\*innen, Partnerorganisationen und Interessierte teilen eine Eigenschaft:** ein Account, dessen Zuhause keine Hochschulgruppe ist, der vom Bundesvorstand freigegeben wird und dessen Schreibrechte einzeln zugeschaltet werden. Die genehmigte BDAJ-Spec (`2026-09-07-bdaj-funktionaere-design.md`) löst das bereits — aber als Einzelfall. PR B verallgemeinert den Mechanismus, solange BDAJ noch nicht implementiert ist; danach kostet es eine Migration plus einen zweiten Enforcement-Pfad.
 
@@ -52,10 +52,10 @@ Damit gilt die Regel der Föderation wörtlich: **wer schon einmal dabei war, is
 
 `alumnus` bleibt **optional gescoped** und wird damit von `canGrantLocalRoles` bereits korrekt geregelt — ohne neues Prädikat:
 
-| Fall | `groupId` | Wer darf vergeben |
-|------|-----------|-------------------|
-| Auswahl direkt bei der Registrierung, ohne Gruppe | `null` | Bundesvorstand (ein Lead scheitert an `canManageGroup`, weil `groupId === null` nur für `federal_board` passierbar ist) |
-| Mitglied einer Hochschulgruppe wird Alumnus — Studienende, Austritt, oder eine\*r Ehemalige\*r, die\*der sich fälschlich einer Gruppe angeschlossen hat | Gruppen-ID | Lead dieser Gruppe, oder Bundesvorstand |
+| Fall                                                                                                                                                    | `groupId`  | Wer darf vergeben                                                                                                       |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | ----------------------------------------------------------------------------------------------------------------------- |
+| Auswahl direkt bei der Registrierung, ohne Gruppe                                                                                                       | `null`     | Bundesvorstand (ein Lead scheitert an `canManageGroup`, weil `groupId === null` nur für `federal_board` passierbar ist) |
+| Mitglied einer Hochschulgruppe wird Alumnus — Studienende, Austritt, oder eine\*r Ehemalige\*r, die\*der sich fälschlich einer Gruppe angeschlossen hat | Gruppen-ID | Lead dieser Gruppe, oder Bundesvorstand                                                                                 |
 
 Die gesamte Codeänderung dafür ist, `role === "alumnus"` in die bestehende Bedingung in `requireCanGrant` (`modules/members/src/services/roles.ts`) aufzunehmen. `requireValidScope` bleibt unangetastet: `alumnus` steht heute in keiner der beiden Listen, ist also bereits optional gescoped.
 
@@ -69,18 +69,18 @@ Das beantwortet eine offene Frage aus Spec §25 („Should alumni retain access 
 
 ### 2.5 Betroffene Stellen
 
-| Datei | Änderung |
-|-------|----------|
-| `modules/members/src/types.ts` | `MemberStatus` auf `pending \| active`; Label-Map entsprechend |
-| `modules/members/src/roles.ts` | status-impliziter `alumnus`-Zweig aus `effectiveGrants` raus; `TRANSITIONS` schrumpft auf `pending → active` |
-| `modules/members/src/services/roles.ts` | `alumnus` in die Lead-vergebbare Bedingung in `requireCanGrant` |
-| `modules/members/src/services/pool.ts` | **Regression-Gefahr:** der Transfer-Pool schließt Alumni heute über den Status aus. Werden sie `active`, rutschen sie ungewollt zurück in den Pool. Der Ausschluss muss über den Grant neu formuliert werden. |
-| `modules/members/src/services/stats.ts` | `StatusCounts` verliert `inactive` und `alumnus`; der Alumni-Eimer wird aus den Grants abgeleitet statt aus dem Status, sonst ändert sich die Zahl, die der Bundesvorstand sieht, stillschweigend |
-| `apps/web/app/_blog/access.ts:54` | `canComment` verkürzt sich auf `status === "active"` |
-| `apps/web/app/(board)/_components/MembersTable.tsx` | Markierung aus dem Grant statt aus dem Status |
-| `apps/web/app/account/view-model.ts`, `account/page.tsx` | dito |
-| `apps/web/content/faq/mitglieder.ts` | Text zum Alumni-Status anpassen |
-| `modules/members/migrations/00NN_alumnus_is_a_role.sql` | siehe 2.6 |
+| Datei                                                    | Änderung                                                                                                                                                                                                      |
+| -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `modules/members/src/types.ts`                           | `MemberStatus` auf `pending \| active`; Label-Map entsprechend                                                                                                                                                |
+| `modules/members/src/roles.ts`                           | status-impliziter `alumnus`-Zweig aus `effectiveGrants` raus; `TRANSITIONS` schrumpft auf `pending → active`                                                                                                  |
+| `modules/members/src/services/roles.ts`                  | `alumnus` in die Lead-vergebbare Bedingung in `requireCanGrant`                                                                                                                                               |
+| `modules/members/src/services/pool.ts`                   | **Regression-Gefahr:** der Transfer-Pool schließt Alumni heute über den Status aus. Werden sie `active`, rutschen sie ungewollt zurück in den Pool. Der Ausschluss muss über den Grant neu formuliert werden. |
+| `modules/members/src/services/stats.ts`                  | `StatusCounts` verliert `inactive` und `alumnus`; der Alumni-Eimer wird aus den Grants abgeleitet statt aus dem Status, sonst ändert sich die Zahl, die der Bundesvorstand sieht, stillschweigend             |
+| `apps/web/app/_blog/access.ts:54`                        | `canComment` verkürzt sich auf `status === "active"`                                                                                                                                                          |
+| `apps/web/app/(board)/_components/MembersTable.tsx`      | Markierung aus dem Grant statt aus dem Status                                                                                                                                                                 |
+| `apps/web/app/account/view-model.ts`, `account/page.tsx` | dito                                                                                                                                                                                                          |
+| `apps/web/content/faq/mitglieder.ts`                     | Text zum Alumni-Status anpassen                                                                                                                                                                               |
+| `modules/members/migrations/00NN_alumnus_is_a_role.sql`  | siehe 2.6                                                                                                                                                                                                     |
 
 ### 2.6 Migration
 
@@ -110,7 +110,7 @@ Zu Schritt 1: `0008_application_reasons.sql` hat nur `inactive`-Zeilen mit `join
 ### 2.7 Bewusst nicht enthalten
 
 - **Kein Ausschluss-Mechanismus.** Mit `inactive` entfällt der letzte (ohnehin unverdrahtete) Weg, jemandem den Zugang zu entziehen, ohne den Account zu löschen. Faktisch ändert sich damit nichts am heutigen Verhalten. Falls die Föderation je einen Ausschluss bei Fehlverhalten braucht, ist das ein eigenes Feature mit eigener Spec — kein Nebenprodukt dieses PRs.
-- **Kein Unique-Constraint gegen doppelte Alumnus-Grants.** Der bestehende Index ist `(member_id, role, COALESCE(group_id, ''))`, eine Person kann also einen gescopten *und* einen ungescopten Alumnus-Grant halten. Für die Kennzeichnung ist das egal — sie ist ein `.some()`. In einer Rollen-Verwaltungsansicht stünden zwei Zeilen; das rechtfertigt keinen Constraint.
+- **Kein Unique-Constraint gegen doppelte Alumnus-Grants.** Der bestehende Index ist `(member_id, role, COALESCE(group_id, ''))`, eine Person kann also einen gescopten _und_ einen ungescopten Alumnus-Grant halten. Für die Kennzeichnung ist das egal — sie ist ein `.some()`. In einer Rollen-Verwaltungsansicht stünden zwei Zeilen; das rechtfertigt keinen Constraint.
 - **Kein automatischer Auslöser.** Alumnus wird vergeben, nicht abgeleitet. Exmatrikulations- oder Ablauf-Logik ist nicht Teil dieses PRs.
 
 ### 2.8 Tests
@@ -157,7 +157,7 @@ Ein Mitglied ohne `primary_group_id` hat `hasGroupScope = false`. Das ist korrek
 
 `grantRole()` wirft, wenn `role === 'local_board_lead'` und die Zielgruppe `kind <> 'hochschulgruppe'` ist. Das ist die tragende Regel der Achse: eine Gruppe ohne lokales Board eskaliert ihre Beitritts­entscheidungen laut ADR 0021 automatisch an den Bundesvorstand. Für Nicht-Hochschulgruppen wird das erzwungen, nicht gehofft — sonst unterläuft ein versehentlich vergebener Lead die Freigabe durch den Bundesvorstand.
 
-### 3.4 Was PR B *nicht* enthält
+### 3.4 Was PR B _nicht_ enthält
 
 PR B legt **keine** Gruppenzeile an und schaltet **keine** UI frei. Er liefert die Achse, das Flag und die Board-Sperre. Jeder konkrete Nutzertyp ist danach eine eigene Spec und ein eigener PR:
 
