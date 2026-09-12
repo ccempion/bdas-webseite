@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 
-import { canGrantLocalRoles, canManageGroup, isFederalBoard, isRole } from "./index";
+import {
+  canGrantLocalRoles,
+  canManageGroup,
+  isAnyLocalBoardLead,
+  isFederalBoard,
+  isRole,
+} from "./index";
 import type { Grant } from "./index";
 
 describe("members public role primitives", () => {
@@ -10,6 +16,11 @@ describe("members public role primitives", () => {
   it("isFederalBoard is true only with a federal_board grant", () => {
     expect(isFederalBoard(federal)).toBe(true);
     expect(isFederalBoard(leadMuc)).toBe(false);
+  });
+
+  it("isAnyLocalBoardLead: true for a Lead of any group; false for federal or plain (re-exported)", () => {
+    expect(isAnyLocalBoardLead(leadMuc)).toBe(true);
+    expect(isAnyLocalBoardLead(federal)).toBe(false);
   });
 
   it("canManageGroup: federal manages any group; a Lead only its own group (ADR 0013)", () => {

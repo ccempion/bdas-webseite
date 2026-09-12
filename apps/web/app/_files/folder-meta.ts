@@ -6,7 +6,19 @@ export const SCOPE_LABEL: Record<FolderScope, string> = {
   group_members: "Gruppenmitglieder",
   local_board: "Lokaler Vorstand",
   federal_board: "Bundesvorstand",
+  board_broadcast: "Bundesvorstand-Verteiler",
 };
+
+/**
+ * Federation-wide singleton scopes (groupId null) that surface on every
+ * group's own page, alongside its group-scoped roots — ADR 0042.
+ * `federal_board` is deliberately not here: that folder is federal-only
+ * working storage, never shown on a group page.
+ */
+export const GROUP_PAGE_FEDERATION_SCOPES: ReadonlySet<FolderScope> = new Set([
+  "members_all",
+  "board_broadcast",
+]);
 
 export type FileCategory = "pdf" | "image" | "spreadsheet" | "document" | "generic";
 

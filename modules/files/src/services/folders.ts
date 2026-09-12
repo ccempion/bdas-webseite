@@ -30,10 +30,11 @@ export function rowToFolder(r: FolderRow): Folder {
 const SINGLETONS: ReadonlyArray<{ slug: string; name: string; scope: Folder["scope"] }> = [
   { slug: "members-all", name: "Alle Mitglieder", scope: "members_all" },
   { slug: "federal-board", name: "Bundesvorstand", scope: "federal_board" },
+  { slug: "board-broadcast", name: "Bundesvorstand-Verteiler", scope: "board_broadcast" },
 ];
 
 /**
- * Idempotently provision every required folder: the two singletons + one
+ * Idempotently provision every required folder: the three singletons + one
  * group_members and one local_board folder per existing group. Safe to re-run
  * (the (scope, group_id) unique makes each insert a no-op on conflict). Called
  * at boot and self-heals any folder a missed group.created event would leave.

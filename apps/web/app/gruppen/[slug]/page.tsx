@@ -17,6 +17,7 @@ import { pageMetadata } from "../../_content/canvas-chrome";
 import { breiteClass, normalizeContent, puckConfig } from "../../_content/puck-config";
 import { loadCurrentMember } from "../../_dashboard/session";
 import { FolderIndex } from "../../_files/FolderIndex";
+import { GROUP_PAGE_FEDERATION_SCOPES } from "../../_files/folder-meta";
 import { requireGroupsFlag } from "../../_groups/flag";
 import { viewerFrom } from "../../../lib/event-viewer";
 import { formatDateTime } from "../../../lib/format";
@@ -49,12 +50,13 @@ export default async function GruppeDetailPage({ params }: { params: { slug: str
   let groupFolders: Folder[] = [];
   let folderCounts: Record<string, number> = {};
   if (filesOn && me?.member) {
-    // Group-scoped roots (this group's Mitglieder/Vorstand folders) plus the
-    // federation-wide "Alle Mitglieder" singleton (members_all, groupId null)
-    // — every member can read it, so it belongs on every group's page too.
-    // Bundesvorstand (federal_board) stays out here; access there is TBD.
+    // Group-scoped roots (this group's Mitglieder/Vorstand folders) plus
+    // whichever federation-wide singletons belong on a group page (ADR 0042)
+    // — canRead already keeps board-only ones out of a plain member's result.
     groupFolders = (await listFolders(getDb(), me)).filter(
-      (f) => f.parentId === null && (f.groupId === group.id || f.scope === "members_all"),
+      (f) =>
+        f.parentId === null &&
+        (f.groupId === group.id || GROUP_PAGE_FEDERATION_SCOPES.has(f.scope)),
     );
     if (groupFolders.length > 0) {
       folderCounts = await folderFileCounts(

@@ -73,6 +73,13 @@ describe("canRead", () => {
     expect(canRead(folder("federal_board", null), me(FED))).toBe(true);
     expect(canRead(folder("federal_board", null), me(LEAD_MUC))).toBe(false);
   });
+
+  it("board_broadcast: any group's Lead, or federal — not a plain member", () => {
+    expect(canRead(folder("board_broadcast", null), me(LEAD_MUC))).toBe(true);
+    expect(canRead(folder("board_broadcast", null), me(FED))).toBe(true);
+    expect(canRead(folder("board_broadcast", null), me(PLAIN))).toBe(false);
+    expect(canRead(folder("board_broadcast", null), me(FILE_MGR_MUC))).toBe(false);
+  });
 });
 
 describe("canWrite", () => {
@@ -81,6 +88,12 @@ describe("canWrite", () => {
     expect(canWrite(folder("members_all", null), me(PLAIN))).toBe(false);
     expect(canWrite(folder("federal_board", null), me(FED))).toBe(true);
     expect(canWrite(folder("federal_board", null), me(LEAD_MUC))).toBe(false);
+  });
+
+  it("board_broadcast: federal only — no local Lead may add to the distribution folder", () => {
+    expect(canWrite(folder("board_broadcast", null), me(FED))).toBe(true);
+    expect(canWrite(folder("board_broadcast", null), me(LEAD_MUC))).toBe(false);
+    expect(canWrite(folder("board_broadcast", null), me(PLAIN))).toBe(false);
   });
 
   it("group_members + local_board: that group's board (federal too)", () => {

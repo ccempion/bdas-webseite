@@ -64,6 +64,7 @@ async function applyMigrations(t: TestDb): Promise<void> {
     ["..", "migrations", "0001_init.sql"],
     ["..", "migrations", "0002_rls_lockdown.sql"],
     ["..", "migrations", "0003_folder_nesting.sql"],
+    ["..", "migrations", "0004_board_broadcast_scope.sql"],
   ]) {
     const sql = await fs.readFile(path.join(__dirname, ...file), "utf8");
     await t.client.unsafe(sql);
@@ -150,7 +151,7 @@ describeIfDb("ensureFolders / listFolders", () => {
     await t.cleanup();
   });
 
-  it("provisions the two singletons + two folders per group, idempotently", async () => {
+  it("provisions the three singletons + two folders per group, idempotently", async () => {
     await seedGroupAndMember(t, { groupId: "grp_muc", memberId: "mbr_1", userId: "usr_1" });
     await t.client`INSERT INTO groups (id, slug, name, city) VALUES ('grp_ber', 'ber', 'Berlin', 'Berlin')`;
 
@@ -158,10 +159,11 @@ describeIfDb("ensureFolders / listFolders", () => {
     await ensureFolders(t.db); // second run must not duplicate
 
     const rows = await t.db.select().from(folders);
-    // 2 singletons + 2 groups × 2 = 6
-    expect(rows).toHaveLength(6);
+    // 3 singletons + 2 groups × 2 = 7
+    expect(rows).toHaveLength(7);
     expect(rows.filter((r) => r.scope === "members_all")).toHaveLength(1);
     expect(rows.filter((r) => r.scope === "federal_board")).toHaveLength(1);
+    expect(rows.filter((r) => r.scope === "board_broadcast")).toHaveLength(1);
     expect(rows.filter((r) => r.scope === "group_members")).toHaveLength(2);
     expect(rows.filter((r) => r.scope === "local_board")).toHaveLength(2);
   });
@@ -187,6 +189,32 @@ describeIfDb("ensureFolders / listFolders", () => {
     const scopes = visible.map((f) => `${f.scope}:${f.groupId ?? ""}`).sort();
     // members_all + own group_members only; no board/federal/other-group folders
     expect(scopes).toEqual(["group_members:grp_muc", "members_all:"]);
+  });
+
+  it("a group's Lead also sees the federal board_broadcast folder", async () => {
+    await seedGroupAndMember(t, { groupId: "grp_muc", memberId: "mbr_1", userId: "usr_1" });
+    await ensureFolders(t.db);
+
+    const lead = meWith([{ role: "local_board_lead", groupId: "grp_muc" }], {
+      id: "mbr_1",
+      userId: "usr_1",
+      firstName: "T",
+      lastName: "M",
+      primaryGroupId: "grp_muc",
+      status: "active",
+      joinedAt: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    const visible = await listFolders(t.db, lead);
+    const scopes = visible.map((f) => `${f.scope}:${f.groupId ?? ""}`).sort();
+    expect(scopes).toEqual([
+      "board_broadcast:",
+      "group_members:grp_muc",
+      "local_board:grp_muc",
+      "members_all:",
+    ]);
   });
 });
 
