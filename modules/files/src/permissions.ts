@@ -1,4 +1,9 @@
-import { canManageGroup, isFederalBoard, type CurrentMember } from "@bdas/members";
+import {
+  canManageGroup,
+  isAnyLocalBoardLead,
+  isFederalBoard,
+  type CurrentMember,
+} from "@bdas/members";
 
 import type { Folder } from "./types";
 
@@ -23,7 +28,7 @@ export function canRead(folder: Folder, me: CurrentMember): boolean {
     case "federal_board":
       return isFederalBoard(grants);
     case "board_broadcast":
-      return isFederalBoard(grants) || grants.some((g) => g.role === "local_board_lead");
+      return isFederalBoard(grants) || isAnyLocalBoardLead(grants);
   }
 }
 

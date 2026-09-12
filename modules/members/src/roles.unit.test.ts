@@ -7,6 +7,7 @@ import {
   canEditGroupPage,
   canGrantLocalRoles,
   canManageGroup,
+  isAnyLocalBoardLead,
   isRole,
 } from "./roles";
 
@@ -43,6 +44,19 @@ describe("canManageGroup", () => {
   it("a null groupId is manageable only by federal board", () => {
     expect(canManageGroup([g("federal_board", null)], null)).toBe(true);
     expect(canManageGroup([g("local_board_lead", "grp_a")], null)).toBe(false);
+  });
+});
+
+describe("isAnyLocalBoardLead", () => {
+  it("true for a Lead of any group, regardless of which", () => {
+    expect(isAnyLocalBoardLead([g("local_board_lead", "grp_a")])).toBe(true);
+    expect(isAnyLocalBoardLead([g("local_board_lead", "grp_b")])).toBe(true);
+  });
+
+  it("false for federal board, a plain member, or no grants — this is Lead-only, unlike canManageGroup", () => {
+    expect(isAnyLocalBoardLead([g("federal_board", null)])).toBe(false);
+    expect(isAnyLocalBoardLead([g("member", null)])).toBe(false);
+    expect(isAnyLocalBoardLead([])).toBe(false);
   });
 });
 

@@ -29,6 +29,7 @@ export {
   effectiveGrants,
   isRole,
   isFederalBoard,
+  isAnyLocalBoardLead,
   canManageGroup,
   canGrantLocalRoles,
   canEditGroupPage,

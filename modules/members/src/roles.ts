@@ -53,6 +53,17 @@ export function isFederalBoard(grants: ReadonlyArray<Grant>): boolean {
 }
 
 /**
+ * Is the actor a Lead of ANY group? Unlike `canManageGroup`, this ignores
+ * which group — it answers "does this member hold local board authority
+ * somewhere", for the rare cross-group-board surface (the files module's
+ * `board_broadcast` distribution folder, ADR 0042) rather than "may they
+ * manage this specific group".
+ */
+export function isAnyLocalBoardLead(grants: ReadonlyArray<Grant>): boolean {
+  return grants.some((g) => g.role === "local_board_lead");
+}
+
+/**
  * May the actor manage this group? Federal board → any group. A group's Lead
  * (`local_board_lead`) → only the group its grant is scoped to — the local
  * role redesign folded the old plain `local_board` role into Lead, so Lead is
