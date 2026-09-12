@@ -12,9 +12,12 @@ const STATUS_LABEL: Record<MemberStatus, string> = {
   inactive: "Inaktiv",
   alumnus: "Alumni",
 };
+type MemberFilter = "all" | "active" | "alumnus";
+
 /** No `pending` filter: an applicant is no longer a member row awaiting a
- *  verdict but a request on the group's Bewerbungen queue (ADR 0031). */
-const FILTERS: ReadonlyArray<{ key: "all" | MemberStatus; label: string }> = [
+ *  verdict but a request on the group's Bewerbungen queue (ADR 0031).
+ *  „Alumni" ist kein Status mehr, sondern die Grant-Kennzeichnung (ADR 0043). */
+const FILTERS: ReadonlyArray<{ key: MemberFilter; label: string }> = [
   { key: "all", label: "Alle" },
   { key: "active", label: "Aktiv" },
   { key: "alumnus", label: "Alumni" },
@@ -23,17 +26,21 @@ const FILTERS: ReadonlyArray<{ key: "all" | MemberStatus; label: string }> = [
 export function MembersTable({
   members,
   groupNames,
+  alumnusIds,
   openChanges,
   revalidatePath,
   rejectionCategories,
 }: {
   members: Member[];
   groupNames: Record<string, string>;
+  /** IDs mit aktivem alumnus-Grant (ADR 0043) — die Kennzeichnung kommt aus
+   *  den Grants, nicht aus dem Status. */
+  alumnusIds: string[];
   openChanges: OpenGroupChange[];
   revalidatePath: string;
   rejectionCategories: ReadonlyArray<{ key: RejectionCategory; label: string }>;
 }) {
-  const [filter, setFilter] = useState<"all" | MemberStatus>("all");
+  const [filter, setFilter] = useState<MemberFilter>("all");
   const [q, setQ] = useState("");
   const [selected, setSelected] = useState<Member | null>(null);
 
@@ -46,15 +53,18 @@ export function MembersTable({
     [openChanges],
   );
 
+  const isAlumnus = useMemo(() => new Set(alumnusIds), [alumnusIds]);
+
   const rows = useMemo(
     () =>
       members.filter(
         (m) =>
-          (filter === "all" || m.status === filter) &&
+          (filter === "all" ||
+            (filter === "alumnus" ? isAlumnus.has(m.id) : m.status === filter)) &&
           (q.trim() === "" ||
             `${m.firstName} ${m.lastName}`.toLowerCase().includes(q.toLowerCase())),
       ),
-    [members, filter, q],
+    [members, filter, q, isAlumnus],
   );
 
   return (
@@ -112,6 +122,11 @@ export function MembersTable({
                     >
                       {STATUS_LABEL[m.status]}
                     </span>
+                    {isAlumnus.has(m.id) && (
+                      <span className="ml-1 rounded-bdas-pill bg-bdas-surface-hover px-2 py-0.5 text-xs font-semibold text-bdas-ink-muted">
+                        Alumnus
+                      </span>
+                    )}
                   </td>
                   <td className="p-3 text-bdas-ink-body">
                     {m.joinedAt ? new Date(m.joinedAt).toLocaleDateString("de-DE") : "—"}
@@ -138,6 +153,10 @@ export function MembersTable({
             <div className="flex justify-between border-b border-bdas-soft pb-1">
               <dt className="text-bdas-ink-muted">Status</dt>
               <dd className="text-bdas-ink-body">{STATUS_LABEL[selected.status]}</dd>
+            </div>
+            <div className="flex justify-between border-b border-bdas-soft pb-1">
+              <dt className="text-bdas-ink-muted">Alumnus</dt>
+              <dd className="text-bdas-ink-body">{isAlumnus.has(selected.id) ? "Ja" : "Nein"}</dd>
             </div>
             <div className="flex justify-between border-b border-bdas-soft pb-1">
               <dt className="text-bdas-ink-muted">Gruppe</dt>

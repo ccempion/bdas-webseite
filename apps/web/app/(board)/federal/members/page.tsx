@@ -1,6 +1,6 @@
 import { getDb } from "@bdas/db";
 import { listGroups } from "@bdas/groups";
-import { listMembers, listOpenGroupChanges } from "@bdas/members";
+import { listAlumnusIds, listMembers, listOpenGroupChanges } from "@bdas/members";
 
 import { requireFederalScope } from "../../../_dashboard/session";
 import { MembersTable } from "../../_components/MembersTable";
@@ -12,10 +12,11 @@ export const metadata = { title: "Mitglieder" };
 export default async function FederalMembersPage() {
   const db = getDb();
   const me = await requireFederalScope();
-  const [members, groups, openChanges] = await Promise.all([
+  const [members, groups, openChanges, alumnusIds] = await Promise.all([
     listMembers(db, {}),
     listGroups(db),
     listOpenGroupChanges(db, { userId: me.user.id, grants: me.grants }),
+    listAlumnusIds(db),
   ]);
   const groupNames = Object.fromEntries(groups.map((g) => [g.id, g.name]));
   return (
@@ -24,6 +25,7 @@ export default async function FederalMembersPage() {
       <MembersTable
         members={members}
         groupNames={groupNames}
+        alumnusIds={alumnusIds}
         openChanges={openChanges}
         revalidatePath="/federal/members"
         rejectionCategories={REJECTION_CATEGORIES}
