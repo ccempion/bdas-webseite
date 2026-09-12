@@ -1,4 +1,4 @@
-# ADR 0041: Alumnus ist eine Rolle, kein Status — und `inactive` entfällt
+# ADR 0043: Alumnus ist eine Rolle, kein Status — und `inactive` entfällt
 
 **Status:** Accepted
 **Date:** 2026-09-12

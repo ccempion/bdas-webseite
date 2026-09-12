@@ -65,7 +65,7 @@ Der Scope ist eine Herkunftsangabe, kein Recht: „Alumnus, ausgewiesen durch HG
 
 **Nichts, außer der Kennzeichnung.** Alumni behalten `status = 'active'`, damit den `member`-Grant und damit den vollen Mitglieder-Zugriff inklusive Event-Anmeldung. In der Mitgliederliste ihrer Gruppe erscheinen sie mit der Markierung „Alumnus".
 
-Das beantwortet eine offene Frage aus Spec §25 („Should alumni retain access to event registration, or only to read-only views?") mit **ja** und weicht bewusst von der Rollen-Tabelle in Spec §4 ab („Read-only access to network, opt-in newsletter, no event registration unless re-flagged") sowie von der Alumni-Zeile in §8 („retains read-only network access"). Der Newsletter-Opt-in bleibt davon unberührt. Deshalb ADR 0041.
+Das beantwortet eine offene Frage aus Spec §25 („Should alumni retain access to event registration, or only to read-only views?") mit **ja** und weicht bewusst von der Rollen-Tabelle in Spec §4 ab („Read-only access to network, opt-in newsletter, no event registration unless re-flagged") sowie von der Alumni-Zeile in §8 („retains read-only network access"). Der Newsletter-Opt-in bleibt davon unberührt. Deshalb ADR 0043.
 
 ### 2.5 Betroffene Stellen
 
