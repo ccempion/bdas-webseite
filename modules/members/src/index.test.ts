@@ -533,6 +533,60 @@ describeIfDb("members integration", () => {
     });
   });
 
+  it("a lead marks members of its own group as alumnus, but not elsewhere (ADR 0043)", async () => {
+    await createGroup("grp_a", "aachen");
+    await createGroup("grp_b", "bonn");
+    await createUser("usr_lead_al", "lead_al@example.de");
+    await createUser("usr_mem_al", "mem_al@example.de");
+
+    const lead = await createProfile(t.db, {
+      userId: "usr_lead_al",
+      firstName: "Lea",
+      lastName: "Lead",
+      primaryGroupId: "grp_a",
+    });
+    await grantRole(t.db, lead.id, "local_board_lead", BOARD, "grp_a");
+    const LEAD_A = {
+      userId: "usr_lead_al",
+      grants: [{ role: "local_board_lead", groupId: "grp_a" }] as ReadonlyArray<Grant>,
+    };
+
+    const m = await createProfile(t.db, {
+      userId: "usr_mem_al",
+      firstName: "Max",
+      lastName: "Mitglied",
+      primaryGroupId: "grp_a",
+    });
+
+    // im eigenen Scope: erlaubt
+    await grantRole(t.db, m.id, "alumnus", LEAD_A, "grp_a");
+    const active = await t.client`
+      SELECT id FROM member_role_grants
+       WHERE member_id = ${m.id} AND role = 'alumnus' AND revoked_at IS NULL
+    `;
+    expect(active).toHaveLength(1);
+
+    // fremder Scope: verboten
+    await expect(grantRole(t.db, m.id, "alumnus", LEAD_A, "grp_b")).rejects.toMatchObject({
+      code: "FORBIDDEN",
+    });
+
+    // ungescoped: nur der Bundesvorstand
+    await expect(grantRole(t.db, m.id, "alumnus", LEAD_A, null)).rejects.toMatchObject({
+      code: "FORBIDDEN",
+    });
+    await grantRole(t.db, m.id, "alumnus", BOARD, null);
+
+    // und der Lead darf die Markierung im eigenen Scope auch wieder entziehen
+    await revokeRole(t.db, m.id, "alumnus", LEAD_A, "grp_a");
+    const left = await t.client`
+      SELECT group_id FROM member_role_grants
+       WHERE member_id = ${m.id} AND role = 'alumnus' AND revoked_at IS NULL
+    `;
+    expect(left).toHaveLength(1);
+    expect(left[0]!["group_id"]).toBeNull();
+  });
+
   it("a lead may grant/revoke event_organizer scoped to its group (ADR 0017)", async () => {
     await createGroup("grp_a", "aachen");
     await createUser("usr_org", "org@example.de");
