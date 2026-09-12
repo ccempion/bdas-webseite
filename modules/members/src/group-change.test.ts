@@ -15,7 +15,7 @@ import {
 import { getMember } from "./services/get";
 import { createProfile } from "./services/profile";
 import { grantRole } from "./services/roles";
-import { approveMember, transitionStatus } from "./services/status";
+import { approveMember } from "./services/status";
 import { createGroup, createUser, dbReachable, setupMembersDb } from "./test-db";
 import type { Grant, MembersEvent } from "./index";
 
@@ -258,15 +258,6 @@ describeIfDb("changePrimaryGroup", () => {
         code: "FORBIDDEN",
       },
     );
-  });
-
-  it("refuses a transfer for an inactive member", async () => {
-    const id = await activeMember("usr_gone");
-    await transitionStatus(t.db, id, "inactive", FEDERAL);
-
-    await expect(changePrimaryGroup(t.db, id, "grp_b", self("usr_gone"))).rejects.toMatchObject({
-      code: "FORBIDDEN",
-    });
   });
 });
 
@@ -805,28 +796,5 @@ describeIfDb("rejection reasons", () => {
     const id = await apply();
     const decided = await decideGroupChange(t.db, id, "approved", boardOf("usr_board", "grp_b"));
     expect(decided.reasonCategory).toBeNull();
-  });
-
-  it("refuses to decide a request whose member was deactivated", async () => {
-    const id = await apply();
-    await t.client`UPDATE members SET status = 'inactive' WHERE id = 'mem_cem'`;
-    await expect(
-      decideGroupChange(t.db, id, "approved", boardOf("usr_board", "grp_b")),
-    ).rejects.toThrow(/nicht mehr/);
-  });
-
-  // Authorization must be checked before the member's state is disclosed: an
-  // actor with no standing over the destination group must be told "you may
-  // not decide this" (Forbidden), not "this member is deactivated"
-  // (Conflict) — the latter would leak a third party's status to someone who
-  // isn't entitled to decide anything about them. This pins the ORDER of the
-  // two checks; swapping them back would turn this red without touching
-  // either error message.
-  it("tells an unauthorized actor they may not decide, not that the member was deactivated", async () => {
-    const id = await apply();
-    await t.client`UPDATE members SET status = 'inactive' WHERE id = 'mem_cem'`;
-    await expect(
-      decideGroupChange(t.db, id, "approved", boardOf("usr_outsider", "grp_a")),
-    ).rejects.toMatchObject({ code: "FORBIDDEN" });
   });
 });

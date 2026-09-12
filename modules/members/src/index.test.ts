@@ -220,8 +220,9 @@ describeIfDb("members integration", () => {
     await expect(approveMember(t.db, pending.id, BOARD)).rejects.toMatchObject({
       code: "FORBIDDEN",
     });
-    // ...and so is reject.
-    await expect(transitionStatus(t.db, pending.id, "inactive", BOARD)).rejects.toMatchObject({
+    // ...and the raw transition behind it is gated identically, so federal
+    // cannot route around approveMember either.
+    await expect(transitionStatus(t.db, pending.id, "active", BOARD)).rejects.toMatchObject({
       code: "FORBIDDEN",
     });
 
@@ -275,30 +276,12 @@ describeIfDb("members integration", () => {
     expect(approved.status).toBe("active");
   });
 
-  it("federal_board keeps authority over non-join transitions of a boarded group (ADR 0021)", async () => {
-    await createGroup("grp_a", "aachen");
-    await createUser("usr_act", "act@example.de");
-    const m = await createProfile(t.db, {
-      userId: "usr_act",
-      firstName: "Act",
-      lastName: "x",
-      primaryGroupId: "grp_a",
-    });
-    // Approve while the group is board-less (fallback), then seat a board.
-    await approveMember(t.db, m.id, BOARD);
-    await seatLead("usr_seat_n", "grp_a");
-
-    // The member is no longer pending, so this is not a join decision: federal
-    // retains deactivation/alumni authority even though grp_a has a board.
-    const alumnus = await transitionStatus(t.db, m.id, "alumnus", BOARD);
-    expect(alumnus.status).toBe("alumnus");
-  });
-
   it("rejects illegal status transitions", async () => {
     await createUser("usr_d", "d@example.de");
     const m = await createProfile(t.db, { userId: "usr_d", firstName: "D", lastName: "x" });
-    // pending → alumnus is not in the matrix
-    await expect(transitionStatus(t.db, m.id, "alumnus", BOARD)).rejects.toMatchObject({
+    await approveMember(t.db, m.id, BOARD);
+    // active → pending ist nicht in der Matrix: eine Aufnahme wird nicht zurückgedreht
+    await expect(transitionStatus(t.db, m.id, "pending", BOARD)).rejects.toMatchObject({
       code: "CONFLICT",
     });
   });

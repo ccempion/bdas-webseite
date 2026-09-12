@@ -121,14 +121,12 @@ export async function addComment(
  * after resolving the post through the visibility-gated `getPostBySlug`, and
  * soft-deleted posts are filtered here as a backstop.
  *
- * Trap for a future caller: this module has two notions of "member" that
- * happen to agree today but are not the same rule. `blogViewer` (app layer)
- * sets `isMember` only for status `active`; eligibility to read and write
- * comments is `canAuthor`, which is `active` OR `alumnus`. They cannot
- * disagree today because every caller reaches `listComments` only after
- * `getPostBySlug`'s visibility gate. A surface that called `listComments`
- * without going through that gate first would render comments to an alumnus
- * regardless of whether the post itself is visible to them — this function
+ * Note for a future caller: eligibility to read and write comments is
+ * `canComment`, which since ADR 0043 is exactly status `active` — the same
+ * rule `blogViewer` (app layer) uses for `isMember`. Every caller reaches
+ * `listComments` only after `getPostBySlug`'s visibility gate; a surface that
+ * called `listComments` without going through that gate first would render
+ * comments regardless of whether the post itself is visible — this function
  * does not re-check that on its own.
  */
 export async function listComments(db: Db, postId: string): Promise<Comment[]> {

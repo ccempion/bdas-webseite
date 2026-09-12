@@ -44,14 +44,14 @@ export async function loadBlogViewer(): Promise<{ me: CurrentMember | null; view
 }
 
 /**
- * Eligible to COMMENT (read or write): an active member or an alumnus.
- * Pending (not yet confirmed by a Lead) and inactive accounts cannot
- * (ADR 0030's original rule, preserved verbatim for comments by ADR 0037
- * even though blog *authoring* eligibility has since narrowed — see that
- * ADR's "Comments are unaffected" section).
+ * Eligible to COMMENT (read or write): an active member. Pending accounts
+ * (not yet confirmed by a Lead) cannot (ADR 0030's original rule, preserved
+ * for comments by ADR 0037 even though blog *authoring* eligibility has since
+ * narrowed — see that ADR's "Comments are unaffected" section). Seit ADR 0043
+ * sind Alumni aktive Mitglieder und damit ohne Sonderfall eingeschlossen.
  */
 export function canComment(me: CurrentMember | null): boolean {
-  return me !== null && (me.member?.status === "active" || me.member?.status === "alumnus");
+  return me !== null && me.member?.status === "active";
 }
 
 const BLOG_AUTHOR_ROLES = new Set([

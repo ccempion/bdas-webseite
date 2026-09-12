@@ -175,11 +175,6 @@ export async function changePrimaryGroup(
       throw new ForbiddenError("Nur das Mitglied selbst kann seine Gruppe wechseln.");
     }
 
-    const status = row.status as MemberStatus;
-    if (status !== "pending" && status !== "active") {
-      throw new ForbiddenError("Nur aktive Mitglieder können die Gruppe wechseln.");
-    }
-
     const from = row.primaryGroupId;
 
     // Re-picking the current group means "never mind" — cancel any open request.
@@ -230,7 +225,7 @@ export async function changePrimaryGroup(
     // allows one open row per member) — but a pending applicant must
     // withdraw explicitly before applying elsewhere: at most one open
     // application in the pool at a time, enforced here by that same index.
-    if (status === "active") {
+    if (row.status === "active") {
       await withdrawOpen(tx, memberId, actor.userId);
     } else {
       const open = await findOpen(tx, memberId);
@@ -342,14 +337,10 @@ export async function decideGroupChange(
     // Exits are written already-approved and never reach this path.
     if (toGroupId === null) throw new ConflictError("Austritte werden nicht freigegeben.");
 
-    // Read once: guards against deciding a request whose member is no longer
-    // pending/active, and — on approval — tells an applicant's first
-    // acceptance apart from a transfer. Not read from `fromGroupId` alone: an
-    // active member who left their group and reapplies also has
-    // `fromGroupId === null` on the rejoin, and that is not an acceptance.
-    // Reading here (before authorization) is harmless; the throw on it is
-    // deferred below the authorization check so an actor with no standing
-    // over the destination group cannot learn a third party's member state.
+    // Read once: on approval this tells an applicant's first acceptance apart
+    // from a transfer. Not read from `fromGroupId` alone: an active member who
+    // left their group and reapplies also has `fromGroupId === null` on the
+    // rejoin, and that is not an acceptance.
     const memberRows = await tx
       .select({ status: members.status, joinedAt: members.joinedAt })
       .from(members)
@@ -362,10 +353,6 @@ export async function decideGroupChange(
     const hasLocalBoard = await groupHasActiveLocalBoard(tx, toGroupId);
     if (!canDecideJoinRequest(actor.grants, toGroupId, hasLocalBoard)) {
       throw new ForbiddenError("Über den Wechsel entscheidet der Vorstand der Zielgruppe.");
-    }
-
-    if (memberStatus !== "pending" && memberStatus !== "active") {
-      throw new ConflictError("Dieses Mitglied ist nicht mehr aktiv.");
     }
 
     const now = new Date();

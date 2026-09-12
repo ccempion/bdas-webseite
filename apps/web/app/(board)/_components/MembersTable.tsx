@@ -9,8 +9,6 @@ import { MemberGroupPanel } from "./MemberGroupPanel";
 const STATUS_LABEL: Record<MemberStatus, string> = {
   pending: "Ausstehend",
   active: "Aktiv",
-  inactive: "Inaktiv",
-  alumnus: "Alumni",
 };
 type MemberFilter = "all" | "active" | "alumnus";
 

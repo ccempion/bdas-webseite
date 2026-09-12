@@ -24,8 +24,6 @@ export type IdentityInput = {
 const STATUS_TEXT: Record<MemberStatus, string> = {
   pending: "Bewerbung eingereicht",
   active: "Aktives Mitglied",
-  inactive: "Inaktiv",
-  alumnus: "Alumnus",
 };
 
 /** Rollen, die jedes aktive Mitglied ohnehin hat. Ein Chip „Mitglied" sagt

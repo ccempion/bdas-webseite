@@ -9,8 +9,6 @@ describe("layoutMode", () => {
 
   it("gives every other status the plain single column", () => {
     expect(layoutMode("pending")).toBe("plain");
-    expect(layoutMode("inactive")).toBe("plain");
-    expect(layoutMode("alumnus")).toBe("plain");
   });
 
   it("gives a user without a member row the plain single column", () => {

@@ -39,7 +39,7 @@ import type { CurrentMember } from "@bdas/members";
 
 import { canAuthorPost, canComment, resolveAuthor, resolveAuthors } from "./access";
 
-function memberWithStatus(status: "pending" | "active" | "inactive" | "alumnus"): CurrentMember {
+function memberWithStatus(status: "pending" | "active"): CurrentMember {
   return {
     user: { id: "usr_1", email: "a@bdas.de", status: "active", roles: [], sessionId: "sess_1" },
     member: {
@@ -80,16 +80,13 @@ describe("canComment", () => {
     expect(canComment(memberWithStatus("active"))).toBe(true);
   });
 
-  it("allows an alumnus", () => {
-    expect(canComment(memberWithStatus("alumnus"))).toBe(true);
+  it("ein Alumnus kommentiert wie jedes aktive Mitglied (ADR 0043)", () => {
+    const alumnus = memberWithStatus("active");
+    expect(canComment({ ...alumnus, grants: [{ role: "alumnus", groupId: "grp_a" }] })).toBe(true);
   });
 
   it("rejects a pending member", () => {
     expect(canComment(memberWithStatus("pending"))).toBe(false);
-  });
-
-  it("rejects an inactive member", () => {
-    expect(canComment(memberWithStatus("inactive"))).toBe(false);
   });
 
   it("rejects a signed-out visitor", () => {
@@ -132,7 +129,10 @@ describe("canAuthorPost", () => {
   });
 
   it("rejects an alumnus with no qualifying grant", () => {
-    expect(canAuthorPost(memberWithStatus("alumnus"))).toBe(false);
+    const alumnus = memberWithStatus("active");
+    expect(canAuthorPost({ ...alumnus, grants: [{ role: "alumnus", groupId: "grp_a" }] })).toBe(
+      false,
+    );
   });
 
   it("rejects file_manager and page_editor — neither is a blog-authoring role", () => {
@@ -157,7 +157,11 @@ describe("ADR 0037: posting is restricted, commenting is preserved", () => {
   });
 
   it("a plain alumnus can NO LONGER post, but CAN STILL comment", () => {
-    const plainAlumnus = memberWithStatus("alumnus");
+    const active = memberWithStatus("active");
+    const plainAlumnus: CurrentMember = {
+      ...active,
+      grants: [{ role: "alumnus", groupId: "grp_a" }],
+    };
     expect(canAuthorPost(plainAlumnus)).toBe(false);
     expect(canComment(plainAlumnus)).toBe(true);
   });
