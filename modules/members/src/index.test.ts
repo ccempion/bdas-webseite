@@ -439,6 +439,7 @@ describeIfDb("members integration", () => {
       primaryGroupId: "grp_a",
     });
     await approveMember(t.db, s1.id, BOARD);
+    await grantRole(t.db, s1.id, "alumnus", BOARD, "grp_a");
 
     const counts = await countMembersByStatus(t.db, {});
     expect(counts.active).toBe(1);
@@ -451,6 +452,12 @@ describeIfDb("members integration", () => {
 
     const scoped = await countMembersByStatus(t.db, { groupId: "grp_a" });
     expect(scoped.active + scoped.pending).toBe(2);
+
+    // Der Alumni-Eimer kommt aus den Grants, nicht aus dem Status (ADR 0043):
+    // s1 bleibt aktiv UND wird als Alumnus gezählt.
+    expect(counts.active).toBe(1);
+    expect(counts.alumnus).toBe(1);
+    expect(scoped.alumnus).toBe(1);
   });
 
   it("a local_board_lead grants page_editor within its group, but not across groups or higher roles", async () => {

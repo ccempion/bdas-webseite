@@ -1,28 +1,58 @@
-import { and, eq, gte, sql, type SQL } from "drizzle-orm";
+import { and, eq, gte, isNull, sql, type SQL } from "drizzle-orm";
 import type { PostgresJsDatabase } from "drizzle-orm/postgres-js";
 
-import { members } from "../schema";
-import type { MemberStatus } from "../types";
+import { members, memberRoleGrants } from "../schema";
 
 export type Db = PostgresJsDatabase<Record<string, never>>;
-export type StatusCounts = Record<MemberStatus, number>;
-export type SignupPoint = { readonly day: string; readonly count: number };
 
-const ZERO: StatusCounts = { pending: 0, active: 0, inactive: 0, alumnus: 0 };
+/**
+ * Die Zahlen der Vorstands-Übersicht. `pending`/`active` sind Kontostände aus
+ * `members.status`; `alumnus` ist seit ADR 0043 kein Status mehr, sondern ein
+ * Grant — der Eimer bleibt trotzdem, sonst zählte der Bundesvorstand ab dem
+ * Merge stillschweigend etwas anderes als vorher. Ein Alumnus zählt in BEIDEN
+ * Eimern: er ist ein aktives Mitglied mit einer Kennzeichnung.
+ */
+export type MemberCounts = {
+  readonly pending: number;
+  readonly active: number;
+  readonly alumnus: number;
+};
+
+/** @deprecated Name aus der Zeit, als alle Eimer Status waren. Alias auf MemberCounts. */
+export type StatusCounts = MemberCounts;
+
+export type SignupPoint = { readonly day: string; readonly count: number };
 
 export async function countMembersByStatus(
   db: Db,
   q: { readonly groupId?: string } = {},
-): Promise<StatusCounts> {
-  const where = q.groupId ? eq(members.primaryGroupId, q.groupId) : undefined;
-  const rows = await db
+): Promise<MemberCounts> {
+  const scope = q.groupId ? eq(members.primaryGroupId, q.groupId) : undefined;
+
+  const statusRows = await db
     .select({ status: members.status, n: sql<number>`count(*)::int` })
     .from(members)
-    .where(where)
+    .where(scope)
     .groupBy(members.status);
-  const out: StatusCounts = { ...ZERO };
-  for (const r of rows) out[r.status as MemberStatus] = r.n;
-  return out;
+
+  const alumnusConds: SQL[] = [
+    eq(memberRoleGrants.role, "alumnus"),
+    isNull(memberRoleGrants.revokedAt) as SQL,
+  ];
+  if (q.groupId) alumnusConds.push(eq(members.primaryGroupId, q.groupId));
+  const alumnusRows = await db
+    .select({ n: sql<number>`count(distinct ${memberRoleGrants.memberId})::int` })
+    .from(memberRoleGrants)
+    .innerJoin(members, eq(members.id, memberRoleGrants.memberId))
+    .where(and(...alumnusConds));
+
+  let pending = 0;
+  let active = 0;
+  for (const r of statusRows) {
+    if (r.status === "pending") pending = r.n;
+    if (r.status === "active") active = r.n;
+  }
+  return { pending, active, alumnus: alumnusRows[0]?.n ?? 0 };
 }
 
 /**

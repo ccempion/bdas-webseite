@@ -57,6 +57,7 @@ export {
 export {
   countMembersByStatus,
   signupsOverTime,
+  type MemberCounts,
   type StatusCounts,
   type SignupPoint,
 } from "./services/stats";
