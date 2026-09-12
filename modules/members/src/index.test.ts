@@ -424,8 +424,10 @@ describeIfDb("members integration", () => {
 
   it("countMembersByStatus and signupsOverTime aggregate, group-scopable", async () => {
     await createGroup("grp_a", "aachen");
+    await createGroup("grp_b", "bonn");
     await createUser("usr_s1", "s1@example.de");
     await createUser("usr_s2", "s2@example.de");
+    await createUser("usr_s3", "s3@example.de");
     const s1 = await createProfile(t.db, {
       userId: "usr_s1",
       firstName: "A",
@@ -438,25 +440,37 @@ describeIfDb("members integration", () => {
       lastName: "B",
       primaryGroupId: "grp_a",
     });
+    // In a different group, so it can prove `alumnus` is actually scoped
+    // by groupId and not just carried through unfiltered.
+    const s3 = await createProfile(t.db, {
+      userId: "usr_s3",
+      firstName: "C",
+      lastName: "C",
+      primaryGroupId: "grp_b",
+    });
     await approveMember(t.db, s1.id, BOARD);
     await grantRole(t.db, s1.id, "alumnus", BOARD, "grp_a");
+    await approveMember(t.db, s3.id, BOARD);
+    await grantRole(t.db, s3.id, "alumnus", BOARD, "grp_b");
 
     const counts = await countMembersByStatus(t.db, {});
-    expect(counts.active).toBe(1);
+    expect(counts.active).toBe(2);
     expect(counts.pending).toBe(1);
 
     const series = await signupsOverTime(t.db, { days: 30 });
     const total = series.reduce((n, p) => n + p.count, 0);
-    expect(total).toBe(2); // both created within the window
+    expect(total).toBe(3); // all three created within the window
     expect(series.length).toBe(30); // one bucket per day, zero-filled
 
     const scoped = await countMembersByStatus(t.db, { groupId: "grp_a" });
     expect(scoped.active + scoped.pending).toBe(2);
 
     // Der Alumni-Eimer kommt aus den Grants, nicht aus dem Status (ADR 0043):
-    // s1 bleibt aktiv UND wird als Alumnus gezählt.
-    expect(counts.active).toBe(1);
-    expect(counts.alumnus).toBe(1);
+    // s1 bleibt aktiv UND wird als Alumnus gezählt. s3 ist Alumnus in grp_b
+    // und zählt ungescopt mit, fällt aber aus dem grp_a-Scope heraus — das
+    // beweist, dass der Scope den Alumni-Eimer tatsächlich filtert.
+    expect(counts.active).toBe(2);
+    expect(counts.alumnus).toBe(2);
     expect(scoped.alumnus).toBe(1);
   });
 
