@@ -20,6 +20,19 @@ export const GROUP_PAGE_FEDERATION_SCOPES: ReadonlySet<FolderScope> = new Set([
   "board_broadcast",
 ]);
 
+/**
+ * Root folders shown on the federal board's own files overview
+ * (`/federal/files`). Deliberately excludes every group's `local_board` /
+ * `group_members` root, even though the federal board can read all of them
+ * (`canManageGroup` is federal-inclusive) — those are reached per group via
+ * `/gruppen/<slug>`, not listed here.
+ */
+export const FEDERAL_FILES_ROOT_SCOPES: ReadonlySet<FolderScope> = new Set([
+  "members_all",
+  "federal_board",
+  "board_broadcast",
+]);
+
 export type FileCategory = "pdf" | "image" | "spreadsheet" | "document" | "generic";
 
 /** Map a MIME type to a coarse category for the file-list icon (spec §11). */
