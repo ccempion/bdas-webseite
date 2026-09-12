@@ -6,6 +6,7 @@ export const SCOPE_LABEL: Record<FolderScope, string> = {
   group_members: "Gruppenmitglieder",
   local_board: "Lokaler Vorstand",
   federal_board: "Bundesvorstand",
+  board_broadcast: "Bundesvorstand-Verteiler",
 };
 
 export type FileCategory = "pdf" | "image" | "spreadsheet" | "document" | "generic";

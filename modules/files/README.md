@@ -5,14 +5,20 @@ Role-scoped file repository (spec §11). Owns `folders`, `files`,
 
 ## Scopes
 
-| Scope               | Cardinality | Read                      | Write           |
-| ------------------- | ----------- | ------------------------- | --------------- |
-| `members_all`       | 1           | every active member       | federal board   |
-| `group_members:[g]` | 1 per group | active members of g       | g's local board |
-| `local_board:[g]`   | 1 per group | g's local board + federal | g's local board |
-| `federal_board`     | 1           | federal board             | federal board   |
+| Scope               | Cardinality | Read                                | Write              |
+| ------------------- | ----------- | ----------------------------------- | ------------------ |
+| `members_all`       | 1           | every active member                 | federal board      |
+| `group_members:[g]` | 1 per group | active members of g                 | g's local board    |
+| `local_board:[g]`   | 1 per group | g's local board + federal           | g's local board    |
+| `federal_board`     | 1           | federal board                       | federal board      |
+| `board_broadcast`   | 1           | every group's local board + federal | federal board only |
 
-The four scopes above are **root** folders, system-provisioned by `ensureFolders`
+`board_broadcast` is the federal board's central distribution folder to every
+local Vorstand — shown as its own root on every group's page (alongside
+`local_board`), read-only for local boards. Only the federal board may add or
+remove documents in it; no local board, Lead, or file_manager may write here.
+
+The five scopes above are **root** folders, system-provisioned by `ensureFolders`
 at boot and by the `groups.group.created` subscriber. Roots cannot be renamed or
 deleted.
 
