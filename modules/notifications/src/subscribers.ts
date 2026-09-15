@@ -272,21 +272,33 @@ export function registerNotificationSubscribers(db: Db, opts: { siteUrl?: string
     // key are deliberately kept so re-enabling is re-adding the subscription
     // here. The board still sees pending Freigaben as the in-app badge.
     // The board decided — tell the applicant, who otherwise waits without ever
-    // hearing back. A transfer between groups is not an application and needs
-    // no such mail.
+    // hearing back. A transfer between groups gets its own, distinct wording
+    // (it's an existing member, not a first-time joiner).
     getEventBus().subscribe<GroupChangeDecided>(
       "members.group_change.decided",
       safe<GroupChangeDecided>(async (e) => {
-        if (e.fromGroupId !== null) return;
+        const isTransfer = e.fromGroupId !== null;
         if (e.decision === "approved") {
-          await sendTransactional(db, "member_application_approved", e.memberId, {});
+          if (isTransfer) {
+            const group = e.toGroupId ? await getGroup(db, e.toGroupId) : null;
+            await sendTransactional(db, "member_group_change_approved", e.memberId, {
+              groupName: group?.name,
+            });
+          } else {
+            await sendTransactional(db, "member_application_approved", e.memberId, {});
+          }
         } else {
           // The reason lives on the row, not on the event.
           const request = await getGroupChangeRequest(db, e.requestId);
-          await sendTransactional(db, "member_application_declined", e.memberId, {
-            reasonCategoryLabel: categoryLabel(request?.reasonCategory ?? null),
-            reasonMessage: request?.reasonMessage ?? undefined,
-          });
+          await sendTransactional(
+            db,
+            isTransfer ? "member_group_change_declined" : "member_application_declined",
+            e.memberId,
+            {
+              reasonCategoryLabel: categoryLabel(request?.reasonCategory ?? null),
+              reasonMessage: request?.reasonMessage ?? undefined,
+            },
+          );
         }
       }),
     ),
