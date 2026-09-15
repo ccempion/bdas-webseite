@@ -126,6 +126,24 @@ export function render(template: TransactionalTemplate, data: TemplateData): Ren
           .filter(Boolean)
           .join(" "),
       );
+    case "password_changed_notice":
+      return body(
+        "BDAS — Dein Passwort wurde geändert",
+        firstName,
+        "dein Passwort wurde soeben geändert. Warst du das nicht, melde dich bitte umgehend beim Bundesvorstand.",
+      );
+    case "password_reset_notice":
+      return body(
+        "BDAS — Dein Passwort wurde zurückgesetzt",
+        firstName,
+        "über den Link „Passwort vergessen“ wurde gerade ein neues Passwort für deinen Account gesetzt. Warst du das nicht, melde dich bitte umgehend beim Bundesvorstand.",
+      );
+    case "email_changed_notice":
+      return body(
+        "BDAS — Deine Login-E-Mail wurde geändert",
+        firstName,
+        `die E-Mail-Adresse für deinen Account wurde soeben auf ${data.newEmail ?? "eine andere Adresse"} geändert. Warst du das nicht, melde dich bitte umgehend beim Bundesvorstand.`,
+      );
     case "blog_post_reported":
       return body(
         "BDAS — Beitrag gemeldet",
