@@ -4,14 +4,20 @@ import { redirect } from "next/navigation";
 import { Card } from "@bdas/design-system";
 
 import { requireAuthFlag } from "../_auth/flag";
+import { sanitizeReturnTo } from "../_auth/return-to";
 import { loadViewer } from "../_dashboard/session";
 import { AnmeldenForm } from "./AnmeldenForm";
 
 export const metadata = { title: "Anmelden" };
 
-export default async function AnmeldenPage() {
+export default async function AnmeldenPage({
+  searchParams,
+}: {
+  searchParams?: Record<string, string | string[] | undefined>;
+}) {
   requireAuthFlag();
-  if (await loadViewer()) redirect("/");
+  const returnTo = sanitizeReturnTo(searchParams?.["returnTo"]);
+  if (await loadViewer()) redirect(returnTo ?? "/");
 
   return (
     <main className="mx-auto flex max-w-md flex-col gap-6 px-4 py-12">
@@ -21,7 +27,7 @@ export default async function AnmeldenPage() {
       </header>
 
       <Card flat className="p-6">
-        <AnmeldenForm />
+        <AnmeldenForm returnTo={returnTo} />
       </Card>
 
       <p className="text-center text-sm text-bdas-ink-body">

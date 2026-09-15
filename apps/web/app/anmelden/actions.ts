@@ -11,6 +11,7 @@ import { getMemberByUserId } from "@bdas/members";
 
 import { bootAuth } from "../../lib/auth-bootstrap";
 import { setSessionCookie } from "../../lib/auth-cookie";
+import { sanitizeReturnTo } from "../_auth/return-to";
 import { isProfileComplete } from "../_profile/complete";
 
 export type LoginFormState = {
@@ -27,6 +28,7 @@ export async function loginAction(
 
   const email = String(formData.get("email") ?? "");
   const password = String(formData.get("password") ?? "");
+  const returnTo = sanitizeReturnTo(formData.get("returnTo")?.toString());
   const h = headers();
   const ip = h.get("x-forwarded-for")?.split(",")[0]?.trim() ?? h.get("x-real-ip") ?? "0.0.0.0";
   const userAgent = h.get("user-agent") ?? undefined;
@@ -49,9 +51,9 @@ export async function loginAction(
   setSessionCookie(result.token);
 
   // Guide pending members who verified but never finished onboarding straight
-  // into the wizard; everyone else (incl. active members with missing profile
-  // data, who backfill via /account) lands on the public home page, which
-  // discloses more to a logged-in viewer.
+  // into the wizard, even if they were bounced from a different page before
+  // login — onboarding isn't skippable via returnTo. Everyone else lands on
+  // the page they originally asked for, or the public home page.
   if (isFlagOn("profile")) {
     const db = getDb();
     const member = await getMemberByUserId(db, result.userId);
@@ -59,5 +61,5 @@ export async function loginAction(
       redirect("/profil");
     }
   }
-  redirect("/");
+  redirect(returnTo ?? "/");
 }

@@ -9,10 +9,11 @@ import { loginAction, type LoginFormState } from "./actions";
 
 const initial: LoginFormState = {};
 
-export function AnmeldenForm() {
+export function AnmeldenForm({ returnTo }: { returnTo?: string | null }) {
   const [state, action] = useFormState(loginAction, initial);
   return (
     <Form action={action}>
+      {returnTo ? <input type="hidden" name="returnTo" value={returnTo} /> : null}
       {state.error ? <Alert variant="error">{state.error}</Alert> : null}
       {state.needsVerification ? (
         <p className="text-sm text-bdas-ink-body">
