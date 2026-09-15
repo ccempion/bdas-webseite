@@ -85,7 +85,7 @@ export const mitglieder: FaqSection = {
       body: [
         {
           kind: "p",
-          text: "Als Alumni giltst du nicht mehr als aktives Mitglied. Du kannst weiterhin Blog-Beiträge verfassen. Für Veranstaltungen kannst du dich erst wieder anmelden, sobald du erneut als aktiv geführt wirst.",
+          text: "Wenig. Du bleibst aktives Mitglied im BDAS-Netzwerk und kannst dich weiterhin zu Veranstaltungen anmelden. In der Mitgliederliste deiner Hochschulgruppe bist du als Alumnus gekennzeichnet — das ist eine Einordnung, keine Einschränkung. Ob du Blog-Beiträge verfassen kannst, hängt wie bei allen anderen an deiner Rolle, nicht an dieser Kennzeichnung.",
         },
       ],
     },
