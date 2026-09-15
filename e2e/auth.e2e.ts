@@ -157,7 +157,23 @@ test("logging in from a protected-page redirect lands back on that page", async 
  */
 test("a scheme-qualified returnTo is ignored, not followed", async ({ page }) => {
   const email = uniqueEmail("openredirect");
+  const groupId = await seedGroup({
+    slug: uniqueSlug("openredirect"),
+    name: "Openredirect Test Gruppe",
+    city: "Teststadt",
+  });
+
   await registerVerifyLogin(page, { email, firstName: "Open", lastName: "Redirect" });
+  await createProfile(page, { firstName: "Open", lastName: "Redirect", groupId });
+
+  const form = page.locator("form:has(#konto-studiengang)");
+  await form.locator("#konto-studiengang").fill("Informatik");
+  await form.locator("#konto-abschlussart").selectOption("bachelor");
+  await pickCombo(form, "konto-uni", "RWTH Aachen");
+  await form.locator("#konto-geburtsdatum").fill("2000-03-04");
+  await form.locator("#konto-gefundenDurch").selectOption("webseite");
+  await submitAndSettle(page, form.getByRole("button", { name: "Speichern" }));
+
   await logout(page);
 
   await page.goto("/anmelden?returnTo=" + encodeURIComponent("https://evil.example"));
