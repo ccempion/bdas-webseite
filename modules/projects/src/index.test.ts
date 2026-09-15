@@ -56,6 +56,7 @@ describeIfDb("projects integration", () => {
       ["..", "..", "groups", "migrations", "0004_location.sql"],
       ["..", "..", "groups", "migrations", "0005_image_key.sql"],
       ["..", "..", "groups", "migrations", "0006_link_scheme_guard.sql"],
+      ["..", "..", "groups", "migrations", "0007_group_kind.sql"],
       ["..", "migrations", "0001_init.sql"],
     ]) {
       const sql = await fs.readFile(path.join(__dirname, ...file), "utf8");

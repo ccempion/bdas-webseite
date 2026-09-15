@@ -14,6 +14,7 @@ import type { PostgresJsDatabase } from "drizzle-orm/postgres-js";
 import type { Role } from "@bdas/auth";
 import { ForbiddenError, NotFoundError, ValidationError } from "@bdas/errors";
 import { getEventBus } from "@bdas/events";
+import { getGroupKind } from "@bdas/groups";
 import { createId } from "@bdas/id";
 
 import type { RoleGranted, RoleRevoked } from "../events";
@@ -81,6 +82,26 @@ function requireValidScope(role: Role, groupId: string | null): void {
   }
 }
 
+/**
+ * Ein lokaler Vorstand sitzt ausschließlich auf einer Hochschulgruppe
+ * (Spec 2026-09-12 §3.3). Jede andere Art eskaliert ihre
+ * Beitrittsentscheidungen laut ADR 0021 an den Bundesvorstand — das hängt
+ * daran, dass dort kein aktiver Lead existiert. Ein versehentlich vergebener
+ * Lead würde diese Freigabe unterlaufen, deshalb wird der Zustand erzwungen
+ * statt gehofft. Eine unbekannte Gruppe fällt ebenfalls durch.
+ *
+ * Die Lesung läuft außerhalb der Transaktion: die Art einer Gruppe ist
+ * faktisch unveränderlich, und `getGroupKind` nimmt eine Db, keine Tx.
+ * `revokeRole` prüft bewusst NICHT — einen Grant, den es nicht geben sollte,
+ * muss man immer entziehen können.
+ */
+async function requireBoardableGroup(db: Db, role: Role, groupId: string | null): Promise<void> {
+  if (role !== "local_board_lead" || groupId === null) return;
+  if ((await getGroupKind(db, groupId)) !== "hochschulgruppe") {
+    throw new ValidationError("Nur eine Hochschulgruppe kann einen lokalen Vorstand haben.");
+  }
+}
+
 export async function grantRole(
   db: Db,
   memberId: string,
@@ -91,6 +112,7 @@ export async function grantRole(
   requireValidRole(role);
   requireValidScope(role, groupId);
   requireCanGrant(actor, role, groupId);
+  await requireBoardableGroup(db, role, groupId);
 
   return db.transaction(async (tx) => {
     const rows = await tx.select().from(members).where(eq(members.id, memberId)).limit(1);

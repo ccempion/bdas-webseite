@@ -3,7 +3,7 @@ import type { PostgresJsDatabase } from "drizzle-orm/postgres-js";
 
 import { rowLocation } from "../location";
 import { groups } from "../schema";
-import type { GroupStatus, GroupSummary } from "../types";
+import type { GroupKind, GroupStatus, GroupSummary } from "../types";
 
 export type Db = PostgresJsDatabase<Record<string, never>>;
 
@@ -21,6 +21,7 @@ export async function listGroups(db: Db, opts: ListOpts = {}): Promise<GroupSumm
       name: groups.name,
       city: groups.city,
       status: groups.status,
+      kind: groups.kind,
       locationName: groups.locationName,
       locationAddress: groups.locationAddress,
       locationLat: groups.locationLat,
@@ -36,6 +37,7 @@ export async function listGroups(db: Db, opts: ListOpts = {}): Promise<GroupSumm
     name: r.name,
     city: r.city,
     status: r.status as GroupStatus,
+    kind: r.kind as GroupKind,
     location: rowLocation(r),
   }));
 }

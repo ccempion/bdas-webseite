@@ -113,6 +113,14 @@ origin scope, so only the federal board can remove it afterwards;
 transfer pool (`listAlumnusIds`) and the statistics all derive the mark from the
 grant, never from the status.
 
+`CurrentMember.hasGroupScope` is the only place that answers whether an account
+has a Hochschulgruppe scope: true exactly when the primary group's `kind` is
+`hochschulgruppe` (read via `getGroupKind` from `@bdas/groups`), false without
+a group. `grantRole` refuses `local_board_lead` on any other kind — even for
+the federal board — because a group without a Lead escalates its join
+decisions to the federal board (ADR 0021); `revokeRole` deliberately does not
+check.
+
 ## Status transitions
 
 ```

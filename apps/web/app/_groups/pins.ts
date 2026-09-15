@@ -11,10 +11,12 @@ export type GroupPin = {
 /**
  * Public projection for the map. Deliberately excludes the location's
  * name/address — they are editor-facing only (spec: address hidden publicly).
+ * Eine Gruppe ohne Stadt steht nicht auf der Karte: `city` ist seit der
+ * Achse `groups.kind` genau dann null, wenn die Gruppe nicht verortet ist.
  */
 export function toPins(groups: readonly GroupSummary[]): GroupPin[] {
   return groups.flatMap((g) =>
-    g.location
+    g.location && g.city !== null
       ? [{ slug: g.slug, name: g.name, city: g.city, lat: g.location.lat, lng: g.location.lng }]
       : [],
   );

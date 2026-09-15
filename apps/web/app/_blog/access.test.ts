@@ -54,6 +54,7 @@ function memberWithStatus(status: "pending" | "active"): CurrentMember {
       updatedAt: new Date(),
     },
     grants: [],
+    hasGroupScope: false,
   };
 }
 
@@ -72,6 +73,7 @@ function memberWithGrants(grants: CurrentMember["grants"]): CurrentMember {
       updatedAt: new Date(),
     },
     grants,
+    hasGroupScope: true,
   };
 }
 
@@ -98,6 +100,7 @@ describe("canComment", () => {
       user: { id: "usr_2", email: "b@bdas.de", status: "active", roles: [], sessionId: "sess_2" },
       member: null,
       grants: [],
+      hasGroupScope: false,
     };
     expect(canComment(me)).toBe(false);
   });

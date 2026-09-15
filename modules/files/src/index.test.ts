@@ -60,6 +60,7 @@ async function applyMigrations(t: TestDb): Promise<void> {
     ["..", "..", "groups", "migrations", "0001_init.sql"],
     ["..", "..", "groups", "migrations", "0004_location.sql"],
     ["..", "..", "groups", "migrations", "0005_image_key.sql"],
+    ["..", "..", "groups", "migrations", "0007_group_kind.sql"],
     ["..", "..", "members", "migrations", "0001_init.sql"],
     ["..", "migrations", "0001_init.sql"],
     ["..", "migrations", "0002_rls_lockdown.sql"],
@@ -91,6 +92,7 @@ function meWith(grants: Grant[], member: CurrentMember["member"]): CurrentMember
     user: { id: "usr_1", email: "t@x.org", status: "active", roles: [], sessionId: "ses_1" },
     member,
     grants,
+    hasGroupScope: Boolean(member?.primaryGroupId),
   };
 }
 

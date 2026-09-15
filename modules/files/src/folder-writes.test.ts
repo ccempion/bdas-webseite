@@ -46,6 +46,7 @@ async function applyMigrations(t: TestDb): Promise<void> {
     ["..", "..", "groups", "migrations", "0004_location.sql"],
     ["..", "..", "groups", "migrations", "0005_image_key.sql"],
     ["..", "..", "groups", "migrations", "0006_link_scheme_guard.sql"],
+    ["..", "..", "groups", "migrations", "0007_group_kind.sql"],
     ["..", "..", "members", "migrations", "0001_init.sql"],
     ["..", "migrations", "0001_init.sql"],
     ["..", "migrations", "0002_rls_lockdown.sql"],
@@ -72,6 +73,7 @@ function actor(grants: Grant[], memberId = "mbr_board"): CurrentMember {
       updatedAt: new Date(),
     },
     grants,
+    hasGroupScope: true,
   };
 }
 

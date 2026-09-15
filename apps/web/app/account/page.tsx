@@ -70,7 +70,7 @@ export default async function AccountPage({
       lastName: me.member?.lastName ?? "",
       primaryGroupId: me.member?.primaryGroupId ?? null,
     },
-    groups: groups.map((g) => ({ id: g.id, slug: g.slug, name: g.name, city: g.city })),
+    groups: groups.map((g) => ({ id: g.id, slug: g.slug, name: g.name, city: g.city ?? "" })),
     openChangeGroupName: targetGroupName,
   };
 

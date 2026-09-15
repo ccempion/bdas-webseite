@@ -1,6 +1,9 @@
 /**
  * Private test harness for the members module. Not re-exported from index.ts.
- * Pulls in the auth + groups migrations because the members tables FK both.
+ * Pulls in the auth + groups migrations because the members tables FK both —
+ * von groups nur `0001_init` plus `0007_group_kind`: mehr braucht
+ * `getGroupKind` nicht, und mehr nachzubauen wäre eine Kopplung an ein
+ * fremdes Schema.
  */
 import { promises as fs } from "node:fs";
 import path from "node:path";
@@ -16,6 +19,7 @@ const DEFAULT_URL = "postgres://bdas:bdas@localhost:5432/bdas";
 export const MEMBERS_TEST_MIGRATIONS: ReadonlyArray<ReadonlyArray<string>> = [
   ["..", "..", "auth", "migrations", "0001_init.sql"],
   ["..", "..", "groups", "migrations", "0001_init.sql"],
+  ["..", "..", "groups", "migrations", "0007_group_kind.sql"],
   ["..", "migrations", "0001_init.sql"],
   ["..", "migrations", "0002_role_grants.sql"],
   ["..", "migrations", "0003_local_board_lead.sql"],

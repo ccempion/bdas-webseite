@@ -21,7 +21,7 @@ import type { GroupArchived, GroupCreated, GroupUpdated } from "../events";
 import { GroupLocationInput, locationColumns, rowLocation } from "../location";
 import { groups } from "../schema";
 import { HttpUrlInput } from "../url";
-import type { Group, GroupLocation, GroupStatus } from "../types";
+import type { Group, GroupKind, GroupLocation, GroupStatus } from "../types";
 
 export type Db = PostgresJsDatabase<Record<string, never>>;
 
@@ -86,6 +86,7 @@ function rowToGroup(r: typeof groups.$inferSelect): Group {
     slug: r.slug,
     name: r.name,
     city: r.city,
+    kind: r.kind as GroupKind,
     contactEmail: r.contactEmail,
     instagramUrl: r.instagramUrl,
     websiteUrl: r.websiteUrl,
@@ -111,6 +112,11 @@ function toGroup(
     slug,
     name: v.name,
     city: v.city,
+    // Über diese Schnittstelle entsteht ausschließlich eine Hochschulgruppe:
+    // CreateGroupInput kennt kein `kind`, die Spalte trägt denselben DEFAULT.
+    // Eine `affiliate`-Zeile legt heute niemand an — das ist Sache der Spec,
+    // die den jeweiligen Nutzertyp einführt.
+    kind: "hochschulgruppe",
     contactEmail: v.contactEmail ?? null,
     instagramUrl: v.instagramUrl ?? null,
     websiteUrl: v.websiteUrl ?? null,

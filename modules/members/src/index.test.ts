@@ -18,6 +18,7 @@ import { MEMBERS_TEST_MIGRATIONS } from "./test-db";
 import { approveMember, transitionStatus } from "./services/status";
 import { grantRole, revokeRole } from "./services/roles";
 import { getGrants } from "./services/get";
+import { resolveHasGroupScope } from "./services/me";
 import { listAlumnusScopes, listMembers } from "./services/list-members";
 import { countMembersByStatus, signupsOverTime } from "./services/stats";
 import { listGrantAudit, listRoleHolders } from "./services/role-views";
@@ -808,5 +809,68 @@ describeIfDb("members integration", () => {
 
     expect(after.primaryGroupId).toBe("grp_a"); // the smuggled field is ignored
     expect(after.firstName).toBe("Cem");
+  });
+
+  it("hasGroupScope unterscheidet Hochschulgruppe, Partnerorganisation und keine Gruppe", async () => {
+    await createGroup("grp_hs", "aachen");
+    await t.client`
+      INSERT INTO groups (id, slug, name, city, kind, status)
+      VALUES ('grp_af', 'bdaj', 'BDAJ', NULL, 'affiliate', 'active')
+    `;
+    await createUser("usr_hs", "hs@example.de");
+    await createUser("usr_af", "af@example.de");
+    await createUser("usr_no", "no@example.de");
+
+    const hs = await createProfile(t.db, {
+      userId: "usr_hs",
+      firstName: "H",
+      lastName: "S",
+      primaryGroupId: "grp_hs",
+    });
+    const af = await createProfile(t.db, {
+      userId: "usr_af",
+      firstName: "A",
+      lastName: "F",
+      primaryGroupId: "grp_af",
+    });
+    const no = await createProfile(t.db, { userId: "usr_no", firstName: "N", lastName: "O" });
+
+    expect(await resolveHasGroupScope(t.db, hs)).toBe(true);
+    expect(await resolveHasGroupScope(t.db, af)).toBe(false);
+    expect(await resolveHasGroupScope(t.db, no)).toBe(false);
+    expect(await resolveHasGroupScope(t.db, null)).toBe(false);
+  });
+
+  it("verweigert local_board_lead auf einer Nicht-Hochschulgruppe (Spec §3.3)", async () => {
+    await createGroup("grp_hs2", "bonn");
+    await t.client`
+      INSERT INTO groups (id, slug, name, city, kind, status)
+      VALUES ('grp_af2', 'bdaj-zwei', 'BDAJ', NULL, 'affiliate', 'active')
+    `;
+    await createUser("usr_cand", "cand@example.de");
+    const m = await createProfile(t.db, {
+      userId: "usr_cand",
+      firstName: "Kai",
+      lastName: "Kandidat",
+      primaryGroupId: "grp_hs2",
+    });
+
+    // Hochschulgruppe: unverändert erlaubt
+    await grantRole(t.db, m.id, "local_board_lead", BOARD, "grp_hs2");
+
+    // Partnerorganisation und unbekannte Gruppe: verweigert, auch für den Bundesvorstand
+    await expect(grantRole(t.db, m.id, "local_board_lead", BOARD, "grp_af2")).rejects.toMatchObject(
+      { code: "VALIDATION" },
+    );
+    await expect(
+      grantRole(t.db, m.id, "local_board_lead", BOARD, "grp_gibt_es_nicht"),
+    ).rejects.toMatchObject({ code: "VALIDATION" });
+    const grants = await getGrants(t.db, m.id);
+    expect(grants.filter((g) => g.role === "local_board_lead").map((g) => g.groupId)).toEqual([
+      "grp_hs2",
+    ]);
+
+    // die Delegiertenrollen bleiben von der Regel unberührt
+    await grantRole(t.db, m.id, "file_manager", BOARD, "grp_af2");
   });
 });

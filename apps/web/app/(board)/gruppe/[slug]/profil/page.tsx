@@ -28,7 +28,7 @@ export default async function GroupProfilePage({ params }: { params: { slug: str
         slug={group.slug}
         initial={{
           name: group.name,
-          city: group.city,
+          city: group.city ?? "",
           contactEmail: group.contactEmail,
           instagramUrl: group.instagramUrl,
           websiteUrl: group.websiteUrl,

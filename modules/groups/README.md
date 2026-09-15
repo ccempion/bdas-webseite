@@ -20,13 +20,36 @@ import {
   listGroups,
   getGroupBySlug,
   getGroup,
+  getGroupKind,
   getJoinPolicy,
   upsertGroupBySlug,
   type Group,
   type GroupSummary,
+  type GroupKind,
   type GroupEvent,
 } from "@bdas/groups";
 ```
+
+## Art einer Gruppe (`kind`)
+
+Every group has a kind (migration `0007_group_kind.sql`, spec
+`docs/superpowers/specs/2026-09-12-nutzertypen-fundament-design.md` §3):
+
+| `kind`            | Meaning                                                                     | `city`       |
+| ----------------- | --------------------------------------------------------------------------- | ------------ |
+| `hochschulgruppe` | A university group — the default, and every existing row                    | required     |
+| `affiliate`       | A partner organisation (BDAJ and others): a home for accounts without scope | must be NULL |
+
+`groups_kind_city_check` enforces the `city` column both ways — there is no
+Hochschulgruppe without a city. `netzwerk` (interested people without a group)
+is deliberately absent until its own spec arrives.
+
+`createGroup` and `upsertGroupBySlug` only ever create a `hochschulgruppe`;
+creating an `affiliate` row is the job of the spec that introduces the
+concrete account type. `getGroupKind` is the one accessor meant for other
+modules. Note for the BDAJ implementation: the flag that spec calls
+`isAffiliate` is `hasGroupScope` here, and it lives on `CurrentMember`
+(`@bdas/members`), not in this module.
 
 ## Adding a group ("peu à peu" workflow)
 
