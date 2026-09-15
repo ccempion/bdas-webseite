@@ -19,6 +19,7 @@ import {
 } from "@bdas/members";
 import { getProfile } from "@bdas/profile";
 
+import { buildAnmeldenUrl } from "../_auth/return-to";
 import { readSessionCookie } from "../../lib/auth-cookie";
 import { signedProfilePhotoUrl } from "../_profile/photo-url";
 
@@ -75,7 +76,7 @@ export function canAuthorPost(me: CurrentMember | null): boolean {
 /** Eligible to author a post (ADR 0037), or redirect. */
 export async function requirePostAuthor(): Promise<CurrentMember> {
   const me = await loadBlogMe();
-  if (!me) redirect("/anmelden");
+  if (!me) redirect(buildAnmeldenUrl("/blog/neu"));
   if (!canAuthorPost(me)) redirect("/blog");
   return me;
 }

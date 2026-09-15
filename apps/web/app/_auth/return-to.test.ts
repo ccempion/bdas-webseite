@@ -57,6 +57,14 @@ describe("sanitizeReturnTo", () => {
   it("rejects a value carrying a header-injection attempt", () => {
     expect(sanitizeReturnTo("/foo\r\nSet-Cookie: x=1")).toBeNull();
   });
+
+  it("rejects a value carrying a NUL byte", () => {
+    expect(sanitizeReturnTo("/foo\u0000evil")).toBeNull();
+  });
+
+  it("rejects a value carrying a C0 control character", () => {
+    expect(sanitizeReturnTo("/foo\u0001evil")).toBeNull();
+  });
 });
 
 describe("buildAnmeldenUrl", () => {
