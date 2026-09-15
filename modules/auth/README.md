@@ -38,6 +38,8 @@ import {
   requestEmailChange,
   confirmEmailChange,
   RequestEmailChangeInput,
+  // Erasing an identity (ADR 0044; the caller decides who may be deleted)
+  deleteAccount,
   // SSO cookie
   COOKIE_NAME,
   COOKIE_MAX_AGE_SECONDS,
@@ -69,6 +71,8 @@ The module publishes typed events through `core/events`:
 - `auth.password.reset`
 - `auth.password.changed`
 - `auth.email.changed`
+- `auth.user.deleted` — after the row is gone; FK cascades have already run,
+  so it is for modules that keep account data without an FK
 
 Subscribers should depend on `AuthEvent` (or its arms) and not on any auth
 service directly.

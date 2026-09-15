@@ -12,8 +12,9 @@ import { eq, or } from "drizzle-orm";
 import type { Db } from "@bdas/db";
 import { getEventBus, type AnyEvent, type EventHandler, type Subscription } from "@bdas/events";
 
+import { accountMatch } from "./account-match";
 import { recordConsent } from "./consent-log";
-import { newsletterSubscribers } from "./schema";
+import { newsletterPrompts, newsletterSubscribers } from "./schema";
 
 /**
  * Structural copy of `auth.user.verified` (modules/auth/src/events.ts).
@@ -24,6 +25,14 @@ import { newsletterSubscribers } from "./schema";
  */
 type UserVerified = {
   readonly type: "auth.user.verified";
+  readonly userId: string;
+  readonly email: string;
+  readonly at: Date;
+};
+
+/** Structural copy of `auth.user.deleted` (modules/auth/src/events.ts, ADR 0044). */
+type UserDeleted = {
+  readonly type: "auth.user.deleted";
   readonly userId: string;
   readonly email: string;
   readonly at: Date;
@@ -82,6 +91,14 @@ async function onVerified(db: Db, e: UserVerified): Promise<void> {
   }
 }
 
+/** The account is gone, and so is what this module kept about it: every row it
+ *  matches by id or address (ADR 0039) — their consent log goes with them
+ *  through the cascade — and the memory of dismissed hints. */
+async function onDeleted(db: Db, e: UserDeleted): Promise<void> {
+  await db.delete(newsletterSubscribers).where(accountMatch(e));
+  await db.delete(newsletterPrompts).where(eq(newsletterPrompts.userId, e.userId));
+}
+
 /** Idempotent: re-registering replaces the previous subscriptions. */
 export function registerNewsletterSubscribers(db: Db): void {
   for (const s of subs) s.unsubscribe();
@@ -92,6 +109,10 @@ export function registerNewsletterSubscribers(db: Db): void {
     bus.subscribe<UserVerified>(
       "auth.user.verified",
       safe<UserVerified>((e) => onVerified(db, e)),
+    ),
+    bus.subscribe<UserDeleted>(
+      "auth.user.deleted",
+      safe<UserDeleted>((e) => onDeleted(db, e)),
     ),
   );
 }

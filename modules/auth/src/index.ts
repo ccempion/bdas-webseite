@@ -34,6 +34,7 @@ export {
 } from "./services/email-change";
 export { getCurrentUser, requireRole, type CurrentUser } from "./services/me";
 export { resendVerification, type ResendResult } from "./services/resend-verification";
+export { deleteAccount } from "./services/delete-account";
 
 // Password policy (UI shows the hint; schema is the single source of truth).
 export { passwordSchema, PASSWORD_RULE_HINT, PASSWORD_MIN_LENGTH } from "./password";
@@ -71,4 +72,5 @@ export type {
   PasswordReset,
   PasswordChanged,
   EmailChanged,
+  UserDeleted,
 } from "./events";

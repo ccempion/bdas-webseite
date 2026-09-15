@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { getUserEmails } from "@bdas/auth";
 import { getDb } from "@bdas/db";
 import { Card } from "@bdas/design-system";
 import { isFlagOn } from "@bdas/feature-flags";
@@ -8,6 +9,9 @@ import { listGrouplessMembers, listOpenGroupChanges } from "@bdas/members";
 import { getProfile } from "@bdas/profile";
 
 import { requireFederalScope } from "../../../_dashboard/session";
+import { deleteApplicantAction } from "./actions";
+import { isDeletableApplicant } from "./deletable";
+import { PoolTable, type PoolRow } from "./PoolTable";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Ohne Gruppe" };
@@ -28,11 +32,29 @@ export default async function PoolPage() {
   const groupName = (id: string | null) =>
     id === null ? "keine Gruppe" : (groups.find((g) => g.id === id)?.name ?? "—");
 
-  const rows = await Promise.all(
-    pool.map(async (p) => ({
-      ...p,
-      uni: profileFlagOn ? ((await getProfile(db, p.member.userId))?.uni ?? "—") : "—",
-    })),
+  const emails = await getUserEmails(
+    db,
+    pool.map((p) => p.member.userId),
+  );
+  const rows: PoolRow[] = await Promise.all(
+    pool.map(async ({ member, registeredAt }) => {
+      const profile = await getProfile(db, member.userId);
+      const verdict = await isDeletableApplicant(db, {
+        member,
+        email: emails.get(member.userId) ?? null,
+        actorUserId: me.user.id,
+      });
+      return {
+        memberId: member.id,
+        userId: member.userId,
+        name: `${member.firstName[0]}. ${member.lastName}`,
+        uni: profileFlagOn ? (profile?.uni ?? "—") : "—",
+        days: days(registeredAt),
+        kind: member.status === "active" ? "Mitglied ohne Gruppe" : "Bewerber:in",
+        hasProfile: profile !== null,
+        deletable: verdict.ok,
+      };
+    }),
   );
 
   return (
@@ -46,40 +68,7 @@ export default async function PoolPage() {
           </p>
         </div>
 
-        <Card flat className="overflow-x-auto p-0">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-bdas-soft text-left text-bdas-ink-muted">
-                <th className="p-3 font-semibold">Name</th>
-                <th className="p-3 font-semibold">Universität</th>
-                <th className="p-3 font-semibold">Im Verband seit</th>
-                <th className="p-3 font-semibold">Art</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.length === 0 ? (
-                <tr>
-                  <td className="p-3 text-bdas-ink-muted" colSpan={4}>
-                    Niemand wartet zurzeit auf eine Gruppe.
-                  </td>
-                </tr>
-              ) : (
-                rows.map(({ member, registeredAt, uni }) => (
-                  <tr key={member.id} className="border-b border-bdas-soft">
-                    <td className="p-3">
-                      {member.firstName[0]}. {member.lastName}
-                    </td>
-                    <td className="p-3">{uni}</td>
-                    <td className="p-3">{days(registeredAt)} Tage</td>
-                    <td className="p-3 text-bdas-ink-muted">
-                      {member.status === "active" ? "Mitglied ohne Gruppe" : "Bewerber:in"}
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </Card>
+        <PoolTable rows={rows} onDelete={deleteApplicantAction} />
       </section>
 
       <section className="flex flex-col gap-3">

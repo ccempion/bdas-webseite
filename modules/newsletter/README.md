@@ -74,8 +74,10 @@ plaintext_; consumers must not log the event verbatim) and
 `newsletter.already_subscribed`. Both are answered identically on screen; only
 the inbox tells them apart.
 
-**Subscribed** — `auth.user.verified`, matched structurally rather than by
-importing `@bdas/auth`.
+**Subscribed** — `auth.user.verified` and `auth.user.deleted`, both matched
+structurally rather than by importing `@bdas/auth`. A deleted account takes
+every row matching its id or address with it, plus its prompt memory
+(ADR 0044).
 
 `core/events` is synchronous and rethrows into the publisher, and
 `auth.user.verified` fires inside the verification path. **A handler here must
