@@ -87,10 +87,13 @@ Alumnus-Grant und bleibt unverändert.
   Antrag (`member_group_change_requests.status = 'rejected'`), nicht am
   Mitglied. Ohne diese Trennung hätte die Entscheidung, Alumni vollen
   Zugriff zu geben, jemandem Zugriff verschafft, der nie Mitglied war.
-- **Der Austritt passt ohne Änderung.** `changePrimaryGroup` mit Ziel
-  `null` setzt `primary_group_id = NULL`, entzieht die gruppengebundenen
-  Grants und lässt `status = 'active'` stehen — „nicht mehr in einer
-  Gruppe, trotzdem im Netzwerk". Es fehlt nur der Alumnus-Grant obendrauf.
+- **Austritt und Gruppenwechsel behalten die Markierung.** `changePrimaryGroup`
+  mit Ziel `null` setzt `primary_group_id = NULL` und lässt `status = 'active'`
+  stehen — „nicht mehr in einer Gruppe, trotzdem im Netzwerk". Austritt und
+  genehmigter Wechsel entziehen die gruppengebundenen Grants, `alumnus` aber
+  ausdrücklich nicht: der Scope bleibt die Herkunftsgruppe (§3). Entfernen
+  lässt sich eine solche Markierung danach nur noch vom Bundesvorstand, weil
+  der Lead der Herkunftsgruppe die Person nicht mehr in seiner Liste führt.
 - **Der Transfer-Pool ist die Regressionsstelle.** `pool.ts` schließt Alumni
   heute über den Status aus. Werden sie `active`, rutschen sie ohne
   Gegenmaßnahme zurück in den Pool; der Ausschluss muss über den Grant neu
@@ -104,7 +107,9 @@ Alumnus-Grant und bleibt unverändert.
   entziehen, ohne den Account zu löschen. Am heutigen Verhalten ändert das
   nichts. Ein Ausschluss bei Fehlverhalten wäre ein eigenes Feature mit
   eigener Spec.
-- **Ein Lead kann jedes Mitglied seiner Gruppe als Alumnus markieren.**
+- **Ein Lead kann jedes Mitglied seiner Gruppe als Alumnus markieren** — und
+  nur diese: `grantRole` verweigert einem Lead den Grant für ein Mitglied
+  einer anderen Gruppe, auch im eigenen Scope.
   Solange die Rolle eine reine Kennzeichnung ist, ist das harmlos. Sobald
   sie irgendwann etwas einschränkt, wird daraus eine
   Degradierungs-Befugnis — dann ist diese Entscheidung neu zu bewerten.

@@ -25,16 +25,17 @@ const FILTERS: ReadonlyArray<{ key: MemberFilter; label: string }> = [
 export function MembersTable({
   members,
   groupNames,
-  alumnusIds,
+  alumnusScopes,
   openChanges,
   revalidatePath,
   rejectionCategories,
 }: {
   members: Member[];
   groupNames: Record<string, string>;
-  /** IDs mit aktivem alumnus-Grant (ADR 0043) — die Kennzeichnung kommt aus
-   *  den Grants, nicht aus dem Status. */
-  alumnusIds: string[];
+  /** Scopes der aktiven alumnus-Grants je Mitglied (ADR 0043) — die
+   *  Kennzeichnung kommt aus den Grants, nicht aus dem Status, und der Scope
+   *  bleibt beim Gruppenwechsel die Herkunftsgruppe. */
+  alumnusScopes: Record<string, ReadonlyArray<string | null>>;
   openChanges: OpenGroupChange[];
   revalidatePath: string;
   rejectionCategories: ReadonlyArray<{ key: RejectionCategory; label: string }>;
@@ -54,7 +55,7 @@ export function MembersTable({
     [openChanges],
   );
 
-  const isAlumnus = useMemo(() => new Set(alumnusIds), [alumnusIds]);
+  const isAlumnus = useMemo(() => new Set(Object.keys(alumnusScopes)), [alumnusScopes]);
 
   const rows = useMemo(
     () =>
@@ -67,6 +68,21 @@ export function MembersTable({
       ),
     [members, filter, q, isAlumnus],
   );
+
+  /** Setzt die Markierung im Scope der heutigen Gruppe; entfernt sie in jedem
+   *  Scope, in dem sie vergeben wurde. Wer darf, prüft requireCanGrant
+   *  serverseitig je Scope (ADR 0043 §3) — die erste Ablehnung bricht ab. */
+  async function toggleAlumnus(member: Member): Promise<{ ok: boolean; error?: string }> {
+    const scopes = alumnusScopes[member.id];
+    if (!scopes) {
+      return grantRoleAction(member.id, "alumnus", member.primaryGroupId, revalidatePath);
+    }
+    for (const scope of scopes) {
+      const res = await revokeRoleAction(member.id, "alumnus", scope, revalidatePath);
+      if (!res.ok) return res;
+    }
+    return { ok: true };
+  }
 
   return (
     <div className="flex gap-4">
@@ -161,8 +177,6 @@ export function MembersTable({
               <dt className="text-bdas-ink-muted">Status</dt>
               <dd className="text-bdas-ink-body">{STATUS_LABEL[selected.status]}</dd>
             </div>
-            {/* Der Scope ist die Gruppe des Mitglieds; wer vergeben darf, prüft
-                requireCanGrant serverseitig (ADR 0043 §3). */}
             <div className="flex items-center justify-between gap-2 border-b border-bdas-soft pb-1">
               <dt className="text-bdas-ink-muted">Alumnus</dt>
               <dd>
@@ -171,15 +185,7 @@ export function MembersTable({
                   disabled={marking}
                   onClick={() =>
                     startMarking(async () => {
-                      const action = isAlumnus.has(selected.id)
-                        ? revokeRoleAction
-                        : grantRoleAction;
-                      const res = await action(
-                        selected.id,
-                        "alumnus",
-                        selected.primaryGroupId,
-                        revalidatePath,
-                      );
+                      const res = await toggleAlumnus(selected);
                       setMarkError(res.ok ? null : (res.error ?? "Fehler"));
                     })
                   }

@@ -97,6 +97,19 @@ export async function grantRole(
     const row = rows[0];
     if (!row) throw new NotFoundError("Mitglied nicht gefunden.");
     const member = row2member(row);
+    // Ein Lead markiert nur Mitglieder der eigenen Gruppe (ADR 0043 §3): sonst
+    // erschiene die Markierung in einer fremden Mitgliederliste, deren Lead sie
+    // nicht entfernen darf.
+    if (
+      role === "alumnus" &&
+      groupId !== null &&
+      !isFederalBoard(actor.grants) &&
+      member.primaryGroupId !== groupId
+    ) {
+      throw new ForbiddenError(
+        "Ein Lead kann nur Mitglieder der eigenen Gruppe als Alumnus markieren.",
+      );
+    }
 
     const existing = await tx
       .select({ id: memberRoleGrants.id })

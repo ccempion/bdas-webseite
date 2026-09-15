@@ -106,9 +106,12 @@ never `federal_board`.
 alumnus stays `active`, keeps the `member` grant and with it event
 registration. It is optionally scoped. Scoped to a group, the group's Lead or
 the federal board may set or remove it; unscoped, only the federal board
-(`canManageGroup(grants, null)` passes federal only). `listAlumnusIds` is the
-read side — member lists, the transfer pool and the statistics all derive the
-mark from the grant, never from the status.
+(`canManageGroup(grants, null)` passes federal only). A Lead may only mark
+members of its own group. The mark survives an exit or a transfer with its
+origin scope, so only the federal board can remove it afterwards;
+`listAlumnusScopes` hands the UI every scope to revoke. Member lists, the
+transfer pool (`listAlumnusIds`) and the statistics all derive the mark from the
+grant, never from the status.
 
 ## Status transitions
 
@@ -144,7 +147,8 @@ federal board as fallback only when that group has no active board seat
 (`canDecideJoinRequest`, ADR 0021). The origin group can see the request but has
 no veto. Approval moves the member, leaves `status` untouched, and **revokes
 every group-scoped grant they still held in the group they left** (emitting a
-`members.role.revoked` per grant); rejection leaves them where they were.
+`members.role.revoked` per grant) — except `alumnus`, whose scope records where
+the mark came from (ADR 0043); rejection leaves them where they were.
 
 The table doubles as the audit log: terminal rows (`approved` / `rejected` /
 `withdrawn`) are the history, read back via `getGroupChangeHistory`. There is no

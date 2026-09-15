@@ -13,7 +13,7 @@
  * foreign key does that. Reading the `groups` table from here would violate
  * CLAUDE.md §1 rule 1.
  */
-import { and, desc, eq, isNull, sql } from "drizzle-orm";
+import { and, desc, eq, isNull, ne, sql } from "drizzle-orm";
 
 import type { Role } from "@bdas/auth";
 import { ConflictError, ForbiddenError, NotFoundError, ValidationError } from "@bdas/errors";
@@ -64,9 +64,10 @@ export function row2request(r: MemberGroupChangeRow): GroupChangeRequest {
 
 /**
  * Revoke every active grant the member holds *scoped to `groupId`* — the group
- * they are leaving (ADR 0022). Unscoped (federal) grants are untouched. Emits a
- * `members.role.revoked` per grant so notifications behave as if a board had
- * revoked it by hand.
+ * they are leaving (ADR 0022). Unscoped (federal) grants are untouched, and so is
+ * `alumnus`: its scope records where the mark came from, not a power held there
+ * (ADR 0043). Emits a `members.role.revoked` per grant so notifications behave
+ * as if a board had revoked it by hand.
  */
 async function revokeGroupScopedGrants(
   tx: Db,
@@ -81,6 +82,7 @@ async function revokeGroupScopedGrants(
       and(
         eq(memberRoleGrants.memberId, memberId),
         eq(memberRoleGrants.groupId, groupId),
+        ne(memberRoleGrants.role, "alumnus"),
         isNull(memberRoleGrants.revokedAt),
       ),
     )

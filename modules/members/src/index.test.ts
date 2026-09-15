@@ -18,7 +18,7 @@ import { MEMBERS_TEST_MIGRATIONS } from "./test-db";
 import { approveMember, transitionStatus } from "./services/status";
 import { grantRole, revokeRole } from "./services/roles";
 import { getGrants } from "./services/get";
-import { listMembers } from "./services/list-members";
+import { listAlumnusScopes, listMembers } from "./services/list-members";
 import { countMembersByStatus, signupsOverTime } from "./services/stats";
 import { listGrantAudit, listRoleHolders } from "./services/role-views";
 import type { Grant } from "./types";
@@ -568,6 +568,77 @@ describeIfDb("members integration", () => {
     `;
     expect(left).toHaveLength(1);
     expect(left[0]!["group_id"]).toBeNull();
+  });
+
+  it("a lead may not mark a member of another group, even scoped to its own (ADR 0043)", async () => {
+    await createGroup("grp_a", "aachen");
+    await createGroup("grp_b", "bonn");
+    await createUser("usr_other", "other@example.de");
+    const LEAD_A = {
+      userId: "usr_lead_a",
+      grants: [{ role: "local_board_lead", groupId: "grp_a" }] as ReadonlyArray<Grant>,
+    };
+
+    const other = await createProfile(t.db, {
+      userId: "usr_other",
+      firstName: "Olga",
+      lastName: "Andere",
+      primaryGroupId: "grp_b",
+    });
+
+    await expect(grantRole(t.db, other.id, "alumnus", LEAD_A, "grp_a")).rejects.toMatchObject({
+      code: "FORBIDDEN",
+    });
+    const rows = await t.client`
+      SELECT id FROM member_role_grants WHERE member_id = ${other.id} AND role = 'alumnus'
+    `;
+    expect(rows).toHaveLength(0);
+
+    // Der Bundesvorstand bleibt frei in der Wahl des Scopes.
+    await grantRole(t.db, other.id, "alumnus", BOARD, "grp_a");
+  });
+
+  it("listAlumnusScopes: every active mark per member, filtered by the current group (ADR 0043)", async () => {
+    await createGroup("grp_a", "aachen");
+    await createGroup("grp_b", "bonn");
+    await createUser("usr_moved", "moved@example.de");
+    await createUser("usr_stay", "stay@example.de");
+    await createUser("usr_plain", "plain@example.de");
+
+    // Marked in grp_a, now a member of grp_b: the scope keeps its origin.
+    const moved = await createProfile(t.db, {
+      userId: "usr_moved",
+      firstName: "Mo",
+      lastName: "Moved",
+      primaryGroupId: "grp_b",
+    });
+    await grantRole(t.db, moved.id, "alumnus", BOARD, "grp_a");
+    await grantRole(t.db, moved.id, "alumnus", BOARD, null);
+
+    const stay = await createProfile(t.db, {
+      userId: "usr_stay",
+      firstName: "St",
+      lastName: "Stay",
+      primaryGroupId: "grp_a",
+    });
+    await grantRole(t.db, stay.id, "alumnus", BOARD, "grp_a");
+    await grantRole(t.db, stay.id, "alumnus", BOARD, "grp_b");
+    await revokeRole(t.db, stay.id, "alumnus", BOARD, "grp_b");
+
+    await createProfile(t.db, {
+      userId: "usr_plain",
+      firstName: "Pl",
+      lastName: "Plain",
+      primaryGroupId: "grp_a",
+    });
+
+    const all = await listAlumnusScopes(t.db);
+    expect(Object.keys(all).sort()).toEqual([moved.id, stay.id].sort());
+    expect([...(all[moved.id] ?? [])].sort()).toEqual(["grp_a", null].sort());
+    expect(all[stay.id]).toEqual(["grp_a"]);
+
+    expect(Object.keys(await listAlumnusScopes(t.db, { groupId: "grp_b" }))).toEqual([moved.id]);
+    expect(Object.keys(await listAlumnusScopes(t.db, { groupId: "grp_a" }))).toEqual([stay.id]);
   });
 
   it("a lead may grant/revoke event_organizer scoped to its group (ADR 0017)", async () => {

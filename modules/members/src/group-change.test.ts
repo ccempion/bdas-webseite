@@ -206,6 +206,23 @@ describeIfDb("changePrimaryGroup", () => {
     expect(grants[0]?.["revoked_at"]).not.toBeNull();
   });
 
+  it("an exit keeps the alumnus mark — its scope records where it came from (ADR 0043)", async () => {
+    const id = await activeMember("usr_alum_leaver");
+    await grantRole(t.db, id, "alumnus", FEDERAL, "grp_a");
+    await grantRole(t.db, id, "blogger", FEDERAL, "grp_a");
+
+    await changePrimaryGroup(t.db, id, null, self("usr_alum_leaver"));
+
+    const grants = await t.client`
+      SELECT role, revoked_at FROM member_role_grants WHERE member_id = ${id} ORDER BY role
+    `;
+    expect(grants.map((g) => [g["role"], g["revoked_at"] === null])).toEqual([
+      ["alumnus", true],
+      ["blogger", false],
+    ]);
+    expect(events.filter((e) => e.type === "members.role.revoked")).toHaveLength(1);
+  });
+
   it("supersedes an open request when the member picks a different group", async () => {
     const id = await activeMember("usr_fickle");
     await createGroup(t, "grp_c", "koeln");
@@ -338,6 +355,22 @@ describeIfDb("decideGroupChange", () => {
     `;
     expect(grants[0]?.["revoked_at"]).not.toBeNull();
     expect(grants[0]?.["revoked_by"]).toBe("usr_b_board");
+  });
+
+  it("approves: the alumnus mark survives the move with its origin scope (ADR 0043)", async () => {
+    const { memberId, requestId } = await pendingTransfer("usr_alum_mover");
+    await grantRole(t.db, memberId, "alumnus", FEDERAL, "grp_a");
+    await giveBoardSeat("usr_b_board", "grp_b");
+
+    await decideGroupChange(t.db, requestId, "approved", boardOf("usr_b_board", "grp_b"));
+
+    const grants = await t.client`
+      SELECT group_id, revoked_at FROM member_role_grants
+      WHERE member_id = ${memberId} AND role = 'alumnus'
+    `;
+    expect(grants).toHaveLength(1);
+    expect(grants[0]?.["group_id"]).toBe("grp_a");
+    expect(grants[0]?.["revoked_at"]).toBeNull();
   });
 
   it("rejects: closes the request and leaves the member where they were", async () => {

@@ -1,10 +1,11 @@
 /**
  * @vitest-environment happy-dom
  *
- * Die Alumnus-Markierung im Mitglieder-Detail (ADR 0043): gesetzt und entfernt
- * über die bestehenden Server Actions, gescoped auf die Gruppe des Mitglieds.
- * Wer darf, entscheidet serverseitig requireCanGrant — eine Ablehnung muss
- * sichtbar werden, statt dass der Klick stillschweigend nichts tut.
+ * Die Alumnus-Markierung im Mitglieder-Detail (ADR 0043): gesetzt im Scope der
+ * heutigen Gruppe, entfernt in jedem Scope, in dem sie vergeben wurde — nach
+ * einem Gruppenwechsel ist das die Herkunftsgruppe. Wer darf, entscheidet
+ * serverseitig requireCanGrant; eine Ablehnung muss sichtbar werden, statt dass
+ * der Klick stillschweigend nichts tut.
  */
 // vitest compiles JSX with the classic runtime, so React has to be in scope.
 import React, { act } from "react";
@@ -35,6 +36,8 @@ const member = {
   updatedAt: new Date("2024-01-01"),
 };
 
+const FORBIDDEN = "Nur der Bundesvorstand oder der Lead dieser Gruppe darf diese Rolle vergeben.";
+
 let container: HTMLDivElement;
 let root: Root;
 
@@ -53,13 +56,13 @@ afterEach(() => {
   container.remove();
 });
 
-async function renderAndOpen(alumnusIds: string[]) {
+async function renderAndOpen(alumnusScopes: Record<string, ReadonlyArray<string | null>>) {
   await act(async () => {
     root.render(
       <MembersTable
         members={[member]}
         groupNames={{ grp_a: "BDAS Aachen" }}
-        alumnusIds={alumnusIds}
+        alumnusScopes={alumnusScopes}
         openChanges={[]}
         revalidatePath="/gruppe/aachen/members"
         rejectionCategories={[]}
@@ -81,7 +84,7 @@ async function click(selector: string, text: string) {
 
 describe("Alumnus-Markierung im Mitglieder-Detail", () => {
   it("vergibt den Grant im Scope der Gruppe des Mitglieds", async () => {
-    await renderAndOpen([]);
+    await renderAndOpen({});
     await click("button", "Als Alumnus markieren");
     expect(actions.grantRoleAction).toHaveBeenCalledWith(
       "mem_1",
@@ -93,7 +96,7 @@ describe("Alumnus-Markierung im Mitglieder-Detail", () => {
   });
 
   it("entzieht den Grant, wenn die Markierung bereits gesetzt ist", async () => {
-    await renderAndOpen(["mem_1"]);
+    await renderAndOpen({ mem_1: ["grp_a"] });
     await click("button", "Markierung entfernen");
     expect(actions.revokeRoleAction).toHaveBeenCalledWith(
       "mem_1",
@@ -104,12 +107,26 @@ describe("Alumnus-Markierung im Mitglieder-Detail", () => {
     expect(actions.grantRoleAction).not.toHaveBeenCalled();
   });
 
-  it("zeigt die Ablehnung des Servers an", async () => {
-    actions.grantRoleAction.mockResolvedValueOnce({
-      ok: false,
-      error: "Nur der Bundesvorstand oder der Lead dieser Gruppe darf diese Rolle vergeben.",
-    });
-    await renderAndOpen([]);
+  it("entzieht nach einem Gruppenwechsel in jedem Herkunfts-Scope, nicht in der heutigen Gruppe", async () => {
+    await renderAndOpen({ mem_1: ["grp_b", null] });
+    await click("button", "Markierung entfernen");
+    expect(actions.revokeRoleAction.mock.calls).toEqual([
+      ["mem_1", "alumnus", "grp_b", "/gruppe/aachen/members"],
+      ["mem_1", "alumnus", null, "/gruppe/aachen/members"],
+    ]);
+  });
+
+  it("bricht beim ersten verweigerten Scope ab und zeigt die Ablehnung an", async () => {
+    actions.revokeRoleAction.mockResolvedValueOnce({ ok: false, error: FORBIDDEN });
+    await renderAndOpen({ mem_1: ["grp_b", null] });
+    await click("button", "Markierung entfernen");
+    expect(actions.revokeRoleAction).toHaveBeenCalledTimes(1);
+    expect(container.textContent).toContain("Nur der Bundesvorstand oder der Lead");
+  });
+
+  it("zeigt die Ablehnung des Servers beim Vergeben an", async () => {
+    actions.grantRoleAction.mockResolvedValueOnce({ ok: false, error: FORBIDDEN });
+    await renderAndOpen({});
     await click("button", "Als Alumnus markieren");
     expect(container.textContent).toContain("Nur der Bundesvorstand oder der Lead");
   });
