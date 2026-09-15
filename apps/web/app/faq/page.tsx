@@ -9,6 +9,7 @@ import { assembleFaq } from "../../lib/faq/assemble";
 import { faqEnabled } from "../../lib/faq/enabled";
 import { highlightedVorstandSubgroups, orderSections } from "../../lib/faq/order";
 import { isVisibleTo, narrowSubgroups } from "../../lib/faq/visibility";
+import { buildAnmeldenUrl } from "../_auth/return-to";
 import { loadCurrentMember } from "../_dashboard/session";
 import { FaqExplorer } from "./FaqExplorer";
 import { FaqSectionView } from "./FaqSection";
@@ -57,7 +58,7 @@ export default async function FaqPage() {
   if (!faqEnabled()) notFound();
 
   const me = await loadCurrentMember();
-  if (!me) redirect("/anmelden");
+  if (!me) redirect(buildAnmeldenUrl("/faq"));
 
   if (!isFlagOn("faq_suite")) return <StaticFaq me={me} />;
 

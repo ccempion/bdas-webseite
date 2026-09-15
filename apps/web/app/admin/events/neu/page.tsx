@@ -5,6 +5,7 @@ import { Card } from "@bdas/design-system";
 import { listGroups } from "@bdas/groups";
 import { getCurrentMember } from "@bdas/members";
 
+import { buildAnmeldenUrl } from "../../../_auth/return-to";
 import { requireEventsFlag } from "../../../_events/flag";
 import { readSessionCookie } from "../../../../lib/auth-cookie";
 import { viewerFrom } from "../../../../lib/event-viewer";
@@ -17,7 +18,7 @@ export default async function NewEventPage() {
 
   const db = getDb();
   const me = await getCurrentMember(db, readSessionCookie());
-  if (!me) redirect("/anmelden");
+  if (!me) redirect(buildAnmeldenUrl("/admin/events/neu"));
   const viewer = viewerFrom(me);
   if (
     !viewer.isFederal &&

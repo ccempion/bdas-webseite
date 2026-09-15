@@ -4,6 +4,7 @@ import { getDb } from "@bdas/db";
 import { listGroups } from "@bdas/groups";
 import { getCurrentMember } from "@bdas/members";
 
+import { buildAnmeldenUrl } from "../_auth/return-to";
 import { requireAuthFlag } from "../_auth/flag";
 import { requireProfileFlag } from "../_profile/flag";
 import { isProfileComplete } from "../_profile/complete";
@@ -18,7 +19,7 @@ export default async function ProfilPage() {
 
   const db = getDb();
   const me = await getCurrentMember(db, readSessionCookie());
-  if (!me) redirect("/anmelden");
+  if (!me) redirect(buildAnmeldenUrl("/profil"));
   if (await isProfileComplete(db, me.user.id)) redirect("/account");
 
   // Wizard is onboarding for pending members only. Active members with

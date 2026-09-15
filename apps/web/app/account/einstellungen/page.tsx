@@ -6,6 +6,7 @@ import { getDb } from "@bdas/db";
 import { Button, Card } from "@bdas/design-system";
 import { getCurrentMember } from "@bdas/members";
 
+import { buildAnmeldenUrl } from "../../_auth/return-to";
 import { requireAuthFlag } from "../../_auth/flag";
 import { requireMembersFlag } from "../../_members/flag";
 import { newsletterEnabled } from "../../_newsletter/flag";
@@ -22,7 +23,7 @@ export default async function AccountSettingsPage() {
 
   const db = getDb();
   const me = await getCurrentMember(db, readSessionCookie());
-  if (!me) redirect("/anmelden");
+  if (!me) redirect(buildAnmeldenUrl("/account/einstellungen"));
 
   return (
     <main className="mx-auto flex max-w-3xl flex-col gap-6 px-4 py-12">

@@ -10,6 +10,7 @@ import { getCurrentMember, getOpenGroupChange } from "@bdas/members";
 import { shouldPrompt } from "@bdas/newsletter";
 import { getProfile } from "@bdas/profile";
 
+import { buildAnmeldenUrl } from "../_auth/return-to";
 import { requireAuthFlag } from "../_auth/flag";
 import { requireMembersFlag } from "../_members/flag";
 import { newsletterEnabled } from "../_newsletter/flag";
@@ -44,7 +45,7 @@ export default async function AccountPage({
 
   const db = getDb();
   const me = await getCurrentMember(db, readSessionCookie());
-  if (!me) redirect("/anmelden");
+  if (!me) redirect(buildAnmeldenUrl("/account"));
 
   const groups = await listGroups(db, { status: "active" });
   const openChange = me.member ? await getOpenGroupChange(db, me.member.id) : null;

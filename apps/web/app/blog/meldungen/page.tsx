@@ -5,6 +5,7 @@ import { getDb } from "@bdas/db";
 import { Alert, Card } from "@bdas/design-system";
 import { isFederalBoard } from "@bdas/members";
 
+import { buildAnmeldenUrl } from "../../_auth/return-to";
 import { requireBlogFlag } from "../../_blog/flag";
 import { loadBlogMe } from "../../_blog/access";
 import { DeletePostButton } from "../../_blog/DeletePostButton";
@@ -17,7 +18,7 @@ export default async function ReportedPostsPage() {
   requireBlogFlag();
 
   const me = await loadBlogMe();
-  if (!me) redirect("/anmelden");
+  if (!me) redirect(buildAnmeldenUrl("/blog/meldungen"));
   if (!isFederalBoard(me.grants)) notFound();
 
   const db = getDb();
