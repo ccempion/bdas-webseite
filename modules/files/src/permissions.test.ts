@@ -51,9 +51,9 @@ const BLOGGER_MUC: Grant[] = [{ role: "blogger", groupId: "grp_muc" }];
 const PLAIN: Grant[] = [{ role: "member", groupId: null }];
 
 describe("canRead", () => {
-  it("members_all: any active member, not inactive", () => {
+  it("members_all: any active member, not a pending applicant", () => {
     expect(canRead(folder("members_all", null), me(PLAIN))).toBe(true);
-    expect(canRead(folder("members_all", null), me(PLAIN, member({ status: "inactive" })))).toBe(
+    expect(canRead(folder("members_all", null), me(PLAIN, member({ status: "pending" })))).toBe(
       false,
     );
   });

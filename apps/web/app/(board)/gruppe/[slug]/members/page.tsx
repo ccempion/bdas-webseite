@@ -1,6 +1,6 @@
 import { getDb } from "@bdas/db";
 import { listGroups } from "@bdas/groups";
-import { listMembers, listOpenGroupChanges } from "@bdas/members";
+import { listAlumnusScopes, listMembers, listOpenGroupChanges } from "@bdas/members";
 
 import { requireGroupScope } from "../../../../_dashboard/session";
 import { MembersTable } from "../../../_components/MembersTable";
@@ -18,10 +18,11 @@ export default async function GroupMembersPage({ params }: { params: { slug: str
   //
   // Incoming requests are not listed here — applicants are not members of this
   // group, and their queue is /gruppe/<slug>/bewerbungen (ADR 0031).
-  const [members, groups, openChanges] = await Promise.all([
+  const [members, groups, openChanges, alumnusScopes] = await Promise.all([
     listMembers(db, { groupId }),
     listGroups(db),
     listOpenGroupChanges(db, actor),
+    listAlumnusScopes(db, { groupId }),
   ]);
   const groupNames = Object.fromEntries(groups.map((g) => [g.id, g.name]));
   return (
@@ -30,6 +31,7 @@ export default async function GroupMembersPage({ params }: { params: { slug: str
       <MembersTable
         members={members}
         groupNames={groupNames}
+        alumnusScopes={alumnusScopes}
         openChanges={openChanges}
         revalidatePath={`/gruppe/${params.slug}/members`}
         rejectionCategories={REJECTION_CATEGORIES}

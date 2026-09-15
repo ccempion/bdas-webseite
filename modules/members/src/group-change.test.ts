@@ -15,7 +15,7 @@ import {
 import { getMember } from "./services/get";
 import { createProfile } from "./services/profile";
 import { grantRole } from "./services/roles";
-import { approveMember, transitionStatus } from "./services/status";
+import { approveMember } from "./services/status";
 import { createGroup, createUser, dbReachable, setupMembersDb } from "./test-db";
 import type { Grant, MembersEvent } from "./index";
 
@@ -206,6 +206,23 @@ describeIfDb("changePrimaryGroup", () => {
     expect(grants[0]?.["revoked_at"]).not.toBeNull();
   });
 
+  it("an exit keeps the alumnus mark — its scope records where it came from (ADR 0043)", async () => {
+    const id = await activeMember("usr_alum_leaver");
+    await grantRole(t.db, id, "alumnus", FEDERAL, "grp_a");
+    await grantRole(t.db, id, "blogger", FEDERAL, "grp_a");
+
+    await changePrimaryGroup(t.db, id, null, self("usr_alum_leaver"));
+
+    const grants = await t.client`
+      SELECT role, revoked_at FROM member_role_grants WHERE member_id = ${id} ORDER BY role
+    `;
+    expect(grants.map((g) => [g["role"], g["revoked_at"] === null])).toEqual([
+      ["alumnus", true],
+      ["blogger", false],
+    ]);
+    expect(events.filter((e) => e.type === "members.role.revoked")).toHaveLength(1);
+  });
+
   it("supersedes an open request when the member picks a different group", async () => {
     const id = await activeMember("usr_fickle");
     await createGroup(t, "grp_c", "koeln");
@@ -258,15 +275,6 @@ describeIfDb("changePrimaryGroup", () => {
         code: "FORBIDDEN",
       },
     );
-  });
-
-  it("refuses a transfer for an inactive member", async () => {
-    const id = await activeMember("usr_gone");
-    await transitionStatus(t.db, id, "inactive", FEDERAL);
-
-    await expect(changePrimaryGroup(t.db, id, "grp_b", self("usr_gone"))).rejects.toMatchObject({
-      code: "FORBIDDEN",
-    });
   });
 });
 
@@ -347,6 +355,22 @@ describeIfDb("decideGroupChange", () => {
     `;
     expect(grants[0]?.["revoked_at"]).not.toBeNull();
     expect(grants[0]?.["revoked_by"]).toBe("usr_b_board");
+  });
+
+  it("approves: the alumnus mark survives the move with its origin scope (ADR 0043)", async () => {
+    const { memberId, requestId } = await pendingTransfer("usr_alum_mover");
+    await grantRole(t.db, memberId, "alumnus", FEDERAL, "grp_a");
+    await giveBoardSeat("usr_b_board", "grp_b");
+
+    await decideGroupChange(t.db, requestId, "approved", boardOf("usr_b_board", "grp_b"));
+
+    const grants = await t.client`
+      SELECT group_id, revoked_at FROM member_role_grants
+      WHERE member_id = ${memberId} AND role = 'alumnus'
+    `;
+    expect(grants).toHaveLength(1);
+    expect(grants[0]?.["group_id"]).toBe("grp_a");
+    expect(grants[0]?.["revoked_at"]).toBeNull();
   });
 
   it("rejects: closes the request and leaves the member where they were", async () => {
@@ -805,28 +829,5 @@ describeIfDb("rejection reasons", () => {
     const id = await apply();
     const decided = await decideGroupChange(t.db, id, "approved", boardOf("usr_board", "grp_b"));
     expect(decided.reasonCategory).toBeNull();
-  });
-
-  it("refuses to decide a request whose member was deactivated", async () => {
-    const id = await apply();
-    await t.client`UPDATE members SET status = 'inactive' WHERE id = 'mem_cem'`;
-    await expect(
-      decideGroupChange(t.db, id, "approved", boardOf("usr_board", "grp_b")),
-    ).rejects.toThrow(/nicht mehr/);
-  });
-
-  // Authorization must be checked before the member's state is disclosed: an
-  // actor with no standing over the destination group must be told "you may
-  // not decide this" (Forbidden), not "this member is deactivated"
-  // (Conflict) — the latter would leak a third party's status to someone who
-  // isn't entitled to decide anything about them. This pins the ORDER of the
-  // two checks; swapping them back would turn this red without touching
-  // either error message.
-  it("tells an unauthorized actor they may not decide, not that the member was deactivated", async () => {
-    const id = await apply();
-    await t.client`UPDATE members SET status = 'inactive' WHERE id = 'mem_cem'`;
-    await expect(
-      decideGroupChange(t.db, id, "approved", boardOf("usr_outsider", "grp_a")),
-    ).rejects.toMatchObject({ code: "FORBIDDEN" });
   });
 });

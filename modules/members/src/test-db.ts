@@ -26,6 +26,7 @@ export const MEMBERS_TEST_MIGRATIONS: ReadonlyArray<ReadonlyArray<string>> = [
   ["..", "migrations", "0008_application_reasons.sql"],
   ["..", "migrations", "0009_reason_required.sql"],
   ["..", "migrations", "0010_local_role_redesign.sql"],
+  ["..", "migrations", "0011_alumnus_is_a_role.sql"],
 ];
 
 export async function dbReachable(): Promise<boolean> {

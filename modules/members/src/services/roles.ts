@@ -1,11 +1,12 @@
 /**
  * Role grant / revoke (ADR 0007, amended by ADR 0013, extended by ADR 0026,
- * and by the local role redesign). Writes scoped rows to `member_role_grants`.
- * Federal board may grant any role; a Lead (`local_board_lead`) may
- * grant/revoke the group's delegate roles — `event_organizer`, `page_editor`,
- * `file_manager`, `blogger` — within its own group only (see
- * requireCanGrant). `local_board_lead` and all four delegate roles are
- * group-scoped; `federal_board` is unscoped.
+ * by the local role redesign, and by ADR 0043). Writes scoped rows to
+ * `member_role_grants`. Federal board may grant any role; a Lead
+ * (`local_board_lead`) may grant/revoke the group's delegate roles —
+ * `event_organizer`, `page_editor`, `file_manager`, `blogger` — and mark
+ * `alumnus` within its own group only (see requireCanGrant).
+ * `local_board_lead` and all four delegate roles are group-scoped;
+ * `federal_board` is unscoped.
  */
 import { and, eq, isNull, sql } from "drizzle-orm";
 import type { PostgresJsDatabase } from "drizzle-orm/postgres-js";
@@ -26,12 +27,14 @@ import type { Actor } from "./status";
 export type Db = PostgresJsDatabase<Record<string, never>>;
 
 /**
- * Who may grant/revoke (ADR 0013, extended by ADR 0026 and the local role
- * redesign):
+ * Who may grant/revoke (ADR 0013, extended by ADR 0026, the local role
+ * redesign, and ADR 0043):
  *  - `event_organizer`, `page_editor`, `file_manager`, `blogger` → federal_board OR the group's Lead
+ *  - `alumnus`                                                   → federal_board OR the group's Lead
+ *    (eine Kennzeichnung, keine Befugnis: der Lead kennt seine Ehemaligen,
+ *     der Bundesvorstand vergibt sie ungescoped bei der Registrierung)
  *  - everything else                                            → federal_board only
- *    (appointing leads and federal_board stays central; member/alumnus are
- *     edge grants the federation owns).
+ *    (appointing leads and federal_board stays central).
  * `role` must already be validated to a known Role and `groupId` to its scope.
  */
 function requireCanGrant(actor: Actor, role: Role, groupId: string | null): void {
@@ -39,7 +42,8 @@ function requireCanGrant(actor: Actor, role: Role, groupId: string | null): void
     role === "event_organizer" ||
     role === "page_editor" ||
     role === "file_manager" ||
-    role === "blogger"
+    role === "blogger" ||
+    role === "alumnus"
   ) {
     if (canGrantLocalRoles(actor.grants, groupId)) return;
     throw new ForbiddenError(
@@ -93,6 +97,19 @@ export async function grantRole(
     const row = rows[0];
     if (!row) throw new NotFoundError("Mitglied nicht gefunden.");
     const member = row2member(row);
+    // Ein Lead markiert nur Mitglieder der eigenen Gruppe (ADR 0043 §3): sonst
+    // erschiene die Markierung in einer fremden Mitgliederliste, deren Lead sie
+    // nicht entfernen darf.
+    if (
+      role === "alumnus" &&
+      groupId !== null &&
+      !isFederalBoard(actor.grants) &&
+      member.primaryGroupId !== groupId
+    ) {
+      throw new ForbiddenError(
+        "Ein Lead kann nur Mitglieder der eigenen Gruppe als Alumnus markieren.",
+      );
+    }
 
     const existing = await tx
       .select({ id: memberRoleGrants.id })

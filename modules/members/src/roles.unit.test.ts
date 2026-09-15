@@ -1,12 +1,14 @@
 import { describe, expect, it } from "vitest";
 
-import type { Grant } from "./types";
+import type { Grant, Member, MemberStatus } from "./types";
 
 import {
   canDecideJoinRequest,
   canEditGroupPage,
   canGrantLocalRoles,
   canManageGroup,
+  canTransition,
+  effectiveGrants,
   isAnyLocalBoardLead,
   isRole,
 } from "./roles";
@@ -111,5 +113,43 @@ describe("canDecideJoinRequest", () => {
   it("file_manager and blogger cannot decide join requests", () => {
     expect(canDecideJoinRequest([g("file_manager", "grp_a")], "grp_a", true)).toBe(false);
     expect(canDecideJoinRequest([g("blogger", "grp_a")], "grp_a", true)).toBe(false);
+  });
+});
+
+describe("effectiveGrants", () => {
+  const member = (status: MemberStatus): Member => ({
+    id: "mem_1",
+    userId: "usr_1",
+    firstName: "A",
+    lastName: "B",
+    primaryGroupId: "grp_a",
+    status,
+    joinedAt: new Date("2024-01-01"),
+    createdAt: new Date("2024-01-01"),
+    updatedAt: new Date("2024-01-01"),
+  });
+
+  it("leitet aus dem Status nur noch `member` ab, nie `alumnus` (ADR 0043)", () => {
+    const grants = effectiveGrants([], member("active"), []);
+    expect(grants).toEqual([{ role: "member", groupId: null }]);
+  });
+
+  it("gibt einer Bewerberin gar keinen impliziten Grant", () => {
+    expect(effectiveGrants([], member("pending"), [])).toEqual([]);
+  });
+
+  it("reicht einen alumnus-Grant aus der Datenbank samt Scope durch", () => {
+    const grants = effectiveGrants([], member("active"), [{ role: "alumnus", groupId: "grp_a" }]);
+    expect(grants).toEqual([
+      { role: "alumnus", groupId: "grp_a" },
+      { role: "member", groupId: null },
+    ]);
+  });
+});
+
+describe("canTransition", () => {
+  it("kennt genau eine Kante: pending → active", () => {
+    expect(canTransition("pending", "active")).toBe(true);
+    expect(canTransition("active", "pending")).toBe(false);
   });
 });

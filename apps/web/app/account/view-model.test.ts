@@ -9,8 +9,6 @@ describe("layoutMode", () => {
 
   it("gives every other status the plain single column", () => {
     expect(layoutMode("pending")).toBe("plain");
-    expect(layoutMode("inactive")).toBe("plain");
-    expect(layoutMode("alumnus")).toBe("plain");
   });
 
   it("gives a user without a member row the plain single column", () => {
@@ -75,5 +73,14 @@ describe("roleChips", () => {
     ]);
 
     expect(chips).toEqual([{ label: "Event-Manager", accent: true }]);
+  });
+
+  it("zeigt den Alumnus-Grant als Chip (ADR 0043)", () => {
+    const chips = roleChips([{ role: "alumnus", groupId: "grp_a" }]);
+    expect(chips.map((c) => c.label)).toEqual(["Alumnus"]);
+  });
+
+  it("zeigt den impliziten member-Grant weiterhin nicht", () => {
+    expect(roleChips([{ role: "member", groupId: null }])).toEqual([]);
   });
 });

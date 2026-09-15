@@ -1,6 +1,10 @@
 import type { Role } from "@bdas/auth";
 
-export type MemberStatus = "pending" | "active" | "inactive" | "alumnus";
+/** Kontolebenszyklus, nichts weiter: wartet auf Aufnahme, oder aufgenommen.
+ *  Alles Übrige ist Rolle (ADR 0043) — `alumnus` lebt in member_role_grants,
+ *  `inactive` gibt es seit ADR 0031 faktisch und seit 0011 auch formal nicht
+ *  mehr. */
+export type MemberStatus = "pending" | "active";
 
 export type Member = {
   readonly id: string;
@@ -18,7 +22,7 @@ export type PendingMember = Member & { readonly status: "pending" };
 
 /**
  * One effective authority (ADR 0007). `groupId` null ⇔ unscoped
- * (federal_board, status-implied member/alumnus); set ⇔ scoped to a group
+ * (federal_board, status-implied member); set ⇔ scoped to a group
  * (local_board_lead).
  */
 export type Grant = {

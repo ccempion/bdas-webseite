@@ -21,7 +21,7 @@ export default async function ProfilPage() {
   if (!me) redirect("/anmelden");
   if (await isProfileComplete(db, me.user.id)) redirect("/account");
 
-  // Wizard is onboarding for pending members only. Active/inactive/alumni with
+  // Wizard is onboarding for pending members only. Active members with
   // missing profile data backfill via /account (edit form), not the wizard.
   if (me.member?.status !== "pending") redirect("/account");
 

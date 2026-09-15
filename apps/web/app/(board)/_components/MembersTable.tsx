@@ -1,20 +1,22 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import React, { useMemo, useState, useTransition } from "react";
 
 import type { Member, MemberStatus, OpenGroupChange, RejectionCategory } from "@bdas/members";
 
 import { MemberGroupPanel } from "./MemberGroupPanel";
+import { grantRoleAction, revokeRoleAction } from "./role-actions";
 
 const STATUS_LABEL: Record<MemberStatus, string> = {
   pending: "Ausstehend",
   active: "Aktiv",
-  inactive: "Inaktiv",
-  alumnus: "Alumni",
 };
+type MemberFilter = "all" | "active" | "alumnus";
+
 /** No `pending` filter: an applicant is no longer a member row awaiting a
- *  verdict but a request on the group's Bewerbungen queue (ADR 0031). */
-const FILTERS: ReadonlyArray<{ key: "all" | MemberStatus; label: string }> = [
+ *  verdict but a request on the group's Bewerbungen queue (ADR 0031).
+ *  „Alumni" ist kein Status mehr, sondern die Grant-Kennzeichnung (ADR 0043). */
+const FILTERS: ReadonlyArray<{ key: MemberFilter; label: string }> = [
   { key: "all", label: "Alle" },
   { key: "active", label: "Aktiv" },
   { key: "alumnus", label: "Alumni" },
@@ -23,19 +25,26 @@ const FILTERS: ReadonlyArray<{ key: "all" | MemberStatus; label: string }> = [
 export function MembersTable({
   members,
   groupNames,
+  alumnusScopes,
   openChanges,
   revalidatePath,
   rejectionCategories,
 }: {
   members: Member[];
   groupNames: Record<string, string>;
+  /** Scopes der aktiven alumnus-Grants je Mitglied (ADR 0043) — die
+   *  Kennzeichnung kommt aus den Grants, nicht aus dem Status, und der Scope
+   *  bleibt beim Gruppenwechsel die Herkunftsgruppe. */
+  alumnusScopes: Record<string, ReadonlyArray<string | null>>;
   openChanges: OpenGroupChange[];
   revalidatePath: string;
   rejectionCategories: ReadonlyArray<{ key: RejectionCategory; label: string }>;
 }) {
-  const [filter, setFilter] = useState<"all" | MemberStatus>("all");
+  const [filter, setFilter] = useState<MemberFilter>("all");
   const [q, setQ] = useState("");
   const [selected, setSelected] = useState<Member | null>(null);
+  const [markError, setMarkError] = useState<string | null>(null);
+  const [marking, startMarking] = useTransition();
 
   const openByMember = useMemo(
     () =>
@@ -46,16 +55,34 @@ export function MembersTable({
     [openChanges],
   );
 
+  const isAlumnus = useMemo(() => new Set(Object.keys(alumnusScopes)), [alumnusScopes]);
+
   const rows = useMemo(
     () =>
       members.filter(
         (m) =>
-          (filter === "all" || m.status === filter) &&
+          (filter === "all" ||
+            (filter === "alumnus" ? isAlumnus.has(m.id) : m.status === filter)) &&
           (q.trim() === "" ||
             `${m.firstName} ${m.lastName}`.toLowerCase().includes(q.toLowerCase())),
       ),
-    [members, filter, q],
+    [members, filter, q, isAlumnus],
   );
+
+  /** Setzt die Markierung im Scope der heutigen Gruppe; entfernt sie in jedem
+   *  Scope, in dem sie vergeben wurde. Wer darf, prüft requireCanGrant
+   *  serverseitig je Scope (ADR 0043 §3) — die erste Ablehnung bricht ab. */
+  async function toggleAlumnus(member: Member): Promise<{ ok: boolean; error?: string }> {
+    const scopes = alumnusScopes[member.id];
+    if (!scopes) {
+      return grantRoleAction(member.id, "alumnus", member.primaryGroupId, revalidatePath);
+    }
+    for (const scope of scopes) {
+      const res = await revokeRoleAction(member.id, "alumnus", scope, revalidatePath);
+      if (!res.ok) return res;
+    }
+    return { ok: true };
+  }
 
   return (
     <div className="flex gap-4">
@@ -95,7 +122,13 @@ export function MembersTable({
             <tbody>
               {rows.map((m) => (
                 <tr key={m.id} className="border-t border-bdas-soft hover:bg-bdas-surface-hover">
-                  <td className="cursor-pointer p-3 text-bdas-ink" onClick={() => setSelected(m)}>
+                  <td
+                    className="cursor-pointer p-3 text-bdas-ink"
+                    onClick={() => {
+                      setSelected(m);
+                      setMarkError(null);
+                    }}
+                  >
                     {m.firstName} {m.lastName} ›
                   </td>
                   <td className="p-3 text-bdas-ink-body">
@@ -112,6 +145,11 @@ export function MembersTable({
                     >
                       {STATUS_LABEL[m.status]}
                     </span>
+                    {isAlumnus.has(m.id) && (
+                      <span className="ml-1 rounded-bdas-pill bg-bdas-surface-hover px-2 py-0.5 text-xs font-semibold text-bdas-ink-muted">
+                        Alumnus
+                      </span>
+                    )}
                   </td>
                   <td className="p-3 text-bdas-ink-body">
                     {m.joinedAt ? new Date(m.joinedAt).toLocaleDateString("de-DE") : "—"}
@@ -139,6 +177,25 @@ export function MembersTable({
               <dt className="text-bdas-ink-muted">Status</dt>
               <dd className="text-bdas-ink-body">{STATUS_LABEL[selected.status]}</dd>
             </div>
+            <div className="flex items-center justify-between gap-2 border-b border-bdas-soft pb-1">
+              <dt className="text-bdas-ink-muted">Alumnus</dt>
+              <dd>
+                <button
+                  type="button"
+                  disabled={marking}
+                  onClick={() =>
+                    startMarking(async () => {
+                      const res = await toggleAlumnus(selected);
+                      setMarkError(res.ok ? null : (res.error ?? "Fehler"));
+                    })
+                  }
+                  className="rounded-bdas-pill border border-bdas-soft px-3 py-1 text-sm text-bdas-ink-body transition-colors hover:bg-bdas-surface-hover disabled:opacity-50"
+                >
+                  {isAlumnus.has(selected.id) ? "Markierung entfernen" : "Als Alumnus markieren"}
+                </button>
+              </dd>
+            </div>
+            {markError ? <p className="text-sm text-bdas-red">{markError}</p> : null}
             <div className="flex justify-between border-b border-bdas-soft pb-1">
               <dt className="text-bdas-ink-muted">Gruppe</dt>
               <dd className="text-bdas-ink-body">

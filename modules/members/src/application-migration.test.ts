@@ -18,6 +18,10 @@ describeIfDb("0008 application reasons — data migration", () => {
 
   beforeEach(async () => {
     t = await setupMembersDb();
+    // Diese Datei stellt den Zustand vor Migration 0008 her, in dem `inactive`
+    // noch existierte. Der CHECK aus 0011 muss dafür weichen und wird nach dem
+    // Datenschritt nicht wieder gesetzt — 0008 kennt ihn nicht.
+    await t.client.unsafe(`ALTER TABLE members DROP CONSTRAINT IF EXISTS members_status_check`);
     await createGroup(t, "grp_a", "aachen");
     for (const [id, email] of [
       ["usr_p", "p@example.de"],

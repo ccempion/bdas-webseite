@@ -24,13 +24,13 @@ export type IdentityInput = {
 const STATUS_TEXT: Record<MemberStatus, string> = {
   pending: "Bewerbung eingereicht",
   active: "Aktives Mitglied",
-  inactive: "Inaktiv",
-  alumnus: "Alumnus",
 };
 
-/** Roles a member always has by virtue of their status. A chip saying
- *  "Mitglied" tells them nothing they did not already know. */
-const IMPLICIT_ROLES: ReadonlySet<Role> = new Set<Role>(["member", "alumnus"]);
+/** Rollen, die jedes aktive Mitglied ohnehin hat. Ein Chip „Mitglied" sagt
+ *  niemandem etwas Neues. `alumnus` steht seit ADR 0043 NICHT mehr hier: die
+ *  Rolle ist ab dort eine ausdrücklich vergebene Kennzeichnung und damit die
+ *  einzige Stelle, an der ein Mitglied sie über sich selbst erfährt. */
+const IMPLICIT_ROLES: ReadonlySet<Role> = new Set<Role>(["member"]);
 
 export function layoutMode(status: MemberStatus | null): AccountLayoutMode {
   return status === "active" ? "full" : "plain";

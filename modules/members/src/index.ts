@@ -47,7 +47,12 @@ export {
   getGroupChangeHistory,
 } from "./services/group-change";
 
-export { listMembers, type MemberQuery } from "./services/list-members";
+export {
+  listMembers,
+  listAlumnusIds,
+  listAlumnusScopes,
+  type MemberQuery,
+} from "./services/list-members";
 export {
   listRoleHolders,
   listGrantAudit,
@@ -57,6 +62,7 @@ export {
 export {
   countMembersByStatus,
   signupsOverTime,
+  type MemberCounts,
   type StatusCounts,
   type SignupPoint,
 } from "./services/stats";

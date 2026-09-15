@@ -21,7 +21,8 @@ export function isRole(value: string): value is Role {
  * Effective grants a request acts with (ADR 0007):
  *   - JWT roles (env allowlist at login per ADR 0002) → unscoped grants,
  *   - active rows from `member_role_grants` → their stored scope,
- *   - status-implied: active → member, alumnus → alumnus (unscoped).
+ *   - status-implied: active → member (unscoped). `alumnus` ist seit ADR 0043
+ *     kein Status mehr, sondern ein regulärer Grant aus member_role_grants.
  * Deduplicated on (role, groupId).
  */
 export function effectiveGrants(
@@ -40,10 +41,7 @@ export function effectiveGrants(
 
   for (const r of jwtRoles) add(r, null);
   for (const g of dbGrants) add(g.role, g.groupId);
-  if (member) {
-    if (member.status === "active") add("member", null);
-    if (member.status === "alumnus") add("alumnus", null);
-  }
+  if (member && member.status === "active") add("member", null);
   return out;
 }
 
@@ -102,7 +100,8 @@ export function canEditGroupPage(grants: ReadonlyArray<Grant>, groupId: string):
 
 /**
  * May the actor decide a *pending* member's join for a local group (ADR 0021)?
- * A join decision — accept (→ active) or reject (→ inactive) — belongs to the
+ * A join decision — accept (→ active), or reject, which leaves the member
+ * `pending` and records the refusal on the request (ADR 0031) — belongs to the
  * group's Lead. Federal board is NOT a blanket authority here; it may act only
  * as an emergency fallback when the group has zero active Lead seats. A
  * pending member with no group (groupId null) has no local Lead to speak for
@@ -120,11 +119,13 @@ export function canDecideJoinRequest(
   return false;
 }
 
+/** Die einzige verbliebene Kante: eine Bewerbung wird angenommen. Austritt
+ *  läuft über primary_group_id (ADR 0022), Ablehnung über
+ *  member_group_change_requests (ADR 0031), Alumnus über einen Grant
+ *  (ADR 0043) — keiner davon ist ein Statuswechsel. */
 const TRANSITIONS: Record<MemberStatus, ReadonlySet<MemberStatus>> = {
-  pending: new Set(["active", "inactive"]),
-  active: new Set(["inactive", "alumnus"]),
-  inactive: new Set(["active"]),
-  alumnus: new Set(["active"]),
+  pending: new Set<MemberStatus>(["active"]),
+  active: new Set<MemberStatus>([]),
 };
 
 export function canTransition(from: MemberStatus, to: MemberStatus): boolean {

@@ -21,7 +21,8 @@ Federation-side member profiles. Identity lives in `@bdas/auth`; membership
    group's `local_board_lead`) opens `/admin/pending-members` → approves via
    `approveMember()` → status `active` and `joined_at` is stamped.
 4. The active member can be promoted (`grantRole local_board_lead <group>`,
-   federal_board only) or transitioned to `inactive` / `alumnus` later.
+   federal_board only) or marked as alumnus later — a grant, not a status
+   (ADR 0043).
 
 ## Public surface
 
@@ -59,14 +60,16 @@ import {
 ## Scoped role grants (ADR 0007)
 
 A `Grant` is `{ role, groupId }`. `groupId === null` ⇔ unscoped
-(`federal_board`, status-implied `member`/`alumnus`); a set `groupId` ⇔ scoped
-(`local_board_lead` of that group, or one of its delegate roles).
+(`federal_board`, status-implied `member`, an `alumnus` mark without a group); a
+set `groupId` ⇔ scoped (`local_board_lead` of that group, one of its delegate
+roles, or an `alumnus` mark issued by that group).
 
 `effectiveGrants(jwtRoles, member, dbGrants)` unions:
 
 - JWT roles (env allowlist `federal_board` per ADR 0002) → unscoped grants,
 - active `member_role_grants` rows → their stored scope,
-- status-implied: `active → member`, `alumnus → alumnus` (unscoped).
+- status-implied: `active → member` (unscoped). Nothing else is derived from
+  the status.
 
 This is `getCurrentMember(...).grants`. Authorize against it via the
 predicates — never inspect a raw role list:
@@ -80,7 +83,7 @@ predicates — never inspect a raw role list:
   primary group.
 - `canGrantLocalRoles(grants, groupId)` — federal_board (any) **or** the
   group's Lead. Governs granting the group's delegate roles: `event_organizer`,
-  `page_editor`, `file_manager`, `blogger`.
+  `page_editor`, `file_manager`, `blogger` — and the `alumnus` mark.
 - `canEditGroupPage(grants, groupId)` — federal_board (any) **or**
   `local_board_lead`/`page_editor` scoped to `groupId` (ADR 0026). `page_editor`
   is a group-scoped, lead-delegable role for the group's public content page —
@@ -99,17 +102,27 @@ grants/revokes the group's delegate roles (`event_organizer`, `page_editor`,
 `file_manager`, `blogger`) within its own group only — never another Lead, and
 never `federal_board`.
 
+`alumnus` (ADR 0043) is a mark, not a permission, and restricts nothing: an
+alumnus stays `active`, keeps the `member` grant and with it event
+registration. It is optionally scoped. Scoped to a group, the group's Lead or
+the federal board may set or remove it; unscoped, only the federal board
+(`canManageGroup(grants, null)` passes federal only). A Lead may only mark
+members of its own group. The mark survives an exit or a transfer with its
+origin scope, so only the federal board can remove it afterwards;
+`listAlumnusScopes` hands the UI every scope to revoke. Member lists, the
+transfer pool (`listAlumnusIds`) and the statistics all derive the mark from the
+grant, never from the status.
+
 ## Status transitions
 
 ```
-pending → active | inactive
-active  → inactive | alumnus
-inactive → active
-alumnus → active
+pending → active
 ```
 
-Anything else throws `ConflictError`. All transitions require the actor to
-manage the member's group (`canManageGroup`).
+`MemberStatus` is `pending | active` and describes only the account lifecycle
+(ADR 0043); `members_status_check` enforces it in the database. Anything else
+throws `ConflictError`. The transition requires the actor to manage the
+member's group (`canManageGroup`).
 
 ## Group transfers (ADR 0022)
 
@@ -134,7 +147,8 @@ federal board as fallback only when that group has no active board seat
 (`canDecideJoinRequest`, ADR 0021). The origin group can see the request but has
 no veto. Approval moves the member, leaves `status` untouched, and **revokes
 every group-scoped grant they still held in the group they left** (emitting a
-`members.role.revoked` per grant); rejection leaves them where they were.
+`members.role.revoked` per grant) — except `alumnus`, whose scope records where
+the mark came from (ADR 0043); rejection leaves them where they were.
 
 The table doubles as the audit log: terminal rows (`approved` / `rejected` /
 `withdrawn`) are the history, read back via `getGroupChangeHistory`. There is no
