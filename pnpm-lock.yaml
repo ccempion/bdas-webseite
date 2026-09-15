@@ -583,6 +583,9 @@ importers:
 
   modules/notifications:
     dependencies:
+      '@bdas/auth':
+        specifier: workspace:*
+        version: link:../auth
       '@bdas/blog':
         specifier: workspace:*
         version: link:../blog

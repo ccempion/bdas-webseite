@@ -19,6 +19,9 @@ export type TransactionalTemplate =
   | "member_application_group_dissolved"
   | "member_group_change_approved"
   | "member_group_change_declined"
+  | "password_changed_notice"
+  | "password_reset_notice"
+  | "email_changed_notice"
   | "blog_post_reported"
   | "newsletter_confirm"
   | "newsletter_already_subscribed";
@@ -59,6 +62,8 @@ export type TemplateData = {
   readonly confirmUrl?: string | undefined;
   /** `newsletter_already_subscribed`: the permanent unsubscribe link. */
   readonly unsubscribeUrl?: string | undefined;
+  /** `email_changed_notice`: the address the login email was changed to. */
+  readonly newEmail?: string | undefined;
 };
 
 /** Outcome of a send attempt, returned by sendTransactional. */

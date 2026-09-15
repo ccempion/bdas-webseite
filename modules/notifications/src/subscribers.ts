@@ -23,9 +23,11 @@ import type {
   EventUpdated,
   WaitlistPromoted,
 } from "@bdas/events-module";
+import type { EmailChanged, PasswordChanged, PasswordReset } from "@bdas/auth";
 import { getGroup } from "@bdas/groups";
 import {
   getGroupChangeRequest,
+  getMemberByUserId,
   listBoardRecipientsForGroup,
   REJECTION_CATEGORY_LABELS,
 } from "@bdas/members";
@@ -258,6 +260,43 @@ export function registerNotificationSubscribers(db: Db, opts: { siteUrl?: string
         await sendTransactional(db, "event_organizer_revoked", e.memberId, {
           groupName: group?.name,
         });
+      }),
+    ),
+    // Account-security notices. auth events carry a userId, not a memberId, so
+    // resolve the member first; a user with no profile yet gets no mail (there
+    // is nowhere to send it — sendTransactional already treats an unresolvable
+    // recipient as "nothing to send").
+    getEventBus().subscribe<PasswordChanged>(
+      "auth.password.changed",
+      safe<PasswordChanged>(async (e) => {
+        const member = await getMemberByUserId(db, e.userId);
+        if (!member) return;
+        await sendTransactional(db, "password_changed_notice", member.id, {});
+      }),
+    ),
+    getEventBus().subscribe<PasswordReset>(
+      "auth.password.reset",
+      safe<PasswordReset>(async (e) => {
+        const member = await getMemberByUserId(db, e.userId);
+        if (!member) return;
+        await sendTransactional(db, "password_reset_notice", member.id, {});
+      }),
+    ),
+    // Sent to the OLD address, not the new one: by the time this fires the
+    // account already carries the new email, so the resolver would only ever
+    // reach the new inbox. The whole point of this notice is that the person
+    // who no longer controls the account finds out — hence a direct, guest-style
+    // send by raw address instead of sendTransactional's memberId resolution.
+    getEventBus().subscribe<EmailChanged>(
+      "auth.email.changed",
+      safe<EmailChanged>(async (e) => {
+        const member = await getMemberByUserId(db, e.userId);
+        await sendTransactionalToGuest(
+          db,
+          "email_changed_notice",
+          { email: e.oldEmail, name: member?.firstName },
+          { newEmail: e.newEmail },
+        );
       }),
     ),
     // An application is a request row (ADR 0031), so these mails hang off the

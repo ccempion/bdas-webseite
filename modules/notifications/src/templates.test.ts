@@ -167,6 +167,27 @@ describe("render — event manage/cancel link", () => {
     expect(out.text).toContain("Wir haben dich dreimal nicht erreicht.");
     expect(out.text).not.toContain("Bewerbung");
   });
+
+  it("alerts on a password change", () => {
+    const out = render("password_changed_notice", { firstName: "Anna", eventTitle: "" });
+    expect(out.subject).toContain("Passwort");
+    expect(out.text).toContain("geändert");
+  });
+
+  it("distinguishes a password reset from a password change", () => {
+    const out = render("password_reset_notice", { firstName: "Anna", eventTitle: "" });
+    expect(out.subject).toContain("zurückgesetzt");
+    expect(out.text).toContain("Passwort vergessen");
+  });
+
+  it("names the new address in the email-change notice", () => {
+    const out = render("email_changed_notice", {
+      firstName: "Anna",
+      eventTitle: "",
+      newEmail: "neu@example.org",
+    });
+    expect(out.text).toContain("neu@example.org");
+  });
 });
 
 describe("newsletter templates", () => {
