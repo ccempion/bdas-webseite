@@ -7,6 +7,7 @@ import { listGroups } from "@bdas/groups";
 import { getCurrentMember } from "@bdas/members";
 import { eventMediaPublicUrl } from "@bdas/storage";
 
+import { buildAnmeldenUrl } from "../../../../_auth/return-to";
 import { requireEventsFlag } from "../../../../_events/flag";
 import { readSessionCookie } from "../../../../../lib/auth-cookie";
 import { viewerFrom } from "../../../../../lib/event-viewer";
@@ -24,7 +25,7 @@ export default async function EditEventPage({ params }: { params: { id: string }
   requireEventsFlag();
   const db = getDb();
   const me = await getCurrentMember(db, readSessionCookie());
-  if (!me) redirect("/anmelden");
+  if (!me) redirect(buildAnmeldenUrl(`/admin/events/${params.id}/edit`));
   const viewer = viewerFrom(me);
   const event = await getEvent(db, params.id, viewer);
   if (!event || !canManage(viewer, event)) notFound();

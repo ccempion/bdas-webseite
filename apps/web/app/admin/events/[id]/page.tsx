@@ -7,6 +7,7 @@ import { canManage, getEvent } from "@bdas/events-module";
 import { getCurrentMember } from "@bdas/members";
 import { listBroadcastsForEvent } from "@bdas/notifications";
 
+import { buildAnmeldenUrl } from "../../../_auth/return-to";
 import { requireEventsFlag } from "../../../_events/flag";
 import { readSessionCookie } from "../../../../lib/auth-cookie";
 import { viewerFrom } from "../../../../lib/event-viewer";
@@ -35,7 +36,7 @@ export default async function ManageEventPage({ params }: { params: { id: string
 
   const db = getDb();
   const me = await getCurrentMember(db, readSessionCookie());
-  if (!me) redirect("/anmelden");
+  if (!me) redirect(buildAnmeldenUrl(`/admin/events/${params.id}`));
   const viewer = viewerFrom(me);
   const event = await getEvent(db, params.id, viewer);
   if (!event || !canManage(viewer, event)) notFound();
