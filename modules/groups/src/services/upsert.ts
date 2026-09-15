@@ -123,6 +123,9 @@ function toGroup(
     slug: v.slug,
     name: v.name,
     city: v.city,
+    // Wie in manage.ts: der Seed kennt kein `kind` und legt nur
+    // Hochschulgruppen an; die Spalte trägt denselben DEFAULT.
+    kind: "hochschulgruppe",
     contactEmail: v.contactEmail ?? null,
     instagramUrl: v.instagramUrl ?? null,
     websiteUrl: v.websiteUrl ?? null,

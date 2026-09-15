@@ -5,6 +5,15 @@
 
 export type GroupStatus = "active" | "dormant" | "new" | "archived";
 
+/**
+ * Die Art einer Gruppe. `hochschulgruppe` ist die Regel und der Vorgabewert;
+ * `affiliate` ist eine Partnerorganisation (BDAJ und weitere) — ein Zuhause
+ * für Accounts ohne Hochschulgruppen-Scope. Die Art entscheidet zwei Dinge:
+ * ob die Gruppe verortet ist (`city`), und ob auf ihr ein lokaler Vorstand
+ * sitzen darf (siehe @bdas/members `grantRole`).
+ */
+export type GroupKind = "hochschulgruppe" | "affiliate";
+
 export type GroupLocation = {
   readonly name: string;
   readonly address: string;
@@ -16,7 +25,10 @@ export type Group = {
   readonly id: string;
   readonly slug: string;
   readonly name: string;
-  readonly city: string;
+  /** null nur bei einer nicht verorteten Art (`affiliate`) — bei einer
+   *  Hochschulgruppe garantiert der DB-Constraint einen Wert. */
+  readonly city: string | null;
+  readonly kind: GroupKind;
   readonly contactEmail: string | null;
   readonly instagramUrl: string | null;
   readonly websiteUrl: string | null;
@@ -28,6 +40,9 @@ export type Group = {
   readonly status: GroupStatus;
 };
 
-export type GroupSummary = Pick<Group, "id" | "slug" | "name" | "city" | "status" | "location">;
+export type GroupSummary = Pick<
+  Group,
+  "id" | "slug" | "name" | "city" | "status" | "location" | "kind"
+>;
 
 export type JoinPolicy = { readonly required: false };

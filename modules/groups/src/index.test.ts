@@ -12,7 +12,7 @@ import { createTestDb, type TestDb } from "@bdas/db/test";
 import { getEventBus, resetEventBus } from "@bdas/events";
 
 import type { GroupEvent } from "./events";
-import { getGroup, getGroupBySlug } from "./services/get";
+import { getGroup, getGroupBySlug, getGroupKind } from "./services/get";
 import { getJoinPolicy } from "./services/join-policy";
 import { listGroups } from "./services/list";
 import { archiveGroup, createGroup, updateGroup } from "./services/manage";
@@ -53,6 +53,7 @@ describeIfDb("groups integration", () => {
       "0004_location.sql",
       "0005_image_key.sql",
       "0006_link_scheme_guard.sql",
+      "0007_group_kind.sql",
     ]) {
       const sql = await fs.readFile(path.join(__dirname, "..", "migrations", file), "utf8");
       await t.client.unsafe(sql);
@@ -62,6 +63,42 @@ describeIfDb("groups integration", () => {
 
   afterEach(async () => {
     await t.cleanup();
+  });
+
+  it("liefert die Art der Gruppe mit und liest sie einzeln (Spec §3.1/§3.2)", async () => {
+    const created = await createGroup(t.db, {
+      slug: "koeln",
+      name: "BDAS Köln",
+      city: "Köln",
+    });
+    expect(created.kind).toBe("hochschulgruppe");
+
+    const fetched = await getGroupBySlug(t.db, "koeln");
+    expect(fetched?.kind).toBe("hochschulgruppe");
+    expect(await getGroupKind(t.db, created.id)).toBe("hochschulgruppe");
+
+    await t.client`
+      INSERT INTO groups (id, slug, name, city, kind)
+      VALUES ('grp_bdaj', 'bdaj', 'BDAJ', NULL, 'affiliate')
+    `;
+    expect(await getGroupKind(t.db, "grp_bdaj")).toBe("affiliate");
+    const affiliate = await getGroupBySlug(t.db, "bdaj");
+    expect(affiliate?.kind).toBe("affiliate");
+    expect(affiliate?.city).toBeNull();
+
+    expect(await getGroupKind(t.db, "grp_gibt_es_nicht")).toBeNull();
+  });
+
+  it("führt eine Gruppe ohne Stadt in listGroups mit auf", async () => {
+    await t.client`
+      INSERT INTO groups (id, slug, name, city, kind, status)
+      VALUES ('grp_bdaj2', 'bdaj2', 'BDAJ Zwei', NULL, 'affiliate', 'active')
+    `;
+    const list = await listGroups(t.db, { status: "active" });
+    const entry = list.find((g) => g.slug === "bdaj2");
+    expect(entry).toBeDefined();
+    expect(entry?.city).toBeNull();
+    expect(entry?.kind).toBe("affiliate");
   });
 
   it("upsert by slug creates then updates idempotently", async () => {

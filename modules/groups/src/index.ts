@@ -6,7 +6,7 @@
  */
 
 export { listGroups, type ListOpts } from "./services/list";
-export { getGroup, getGroupBySlug } from "./services/get";
+export { getGroup, getGroupBySlug, getGroupKind } from "./services/get";
 export { getJoinPolicy } from "./services/join-policy";
 export { upsertGroupBySlug, UpsertGroupInput, type UpsertResult } from "./services/upsert";
 export {
@@ -17,5 +17,12 @@ export {
   UpdateGroupInput,
 } from "./services/manage";
 
-export type { Group, GroupSummary, GroupStatus, GroupLocation, JoinPolicy } from "./types";
+export type {
+  Group,
+  GroupSummary,
+  GroupStatus,
+  GroupKind,
+  GroupLocation,
+  JoinPolicy,
+} from "./types";
 export type { GroupEvent, GroupCreated, GroupUpdated, GroupArchived } from "./events";
