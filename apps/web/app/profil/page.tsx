@@ -34,7 +34,7 @@ export default async function ProfilPage() {
           Nur noch ein paar Angaben, dann geht deine Bewerbung an deinen lokalen Vorstand.
         </p>
       </header>
-      <Wizard groups={groups.map((g) => ({ id: g.id, name: g.name, city: g.city }))} />
+      <Wizard groups={groups.map((g) => ({ id: g.id, name: g.name, city: g.city ?? "" }))} />
     </main>
   );
 }

@@ -14,9 +14,18 @@ describe("toPins", () => {
         slug: "koeln",
         name: "BDAS Köln",
         city: "Köln",
+        kind: "hochschulgruppe",
         location: { name: "Uni Köln", address: "Albertus-Magnus-Platz", lat: 50.9271, lng: 6.9285 },
       },
-      { ...base, id: "grp_2", slug: "essen", name: "BDAS Essen", city: "Essen", location: null },
+      {
+        ...base,
+        id: "grp_2",
+        slug: "essen",
+        name: "BDAS Essen",
+        city: "Essen",
+        kind: "hochschulgruppe",
+        location: null,
+      },
     ];
 
     const pins = toPins(groups);
@@ -31,5 +40,20 @@ describe("toPins", () => {
     });
     // Privacy: the location name/address must never reach the client payload.
     expect(Object.keys(pins[0]!).sort()).toEqual(["city", "lat", "lng", "name", "slug"]);
+  });
+
+  it("lässt eine Gruppe ohne Stadt aus der Karte heraus", () => {
+    const groups: GroupSummary[] = [
+      {
+        ...base,
+        id: "grp_3",
+        slug: "bdaj",
+        name: "BDAJ",
+        city: null,
+        kind: "affiliate",
+        location: { name: "Geschäftsstelle", address: "Irgendwo 1", lat: 52.52, lng: 13.405 },
+      },
+    ];
+    expect(toPins(groups)).toEqual([]);
   });
 });
