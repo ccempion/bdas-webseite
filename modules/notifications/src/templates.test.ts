@@ -145,6 +145,28 @@ describe("render — event manage/cancel link", () => {
     expect(out.text).toContain("aufgelöst");
     expect(out.text).not.toMatch(/abgelehnt|nicht angenommen/);
   });
+
+  it("confirms an accepted group change with the destination group's name", () => {
+    const out = render("member_group_change_approved", {
+      firstName: "Anna",
+      eventTitle: "",
+      groupName: "BDAS Aachen",
+    });
+    expect(out.text).toContain("BDAS Aachen");
+    expect(out.text).not.toMatch(/aufgenommen|willkommen/);
+  });
+
+  it("puts the rejection reason in the group-change decline email", () => {
+    const out = render("member_group_change_declined", {
+      firstName: "Anna",
+      eventTitle: "",
+      reasonCategoryLabel: "Kein Kontakt zustande gekommen",
+      reasonMessage: "Wir haben dich dreimal nicht erreicht.",
+    });
+    expect(out.text).toContain("Kein Kontakt zustande gekommen");
+    expect(out.text).toContain("Wir haben dich dreimal nicht erreicht.");
+    expect(out.text).not.toContain("Bewerbung");
+  });
 });
 
 describe("newsletter templates", () => {

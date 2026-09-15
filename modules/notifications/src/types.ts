@@ -17,6 +17,8 @@ export type TransactionalTemplate =
   | "member_application_approved"
   | "member_application_declined"
   | "member_application_group_dissolved"
+  | "member_group_change_approved"
+  | "member_group_change_declined"
   | "blog_post_reported"
   | "newsletter_confirm"
   | "newsletter_already_subscribed";
@@ -38,13 +40,13 @@ export type TemplateData = {
   /** `event_organizer_message`: organizer-authored subject + body. */
   readonly subject?: string | undefined;
   readonly messageBody?: string | undefined;
-  /** `event_organizer_*`: the group the organizer role applies to. */
+  /** `event_organizer_*`, `member_group_change_approved`: the group the mail is about. */
   readonly groupName?: string | undefined;
   /** `member_application_received`: the applicant's full name. */
   readonly applicantName?: string | undefined;
-  /** `member_application_declined`: the German label of the category the board picked. */
+  /** `member_application_declined`, `member_group_change_declined`: the German label of the category the board picked. */
   readonly reasonCategoryLabel?: string | undefined;
-  /** `member_application_declined`: the board's free-text message to the applicant. */
+  /** `member_application_declined`, `member_group_change_declined`: the board's free-text message to the applicant. */
   readonly reasonMessage?: string | undefined;
   /** `blog_post_reported`: the reported post's title. */
   readonly postTitle?: string | undefined;

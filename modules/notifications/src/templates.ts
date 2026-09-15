@@ -108,6 +108,24 @@ export function render(template: TransactionalTemplate, data: TemplateData): Ren
         firstName,
         `die Gruppe${data.groupName ? ` ${data.groupName}` : ""} wurde aufgelöst, bevor über deine Bewerbung entschieden werden konnte. Das ist keine Absage — bitte bewirb dich gerne bei einer anderen BDAS-Gruppe.`,
       );
+    case "member_group_change_approved":
+      return body(
+        "BDAS — Dein Gruppenwechsel ist bestätigt",
+        firstName,
+        `der Vorstand${data.groupName ? ` von ${data.groupName}` : ""} hat deinen Gruppenwechsel angenommen — du bist ab sofort dort Mitglied.`,
+      );
+    case "member_group_change_declined":
+      return body(
+        "BDAS — Entscheidung über deinen Gruppenwechsel",
+        firstName,
+        [
+          "der Vorstand der Zielgruppe hat deinen Antrag auf Gruppenwechsel geprüft und ihn nicht angenommen. Deine bisherige Mitgliedschaft bleibt davon unberührt.",
+          data.reasonCategoryLabel ? `Grund: ${data.reasonCategoryLabel}.` : null,
+          data.reasonMessage ? `„${data.reasonMessage}“` : null,
+        ]
+          .filter(Boolean)
+          .join(" "),
+      );
     case "blog_post_reported":
       return body(
         "BDAS — Beitrag gemeldet",

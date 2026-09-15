@@ -1,8 +1,9 @@
 /**
- * The application mails, which all hang off the request row's lifecycle
- * (ADR 0031): `.decided` tells the applicant, `.withdrawn` tells them their
- * group was dissolved. The board-side `.requested` mail is currently disabled
- * (see subscribers.ts) and pinned off by the first case below.
+ * The application and group-change mails, which all hang off the request
+ * row's lifecycle (ADR 0031/0022): `.decided` tells the applicant or
+ * transferring member, `.withdrawn` tells them their group was dissolved.
+ * The board-side `.requested` mail is currently disabled (see subscribers.ts)
+ * and pinned off by the first case below.
  * Integration tests against a real Postgres schema; skips when
  * DATABASE_URL is unreachable, as the sibling suites do.
  *
@@ -202,7 +203,7 @@ describeIfDb("notifications: the application mails", () => {
     expect(sent[0]?.text).toContain("Wir haben dich dreimal nicht erreicht.");
   });
 
-  it("stays quiet about a transfer between two groups", async () => {
+  it("emails the member with transfer wording when a group change is accepted", async () => {
     await publish({
       type: "members.group_change.decided",
       requestId: "mgc_1",
@@ -214,7 +215,37 @@ describeIfDb("notifications: the application mails", () => {
       at: new Date(),
     });
 
-    expect(sent).toHaveLength(0);
+    expect(sent).toHaveLength(1);
+    expect(sent[0]?.to).toBe("anna@example.org");
+    expect(sent[0]?.subject).toContain("Gruppenwechsel");
+    expect(sent[0]?.text).toContain("BDAS Aachen");
+    expect(sent[0]?.text).not.toMatch(/aufgenommen|willkommen/);
+  });
+
+  it("carries the board's reason into the transfer decline mail", async () => {
+    await t.client`
+      INSERT INTO member_group_change_requests
+        (id, member_id, from_group_id, to_group_id, status, decided_at, decided_by,
+         reason_category, reason_message)
+      VALUES ('mgc_1', 'mem_applicant', 'grp_b', 'grp_a', 'rejected', now(), 'usr_board',
+              'no_contact', 'Wir haben dich dreimal nicht erreicht.')`;
+
+    await publish({
+      type: "members.group_change.decided",
+      requestId: "mgc_1",
+      memberId: "mem_applicant",
+      fromGroupId: "grp_b",
+      toGroupId: "grp_a",
+      decision: "rejected",
+      actorUserId: "usr_board",
+      at: new Date(),
+    });
+
+    expect(sent).toHaveLength(1);
+    expect(sent[0]?.subject).toContain("Gruppenwechsel");
+    expect(sent[0]?.text).toContain("Kein Kontakt zustande gekommen");
+    expect(sent[0]?.text).toContain("Wir haben dich dreimal nicht erreicht.");
+    expect(sent[0]?.text).not.toMatch(/Bewerbung/);
   });
 
   it("tells the applicant their group was dissolved, not that they were rejected", async () => {
