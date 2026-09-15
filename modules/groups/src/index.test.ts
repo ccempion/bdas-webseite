@@ -379,3 +379,72 @@ describeIfDb("groups integration", () => {
     expect(active.find((g) => g.slug === "essen")?.location).toBeNull();
   });
 });
+
+describeIfDb("0007 group kind", () => {
+  let t: TestDb;
+
+  beforeEach(async () => {
+    t = await createTestDb();
+    for (const file of [
+      "0001_init.sql",
+      "0002_status_check.sql",
+      "0003_drop_university_description.sql",
+      "0004_location.sql",
+      "0005_image_key.sql",
+      "0006_link_scheme_guard.sql",
+      "0007_group_kind.sql",
+    ]) {
+      const sql = await fs.readFile(path.join(__dirname, "..", "migrations", file), "utf8");
+      await t.client.unsafe(sql);
+    }
+    resetEventBus();
+  });
+
+  afterEach(async () => {
+    await t.cleanup();
+  });
+
+  it("setzt bestehende Zeilen auf hochschulgruppe", async () => {
+    await t.client`
+      INSERT INTO groups (id, slug, name, city) VALUES ('grp_h', 'aachen', 'BDAS Aachen', 'Aachen')
+    `;
+    const [row] = await t.client`SELECT kind FROM groups WHERE id = 'grp_h'`;
+    expect(row!["kind"]).toBe("hochschulgruppe");
+  });
+
+  it("lässt eine affiliate-Zeile ohne Stadt zu", async () => {
+    await t.client`
+      INSERT INTO groups (id, slug, name, city, kind)
+      VALUES ('grp_a', 'bdaj', 'BDAJ', NULL, 'affiliate')
+    `;
+    const [row] = await t.client`SELECT city, kind FROM groups WHERE id = 'grp_a'`;
+    expect(row!["city"]).toBeNull();
+    expect(row!["kind"]).toBe("affiliate");
+  });
+
+  it("verlangt bei einer Hochschulgruppe weiterhin eine Stadt", async () => {
+    await expect(
+      t.client`
+        INSERT INTO groups (id, slug, name, city) VALUES ('grp_x', 'ohne', 'Ohne Stadt', NULL)
+      `,
+    ).rejects.toThrow(/groups_kind_city_check/);
+  });
+
+  it("verbietet einer affiliate-Zeile eine Stadt", async () => {
+    await expect(
+      t.client`
+        INSERT INTO groups (id, slug, name, city, kind)
+        VALUES ('grp_y', 'mitstadt', 'Mit Stadt', 'Köln', 'affiliate')
+      `,
+    ).rejects.toThrow(/groups_kind_city_check/);
+  });
+
+  it("weist eine unbekannte Art ab", async () => {
+    await expect(
+      t.client`
+        INSERT INTO groups (id, slug, name, city, kind)
+        VALUES ('grp_z', 'netzwerk', 'Netzwerk', NULL, 'netzwerk')
+      `,
+    ).rejects.toThrow(/groups_kind_check/);
+  });
+});
