@@ -65,7 +65,7 @@ export const allgemein: FaqSection = {
             "Event Organisator — darf Veranstaltungen der Gruppe verwalten.",
             "Seiten Editor — darf die öffentliche Gruppenseite bearbeiten.",
             "Bundesvorstand — föderationsweite Verwaltung über alle Gruppen.",
-            "Alumni — ausgeschiedenes Mitglied; meldet sich nicht mehr für Veranstaltungen an, kann aber weiterhin Blog-Beiträge verfassen.",
+            "Alumni — ehemaliges Mitglied; eine Kennzeichnung, keine Einschränkung. Du meldest dich weiter zu Veranstaltungen an wie jedes Mitglied.",
           ],
         },
       ],
