@@ -60,6 +60,17 @@ export type EmailChanged = {
   readonly at: Date;
 };
 
+/**
+ * An identity was erased (ADR 0044). The row is already gone when this fires;
+ * `email` is the normalized address it had, for modules that match on it.
+ */
+export type UserDeleted = {
+  readonly type: "auth.user.deleted";
+  readonly userId: string;
+  readonly email: string;
+  readonly at: Date;
+};
+
 export type AuthEvent =
   | UserRegistered
   | UserVerified
@@ -67,4 +78,5 @@ export type AuthEvent =
   | UserLoggedOut
   | PasswordReset
   | PasswordChanged
-  | EmailChanged;
+  | EmailChanged
+  | UserDeleted;

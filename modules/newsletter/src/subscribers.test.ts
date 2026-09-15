@@ -4,7 +4,7 @@ import type { Db } from "@bdas/db";
 import type { TestDb } from "@bdas/db/test";
 import { getEventBus, resetEventBus } from "@bdas/events";
 
-import { newsletterConsentLog, newsletterSubscribers } from "./schema";
+import { newsletterConsentLog, newsletterPrompts, newsletterSubscribers } from "./schema";
 import { subscribeAtRegistration } from "./services/subscribe";
 import { registerNewsletterSubscribers } from "./subscribers";
 import { dbReachable, setupNewsletterDb } from "./test-db";
@@ -13,6 +13,13 @@ const reachable = await dbReachable();
 
 const verified = (userId: string, email: string) => ({
   type: "auth.user.verified" as const,
+  userId,
+  email,
+  at: new Date(),
+});
+
+const deleted = (userId: string, email: string) => ({
+  type: "auth.user.deleted" as const,
   userId,
   email,
   at: new Date(),
@@ -93,5 +100,47 @@ describe.skipIf(!reachable)("newsletter bus subscribers", () => {
 
     const log = await t.db.select().from(newsletterConsentLog);
     expect(log.filter((l) => l.event === "confirmed")).toHaveLength(1);
+  });
+
+  describe("auth.user.deleted", () => {
+    const addRow = (id: string, email: string, userId: string | null) =>
+      t.db.insert(newsletterSubscribers).values({
+        id,
+        email,
+        userId,
+        status: "pending",
+        unsubscribeTokenHash: `h_${id}`,
+        source: "registrierung",
+      });
+
+    it("deletes the account's rows by id or address, with their log and the prompt memory", async () => {
+      await addRow("nls_by_id", "alt@example.org", "u6");
+      await addRow("nls_by_mail", "bot@example.org", null);
+      await addRow("nls_other", "fremd@example.org", "u7");
+      await t.db
+        .insert(newsletterConsentLog)
+        .values({ id: "nlc_1", subscriberId: "nls_by_id", event: "subscribed" });
+      await t.db.insert(newsletterPrompts).values([{ userId: "u6" }, { userId: "u7" }]);
+
+      await getEventBus().publish(deleted("u6", "Bot@Example.org"));
+
+      const rows = await t.db.select({ id: newsletterSubscribers.id }).from(newsletterSubscribers);
+      expect(rows.map((r) => r.id)).toEqual(["nls_other"]);
+      expect(await t.db.select().from(newsletterConsentLog)).toEqual([]);
+      const prompts = await t.db.select().from(newsletterPrompts);
+      expect(prompts.map((p) => p.userId)).toEqual(["u7"]);
+    });
+
+    it("never lets a failure escape into the deleting caller", async () => {
+      resetEventBus();
+      const broken = {
+        delete() {
+          throw new Error("db is down");
+        },
+      } as unknown as Db;
+      registerNewsletterSubscribers(broken);
+
+      await expect(getEventBus().publish(deleted("u8", "x@example.org"))).resolves.toBeUndefined();
+    });
   });
 });
