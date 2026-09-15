@@ -25,6 +25,7 @@ export {
   listSubscribers,
   type SubscriberFilter,
 } from "./services/read";
+export { purgeStalePending, removeSubscriber } from "./services/remove";
 export { type NewsletterAccount } from "./account-match";
 export {
   declineForUser,

@@ -9,10 +9,11 @@
 // vitest compiles JSX with the classic runtime, so React has to be in scope.
 import React, { act, StrictMode } from "react";
 import { createRoot, type Root } from "react-dom/client";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { SubscriberRow } from "@bdas/newsletter";
 
+import type { RemoveResult } from "./actions";
 import { SubscriberTable } from "./SubscriberTable";
 
 let container: HTMLDivElement;
@@ -20,15 +21,21 @@ let root: Root;
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
+let onRemove = vi.fn(async (_id: string): Promise<RemoveResult> => ({ ok: true, removed: 1 }));
+let onPurge = vi.fn(async (): Promise<RemoveResult> => ({ ok: true, removed: 3 }));
+
 beforeEach(() => {
   container = document.createElement("div");
   document.body.appendChild(container);
   root = createRoot(container);
+  onRemove = vi.fn(async (_id: string): Promise<RemoveResult> => ({ ok: true, removed: 1 }));
+  onPurge = vi.fn(async (): Promise<RemoveResult> => ({ ok: true, removed: 3 }));
 });
 
 afterEach(() => {
   act(() => root.unmount());
   container.remove();
+  vi.restoreAllMocks();
 });
 
 const row = (over: Partial<SubscriberRow> & { id: string }): SubscriberRow => ({
@@ -54,7 +61,12 @@ function render(rows: SubscriberRow[] = ROWS) {
   act(() =>
     root.render(
       <StrictMode>
-        <SubscriberTable rows={rows} groupNames={{ u1: "HG Aachen" }} />
+        <SubscriberTable
+          rows={rows}
+          groupNames={{ u1: "HG Aachen" }}
+          onRemove={onRemove}
+          onPurge={onPurge}
+        />
       </StrictMode>,
     ),
   );
@@ -146,5 +158,53 @@ describe("SubscriberTable", () => {
   it("says so when nothing matches instead of showing an empty frame", () => {
     render([]);
     expect(container.textContent).toContain("Keine Einträge");
+  });
+
+  describe("deleting", () => {
+    const deleteButtonFor = (email: string) =>
+      bodyRows()
+        .find((tr) => tr.textContent?.includes(email))
+        ?.querySelector("button") as HTMLButtonElement;
+
+    async function clickAsync(el: Element) {
+      await act(async () => {
+        el.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      });
+    }
+
+    it("deletes the row's id once the board confirms, and says so", async () => {
+      vi.spyOn(window, "confirm").mockReturnValue(true);
+      render();
+      await clickAsync(deleteButtonFor("bernd@example.org"));
+      expect(onRemove).toHaveBeenCalledWith("bernd");
+      expect(container.querySelector('[role="status"]')?.textContent).toBe(
+        "bernd@example.org gelöscht.",
+      );
+    });
+
+    it("does nothing when the confirmation is cancelled", async () => {
+      vi.spyOn(window, "confirm").mockReturnValue(false);
+      render();
+      await clickAsync(deleteButtonFor("bernd@example.org"));
+      expect(onRemove).not.toHaveBeenCalled();
+    });
+
+    it("purges the expired entries and reports how many went", async () => {
+      vi.spyOn(window, "confirm").mockReturnValue(true);
+      render();
+      await clickAsync(chip("Abgelaufene löschen"));
+      expect(onPurge).toHaveBeenCalledOnce();
+      expect(container.querySelector('[role="status"]')?.textContent).toBe(
+        "3 abgelaufene Einträge gelöscht.",
+      );
+    });
+
+    it("shows the refusal instead of a success message", async () => {
+      vi.spyOn(window, "confirm").mockReturnValue(true);
+      onRemove.mockResolvedValueOnce({ ok: false, error: "Keine Berechtigung." });
+      render();
+      await clickAsync(deleteButtonFor("bernd@example.org"));
+      expect(container.querySelector('[role="status"]')?.textContent).toBe("Keine Berechtigung.");
+    });
   });
 });
