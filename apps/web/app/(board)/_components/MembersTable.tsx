@@ -1,10 +1,11 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import React, { useMemo, useState, useTransition } from "react";
 
 import type { Member, MemberStatus, OpenGroupChange, RejectionCategory } from "@bdas/members";
 
 import { MemberGroupPanel } from "./MemberGroupPanel";
+import { grantRoleAction, revokeRoleAction } from "./role-actions";
 
 const STATUS_LABEL: Record<MemberStatus, string> = {
   pending: "Ausstehend",
@@ -41,6 +42,8 @@ export function MembersTable({
   const [filter, setFilter] = useState<MemberFilter>("all");
   const [q, setQ] = useState("");
   const [selected, setSelected] = useState<Member | null>(null);
+  const [markError, setMarkError] = useState<string | null>(null);
+  const [marking, startMarking] = useTransition();
 
   const openByMember = useMemo(
     () =>
@@ -103,7 +106,13 @@ export function MembersTable({
             <tbody>
               {rows.map((m) => (
                 <tr key={m.id} className="border-t border-bdas-soft hover:bg-bdas-surface-hover">
-                  <td className="cursor-pointer p-3 text-bdas-ink" onClick={() => setSelected(m)}>
+                  <td
+                    className="cursor-pointer p-3 text-bdas-ink"
+                    onClick={() => {
+                      setSelected(m);
+                      setMarkError(null);
+                    }}
+                  >
                     {m.firstName} {m.lastName} ›
                   </td>
                   <td className="p-3 text-bdas-ink-body">
@@ -152,10 +161,35 @@ export function MembersTable({
               <dt className="text-bdas-ink-muted">Status</dt>
               <dd className="text-bdas-ink-body">{STATUS_LABEL[selected.status]}</dd>
             </div>
-            <div className="flex justify-between border-b border-bdas-soft pb-1">
+            {/* Der Scope ist die Gruppe des Mitglieds; wer vergeben darf, prüft
+                requireCanGrant serverseitig (ADR 0043 §3). */}
+            <div className="flex items-center justify-between gap-2 border-b border-bdas-soft pb-1">
               <dt className="text-bdas-ink-muted">Alumnus</dt>
-              <dd className="text-bdas-ink-body">{isAlumnus.has(selected.id) ? "Ja" : "Nein"}</dd>
+              <dd>
+                <button
+                  type="button"
+                  disabled={marking}
+                  onClick={() =>
+                    startMarking(async () => {
+                      const action = isAlumnus.has(selected.id)
+                        ? revokeRoleAction
+                        : grantRoleAction;
+                      const res = await action(
+                        selected.id,
+                        "alumnus",
+                        selected.primaryGroupId,
+                        revalidatePath,
+                      );
+                      setMarkError(res.ok ? null : (res.error ?? "Fehler"));
+                    })
+                  }
+                  className="rounded-bdas-pill border border-bdas-soft px-3 py-1 text-sm text-bdas-ink-body transition-colors hover:bg-bdas-surface-hover disabled:opacity-50"
+                >
+                  {isAlumnus.has(selected.id) ? "Markierung entfernen" : "Als Alumnus markieren"}
+                </button>
+              </dd>
             </div>
+            {markError ? <p className="text-sm text-bdas-red">{markError}</p> : null}
             <div className="flex justify-between border-b border-bdas-soft pb-1">
               <dt className="text-bdas-ink-muted">Gruppe</dt>
               <dd className="text-bdas-ink-body">
