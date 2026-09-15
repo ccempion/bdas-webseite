@@ -8,6 +8,7 @@ import { bootNewsletter } from "../../../../lib/newsletter-bootstrap";
 import { requireFederalScope } from "../../../_dashboard/session";
 import { requireNewsletterFlag } from "../../../_newsletter/flag";
 import { Tile } from "../../_components/Tile";
+import { purgeStalePendingAction, removeSubscriberAction } from "./actions";
 import { SubscriberTable } from "./SubscriberTable";
 
 export const dynamic = "force-dynamic";
@@ -45,7 +46,12 @@ export default async function FederalNewsletterPage() {
         <Tile value={String(counts.unsubscribed)} label="Abgemeldet" />
         <Tile value={String(counts.declined)} label="Abgelehnt" />
       </div>
-      <SubscriberTable rows={rows} groupNames={groupNames} />
+      <SubscriberTable
+        rows={rows}
+        groupNames={groupNames}
+        onRemove={removeSubscriberAction}
+        onPurge={purgeStalePendingAction}
+      />
     </section>
   );
 }

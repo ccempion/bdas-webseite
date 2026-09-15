@@ -54,16 +54,15 @@ export type SubscriberFilter = {
 };
 
 /**
- * Every row, address-resolved and deduplicated — the single pipeline behind
- * both the list and the counters, so the tiles can never contradict the table
- * beneath them.
+ * Every row with its address resolved, newest first, NOT yet deduplicated.
+ * Module-internal: `removeSubscriber` needs the duplicates the list hides.
  *
- * Deduplication cannot move into SQL: the resolved value lives in
- * modules/auth, not in this module's tables (spec §4). One full scan plus one
- * batched resolver call. Fine at the expected size; past ~50k rows the
- * counters want a materialized view.
+ * Resolution cannot move into SQL: the resolved value lives in modules/auth,
+ * not in this module's tables (spec §4). One full scan plus one batched
+ * resolver call. Fine at the expected size; past ~50k rows the counters want a
+ * materialized view.
  */
-async function loadDeduped(db: Db): Promise<SubscriberRow[]> {
+export async function loadResolved(db: Db): Promise<SubscriberRow[]> {
   const rows = await db
     .select()
     .from(newsletterSubscribers)
@@ -75,22 +74,28 @@ async function loadDeduped(db: Db): Promise<SubscriberRow[]> {
       ? await getAccountEmailResolver().resolve(db, userIds)
       : new Map<string, string>();
 
+  return rows.map((r) => ({
+    id: r.id,
+    email: (r.userId === null ? r.email : (resolved.get(r.userId) ?? r.email)).trim().toLowerCase(),
+    status: r.status as SubscriptionStatus,
+    source: r.source as NewsletterSource,
+    sourcePath: r.sourcePath,
+    groupId: r.groupId,
+    userId: r.userId,
+    createdAt: r.createdAt,
+    confirmedAt: r.confirmedAt,
+  }));
+}
+
+/**
+ * Every row, address-resolved and deduplicated — the single pipeline behind
+ * both the list and the counters, so the tiles can never contradict the table
+ * beneath them.
+ */
+async function loadDeduped(db: Db): Promise<SubscriberRow[]> {
   const byEmail = new Map<string, SubscriberRow>();
-  for (const r of rows) {
-    const email = (r.userId === null ? r.email : (resolved.get(r.userId) ?? r.email))
-      .trim()
-      .toLowerCase();
-    const row: SubscriberRow = {
-      id: r.id,
-      email,
-      status: r.status as SubscriptionStatus,
-      source: r.source as NewsletterSource,
-      sourcePath: r.sourcePath,
-      groupId: r.groupId,
-      userId: r.userId,
-      createdAt: r.createdAt,
-      confirmedAt: r.confirmedAt,
-    };
+  for (const row of await loadResolved(db)) {
+    const email = row.email;
     const seen = byEmail.get(email);
     // The account row wins: its address is the one that keeps following the
     // person (spec §4). Otherwise the newer row stays — rows arrive desc.

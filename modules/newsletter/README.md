@@ -46,26 +46,33 @@ _getter_ are private — consumers wire a resolver, they never read one. Every
 service takes the `Db` handle as its first argument and is **auth-agnostic**:
 it validates, it does not authorize.
 
-| Service                                    | What it does                                                            |
-| ------------------------------------------ | ----------------------------------------------------------------------- |
-| `subscribeAsUser(db, input)`               | One-click subscribe for an authenticated account, idempotent            |
-| `subscribePublicly(db, input)`             | Anonymous double-opt-in signup; always resolves to `void`               |
-| `subscribeAtRegistration(db, input)`       | `pending` row from the registration checkbox, publishes nothing         |
-| `confirmSubscription(db, token, context?)` | Redeems a confirmation link → `confirmed`/`already_confirmed`/`expired` |
-| `unsubscribeByToken(db, token, context?)`  | The permanent link from the mail; `NotFoundError` on an unknown token   |
-| `unsubscribeAsUser(db, input)`             | The switch under "Mein Konto"; quiet when there is nothing to end       |
-| `getSubscriptionForUser(db, userId)`       | The account's row, whatever its status                                  |
-| `listSubscribers(db, filter?)`             | Board list: address-resolved, deduplicated, newest first                |
-| `countSubscribers(db)`                     | Per-status counters over the _same_ pipeline as the list                |
-| `declineForUser(db, input)`                | One dismissal; the third writes `declined` and ends the asking          |
-| `shouldPrompt(db, userId)`                 | Whether an interrupting hint may be shown at all                        |
-| `registerNewsletterSubscribers(db)`        | Wires the bus handlers; idempotent                                      |
-| `setAccountEmailResolver(resolver)`        | Composition-time wiring of the address resolver                         |
+| Service                                    | What it does                                                               |
+| ------------------------------------------ | -------------------------------------------------------------------------- |
+| `subscribeAsUser(db, input)`               | One-click subscribe for an authenticated account, idempotent               |
+| `subscribePublicly(db, input)`             | Anonymous double-opt-in signup; always resolves to `void`                  |
+| `subscribeAtRegistration(db, input)`       | `pending` row from the registration checkbox, publishes nothing            |
+| `confirmSubscription(db, token, context?)` | Redeems a confirmation link → `confirmed`/`already_confirmed`/`expired`    |
+| `unsubscribeByToken(db, token, context?)`  | The permanent link from the mail; `NotFoundError` on an unknown token      |
+| `unsubscribeAsUser(db, input)`             | The switch under "Mein Konto"; quiet when there is nothing to end          |
+| `getSubscriptionForUser(db, userId)`       | The account's row, whatever its status                                     |
+| `listSubscribers(db, filter?)`             | Board list: address-resolved, deduplicated, newest first                   |
+| `countSubscribers(db)`                     | Per-status counters over the _same_ pipeline as the list                   |
+| `removeSubscriber(db, id)`                 | Board delete: the row, its same-address duplicates and their consent log   |
+| `purgeStalePending(db)`                    | Deletes `pending` rows whose link expired or that waited 7 days unverified |
+| `declineForUser(db, input)`                | One dismissal; the third writes `declined` and ends the asking             |
+| `shouldPrompt(db, userId)`                 | Whether an interrupting hint may be shown at all                           |
+| `registerNewsletterSubscribers(db)`        | Wires the bus handlers; idempotent                                         |
+| `setAccountEmailResolver(resolver)`        | Composition-time wiring of the address resolver                            |
 
 `listSubscribers` and `countSubscribers` share one pipeline on purpose: a
 `GROUP BY status` counter would be one query cheaper but could disagree with
 the table beneath it by the number of duplicates, and a tile that contradicts
 its own table is a bug report.
+
+**Deleting is not unsubscribing.** `removeSubscriber` and `purgeStalePending`
+exist for bots and junk signups: they delete the row, and the consent log goes
+with it through the cascade. A person who wants out is `unsubscribed`, which
+keeps the proof that they once agreed.
 
 ## Events
 

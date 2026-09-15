@@ -1,9 +1,11 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useTransition } from "react";
 
-import { FilterChip, Input } from "@bdas/design-system";
+import { Button, FilterChip, Input } from "@bdas/design-system";
 import type { NewsletterSource, SubscriberRow, SubscriptionStatus } from "@bdas/newsletter";
+
+import type { RemoveResult } from "./actions";
 
 const STATUS_LABEL: Record<SubscriptionStatus, string> = {
   subscribed: "Abonniert",
@@ -45,13 +47,28 @@ const SOURCE_LABEL: Record<NewsletterSource, string> = {
 export function SubscriberTable({
   rows,
   groupNames,
+  onRemove,
+  onPurge,
 }: {
   rows: ReadonlyArray<SubscriberRow>;
   /** Account id → the group that person is a member of today. */
   groupNames: Record<string, string>;
+  /** Server actions, handed in by the page so the table stays testable. */
+  onRemove: (id: string) => Promise<RemoveResult>;
+  onPurge: () => Promise<RemoveResult>;
 }) {
   const [filter, setFilter] = useState<"all" | SubscriptionStatus>("all");
   const [q, setQ] = useState("");
+  const [busy, start] = useTransition();
+  const [notice, setNotice] = useState<string | null>(null);
+
+  function run(question: string, action: () => Promise<RemoveResult>, done: (n: number) => string) {
+    if (!window.confirm(question)) return;
+    start(async () => {
+      const res = await action();
+      setNotice(res.ok ? done(res.removed) : res.error);
+    });
+  }
 
   const visible = useMemo(() => {
     const needle = q.trim().toLowerCase();
@@ -86,7 +103,29 @@ export function SubscriberTable({
         >
           Ganze Liste als CSV
         </a>
+        <Button
+          variant="secondary"
+          size="sm"
+          disabled={busy}
+          onClick={() =>
+            run(
+              "Alle unbestätigten Einträge löschen, deren Bestätigungslink abgelaufen ist oder die seit 7 Tagen auf die Kontobestätigung warten?",
+              onPurge,
+              (n) =>
+                n === 1
+                  ? "1 abgelaufener Eintrag gelöscht."
+                  : `${n} abgelaufene Einträge gelöscht.`,
+            )
+          }
+        >
+          Abgelaufene löschen
+        </Button>
       </div>
+      {notice !== null && (
+        <p role="status" className="border-b border-bdas-soft px-3 py-2 text-bdas-ink-body">
+          {notice}
+        </p>
+      )}
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
@@ -97,6 +136,9 @@ export function SubscriberTable({
               <th className="p-3 text-left font-medium">Gruppe</th>
               <th className="p-3 text-left font-medium">Konto</th>
               <th className="p-3 text-left font-medium">Eingetragen am</th>
+              <th className="p-3">
+                <span className="sr-only">Aktion</span>
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -116,11 +158,27 @@ export function SubscriberTable({
                 <td className="p-3 text-bdas-ink-body">
                   {r.createdAt.toLocaleDateString("de-DE")}
                 </td>
+                <td className="p-3 text-right">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    disabled={busy}
+                    onClick={() =>
+                      run(
+                        `${r.email} endgültig löschen? Der Einwilligungsnachweis wird mitgelöscht — für echte Personen ist Abmelden der richtige Weg.`,
+                        () => onRemove(r.id),
+                        () => `${r.email} gelöscht.`,
+                      )
+                    }
+                  >
+                    Löschen
+                  </Button>
+                </td>
               </tr>
             ))}
             {visible.length === 0 && (
               <tr>
-                <td colSpan={6} className="p-6 text-center text-bdas-ink-muted">
+                <td colSpan={7} className="p-6 text-center text-bdas-ink-muted">
                   Keine Einträge.
                 </td>
               </tr>

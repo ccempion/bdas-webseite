@@ -63,6 +63,16 @@ test.describe("newsletter, the board list", () => {
     expect(body.startsWith("﻿")).toBe(true);
     expect(body).toContain("email,status,source");
     expect(body).toContain(FEDERAL_EMAIL);
+
+    // Deleting (the tool against bots) takes the row off the list for good.
+    page.once("dialog", (dialog) => void dialog.accept());
+    await page
+      .getByRole("row", { name: new RegExp(FEDERAL_EMAIL) })
+      .getByRole("button", { name: "Löschen" })
+      .click();
+    await expect(page.getByRole("status")).toHaveText(`${FEDERAL_EMAIL} gelöscht.`);
+    await page.reload();
+    await expect(page.getByRole("cell", { name: FEDERAL_EMAIL })).toHaveCount(0);
   });
 
   test("a plain member reaches neither the page nor the file", async ({ page }) => {
