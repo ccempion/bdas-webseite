@@ -24,6 +24,13 @@ export const FAQ_TEST_MIGRATIONS: ReadonlyArray<ReadonlyArray<string>> = [
 ];
 
 const SEED_MIGRATION = ["..", "migrations", "0002_seed.sql"];
+const ALUMNI_TEXT_MIGRATION = ["..", "migrations", "0003_alumni_text.sql"];
+
+/** Applies `0003_alumni_text.sql` — a content fix, so it only matters on top of the seed. */
+export async function applyAlumniTextFix(t: TestDb): Promise<void> {
+  const sql = await fs.readFile(path.join(__dirname, ...ALUMNI_TEXT_MIGRATION), "utf8");
+  await t.client.unsafe(sql);
+}
 
 /** Applies `0002_seed.sql` to an already-migrated test schema. */
 export async function applyFaqSeed(t: TestDb): Promise<void> {
