@@ -41,6 +41,7 @@ function me(grants: Grant[], m: Member | null = member()): CurrentMember {
     user: { id: "usr_1", email: "t@x.org", status: "active", roles: [], sessionId: "ses_1" },
     member: m,
     grants,
+    hasGroupScope: Boolean(m?.primaryGroupId),
   };
 }
 

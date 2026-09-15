@@ -73,6 +73,7 @@ function actor(grants: Grant[], memberId = "mbr_board"): CurrentMember {
       updatedAt: new Date(),
     },
     grants,
+    hasGroupScope: true,
   };
 }
 
