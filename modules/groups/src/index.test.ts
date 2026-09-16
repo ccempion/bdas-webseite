@@ -431,7 +431,11 @@ describeIfDb("groups integration", () => {
     expect(list.map((g) => g.slug)).toEqual(["netzwerk"]);
     expect(await listGroupIdsByKind(t.db, "netzwerk")).toEqual([res.group.id]);
 
-    const hgg = await upsertGroupBySlug(t.db, { slug: "aachen", name: "BDAS Aachen", city: "Aachen" });
+    const hgg = await upsertGroupBySlug(t.db, {
+      slug: "aachen",
+      name: "BDAS Aachen",
+      city: "Aachen",
+    });
     expect(hgg.group.kind).toBe("hochschulgruppe");
 
     const publicSurface = await listGroups(t.db, { status: "active", kind: "hochschulgruppe" });
@@ -440,11 +444,16 @@ describeIfDb("groups integration", () => {
   });
 
   it("verlangt für eine Hochschulgruppe eine Stadt und verbietet sie sonst", async () => {
-    await expect(upsertGroupBySlug(t.db, { slug: "ohne", name: "Ohne Stadt" })).rejects.toMatchObject(
-      { code: "VALIDATION" },
-    );
     await expect(
-      upsertGroupBySlug(t.db, { slug: "nw2", name: "Netzwerk Zwei", kind: "netzwerk", city: "Köln" }),
+      upsertGroupBySlug(t.db, { slug: "ohne", name: "Ohne Stadt" }),
+    ).rejects.toMatchObject({ code: "VALIDATION" });
+    await expect(
+      upsertGroupBySlug(t.db, {
+        slug: "nw2",
+        name: "Netzwerk Zwei",
+        kind: "netzwerk",
+        city: "Köln",
+      }),
     ).rejects.toMatchObject({ code: "VALIDATION" });
   });
 });
