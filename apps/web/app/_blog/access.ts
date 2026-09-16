@@ -28,7 +28,12 @@ export const loadBlogMe = cache(
   (): Promise<CurrentMember | null> => getCurrentMember(getDb(), readSessionCookie()),
 );
 
-/** Map the session principal onto the blog visibility `Viewer`. */
+/**
+ * Map the session principal onto the blog visibility `Viewer`. `isMember`
+ * (members-only posts to READ) deliberately stays on the account status, not
+ * `isBdasMember`: Förderer read them, like members-only events — "intern, aber
+ * bundesweit" (product decision 2026-09-16). Commenting is `canComment`.
+ */
 export function blogViewer(me: CurrentMember | null): Viewer {
   if (!me) return ANON;
   return {
