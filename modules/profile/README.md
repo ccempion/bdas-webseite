@@ -42,11 +42,18 @@ under 11 categories (`Kategorie,Studienfach`), transcoded to UTF-8 without a BOM
 and otherwise verbatim. It is a source file only: nothing reads it yet, and
 `studiengang` is still stored and entered as free text.
 
-Wiring it up mirrors the Hochschule list — a generator writing a
-`src/studienfaecher.generated.ts`, then a Combobox with the "Sonstige" escape
-hatch. Open before that lands: whether the form offers the 265 subjects flat or
-narrows by category first, and whether existing free-text values get a
-`canonicalStudienfach` the way universities got one.
+Decided: the form asks in two steps — category first, then subject within it.
+The category is the point, not a convenience. The 265 subjects will never be
+complete, so a subject the list misses still lands in a known category and the
+answer stays usable; a flat list would have to fall back to free text and lose
+that. The 11 categories are the fallback, which is why they are stored, not just
+used to filter the second step.
+
+This is not bolted onto today's form: it ships with the new registration wizard
+covering all user types. Until then `studiengang` stays free text and nothing
+reads the CSV. Still open for that work: a generator and the generated list
+(mirroring the Hochschule list), and whether existing free-text values get a
+`canonicalStudienfach` the way universities got a `canonicalUniversity`.
 
 Photos live in the **private** `profile-media` bucket (`core/storage`
 `getProfileMediaStorage()`); the app mints short-lived signed URLs — never a
