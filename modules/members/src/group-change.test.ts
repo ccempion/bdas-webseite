@@ -26,6 +26,8 @@ const FEDERAL = {
   userId: "usr_federal",
   grants: [{ role: "federal_board", groupId: null }] as ReadonlyArray<Grant>,
 };
+const JOIN_NETZWERK = { allowNetzwerk: true } as const;
+
 const self = (userId: string) => ({
   userId,
   grants: [{ role: "member", groupId: null }] as ReadonlyArray<Grant>,
@@ -165,7 +167,7 @@ describeIfDb("changePrimaryGroup", () => {
       lastName: "Selbst",
     });
 
-    const res = await changePrimaryGroup(t.db, m.id, "grp_nw", self("usr_self"));
+    const res = await changePrimaryGroup(t.db, m.id, "grp_nw", self("usr_self"), JOIN_NETZWERK);
 
     expect(res.kind).toBe("applied");
     const after = await getMember(t.db, m.id);
@@ -195,7 +197,7 @@ describeIfDb("changePrimaryGroup", () => {
     });
     await changePrimaryGroup(t.db, m.id, "grp_a", self("usr_switch"));
 
-    const res = await changePrimaryGroup(t.db, m.id, "grp_nw", self("usr_switch"));
+    const res = await changePrimaryGroup(t.db, m.id, "grp_nw", self("usr_switch"), JOIN_NETZWERK);
 
     expect(res.kind).toBe("applied");
     expect(await getOpenGroupChange(t.db, m.id)).toBeNull();
@@ -206,13 +208,27 @@ describeIfDb("changePrimaryGroup", () => {
     const id = await activeMember("usr_to_nw");
     await grantRole(t.db, id, "local_board_lead", FEDERAL, "grp_a");
 
-    const res = await changePrimaryGroup(t.db, id, "grp_nw", self("usr_to_nw"));
+    const res = await changePrimaryGroup(t.db, id, "grp_nw", self("usr_to_nw"), JOIN_NETZWERK);
 
     expect(res.kind).toBe("applied");
     const grants = await t.client`
       SELECT role FROM member_role_grants WHERE member_id = ${id} AND revoked_at IS NULL
     `;
     expect(grants).toEqual([]);
+  });
+
+  it("ohne ausdrückliche Zustimmung des Aufrufers nimmt der Service niemanden ins Netzwerk auf", async () => {
+    await createNetzwerk();
+    await createUser(t, "usr_plain", "plain@example.de");
+    const m = await createProfile(t.db, { userId: "usr_plain", firstName: "P", lastName: "P" });
+
+    await expect(changePrimaryGroup(t.db, m.id, "grp_nw", self("usr_plain"))).rejects.toMatchObject(
+      { code: "VALIDATION" },
+    );
+    const after = await getMember(t.db, m.id);
+    expect(after?.status).toBe("pending");
+    expect(after?.primaryGroupId).toBeNull();
+    expect(await t.client`SELECT id FROM member_group_change_requests`).toEqual([]);
   });
 
   it("nur die Person selbst tritt dem Netzwerk bei", async () => {
@@ -224,7 +240,7 @@ describeIfDb("changePrimaryGroup", () => {
       lastName: "V",
     });
     await expect(
-      changePrimaryGroup(t.db, m.id, "grp_nw", self("usr_attacker")),
+      changePrimaryGroup(t.db, m.id, "grp_nw", self("usr_attacker"), JOIN_NETZWERK),
     ).rejects.toMatchObject({ code: "FORBIDDEN" });
     expect((await getMember(t.db, m.id))?.status).toBe("pending");
   });
@@ -709,7 +725,7 @@ describeIfDb("listIncomingGroupChanges", () => {
       firstName: "Fritz",
       lastName: "Förderer",
     });
-    await changePrimaryGroup(t.db, f.id, "grp_nw", self("usr_foerderer"));
+    await changePrimaryGroup(t.db, f.id, "grp_nw", self("usr_foerderer"), JOIN_NETZWERK);
     await changePrimaryGroup(t.db, f.id, "grp_b", self("usr_foerderer"));
     await createUser(t, "usr_new", "new@example.de");
     const n = await createProfile(t.db, { userId: "usr_new", firstName: "Nora", lastName: "Neu" });

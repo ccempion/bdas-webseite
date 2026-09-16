@@ -166,12 +166,17 @@ async function withdrawOpen(
  * Self-service group change. `toGroupId` null ⇔ leave the group structure.
  * The actor must be the member themselves; a board moves people by deciding
  * requests, never by writing the column.
+ *
+ * Joining a `netzwerk` group activates the account without any decision, so
+ * it is closed unless the caller opts in with `allowNetzwerk` — the entry
+ * point for Förderer (the triage wizard) does; profile forms must not.
  */
 export async function changePrimaryGroup(
   db: Db,
   memberId: string,
   toGroupId: string | null,
   actor: Actor,
+  opts: { readonly allowNetzwerk?: boolean } = {},
 ): Promise<GroupChangeResult> {
   return db.transaction(async (tx) => {
     const rows = await tx.select().from(members).where(eq(members.id, memberId)).limit(1);
@@ -236,6 +241,9 @@ export async function changePrimaryGroup(
     // Die Art wird auf `db` gelesen: sie ist unveränderlich, und `getGroupKind`
     // nimmt keine Transaktion.
     if ((await getGroupKind(db, toGroupId)) === "netzwerk") {
+      if (!opts.allowNetzwerk) {
+        throw new ValidationError("Dem Netzwerk tritt man nicht über das Profil bei.");
+      }
       await withdrawOpen(tx, memberId, actor.userId);
       const now = new Date();
       const [updated] = await tx

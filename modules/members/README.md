@@ -163,7 +163,8 @@ branches on their status:
 
 Joining a `netzwerk` group is the one self-service join: that group has no
 board, and nobody is meant to decide on a Förderer account. It does not make
-the account a member (`isBdasMember`). The app only lets people pick a
+the account a member (`isBdasMember`). The service refuses it unless the
+caller passes `{ allowNetzwerk: true }`. The app only lets people pick a
 Hochschulgruppe themselves (`apps/web/lib/self-service-group.ts`) until the
 triage wizard brings an entry point for Förderer.
 
