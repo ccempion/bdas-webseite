@@ -113,7 +113,7 @@ Höhe.
 | Student\*in | Studienfach (Kategorie → Fach) + Abschlussart → Hochschule → Geburtsdatum → Wie hast du uns gefunden? → Foto (optional) |
 | Alumnus/Alumna | Studienfach (Kategorie → Fach) → ehemalige Hochschule → Wie hast du uns gefunden? |
 | Förderer/Interessierte (inkl. Student\*in ohne Gruppe) | „Was interessiert dich an BDAS?" (Kurztext) → Wie hast du uns gefunden? |
-| BDAJ | „Welche Funktion hast du in der BDAJ?" (Kurztext) → Wie hast du uns gefunden? |
+| BDAJ | „Welche Funktion hast du in der BDAJ?" (eine Karte: *Vorstandsmitglied*, *Mitglied*, *Geschäftsstelle*) → Wie hast du uns gefunden? |
 
    Das Studienfach ist zweistufig, die Kategorie wird mitgespeichert (Entscheidung 2026-09-16).
    Quelle ist `modules/profile/data/studienfaecher.csv` (11 Kategorien, 265 Fächer) — **liegt noch
