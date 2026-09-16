@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { buildIdentityRows, layoutMode, roleChips } from "./view-model";
+import { buildIdentityRows, layoutMode, roleChips, statusText } from "./view-model";
 
 describe("layoutMode", () => {
   it("gives an active member the full two-column page", () => {
@@ -22,6 +22,7 @@ describe("buildIdentityRows", () => {
       status: "active",
       groupName: "BDAS Berlin",
       joinedAt: new Date("2025-03-14T00:00:00Z"),
+      kind: "hochschulgruppe",
     });
 
     expect(rows).toEqual([
@@ -36,15 +37,49 @@ describe("buildIdentityRows", () => {
       status: "active",
       groupName: "BDAS Berlin",
       joinedAt: null,
+      kind: "hochschulgruppe",
     });
 
     expect(rows.map((r) => r.label)).toEqual(["Status", "Gruppe"]);
   });
 
   it("omits the group when the member has none", () => {
-    const rows = buildIdentityRows({ status: "active", groupName: null, joinedAt: null });
+    const rows = buildIdentityRows({
+      status: "active",
+      groupName: null,
+      joinedAt: null,
+      kind: null,
+    });
 
     expect(rows.map((r) => r.label)).toEqual(["Status"]);
+  });
+
+  it('nennt einen Förderer-Account beim Namen, ohne Netzwerk-Gruppe und ohne „Mitglied seit"', () => {
+    const rows = buildIdentityRows({
+      status: "active",
+      groupName: "BDAS Netzwerk",
+      joinedAt: new Date("2025-03-14T00:00:00Z"),
+      kind: "netzwerk",
+    });
+
+    expect(rows).toEqual([
+      { label: "Status", value: "Förderer:in" },
+      { label: "Dabei seit", value: "14. März 2025" },
+    ]);
+  });
+});
+
+describe("statusText", () => {
+  it("nennt einen aufgenommenen Förderer-Account beim Namen", () => {
+    expect(statusText("active", "netzwerk")).toBe("Förderer:in");
+  });
+
+  it("lässt Mitglieder und Bewerbungen unverändert", () => {
+    expect(statusText("active", "hochschulgruppe")).toBe("Aktives Mitglied");
+    expect(statusText("active", null)).toBe("Aktives Mitglied");
+    expect(statusText("pending", null)).toBe("Bewerbung eingereicht");
+    expect(statusText("pending", "netzwerk")).toBe("Bewerbung eingereicht");
+    expect(statusText(null, null)).toBeNull();
   });
 });
 

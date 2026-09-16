@@ -1,4 +1,5 @@
 import type { Role } from "@bdas/auth";
+import type { GroupKind } from "@bdas/groups";
 import type { Grant, MemberStatus } from "@bdas/members";
 import { ROLE_LABELS } from "@bdas/members";
 
@@ -19,6 +20,7 @@ export type IdentityInput = {
   status: MemberStatus | null;
   groupName: string | null;
   joinedAt: Date | null;
+  kind: GroupKind | null;
 };
 
 const STATUS_TEXT: Record<MemberStatus, string> = {
@@ -36,12 +38,26 @@ export function layoutMode(status: MemberStatus | null): AccountLayoutMode {
   return status === "active" ? "full" : "plain";
 }
 
+/**
+ * Die Statuszeile der Identitätskarte. Ein Förderer-Account ist aufgenommen,
+ * aber kein Mitglied (Spec 2026-09-16 §3.1) — „Aktives Mitglied" wäre dort
+ * schlicht falsch.
+ */
+export function statusText(status: MemberStatus | null, kind: GroupKind | null): string | null {
+  if (status === null) return null;
+  if (status === "active" && kind === "netzwerk") return "Förderer:in";
+  return STATUS_TEXT[status];
+}
+
 export function buildIdentityRows(input: IdentityInput): IdentityRow[] {
+  // Die Netzwerk-Gruppe hat keine Seite und keine Mitglieder: sie gehört nicht
+  // in die Karte, und wer dort ist, ist nicht „Mitglied seit".
+  const netzwerk = input.kind === "netzwerk";
   const rows: Array<{ label: string; value: string | null }> = [
-    { label: "Status", value: input.status ? STATUS_TEXT[input.status] : null },
-    { label: "Gruppe", value: input.groupName },
+    { label: "Status", value: statusText(input.status, input.kind) },
+    { label: "Gruppe", value: netzwerk ? null : input.groupName },
     {
-      label: "Mitglied seit",
+      label: netzwerk ? "Dabei seit" : "Mitglied seit",
       value: input.joinedAt
         ? input.joinedAt.toLocaleDateString("de-DE", {
             day: "numeric",
