@@ -162,6 +162,25 @@ describe("canAuthorPost", () => {
     );
   });
 
+  describe("ohne Hochschulgruppe (ADR 0047)", () => {
+    const affiliate = (grants: CurrentMember["grants"]): CurrentMember => ({
+      ...memberWithGrants(grants),
+      primaryGroupKind: "affiliate",
+      hasGroupScope: false,
+      isBdasMember: false,
+    });
+
+    it("schaltet die Event-Manager-Rolle keinen Blog frei", () => {
+      expect(canAuthorPost(affiliate([{ role: "event_organizer", groupId: "grp_bdaj" }]))).toBe(
+        false,
+      );
+    });
+
+    it("schreibt mit der Blogger-Rolle", () => {
+      expect(canAuthorPost(affiliate([{ role: "blogger", groupId: "grp_bdaj" }]))).toBe(true);
+    });
+  });
+
   it("rejects a signed-out visitor", () => {
     expect(canAuthorPost(null)).toBe(false);
   });
