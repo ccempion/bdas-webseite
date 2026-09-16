@@ -17,6 +17,9 @@ export function viewerFrom(me: CurrentMember | null): Viewer {
     organizerGroupIds: me.grants
       .filter((g) => g.role === "event_organizer" && g.groupId)
       .map((g) => g.groupId as string),
+    userId: me.user.id,
+    // Ohne Hochschulgruppe verwaltet die Event-Manager-Rolle nur eigene Events (ADR 0047).
+    ownEventsOnly: !me.hasGroupScope,
   };
 }
 

@@ -59,22 +59,21 @@ export function canComment(me: CurrentMember | null): boolean {
   return me !== null && me.isBdasMember;
 }
 
-const BLOG_AUTHOR_ROLES = new Set([
-  "federal_board",
-  "local_board_lead",
-  "event_organizer",
-  "blogger",
-]);
+const BLOG_AUTHOR_ROLES = new Set(["federal_board", "local_board_lead", "blogger"]);
 
 /**
  * Eligible to AUTHOR a new post: federal board, a group's Lead, an
  * Event-Manager, or a Blogger (ADR 0037 — supersedes ADR 0030's "any active
  * member or alumnus" default). Deliberately grant-based, not status-based:
- * holding one of these roles is itself the qualification.
+ * holding one of these roles is itself the qualification. Without a
+ * Hochschulgruppe the Event-Manager role does not count — events and blog are
+ * switched on separately there (ADR 0047).
  */
 export function canAuthorPost(me: CurrentMember | null): boolean {
   if (me === null) return false;
-  return me.grants.some((g) => BLOG_AUTHOR_ROLES.has(g.role));
+  return me.grants.some(
+    (g) => BLOG_AUTHOR_ROLES.has(g.role) || (g.role === "event_organizer" && me.hasGroupScope),
+  );
 }
 
 /** Eligible to author a post (ADR 0037), or redirect. */
