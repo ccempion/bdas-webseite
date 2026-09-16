@@ -13,9 +13,9 @@ import { formatFileSize, mimeIcon } from "./folder-meta";
 /**
  * One file row. Both the filename and the "Herunterladen" button trigger the
  * same download (signed URL → open in a new tab), sharing one busy/error state.
- * Delete is shown only when `canWrite`.
+ * Delete is shown only when `canDelete`.
  */
-export function FileRow({ file, canWrite }: { file: FileMeta; canWrite: boolean }) {
+export function FileRow({ file, canDelete }: { file: FileMeta; canDelete: boolean }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -53,7 +53,7 @@ export function FileRow({ file, canWrite }: { file: FileMeta; canWrite: boolean 
       <Button variant="secondary" size="sm" onClick={download} disabled={busy}>
         {busy ? "…" : "Herunterladen"}
       </Button>
-      {canWrite ? <DeleteFileButton fileId={file.id} filename={file.filename} /> : null}
+      {canDelete ? <DeleteFileButton fileId={file.id} filename={file.filename} /> : null}
     </li>
   );
 }

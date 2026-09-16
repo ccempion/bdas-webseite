@@ -23,8 +23,8 @@ at boot and by the `groups.group.created` subscriber. Roots cannot be renamed or
 deleted. Per-group folders exist only for a Hochschulgruppe: a `netzwerk` or
 `affiliate` group has neither a board nor members (ADR 0045).
 
-Inside a root, anyone with write permission on it (`canWrite` — the group's board
-or federal board) may create subfolders up to `MAX_FOLDER_DEPTH` (5) levels deep.
+Inside a root, anyone who manages it (`canManage` — the scope rule: the group's
+board, its Datei-Manager for the members folder, or federal board) may create subfolders up to `MAX_FOLDER_DEPTH` (5) levels deep.
 A subfolder permanently **inherits** its parent's `scope` and `group_id`; there is
 no per-folder permission setting, and a database trigger
 (`folders_inherit_trg`) rejects any row that diverges. Deletion is refused while a
@@ -35,15 +35,18 @@ folder still contains files or subfolders.
 `folder_member_grants` opens one folder to one person on top of the scope rule
 (Spec 2026-09-16 §5.3) — the path for BDAJ officials who work with single
 groups without being members. A grant covers the folder and all its
-subfolders, read-only unless `can_write`. A write grant opens the folder's
-contents, not the folder itself: renaming or deleting a folder needs write
-access to its parent, so the grantee cannot rename or delete the shared folder. It never takes away what the scope
-already allows. Accept first, then grant: only an `active` account can receive
-a grant, and a grant has no effect while the account is not active. Only the federal board may `grantFolderAccess`,
-`revokeFolderAccess` or `listFolderAccess`; revoked rows stay as a record.
-Every file and folder service loads the caller's grants itself. The public
-`canReadFolder`/`canWriteFolder` accept them as an optional third argument, but
-the app does not pass them yet — there is no UI for grants until the BDAJ PR.
+subfolders, read-only unless `can_write`. A write grant lets the grantee upload
+and delete **their own** files — nothing more (ADR 0047): creating, renaming or
+deleting folders and deleting other people's files stay with the scope rule
+(`canManage`). It never takes away what the scope already allows. Accept first,
+then grant: only an `active` account can receive a grant, and a grant has no
+effect while the account is not active. Only the federal board may
+`grantFolderAccess`, `revokeFolderAccess`, `listFolderAccess`,
+`listAllFolderGrants` and `listFolderTree` (every folder regardless of read
+access — the federal board grants folders it cannot open); revoked rows stay as a
+record. Every file and folder service loads the caller's grants itself; pages ask
+`getFolderRights` (`canUpload`, `canManage`) and `mayDeleteFile` per file. The app's
+grant page is `/federal/files/freigaben`.
 
 ## Uploads are two-phase (the app never proxies bytes)
 
@@ -63,8 +66,10 @@ Phase 3 cron).
 `listFolders`, `getFolder`, `createFolder`, `renameFolder`, `deleteFolder`,
 `listFiles`, `getDownloadUrl`, `requestUpload`, `confirmUpload`, `deleteFile`,
 `sweepStalePendingUploads`, `ensureFolders`, `registerFilesSubscribers`,
-`grantFolderAccess`, `revokeFolderAccess`, `listFolderAccess`. Every
-method enforces permission internally.
+`grantFolderAccess`, `revokeFolderAccess`, `listFolderAccess`,
+`listAllFolderGrants`, `listFolderTree`, `getFolderRights`, and the pure
+predicates `canReadFolder` and `mayDeleteFile`. Every service enforces permission
+internally.
 
 ## Dependencies
 

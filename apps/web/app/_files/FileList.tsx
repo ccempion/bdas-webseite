@@ -5,22 +5,24 @@ import { FileUploader } from "./FileUploader";
 
 /**
  * File list shared by member and board surfaces. Read/download is always
- * available (filename and button both download); when `canWrite` is true (boards
- * on folders they may write) it adds the upload dropzone and a per-row delete.
- * Member pages pass `canWrite={false}`.
+ * available (filename and button both download); `canUpload` adds the upload
+ * dropzone, and each file in `deletableIds` gets a delete button — all files
+ * for a folder manager, only their own for someone with a personal grant.
  */
 export function FileList({
   files,
   folderId,
-  canWrite = false,
+  canUpload = false,
+  deletableIds = [],
 }: {
   files: FileMeta[];
   folderId: string;
-  canWrite?: boolean;
+  canUpload?: boolean;
+  deletableIds?: ReadonlyArray<string>;
 }) {
   return (
     <div className="flex flex-col gap-4">
-      {canWrite ? (
+      {canUpload ? (
         <FileUploader
           folderId={folderId}
           maxBytes={MAX_FILE_BYTES}
@@ -35,7 +37,7 @@ export function FileList({
       ) : (
         <ul className="flex flex-col gap-2">
           {files.map((f) => (
-            <FileRow key={f.id} file={f} canWrite={canWrite} />
+            <FileRow key={f.id} file={f} canDelete={deletableIds.includes(f.id)} />
           ))}
         </ul>
       )}

@@ -4,7 +4,7 @@
  * Funktionär*innen an einzelnen Ordnern mitarbeiten, ohne Mitglied zu sein.
  * Vergeben, widerrufen und einsehen darf nur der Bundesvorstand.
  */
-import { and, eq, isNull, sql } from "drizzle-orm";
+import { and, asc, eq, isNull, sql } from "drizzle-orm";
 
 import type { Db } from "@bdas/db";
 import { ForbiddenError, NotFoundError, ValidationError } from "@bdas/errors";
@@ -16,7 +16,7 @@ import { folderMemberGrants, folders } from "../schema";
 
 const EMPTY: FolderAccess = new Map();
 
-function requireFederal(me: CurrentMember): { id: string } {
+export function requireFederal(me: CurrentMember): { id: string } {
   if (!me.member || !isFederalBoard(me.grants)) {
     throw new ForbiddenError("Nur der Bundesvorstand gibt Ordner für einzelne Personen frei.");
   }
@@ -86,6 +86,28 @@ export async function listFolderAccess(
     .select({ memberId: folderMemberGrants.memberId, canWrite: folderMemberGrants.canWrite })
     .from(folderMemberGrants)
     .where(and(eq(folderMemberGrants.folderId, folderId), isNull(folderMemberGrants.revokedAt)));
+}
+
+export type FolderGrant = {
+  readonly folderId: string;
+  readonly memberId: string;
+  readonly canWrite: boolean;
+  readonly grantedAt: Date;
+};
+
+/** Alle offenen Freigaben, älteste zuerst — die Übersicht des Bundesvorstands. */
+export async function listAllFolderGrants(db: Db, byMember: CurrentMember): Promise<FolderGrant[]> {
+  requireFederal(byMember);
+  return db
+    .select({
+      folderId: folderMemberGrants.folderId,
+      memberId: folderMemberGrants.memberId,
+      canWrite: folderMemberGrants.canWrite,
+      grantedAt: folderMemberGrants.grantedAt,
+    })
+    .from(folderMemberGrants)
+    .where(isNull(folderMemberGrants.revokedAt))
+    .orderBy(asc(folderMemberGrants.grantedAt));
 }
 
 /**

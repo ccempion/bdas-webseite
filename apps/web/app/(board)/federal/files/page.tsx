@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import { getDb } from "@bdas/db";
 import { folderFileCounts, listFolders } from "@bdas/files";
 import { listGroups } from "@bdas/groups";
@@ -30,7 +32,12 @@ export default async function FederalFilesPage() {
   const groupNames = Object.fromEntries(groups.map((g) => [g.id, g.name]));
   return (
     <section className="flex flex-col gap-4">
-      <h1 className="text-2xl font-semibold text-bdas-ink">Dateien</h1>
+      <div className="flex items-center justify-between gap-4">
+        <h1 className="text-2xl font-semibold text-bdas-ink">Dateien</h1>
+        <Link href="/federal/files/freigaben" className="text-sm text-bdas-red hover:underline">
+          Ordnerfreigaben →
+        </Link>
+      </div>
       <FolderIndex
         folders={roots}
         groupNames={groupNames}

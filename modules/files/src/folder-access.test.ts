@@ -10,14 +10,22 @@ import postgres from "postgres";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { createTestDb, type TestDb } from "@bdas/db/test";
+import { setStorage, type SignedUrl } from "@bdas/storage";
 import type { CurrentMember, Grant } from "@bdas/members";
 
 import { canRead, canWrite } from "./permissions";
-import { grantFolderAccess, listFolderAccess, revokeFolderAccess } from "./index";
+import {
+  getFolderRights,
+  grantFolderAccess,
+  listAllFolderGrants,
+  listFolderAccess,
+  listFolderTree,
+  revokeFolderAccess,
+} from "./index";
 import { createFolder, deleteFolder, renameFolder } from "./services/folder-writes";
 import { loadFolderAccess } from "./services/folder-access";
 import { ensureFolders, getFolder, listFolders } from "./services/folders";
-import { listFiles } from "./services/files";
+import { deleteFile, listFiles, requestUpload } from "./services/files";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DEFAULT_URL = "postgres://bdas:bdas@localhost:5432/bdas";
@@ -124,11 +132,32 @@ async function seed(t: TestDb): Promise<string> {
   return String(rows[0]?.["id"]);
 }
 
+/** A ready file in `folderId`, uploaded by `memberId`. */
+async function readyFile(t: TestDb, folderId: string, memberId: string): Promise<string> {
+  const id = `fil_${memberId}_${Math.random().toString(36).slice(2, 8)}`;
+  await t.client`
+    INSERT INTO files (id, folder_id, filename, storage_key, mime_type, size_bytes, status, uploaded_by)
+    VALUES (${id}, ${folderId}, 'a.pdf', ${"k/" + id}, 'application/pdf', 10, 'ready', ${memberId})
+  `;
+  return id;
+}
+
+const SIGNED: SignedUrl = {
+  url: "https://signed.example",
+  expiresAt: new Date(Date.now() + 60_000),
+};
+
 describeIfDb("Ordnerfreigabe pro Person", () => {
   let t: TestDb;
   let folderId: string;
 
   beforeEach(async () => {
+    setStorage({
+      signedUploadUrl: async () => SIGNED,
+      signedDownloadUrl: async () => SIGNED,
+      statObject: async () => ({ sizeBytes: 10 }),
+      deleteObject: async () => undefined,
+    });
     t = await createTestDb();
     folderId = await seed(t);
   });
@@ -235,8 +264,9 @@ describeIfDb("Ordnerfreigabe pro Person", () => {
     expect(canWrite(grandchild, OUTSIDER, access)).toBe(true);
   });
 
-  it("der freigegebene Ordner selbst bleibt unangetastet, sein Inhalt nicht", async () => {
+  it("eine Schreibfreigabe verwaltet keine Ordner (ADR 0047)", async () => {
     const shared = await createFolder(t.db, { parentId: folderId, name: "Geteilt" }, BOARD);
+    const inner = await createFolder(t.db, { parentId: shared.id, name: "Innen" }, BOARD);
     await grantFolderAccess(t.db, shared.id, "mbr_out", { canWrite: true }, BOARD);
 
     await expect(
@@ -245,12 +275,15 @@ describeIfDb("Ordnerfreigabe pro Person", () => {
     await expect(deleteFolder(t.db, shared.id, OUTSIDER)).rejects.toMatchObject({
       code: "FORBIDDEN",
     });
-
-    const inner = await createFolder(t.db, { parentId: shared.id, name: "Innen" }, OUTSIDER);
     await expect(
-      renameFolder(t.db, inner.id, { name: "Innen 2" }, OUTSIDER),
-    ).resolves.toMatchObject({ name: "Innen 2" });
-    await expect(deleteFolder(t.db, inner.id, OUTSIDER)).resolves.toBeUndefined();
+      createFolder(t.db, { parentId: shared.id, name: "Neu" }, OUTSIDER),
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    await expect(renameFolder(t.db, inner.id, { name: "Innen 2" }, OUTSIDER)).rejects.toMatchObject(
+      { code: "FORBIDDEN" },
+    );
+    await expect(deleteFolder(t.db, inner.id, OUTSIDER)).rejects.toMatchObject({
+      code: "FORBIDDEN",
+    });
   });
 
   it("eine Lesefreigabe erlaubt weder Umbenennen noch Löschen darin", async () => {
@@ -277,8 +310,48 @@ describeIfDb("Ordnerfreigabe pro Person", () => {
     expect((await listFolders(t.db, OUTSIDER)).map((f) => f.id)).toEqual([folderId]);
     expect(await listFiles(t.db, folderId, OUTSIDER)).toEqual([]);
     await expect(
-      createFolder(t.db, { parentId: folderId, name: "Neu" }, OUTSIDER),
-    ).resolves.toMatchObject({ parentId: folderId });
+      requestUpload(
+        t.db,
+        folderId,
+        { filename: "a.pdf", mimeType: "application/pdf", sizeBytes: 10 },
+        OUTSIDER,
+      ),
+    ).resolves.toMatchObject({ fileId: expect.any(String) });
+    await expect(getFolderRights(t.db, await getFolder(t.db, folderId), OUTSIDER)).resolves.toEqual(
+      { canUpload: true, canManage: false },
+    );
+  });
+
+  it("mit Schreibfreigabe löscht man eigene Dateien, keine fremden (ADR 0047)", async () => {
+    await grantFolderAccess(t.db, folderId, "mbr_out", { canWrite: true }, BOARD);
+    const own = await readyFile(t, folderId, "mbr_out");
+    const foreign = await readyFile(t, folderId, "mbr_board");
+
+    await expect(deleteFile(t.db, foreign, OUTSIDER)).rejects.toMatchObject({
+      code: "FORBIDDEN",
+    });
+    await expect(deleteFile(t.db, own, OUTSIDER)).resolves.toBeUndefined();
+
+    await grantFolderAccess(t.db, folderId, "mbr_out", { canWrite: false }, BOARD);
+    const later = await readyFile(t, folderId, "mbr_out");
+    await expect(deleteFile(t.db, later, OUTSIDER)).rejects.toMatchObject({ code: "FORBIDDEN" });
+
+    await expect(deleteFile(t.db, foreign, BOARD)).resolves.toBeUndefined();
+  });
+
+  it("die Übersichten für die Freigabe-Seite gibt es nur für den Bundesvorstand", async () => {
+    await grantFolderAccess(t.db, folderId, "mbr_out", { canWrite: true }, BOARD);
+
+    const grants = await listAllFolderGrants(t.db, BOARD);
+    expect(grants).toMatchObject([{ folderId, memberId: "mbr_out", canWrite: true }]);
+    const tree = await listFolderTree(t.db, BOARD);
+    expect(tree.map((f) => f.id)).toContain(folderId);
+    expect(tree.length).toBeGreaterThan((await listFolders(t.db, OUTSIDER)).length);
+
+    for (const who of [LEAD_OF_OTHER_GROUP, OUTSIDER]) {
+      await expect(listAllFolderGrants(t.db, who)).rejects.toMatchObject({ code: "FORBIDDEN" });
+      await expect(listFolderTree(t.db, who)).rejects.toMatchObject({ code: "FORBIDDEN" });
+    }
   });
 
   it("das Löschen des Ordners räumt seine Freigaben mit ab", async () => {
