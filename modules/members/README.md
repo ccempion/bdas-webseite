@@ -153,12 +153,22 @@ member's group (`canManageGroup`).
 takes names only. A member moves groups through `changePrimaryGroup`, which
 branches on their status:
 
-| Member is | Picks               | What happens                                                                                                   |
-| --------- | ------------------- | -------------------------------------------------------------------------------------------------------------- |
-| `pending` | any group           | written straight through — nothing was approved yet, so the join request just moves to the other group's queue |
-| `active`  | another group       | a `pending` row in `member_group_change_requests`; the member does **not** move                                |
-| `active`  | no group (exit)     | applied immediately (nobody approves an exit), logged as an auto-approved row                                  |
-| any       | their current group | no-op, and any open request is withdrawn — the "never mind" affordance                                         |
+| Member is | Picks               | What happens                                                                                                    |
+| --------- | ------------------- | --------------------------------------------------------------------------------------------------------------- |
+| `pending` | any group           | written straight through — nothing was approved yet, so the join request just moves to the other group's queue  |
+| `active`  | another group       | a `pending` row in `member_group_change_requests`; the member does **not** move                                 |
+| `active`  | no group (exit)     | applied immediately (nobody approves an exit), logged as an auto-approved row                                   |
+| any       | their current group | no-op, and any open request is withdrawn — the "never mind" affordance                                          |
+| any       | a `netzwerk` group  | applied immediately and `status` set to `active`, logged as an auto-approved row, no `decided` event (ADR 0045) |
+
+Joining a `netzwerk` group is the one self-service join: that group has no
+board, and nobody is meant to decide on a Förderer account. It does not make
+the account a member (`isBdasMember`). The app only lets people pick a
+Hochschulgruppe themselves (`apps/web/lib/self-service-group.ts`) until the
+triage wizard brings an entry point for Förderer.
+
+`listIncomingGroupChanges` carries `memberIsBdasMember` per applicant, so the
+destination board can tell a member's transfer from a Förderer's application.
 
 An open request is superseded when the member picks a different group, and
 withdrawn by `withdrawGroupChange`. At most one open request per member (partial

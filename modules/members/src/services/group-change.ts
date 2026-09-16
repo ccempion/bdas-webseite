@@ -48,6 +48,7 @@ import type {
 } from "../types";
 
 import { row2member } from "./get";
+import { resolveMembership } from "./me";
 import { groupHasActiveLocalBoard, scopedGroupIds, type Actor, type Db } from "./status";
 
 export function row2request(r: MemberGroupChangeRow): GroupChangeRequest {
@@ -571,11 +572,13 @@ export async function listIncomingGroupChanges(
     await groupHasActiveLocalBoard(db, toGroupId),
   );
 
-  return rows.map((r) => ({
-    ...row2request(r.request),
-    canDecide,
-    member: row2member(r.member),
-  }));
+  return Promise.all(
+    rows.map(async (r) => {
+      const member = row2member(r.member);
+      const { isBdasMember } = await resolveMembership(db, member);
+      return { ...row2request(r.request), canDecide, member, memberIsBdasMember: isBdasMember };
+    }),
+  );
 }
 
 /**

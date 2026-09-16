@@ -697,6 +697,31 @@ describeIfDb("listIncomingGroupChanges", () => {
     expect(incoming[0]?.canDecide).toBe(true);
   });
 
+  it("sagt, ob die Person schon Mitglied ist — nicht nur, ob sie aufgenommen ist", async () => {
+    await applicant("usr_member", "Mira");
+    await t.client`
+      INSERT INTO groups (id, slug, name, city, kind, status)
+      VALUES ('grp_nw', 'netzwerk', 'BDAS Netzwerk', NULL, 'netzwerk', 'active')
+    `;
+    await createUser(t, "usr_foerderer", "foerderer@example.de");
+    const f = await createProfile(t.db, {
+      userId: "usr_foerderer",
+      firstName: "Fritz",
+      lastName: "Förderer",
+    });
+    await changePrimaryGroup(t.db, f.id, "grp_nw", self("usr_foerderer"));
+    await changePrimaryGroup(t.db, f.id, "grp_b", self("usr_foerderer"));
+    await createUser(t, "usr_new", "new@example.de");
+    const n = await createProfile(t.db, { userId: "usr_new", firstName: "Nora", lastName: "Neu" });
+    await changePrimaryGroup(t.db, n.id, "grp_b", self("usr_new"));
+
+    const incoming = await listIncomingGroupChanges(t.db, "grp_b", FEDERAL);
+    const byName = Object.fromEntries(
+      incoming.map((r) => [r.member.firstName, r.memberIsBdasMember]),
+    );
+    expect(byName).toEqual({ Mira: true, Fritz: false, Nora: false });
+  });
+
   it("the origin board has no inbound queue of its own", async () => {
     await applicant("usr_leaver", "Lena");
     await giveBoardSeat("usr_a_board", "grp_a");

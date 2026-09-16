@@ -56,7 +56,7 @@ export default async function BewerbungenPage({ params }: { params: { slug: stri
           slug={params.slug}
           canDecide={req.canDecide}
           name={`${req.member.firstName} ${req.member.lastName}`}
-          isExistingMember={req.member.status === "active"}
+          isExistingMember={req.memberIsBdasMember}
           requestedAt={req.requestedAt}
           photoUrl={photoUrl}
           profile={
