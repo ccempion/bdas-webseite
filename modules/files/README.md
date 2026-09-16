@@ -35,7 +35,9 @@ folder still contains files or subfolders.
 `folder_member_grants` opens one folder to one person on top of the scope rule
 (Spec 2026-09-16 §5.3) — the path for BDAJ officials who work with single
 groups without being members. A grant covers the folder and all its
-subfolders, read-only unless `can_write`. It never takes away what the scope
+subfolders, read-only unless `can_write`. A write grant opens the folder's
+contents, not the folder itself: renaming or deleting a folder needs write
+access to its parent, so the grantee cannot rename or delete the shared folder. It never takes away what the scope
 already allows. Accept first, then grant: only an `active` account can receive
 a grant, and a grant has no effect while the account is not active. Only the federal board may `grantFolderAccess`,
 `revokeFolderAccess` or `listFolderAccess`; revoked rows stay as a record.

@@ -90,6 +90,23 @@ export async function createFolder(
 }
 
 /**
+ * Renaming or deleting a folder changes its parent, so it needs write access
+ * there. For scope-based writers that is the same as the folder itself (a
+ * subfolder inherits its parent's scope); a personal grant on a folder opens
+ * its contents but not the folder itself (Spec 2026-09-16 §5.3).
+ */
+async function requireWriteOnParent(
+  db: Db,
+  parentId: string,
+  byMember: CurrentMember,
+): Promise<void> {
+  const parent = await getFolder(db, parentId);
+  if (!canWrite(parent, byMember, await loadFolderAccess(db, byMember))) {
+    throw new ForbiddenError("Kein Schreibzugriff auf diesen Ordner.");
+  }
+}
+
+/**
  * Rename a subfolder and optionally reword its description. Roots are
  * system-provisioned (D5) — ensureFolders rewrites their names at every boot,
  * so allowing a rename here would produce a change that silently reverts.
@@ -105,9 +122,7 @@ export async function renameFolder(
   if (folder.parentId === null) {
     throw new ForbiddenError("Systemordner können nicht umbenannt werden.");
   }
-  if (!canWrite(folder, byMember, await loadFolderAccess(db, byMember))) {
-    throw new ForbiddenError("Kein Schreibzugriff auf diesen Ordner.");
-  }
+  await requireWriteOnParent(db, folder.parentId, byMember);
 
   const { name, slug } = normalizeName(input.name);
   await assertSlugFree(db, folder.parentId, slug, folder.id);
@@ -142,9 +157,7 @@ export async function deleteFolder(
   if (folder.parentId === null) {
     throw new ForbiddenError("Systemordner können nicht gelöscht werden.");
   }
-  if (!canWrite(folder, byMember, await loadFolderAccess(db, byMember))) {
-    throw new ForbiddenError("Kein Schreibzugriff auf diesen Ordner.");
-  }
+  await requireWriteOnParent(db, folder.parentId, byMember);
 
   const [fileCount] = await db
     .select({ n: count() })

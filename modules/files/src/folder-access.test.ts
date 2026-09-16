@@ -14,7 +14,7 @@ import type { CurrentMember, Grant } from "@bdas/members";
 
 import { canRead, canWrite } from "./permissions";
 import { grantFolderAccess, listFolderAccess, revokeFolderAccess } from "./index";
-import { createFolder } from "./services/folder-writes";
+import { createFolder, deleteFolder, renameFolder } from "./services/folder-writes";
 import { loadFolderAccess } from "./services/folder-access";
 import { ensureFolders, getFolder, listFolders } from "./services/folders";
 import { listFiles } from "./services/files";
@@ -233,6 +233,37 @@ describeIfDb("Ordnerfreigabe pro Person", () => {
     expect(canWrite(await getFolder(t.db, folderId), OUTSIDER, access)).toBe(false);
     expect(canWrite(child, OUTSIDER, access)).toBe(true);
     expect(canWrite(grandchild, OUTSIDER, access)).toBe(true);
+  });
+
+  it("der freigegebene Ordner selbst bleibt unangetastet, sein Inhalt nicht", async () => {
+    const shared = await createFolder(t.db, { parentId: folderId, name: "Geteilt" }, BOARD);
+    await grantFolderAccess(t.db, shared.id, "mbr_out", { canWrite: true }, BOARD);
+
+    await expect(
+      renameFolder(t.db, shared.id, { name: "Umbenannt" }, OUTSIDER),
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    await expect(deleteFolder(t.db, shared.id, OUTSIDER)).rejects.toMatchObject({
+      code: "FORBIDDEN",
+    });
+
+    const inner = await createFolder(t.db, { parentId: shared.id, name: "Innen" }, OUTSIDER);
+    await expect(
+      renameFolder(t.db, inner.id, { name: "Innen 2" }, OUTSIDER),
+    ).resolves.toMatchObject({ name: "Innen 2" });
+    await expect(deleteFolder(t.db, inner.id, OUTSIDER)).resolves.toBeUndefined();
+  });
+
+  it("eine Lesefreigabe erlaubt weder Umbenennen noch Löschen darin", async () => {
+    const shared = await createFolder(t.db, { parentId: folderId, name: "Geteilt" }, BOARD);
+    const inner = await createFolder(t.db, { parentId: shared.id, name: "Innen" }, BOARD);
+    await grantFolderAccess(t.db, shared.id, "mbr_out", { canWrite: false }, BOARD);
+
+    await expect(renameFolder(t.db, inner.id, { name: "X" }, OUTSIDER)).rejects.toMatchObject({
+      code: "FORBIDDEN",
+    });
+    await expect(deleteFolder(t.db, inner.id, OUTSIDER)).rejects.toMatchObject({
+      code: "FORBIDDEN",
+    });
   });
 
   it("die Dateidienste reichen die Freigabe durch", async () => {
