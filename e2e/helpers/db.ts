@@ -162,15 +162,26 @@ export async function memberStatusByEmail(email: string): Promise<string | null>
  *  for tests that only need an active viewer (e.g. members_only visibility).
  *  Returns the member id. The member row is created by the /account Server
  *  Action just before this; poll briefly so we don't race its commit (same
- *  race `grantLocalBoardLead` above guards against). */
-export async function activateMemberByEmail(email: string): Promise<string> {
+ *  race `grantLocalBoardLead` above guards against).
+ *
+ *  Active alone is an accepted account, not a BDAS member (ADR 0045). Pass
+ *  `groupId` (a Hochschulgruppe) when the test needs a member — commenting,
+ *  the federation-wide members folder. */
+export async function activateMemberByEmail(
+  email: string,
+  opts: { groupId?: string } = {},
+): Promise<string> {
   let memberId: string | null = null;
   for (let i = 0; i < 20 && !memberId; i++) {
     memberId = await memberIdByEmail(email);
     if (!memberId) await new Promise((r) => setTimeout(r, 250));
   }
   if (!memberId) throw new Error(`activateMemberByEmail: no member for ${email}`);
-  await sql`UPDATE members SET status = 'active' WHERE id = ${memberId}`;
+  await sql`
+    UPDATE members
+       SET status = 'active',
+           primary_group_id = COALESCE(${opts.groupId ?? null}, primary_group_id)
+     WHERE id = ${memberId}`;
   return memberId;
 }
 

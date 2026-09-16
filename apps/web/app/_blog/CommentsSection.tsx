@@ -13,7 +13,7 @@ import { formatDate } from "../../lib/format";
  * Member discussion under a post. Renders nothing at all for guests and
  * non-members — a post's share link must never expose the comments region
  * (blog spec 2026-07-26, requirement 5). Eligibility to read matches
- * eligibility to write: an active member (ADR 0030, reused by 0033;
+ * eligibility to write: a BDAS member (ADR 0030, reused by 0033; ADR 0045;
  * unaffected by ADR 0037's authoring restriction — see canComment). Alumni
  * sind seit ADR 0043 aktive Mitglieder und kein Sonderfall mehr.
  */
