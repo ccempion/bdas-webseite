@@ -11,7 +11,7 @@ import { toPins } from "../../_groups/pins";
 const MAX_CARDS = 8;
 
 export async function GruppenBlock() {
-  const groups = await listGroups(getDb(), { status: "active" });
+  const groups = await listGroups(getDb(), { status: "active", kind: "hochschulgruppe" });
   const pins = isFlagOn("group_map") ? toPins(groups) : [];
   const shown = groups.slice(0, MAX_CARDS);
 

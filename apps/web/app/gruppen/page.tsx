@@ -14,7 +14,9 @@ export const metadata = { title: "Hochschulgruppen" };
 export default async function GruppenPage() {
   requireGroupsFlag();
 
-  const groups = await listGroups(getDb(), { status: "active" });
+  // Öffentlich sind nur Hochschulgruppen. netzwerk und affiliate sind
+  // Zuhause für Accounts, keine Gruppen, die jemand besuchen könnte.
+  const groups = await listGroups(getDb(), { status: "active", kind: "hochschulgruppe" });
   const pins = isFlagOn("group_map") ? toPins(groups) : [];
 
   return (
