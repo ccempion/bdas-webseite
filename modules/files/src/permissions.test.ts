@@ -163,6 +163,40 @@ describe("canWrite", () => {
   });
 });
 
+describe("Freigabe pro Person (Spec 2026-09-16 §5.3)", () => {
+  const outsider: CurrentMember = {
+    ...me([], member({ primaryGroupId: null })),
+    primaryGroupKind: null,
+    hasGroupScope: false,
+    isBdasMember: false,
+  };
+  const board = folder("local_board", "grp_muc");
+
+  it("eine Lesefreigabe öffnet genau diesen Ordner zum Lesen, nicht zum Schreiben", () => {
+    const access = new Map([["fld_x", false]]);
+    expect(canRead(board, outsider)).toBe(false);
+    expect(canRead(board, outsider, access)).toBe(true);
+    expect(canWrite(board, outsider, access)).toBe(false);
+  });
+
+  it("eine Schreibfreigabe öffnet auch das Schreiben", () => {
+    const access = new Map([["fld_x", true]]);
+    expect(canRead(board, outsider, access)).toBe(true);
+    expect(canWrite(board, outsider, access)).toBe(true);
+  });
+
+  it("eine Freigabe für einen anderen Ordner öffnet nichts", () => {
+    const access = new Map([["fld_other", true]]);
+    expect(canRead(board, outsider, access)).toBe(false);
+    expect(canWrite(board, outsider, access)).toBe(false);
+  });
+
+  it("eine Freigabe nimmt der Scope-Regel nichts weg", () => {
+    const access = new Map([["fld_x", false]]);
+    expect(canWrite(board, me(LEAD_MUC), access)).toBe(true);
+  });
+});
+
 describe("public folder predicates (re-exported)", () => {
   it("canReadFolder / canWriteFolder match the internal predicates", () => {
     const f = folder("local_board", "grp_muc");

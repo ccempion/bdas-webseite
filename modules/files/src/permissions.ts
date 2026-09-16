@@ -7,6 +7,11 @@ import {
 
 import type { Folder } from "./types";
 
+/** Ordner-ID → darf schreiben; die persönlichen Freigaben des Betrachters. */
+export type FolderAccess = ReadonlyMap<string, boolean>;
+
+const NO_ACCESS: FolderAccess = new Map();
+
 /**
  * May this member read the folder? (spec §11 taxonomy)
  *  members_all      → BDAS members (ADR 0045) — not every accepted account —
@@ -16,8 +21,11 @@ import type { Folder } from "./types";
  *  federal_board    → federal only
  *  board_broadcast  → any group's Lead, or federal — the federal board's
  *                      central distribution folder to every local Vorstand
+ * A personal grant in `access` opens the folder on top of the scope rule
+ * (Spec 2026-09-16 §5.3).
  */
-export function canRead(folder: Folder, me: CurrentMember): boolean {
+export function canRead(folder: Folder, me: CurrentMember, access = NO_ACCESS): boolean {
+  if (access.has(folder.id)) return true;
   const { member, grants } = me;
   switch (folder.scope) {
     case "members_all":
@@ -48,8 +56,10 @@ export function canRead(folder: Folder, me: CurrentMember): boolean {
  *                                  a Datei-Manager gets full write access, but
  *                                  ONLY to the members folder, never the board
  *                                  folder, never another group)
+ * A personal grant with can_write opens writing on top of the scope rule.
  */
-export function canWrite(folder: Folder, me: CurrentMember): boolean {
+export function canWrite(folder: Folder, me: CurrentMember, access = NO_ACCESS): boolean {
+  if (access.get(folder.id) === true) return true;
   const { grants } = me;
   switch (folder.scope) {
     case "members_all":

@@ -9,6 +9,7 @@ import type { CurrentMember } from "@bdas/members";
 import { canRead } from "../permissions";
 import { folders } from "../schema";
 import type { Folder } from "../types";
+import { loadFolderAccess } from "./folder-access";
 
 type FolderRow = typeof folders.$inferSelect;
 
@@ -112,5 +113,6 @@ export async function getFolder(db: Db, folderId: string): Promise<Folder> {
 /** Folders the member may read (spec §11). */
 export async function listFolders(db: Db, forMember: CurrentMember): Promise<Folder[]> {
   const rows = await db.select().from(folders);
-  return rows.map(rowToFolder).filter((f) => canRead(f, forMember));
+  const access = await loadFolderAccess(db, forMember);
+  return rows.map(rowToFolder).filter((f) => canRead(f, forMember, access));
 }
