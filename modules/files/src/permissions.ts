@@ -9,7 +9,8 @@ import type { Folder } from "./types";
 
 /**
  * May this member read the folder? (spec §11 taxonomy)
- *  members_all      → any active member
+ *  members_all      → BDAS members (ADR 0045) — not every accepted account —
+ *                      plus the federal board, which fills the folder
  *  group_members    → active member of that group
  *  local_board      → that group's board, or federal (canManageGroup covers both)
  *  federal_board    → federal only
@@ -20,7 +21,11 @@ export function canRead(folder: Folder, me: CurrentMember): boolean {
   const { member, grants } = me;
   switch (folder.scope) {
     case "members_all":
-      return member?.status === "active";
+      // Mitglieder, nicht „aufgenommene Accounts": Förderer und
+      // Partnerorganisationen haben hier nichts zu suchen (Spec 2026-09-16 §4).
+      // Der Bundesvorstand befüllt den Ordner und muss ihn sehen, auch ohne
+      // eigene Hochschulgruppe.
+      return me.isBdasMember || isFederalBoard(grants);
     case "group_members":
       return member?.status === "active" && member.primaryGroupId === folder.groupId;
     case "local_board":

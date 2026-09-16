@@ -5,7 +5,7 @@
  */
 import { expect, test } from "@playwright/test";
 
-import { deleteUserByEmail, uniqueEmail } from "./helpers/db";
+import { activateMemberByEmail, deleteUserByEmail, uniqueEmail } from "./helpers/db";
 import { createProfile, logout, registerVerifyLogin } from "./helpers/flows";
 
 // Must match BDAS_FEDERAL_BOARD_EMAILS in the CI e2e job.
@@ -44,8 +44,11 @@ test("federal publishes an event; a member registers then deregisters", async ({
   // A member registers for it, then cancels.
   await page.goto("/account"); // the logout button lives here
   await logout(page);
-  await registerVerifyLogin(page, { email: uniqueEmail("evt-member") });
+  const memberEmail = uniqueEmail("evt-member");
+  await registerVerifyLogin(page, { email: memberEmail });
   await createProfile(page, { firstName: "Mit", lastName: "Glied" });
+  // Anmelden darf sich erst ein aufgenommener Account (Spec 2026-09-16 §5.4).
+  await activateMemberByEmail(memberEmail);
 
   await page.goto("/events");
   await page.getByRole("link", { name: new RegExp(title) }).click();

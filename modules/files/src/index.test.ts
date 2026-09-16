@@ -61,6 +61,7 @@ async function applyMigrations(t: TestDb): Promise<void> {
     ["..", "..", "groups", "migrations", "0004_location.sql"],
     ["..", "..", "groups", "migrations", "0005_image_key.sql"],
     ["..", "..", "groups", "migrations", "0007_group_kind.sql"],
+    ["..", "..", "groups", "migrations", "0008_group_kind_netzwerk.sql"],
     ["..", "..", "members", "migrations", "0001_init.sql"],
     ["..", "migrations", "0001_init.sql"],
     ["..", "migrations", "0002_rls_lockdown.sql"],
@@ -170,6 +171,18 @@ describeIfDb("ensureFolders / listFolders", () => {
     expect(rows.filter((r) => r.scope === "board_broadcast")).toHaveLength(1);
     expect(rows.filter((r) => r.scope === "group_members")).toHaveLength(2);
     expect(rows.filter((r) => r.scope === "local_board")).toHaveLength(2);
+  });
+
+  it("legt für netzwerk- und affiliate-Gruppen keine Ordner an (Spec 2026-09-16 §5.3)", async () => {
+    await t.client`
+      INSERT INTO groups (id, slug, name, city, kind)
+      VALUES ('grp_nw', 'netzwerk', 'BDAS Netzwerk', NULL, 'netzwerk'),
+             ('grp_af', 'bdaj', 'BDAJ', NULL, 'affiliate')
+    `;
+    await ensureFolders(t.db);
+
+    const rows = await t.db.select().from(folders);
+    expect(rows.filter((r) => r.groupId !== null)).toEqual([]);
   });
 
   it("listFolders returns only folders the member can read", async () => {
@@ -672,6 +685,23 @@ describeIfDb("group.created subscriber", () => {
     expect((await t.db.select().from(folders)).filter((f) => f.groupId === "grp_new")).toHaveLength(
       2,
     );
+  });
+
+  it("legt für eine neue netzwerk-Gruppe keine Ordner an", async () => {
+    await t.client`
+      INSERT INTO groups (id, slug, name, city, kind)
+      VALUES ('grp_nw', 'netzwerk', 'BDAS Netzwerk', NULL, 'netzwerk')
+    `;
+    registerFilesSubscribers(t.db);
+
+    await getEventBus().publish<GroupCreated>({
+      type: "groups.group.created",
+      groupId: "grp_nw",
+      slug: "netzwerk",
+      at: new Date(),
+    });
+
+    expect((await t.db.select().from(folders)).filter((f) => f.groupId === "grp_nw")).toEqual([]);
   });
 });
 

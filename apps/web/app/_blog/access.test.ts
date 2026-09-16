@@ -91,6 +91,15 @@ describe("canComment", () => {
     expect(canComment({ ...alumnus, grants: [{ role: "alumnus", groupId: "grp_a" }] })).toBe(true);
   });
 
+  it("ein Förderer-Account darf nicht kommentieren (ADR 0045)", () => {
+    const foerderer: CurrentMember = {
+      ...memberWithStatus("active"),
+      primaryGroupKind: "netzwerk",
+      isBdasMember: false,
+    };
+    expect(canComment(foerderer)).toBe(false);
+  });
+
   it("rejects a pending member", () => {
     expect(canComment(memberWithStatus("pending"))).toBe(false);
   });

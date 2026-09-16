@@ -4,11 +4,12 @@ import { revalidatePath } from "next/cache";
 
 import { getDb } from "@bdas/db";
 import { isAppError } from "@bdas/errors";
-import { cancelRegistration, registerGuest, registerMember } from "@bdas/events-module";
+import { cancelRegistration, getEvent, registerGuest, registerMember } from "@bdas/events-module";
 import { isFlagOn } from "@bdas/feature-flags";
 import { getCurrentMember } from "@bdas/members";
 
 import { readSessionCookie } from "../../../lib/auth-cookie";
+import { viewerFrom } from "../../../lib/event-viewer";
 import { subscribePubliclyAction } from "../../_newsletter/public-actions";
 
 export type RegState = {
@@ -35,6 +36,18 @@ export async function registerAction(_prev: RegState, formData: FormData): Promi
   const me = await getCurrentMember(getDb(), readSessionCookie());
   if (!me) return { error: "Anmeldung erforderlich." };
   if (!me.member) return { error: "Bitte lege zuerst dein Profil an." };
+  // Bis zur Aufnahme meldet sich niemand an, auch nicht zu einer öffentlichen
+  // Veranstaltung: dafür gibt es die Gastanmeldung.
+  if (me.member.status !== "active") {
+    return { error: "Das geht erst, wenn dein Konto freigegeben ist." };
+  }
+  // Sichtbarkeit ist Autorisierung. Der Service ist auth-agnostisch, die
+  // Aktion ist die Durchsetzungsstelle: ohne diese Prüfung meldet sich
+  // jede*r mit der Event-ID zu members_only- und fremden group_only-Terminen
+  // an. Eine unsichtbare Veranstaltung gilt als nicht vorhanden.
+  if (!(await getEvent(getDb(), eventId, viewerFrom(me)))) {
+    return { error: "Veranstaltung nicht gefunden." };
+  }
 
   try {
     await registerMember(getDb(), eventId, me.member.id);

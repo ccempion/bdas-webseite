@@ -176,7 +176,7 @@ export async function dismissReportAction(_prev: ActionState, fd: FormData): Pro
 export type CommentFormState = { readonly error?: string; readonly success?: boolean };
 
 /**
- * Add a comment. Eligibility is `canComment` — active member or alumnus,
+ * Add a comment. Eligibility is `canComment` — a BDAS member (ADR 0045),
  * unchanged by the ADR 0037 authoring restriction (see that ADR's "Comments
  * are unaffected" section).
  */

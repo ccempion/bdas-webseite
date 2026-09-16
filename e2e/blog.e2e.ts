@@ -26,7 +26,13 @@ import { expect, test, type Page } from "@playwright/test";
 
 import type { PostCategory } from "@bdas/blog";
 
-import { activateMemberByEmail, seedRoleGrant, uniqueEmail } from "./helpers/db";
+import {
+  activateMemberByEmail,
+  seedGroup,
+  seedRoleGrant,
+  uniqueEmail,
+  uniqueSlug,
+} from "./helpers/db";
 import { logout, registerVerifyLogin } from "./helpers/flows";
 
 /**
@@ -36,8 +42,8 @@ import { logout, registerVerifyLogin } from "./helpers/flows";
  * `canComment`). `groupId: null` is fine: blog posts carry no group and
  * `canAuthorPost` never inspects a grant's scope, only its role.
  */
-async function activateBlogAuthor(email: string): Promise<void> {
-  const memberId = await activateMemberByEmail(email);
+async function activateBlogAuthor(email: string, opts: { groupId?: string } = {}): Promise<void> {
+  const memberId = await activateMemberByEmail(email, opts);
   await seedRoleGrant(memberId, "blogger", null);
 }
 
@@ -297,7 +303,13 @@ test.describe("blog", () => {
   test("a member comments on a post, sees it, and deletes it", async ({ page }) => {
     const email = uniqueEmail("blog-comment");
     await registerVerifyLogin(page, { email });
-    await activateBlogAuthor(email);
+    // Kommentieren dürfen Mitglieder (ADR 0045): aktiv UND in einer Hochschulgruppe.
+    const groupId = await seedGroup({
+      slug: uniqueSlug("e2e-blog-comment"),
+      name: "E2E Blog Gruppe",
+      city: "Teststadt",
+    });
+    await activateBlogAuthor(email, { groupId });
 
     const slug = await writePost(page, {
       title: "Kommentierbarer Beitrag",

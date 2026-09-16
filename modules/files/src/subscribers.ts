@@ -18,8 +18,10 @@ export function registerFilesSubscribers(db: Db): void {
     getEventBus().subscribe<GroupCreated>("groups.group.created", async (e) => {
       try {
         const group = await getGroup(db, e.groupId);
-        const name = group?.name ?? e.slug;
-        await provisionGroupFolders(db, e.groupId, name);
+        // Without the row the kind is unknown — provision nothing rather than
+        // guess Hochschulgruppe; ensureFolders at boot catches up.
+        if (!group) return;
+        await provisionGroupFolders(db, e.groupId, group.name, group.kind);
       } catch (err) {
         console.error(`[files] provisioning folders for group ${e.groupId} failed:`, err);
       }

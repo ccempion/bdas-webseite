@@ -7,7 +7,7 @@ Role-scoped file repository (spec §11). Owns `folders`, `files`,
 
 | Scope               | Cardinality | Read                                | Write              |
 | ------------------- | ----------- | ----------------------------------- | ------------------ |
-| `members_all`       | 1           | every active member                 | federal board      |
+| `members_all`       | 1           | BDAS members + federal board        | federal board      |
 | `group_members:[g]` | 1 per group | active members of g                 | g's local board    |
 | `local_board:[g]`   | 1 per group | g's local board + federal           | g's local board    |
 | `federal_board`     | 1           | federal board                       | federal board      |
@@ -20,7 +20,8 @@ remove documents in it; no local board, Lead, or file_manager may write here.
 
 The five scopes above are **root** folders, system-provisioned by `ensureFolders`
 at boot and by the `groups.group.created` subscriber. Roots cannot be renamed or
-deleted.
+deleted. Per-group folders exist only for a Hochschulgruppe: a `netzwerk` or
+`affiliate` group has neither a board nor members (ADR 0045).
 
 Inside a root, anyone with write permission on it (`canWrite` — the group's board
 or federal board) may create subfolders up to `MAX_FOLDER_DEPTH` (5) levels deep.
