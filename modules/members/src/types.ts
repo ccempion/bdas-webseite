@@ -105,5 +105,10 @@ export type OpenGroupChange = GroupChangeRequest & { readonly canDecide: boolean
  * An open request *into* a group, hydrated with the member who filed it. The
  * applicant is by definition not yet in the destination group's member list, so
  * the destination board has no other way to see who they are.
+ * `memberIsBdasMember` says whether they already are a BDAS member (ADR 0045) —
+ * a Förderer account is accepted but is not one.
  */
-export type IncomingGroupChange = OpenGroupChange & { readonly member: Member };
+export type IncomingGroupChange = OpenGroupChange & {
+  readonly member: Member;
+  readonly memberIsBdasMember: boolean;
+};

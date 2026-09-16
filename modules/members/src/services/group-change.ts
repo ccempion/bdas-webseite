@@ -7,17 +7,20 @@
  * DESTINATION group's board decides (ADR 0021's rule, applied to transfers).
  * `primary_group_id` is written only once a board approves. Leaving to no
  * group applies immediately — nobody needs to approve an exit — but is still
- * logged.
+ * logged. The one exception on the way in: joining a `netzwerk` group applies
+ * immediately too (ADR 0045) — that group has no board, and nobody is meant
+ * to decide on a Förderer account.
  *
  * The module deliberately does not verify that a destination group exists; the
  * foreign key does that. Reading the `groups` table from here would violate
- * CLAUDE.md §1 rule 1.
+ * CLAUDE.md §1 rule 1 — the group's kind comes via `getGroupKind`.
  */
 import { and, desc, eq, isNull, ne, sql } from "drizzle-orm";
 
 import type { Role } from "@bdas/auth";
 import { ConflictError, ForbiddenError, NotFoundError, ValidationError } from "@bdas/errors";
 import { getEventBus } from "@bdas/events";
+import { getGroupKind } from "@bdas/groups";
 import { createId } from "@bdas/id";
 
 import type {
@@ -45,6 +48,7 @@ import type {
 } from "../types";
 
 import { row2member } from "./get";
+import { resolveMembership } from "./me";
 import { groupHasActiveLocalBoard, scopedGroupIds, type Actor, type Db } from "./status";
 
 export function row2request(r: MemberGroupChangeRow): GroupChangeRequest {
@@ -162,12 +166,17 @@ async function withdrawOpen(
  * Self-service group change. `toGroupId` null ⇔ leave the group structure.
  * The actor must be the member themselves; a board moves people by deciding
  * requests, never by writing the column.
+ *
+ * Joining a `netzwerk` group activates the account without any decision, so
+ * it is closed unless the caller opts in with `allowNetzwerk` — the entry
+ * point for Förderer (the triage wizard) does; profile forms must not.
  */
 export async function changePrimaryGroup(
   db: Db,
   memberId: string,
   toGroupId: string | null,
   actor: Actor,
+  opts: { readonly allowNetzwerk?: boolean } = {},
 ): Promise<GroupChangeResult> {
   return db.transaction(async (tx) => {
     const rows = await tx.select().from(members).where(eq(members.id, memberId)).limit(1);
@@ -219,6 +228,45 @@ export async function changePrimaryGroup(
       };
       await getEventBus().publish(event);
 
+      return { kind: "applied", member: row2member(updated) };
+    }
+
+    // Eine netzwerk-Gruppe ist das Zuhause für Förderer-Accounts und hat
+    // niemanden, der entscheiden könnte: nach ADR 0021 fiele das an den
+    // Bundesvorstand, und genau diese Entscheidung ist hier nicht gewollt
+    // (Spec 2026-09-16 §5.2). Der Beitritt gilt sofort und setzt den Account
+    // auf active — Mitglied macht ihn das nicht (isBdasMember). Protokolliert
+    // wie ein Austritt, aber ohne `decided`-Ereignis: dessen Abonnent schickt
+    // die Mail „Bewerbung angenommen".
+    // Die Art wird auf `db` gelesen: sie ist unveränderlich, und `getGroupKind`
+    // nimmt keine Transaktion.
+    if ((await getGroupKind(db, toGroupId)) === "netzwerk") {
+      if (!opts.allowNetzwerk) {
+        throw new ValidationError("Dem Netzwerk tritt man nicht über das Profil bei.");
+      }
+      await withdrawOpen(tx, memberId, actor.userId);
+      const now = new Date();
+      const [updated] = await tx
+        .update(members)
+        .set({
+          primaryGroupId: toGroupId,
+          status: "active",
+          joinedAt: row.joinedAt ?? now,
+          updatedAt: now,
+        })
+        .where(eq(members.id, memberId))
+        .returning();
+      if (!updated) throw new Error("changePrimaryGroup: update returned no row");
+      if (from !== null) await revokeGroupScopedGrants(tx, memberId, from, actor.userId);
+      await tx.insert(memberGroupChangeRequests).values({
+        id: createId("mgc"),
+        memberId,
+        fromGroupId: from,
+        toGroupId,
+        status: "approved",
+        decidedAt: now,
+        decidedBy: actor.userId,
+      });
       return { kind: "applied", member: row2member(updated) };
     }
 
@@ -532,11 +580,13 @@ export async function listIncomingGroupChanges(
     await groupHasActiveLocalBoard(db, toGroupId),
   );
 
-  return rows.map((r) => ({
-    ...row2request(r.request),
-    canDecide,
-    member: row2member(r.member),
-  }));
+  return Promise.all(
+    rows.map(async (r) => {
+      const member = row2member(r.member);
+      const { isBdasMember } = await resolveMembership(db, member);
+      return { ...row2request(r.request), canDecide, member, memberIsBdasMember: isBdasMember };
+    }),
+  );
 }
 
 /**
