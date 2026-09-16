@@ -1,6 +1,6 @@
 # ADR 0045 — Mitgliedschaft statt Kontostatus
 
-**Status:** Accepted
+**Status:** Accepted — Entscheidung 2 überschrieben durch ADR 0046
 **Date:** 2026-09-16
 **Affects:** `modules/members`, `modules/groups`, später `modules/files`, `modules/events`, `apps/web`
 **Spec:** [`docs/superpowers/specs/2026-09-16-nutzertypen-fundament-ii-design.md`](../superpowers/specs/2026-09-16-nutzertypen-fundament-ii-design.md)

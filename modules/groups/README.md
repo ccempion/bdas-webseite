@@ -39,10 +39,11 @@ Every group has a kind (migration `0007_group_kind.sql`, spec
 | ----------------- | --------------------------------------------------------------------------- | ------------ |
 | `hochschulgruppe` | A university group — the default, and every existing row                    | required     |
 | `affiliate`       | A partner organisation (BDAJ and others): a home for accounts without scope | must be NULL |
+| `netzwerk`        | Förderer and network contacts; joining is decided by the federal board      | must be NULL |
 
 `groups_kind_city_check` enforces the `city` column both ways — there is no
-Hochschulgruppe without a city. `netzwerk` (interested people without a group)
-is deliberately absent until its own spec arrives.
+Hochschulgruppe without a city. `netzwerk` is the home for Förderer accounts;
+it has no board, so the federal board decides who joins (ADR 0046).
 
 `createGroup` (the board form) still only ever creates a `hochschulgruppe`;
 `upsertGroupBySlug` now takes `kind` and the seed uses it for the `netzwerk`
