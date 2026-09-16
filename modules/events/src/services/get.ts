@@ -23,6 +23,11 @@ export type Viewer = {
   readonly boardGroupIds: ReadonlyArray<string>;
   /** Groups the viewer is an event_organizer of (manages those events; ADR 0017). */
   readonly organizerGroupIds: ReadonlyArray<string>;
+  /** The viewer's user id — what `EventItem.createdBy` holds. */
+  readonly userId: string | null;
+  /** The organizer role covers only events the viewer created (ADR 0047). Set
+   *  for accounts without a Hochschulgruppe; board and federal rights ignore it. */
+  readonly ownEventsOnly: boolean;
 };
 
 export const ANON: Viewer = {
@@ -31,13 +36,25 @@ export const ANON: Viewer = {
   isFederal: false,
   boardGroupIds: [],
   organizerGroupIds: [],
+  userId: null,
+  ownEventsOnly: false,
 };
 
-/** Whether the viewer may create/edit/publish/cancel/delete this event. */
-export function canManage(v: Viewer, event: Pick<EventItem, "groupId">): boolean {
+/** Whether the viewer may create an event for this group (null = federation-wide),
+ *  or move an existing one there. */
+export function canCreateFor(v: Viewer, groupId: string | null): boolean {
+  if (v.isFederal) return true;
+  if (groupId === null) return false;
+  return v.boardGroupIds.includes(groupId) || v.organizerGroupIds.includes(groupId);
+}
+
+/** Whether the viewer may edit/publish/cancel/delete this event. */
+export function canManage(v: Viewer, event: Pick<EventItem, "groupId" | "createdBy">): boolean {
   if (v.isFederal) return true;
   if (event.groupId === null) return false;
-  return v.boardGroupIds.includes(event.groupId) || v.organizerGroupIds.includes(event.groupId);
+  if (v.boardGroupIds.includes(event.groupId)) return true;
+  if (!v.organizerGroupIds.includes(event.groupId)) return false;
+  return !v.ownEventsOnly || (v.userId !== null && event.createdBy === v.userId);
 }
 
 /** Whether the viewer may see this event at all. */
