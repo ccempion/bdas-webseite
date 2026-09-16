@@ -1,4 +1,13 @@
-import { bigint, index, integer, pgTable, text, timestamp, unique } from "drizzle-orm/pg-core";
+import {
+  bigint,
+  boolean,
+  index,
+  integer,
+  pgTable,
+  text,
+  timestamp,
+  unique,
+} from "drizzle-orm/pg-core";
 
 // Drizzle table definitions for query building. Authoritative DDL — FKs, CHECKs,
 // the (scope, group_id) unique — lives in migrations/0001_init.sql.
@@ -58,3 +67,14 @@ export const fileAccessLog = pgTable(
     memberIdx: index("file_access_log_member_idx").on(t.memberId),
   }),
 );
+
+export const folderMemberGrants = pgTable("folder_member_grants", {
+  id: text("id").primaryKey(),
+  folderId: text("folder_id").notNull(),
+  memberId: text("member_id").notNull(),
+  canWrite: boolean("can_write").notNull().default(false),
+  grantedAt: timestamp("granted_at", { withTimezone: true }).notNull().defaultNow(),
+  grantedBy: text("granted_by").notNull(),
+  revokedAt: timestamp("revoked_at", { withTimezone: true }),
+  revokedBy: text("revoked_by"),
+});

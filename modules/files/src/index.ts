@@ -13,6 +13,7 @@ export {
   deleteFile,
   sweepStalePendingUploads,
 } from "./services/files";
+export { grantFolderAccess, revokeFolderAccess, listFolderAccess } from "./services/folder-access";
 export { registerFilesSubscribers, unregisterFilesSubscribers } from "./subscribers";
 export { canRead as canReadFolder, canWrite as canWriteFolder } from "./permissions";
 export {

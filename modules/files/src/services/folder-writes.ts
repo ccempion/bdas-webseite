@@ -11,6 +11,7 @@ import { canWrite } from "../permissions";
 import { files, folders } from "../schema";
 import { slugifyFolderName } from "../slug";
 import type { Folder } from "../types";
+import { loadFolderAccess } from "./folder-access";
 import { getFolder, rowToFolder } from "./folders";
 
 function requireActingMember(me: CurrentMember): { id: string } {
@@ -58,7 +59,7 @@ export async function createFolder(
 ): Promise<Folder> {
   const actor = requireActingMember(byMember);
   const parent = await getFolder(db, input.parentId);
-  if (!canWrite(parent, byMember)) {
+  if (!canWrite(parent, byMember, await loadFolderAccess(db, actor.id))) {
     throw new ForbiddenError("Kein Schreibzugriff auf diesen Ordner.");
   }
   if (parent.depth >= MAX_FOLDER_DEPTH) {
@@ -99,12 +100,12 @@ export async function renameFolder(
   input: { name: string; description?: string },
   byMember: CurrentMember,
 ): Promise<Folder> {
-  requireActingMember(byMember);
+  const actor = requireActingMember(byMember);
   const folder = await getFolder(db, folderId);
   if (folder.parentId === null) {
     throw new ForbiddenError("Systemordner können nicht umbenannt werden.");
   }
-  if (!canWrite(folder, byMember)) {
+  if (!canWrite(folder, byMember, await loadFolderAccess(db, actor.id))) {
     throw new ForbiddenError("Kein Schreibzugriff auf diesen Ordner.");
   }
 
@@ -136,12 +137,12 @@ export async function deleteFolder(
   folderId: string,
   byMember: CurrentMember,
 ): Promise<void> {
-  requireActingMember(byMember);
+  const actor = requireActingMember(byMember);
   const folder = await getFolder(db, folderId);
   if (folder.parentId === null) {
     throw new ForbiddenError("Systemordner können nicht gelöscht werden.");
   }
-  if (!canWrite(folder, byMember)) {
+  if (!canWrite(folder, byMember, await loadFolderAccess(db, actor.id))) {
     throw new ForbiddenError("Kein Schreibzugriff auf diesen Ordner.");
   }
 
