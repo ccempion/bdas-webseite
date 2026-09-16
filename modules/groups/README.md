@@ -44,9 +44,10 @@ Every group has a kind (migration `0007_group_kind.sql`, spec
 Hochschulgruppe without a city. `netzwerk` (interested people without a group)
 is deliberately absent until its own spec arrives.
 
-`createGroup` and `upsertGroupBySlug` only ever create a `hochschulgruppe`;
-creating an `affiliate` row is the job of the spec that introduces the
-concrete account type. `getGroupKind` is the one accessor meant for other
+`createGroup` (the board form) still only ever creates a `hochschulgruppe`;
+`upsertGroupBySlug` now takes `kind` and the seed uses it for the `netzwerk`
+row, but creating an `affiliate` row is still the job of the spec that
+introduces the concrete account type. `getGroupKind` is the one accessor meant for other
 modules. Note for the BDAJ implementation: the flag that spec calls
 `isAffiliate` is `hasGroupScope` here, and it lives on `CurrentMember`
 (`@bdas/members`), not in this module.

@@ -430,6 +430,13 @@ describeIfDb("groups integration", () => {
     const list = await listGroups(t.db, { kind: "netzwerk" });
     expect(list.map((g) => g.slug)).toEqual(["netzwerk"]);
     expect(await listGroupIdsByKind(t.db, "netzwerk")).toEqual([res.group.id]);
+
+    const hgg = await upsertGroupBySlug(t.db, { slug: "aachen", name: "BDAS Aachen", city: "Aachen" });
+    expect(hgg.group.kind).toBe("hochschulgruppe");
+
+    const publicSurface = await listGroups(t.db, { status: "active", kind: "hochschulgruppe" });
+    expect(publicSurface.map((g) => g.slug)).toContain("aachen");
+    expect(publicSurface.map((g) => g.slug)).not.toContain("netzwerk");
   });
 
   it("verlangt für eine Hochschulgruppe eine Stadt und verbietet sie sonst", async () => {
