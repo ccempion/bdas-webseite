@@ -6,7 +6,7 @@
 
 **Architecture:** A `returnTo` query parameter carries the originally requested internal path from the guard to `/anmelden`, through the login form as a hidden field, into the login Server Action, which redirects there on success. A single sanitizer (`sanitizeReturnTo`) is the only thing allowed to decide a value is safe to redirect to — it is called both when `/anmelden` renders (to reflect the param into the form) and again inside the login Server Action (which sees raw `FormData` an attacker could post directly, so it must never trust what the page already reflected). Only a same-origin, single-leading-slash path is ever accepted; anything scheme-qualified, protocol-relative, or carrying a backslash/control character is rejected and falls back to `/`. No guard logic is bypassed by this: `returnTo` only ever steers a browser navigation to a URL, and that URL's own page/layout runs its normal `if (!me) redirect(...)` / role checks the moment it renders — there is no separate "trusted because it came from returnTo" code path.
 
-**Scope note (from prior research turn):** This plan covers only the pages with a *direct* `if (!me) redirect("/anmelden")` guard — `/account`, `/account/einstellungen`, `/admin/events` (+ `neu`, `/[id]`, `/[id]/edit`), `/blog/meldungen`, `/faq`, `/profil`. The `(board)/*` routes (gated centrally through `requireBoardAccess()` in `apps/web/app/_dashboard/session.ts`) are explicitly **out of scope**: Next.js 14 Server Component layouts have no built-in access to the requested pathname, and getting it there needs either new `middleware.ts` (edge runtime, doesn't have the Postgres access the real session check needs) or pathname prop-drilling through every nested board layout — both bigger and riskier than this fix. That gap was raised with ccempion and accepted as a known follow-up, not silently dropped.
+**Scope note (from prior research turn):** This plan covers only the pages with a _direct_ `if (!me) redirect("/anmelden")` guard — `/account`, `/account/einstellungen`, `/admin/events` (+ `neu`, `/[id]`, `/[id]/edit`), `/blog/meldungen`, `/faq`, `/profil`. The `(board)/*` routes (gated centrally through `requireBoardAccess()` in `apps/web/app/_dashboard/session.ts`) are explicitly **out of scope**: Next.js 14 Server Component layouts have no built-in access to the requested pathname, and getting it there needs either new `middleware.ts` (edge runtime, doesn't have the Postgres access the real session check needs) or pathname prop-drilling through every nested board layout — both bigger and riskier than this fix. That gap was raised with ccempion and accepted as a known follow-up, not silently dropped.
 
 **Tech Stack:** Next.js 14 App Router (Server Components + Server Actions), TypeScript, Vitest, Playwright.
 
@@ -25,10 +25,12 @@
 ## Task 1: `sanitizeReturnTo` / `buildAnmeldenUrl` helper
 
 **Files:**
+
 - Create: `apps/web/app/_auth/return-to.ts`
 - Test: `apps/web/app/_auth/return-to.test.ts`
 
 **Interfaces:**
+
 - Produces: `sanitizeReturnTo(raw: string | string[] | undefined): string | null` — the open-redirect guard, used by every later task.
 - Produces: `buildAnmeldenUrl(path: string): string` — used by every guard call site to build `/anmelden?returnTo=<encoded path>`.
 
@@ -160,11 +162,13 @@ git commit -m "feat(auth): add sanitizeReturnTo/buildAnmeldenUrl helpers"
 ## Task 2: Wire `/anmelden` to preserve and consume `returnTo`
 
 **Files:**
+
 - Modify: `apps/web/app/anmelden/page.tsx`
 - Modify: `apps/web/app/anmelden/AnmeldenForm.tsx`
 - Modify: `apps/web/app/anmelden/actions.ts`
 
 **Interfaces:**
+
 - Consumes: `sanitizeReturnTo` and `buildAnmeldenUrl` from Task 1 (`apps/web/app/_auth/return-to.ts`).
 - Produces: `AnmeldenForm` now takes a `returnTo?: string | null` prop and renders it as a hidden `<input name="returnTo">` when present — Tasks 3/4 don't touch this file, but rely on `/anmelden?returnTo=...` (built by `buildAnmeldenUrl`) actually being honored end-to-end by this task.
 
@@ -361,6 +365,7 @@ git commit -m "feat(auth): preserve returnTo through the login form and action"
 ## Task 3: Point the static-path guards at `buildAnmeldenUrl`
 
 **Files:**
+
 - Modify: `apps/web/app/account/page.tsx:47`
 - Modify: `apps/web/app/account/einstellungen/page.tsx:25`
 - Modify: `apps/web/app/profil/page.tsx:21`
@@ -370,6 +375,7 @@ git commit -m "feat(auth): preserve returnTo through the login form and action"
 - Modify: `apps/web/app/admin/events/neu/page.tsx:20`
 
 **Interfaces:**
+
 - Consumes: `buildAnmeldenUrl(path: string): string` from Task 1.
 
 Each of these seven files has the identical one-line change: add the import, then replace the bare `redirect("/anmelden")` with `redirect(buildAnmeldenUrl("<this route's own literal path>"))`. None of these routes need to preserve a query string (verified: none of their guarded views depend on search params for the returnTo target itself).
@@ -385,13 +391,13 @@ import { buildAnmeldenUrl } from "../_auth/return-to";
 Change:
 
 ```ts
-  if (!me) redirect("/anmelden");
+if (!me) redirect("/anmelden");
 ```
 
 to:
 
 ```ts
-  if (!me) redirect(buildAnmeldenUrl("/account"));
+if (!me) redirect(buildAnmeldenUrl("/account"));
 ```
 
 - [ ] **Step 2: `apps/web/app/account/einstellungen/page.tsx`**
@@ -405,13 +411,13 @@ import { buildAnmeldenUrl } from "../../_auth/return-to";
 Change:
 
 ```ts
-  if (!me) redirect("/anmelden");
+if (!me) redirect("/anmelden");
 ```
 
 to:
 
 ```ts
-  if (!me) redirect(buildAnmeldenUrl("/account/einstellungen"));
+if (!me) redirect(buildAnmeldenUrl("/account/einstellungen"));
 ```
 
 - [ ] **Step 3: `apps/web/app/profil/page.tsx`**
@@ -425,13 +431,13 @@ import { buildAnmeldenUrl } from "../_auth/return-to";
 Change:
 
 ```ts
-  if (!me) redirect("/anmelden");
+if (!me) redirect("/anmelden");
 ```
 
 to:
 
 ```ts
-  if (!me) redirect(buildAnmeldenUrl("/profil"));
+if (!me) redirect(buildAnmeldenUrl("/profil"));
 ```
 
 - [ ] **Step 4: `apps/web/app/faq/page.tsx`**
@@ -445,13 +451,13 @@ import { buildAnmeldenUrl } from "../_auth/return-to";
 Change:
 
 ```ts
-  if (!me) redirect("/anmelden");
+if (!me) redirect("/anmelden");
 ```
 
 to:
 
 ```ts
-  if (!me) redirect(buildAnmeldenUrl("/faq"));
+if (!me) redirect(buildAnmeldenUrl("/faq"));
 ```
 
 - [ ] **Step 5: `apps/web/app/blog/meldungen/page.tsx`**
@@ -465,13 +471,13 @@ import { buildAnmeldenUrl } from "../../_auth/return-to";
 Change:
 
 ```ts
-  if (!me) redirect("/anmelden");
+if (!me) redirect("/anmelden");
 ```
 
 to:
 
 ```ts
-  if (!me) redirect(buildAnmeldenUrl("/blog/meldungen"));
+if (!me) redirect(buildAnmeldenUrl("/blog/meldungen"));
 ```
 
 - [ ] **Step 6: `apps/web/app/admin/events/page.tsx`**
@@ -485,13 +491,13 @@ import { buildAnmeldenUrl } from "../../_auth/return-to";
 Change:
 
 ```ts
-  if (!me) redirect("/anmelden");
+if (!me) redirect("/anmelden");
 ```
 
 to:
 
 ```ts
-  if (!me) redirect(buildAnmeldenUrl("/admin/events"));
+if (!me) redirect(buildAnmeldenUrl("/admin/events"));
 ```
 
 - [ ] **Step 7: `apps/web/app/admin/events/neu/page.tsx`**
@@ -505,13 +511,13 @@ import { buildAnmeldenUrl } from "../../../_auth/return-to";
 Change:
 
 ```ts
-  if (!me) redirect("/anmelden");
+if (!me) redirect("/anmelden");
 ```
 
 to:
 
 ```ts
-  if (!me) redirect(buildAnmeldenUrl("/admin/events/neu"));
+if (!me) redirect(buildAnmeldenUrl("/admin/events/neu"));
 ```
 
 - [ ] **Step 8: Typecheck**
@@ -537,10 +543,12 @@ git commit -m "feat(auth): carry returnTo from the static-path login guards"
 ## Task 4: Point the dynamic-path guards (`admin/events/[id]*`) at `buildAnmeldenUrl`
 
 **Files:**
+
 - Modify: `apps/web/app/admin/events/[id]/page.tsx:38`
 - Modify: `apps/web/app/admin/events/[id]/edit/page.tsx:27`
 
 **Interfaces:**
+
 - Consumes: `buildAnmeldenUrl(path: string): string` from Task 1.
 
 These two need the route's `params.id` folded into the path (Next.js dynamic segments never contain `/`, so no extra sanitization is needed here — `buildAnmeldenUrl` only URL-encodes).
@@ -556,13 +564,13 @@ import { buildAnmeldenUrl } from "../../../_auth/return-to";
 Change:
 
 ```ts
-  if (!me) redirect("/anmelden");
+if (!me) redirect("/anmelden");
 ```
 
 to:
 
 ```ts
-  if (!me) redirect(buildAnmeldenUrl(`/admin/events/${params.id}`));
+if (!me) redirect(buildAnmeldenUrl(`/admin/events/${params.id}`));
 ```
 
 - [ ] **Step 2: `apps/web/app/admin/events/[id]/edit/page.tsx`**
@@ -576,13 +584,13 @@ import { buildAnmeldenUrl } from "../../../../_auth/return-to";
 Change:
 
 ```ts
-  if (!me) redirect("/anmelden");
+if (!me) redirect("/anmelden");
 ```
 
 to:
 
 ```ts
-  if (!me) redirect(buildAnmeldenUrl(`/admin/events/${params.id}/edit`));
+if (!me) redirect(buildAnmeldenUrl(`/admin/events/${params.id}/edit`));
 ```
 
 - [ ] **Step 3: Typecheck**
@@ -603,9 +611,11 @@ git commit -m "feat(auth): carry returnTo from the admin/events/[id] guards"
 ## Task 5: End-to-end coverage of the full return-to story
 
 **Files:**
+
 - Modify: `e2e/auth.e2e.ts`
 
 **Interfaces:**
+
 - Consumes: `PASSWORD`, `pickCombo`, `registerVerifyLogin`, `createProfile`, `submitAndSettle`, `uniqueEmail` from `e2e/helpers/flows.ts` / `e2e/helpers/db.ts` (all already exported, see `e2e/account-profile.e2e.ts` for the identical "complete the extended profile" recipe this task reuses).
 
 The login action's pending-member-onboarding redirect to `/profil` takes priority over `returnTo` (Task 2, Step 3 — intentional: onboarding isn't skippable). So this test must use a member whose profile is already complete, or the login would always land on `/profil` regardless of `returnTo`, and the test would pass for the wrong reason. `e2e/account-profile.e2e.ts` already has this exact recipe (register → verify → login → `createProfile` → fill the extended profile form) — this task repeats it locally rather than importing across spec files (each `*.e2e.ts` file in this repo keeps its setup helpers local; see `completeProfile` in `account-profile.e2e.ts`).

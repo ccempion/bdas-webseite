@@ -96,9 +96,7 @@ describeIfDb("notifications: account-security mails", () => {
     await t.cleanup();
   });
 
-  async function publish(
-    event: PasswordChanged | PasswordReset | EmailChanged,
-  ): Promise<void> {
+  async function publish(event: PasswordChanged | PasswordReset | EmailChanged): Promise<void> {
     await getEventBus().publish(event);
     await new Promise((r) => setTimeout(r, 0));
   }
