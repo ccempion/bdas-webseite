@@ -180,19 +180,25 @@ export function MembersTable({
             <div className="flex items-center justify-between gap-2 border-b border-bdas-soft pb-1">
               <dt className="text-bdas-ink-muted">Alumnus</dt>
               <dd>
-                <button
-                  type="button"
-                  disabled={marking}
-                  onClick={() =>
-                    startMarking(async () => {
-                      const res = await toggleAlumnus(selected);
-                      setMarkError(res.ok ? null : (res.error ?? "Fehler"));
-                    })
-                  }
-                  className="rounded-bdas-pill border border-bdas-soft px-3 py-1 text-sm text-bdas-ink-body transition-colors hover:bg-bdas-surface-hover disabled:opacity-50"
-                >
-                  {isAlumnus.has(selected.id) ? "Markierung entfernen" : "Als Alumnus markieren"}
-                </button>
+                {/* Markieren nur Aufgenommene (grantRole erzwingt das);
+                    eine vorhandene Markierung bleibt immer entfernbar. */}
+                {selected.status === "active" || isAlumnus.has(selected.id) ? (
+                  <button
+                    type="button"
+                    disabled={marking}
+                    onClick={() =>
+                      startMarking(async () => {
+                        const res = await toggleAlumnus(selected);
+                        setMarkError(res.ok ? null : (res.error ?? "Fehler"));
+                      })
+                    }
+                    className="rounded-bdas-pill border border-bdas-soft px-3 py-1 text-sm text-bdas-ink-body transition-colors hover:bg-bdas-surface-hover disabled:opacity-50"
+                  >
+                    {isAlumnus.has(selected.id) ? "Markierung entfernen" : "Als Alumnus markieren"}
+                  </button>
+                ) : (
+                  <span className="text-bdas-ink-muted">—</span>
+                )}
               </dd>
             </div>
             {markError ? <p className="text-sm text-bdas-red">{markError}</p> : null}

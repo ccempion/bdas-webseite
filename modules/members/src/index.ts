@@ -11,7 +11,7 @@ export {
   CreateProfileInput,
   UpdateProfileInput,
 } from "./services/profile";
-export { transitionStatus, approveMember, type Actor } from "./services/status";
+export { transitionStatus, approveMember, acceptAsAlumnus, type Actor } from "./services/status";
 export { grantRole, revokeRole } from "./services/roles";
 export { getMember, getMemberByUserId } from "./services/get";
 export { listBoardRecipientsForGroup } from "./services/board-recipients";

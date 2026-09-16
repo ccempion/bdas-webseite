@@ -15,13 +15,14 @@ import { getEventBus, resetEventBus } from "@bdas/events";
 
 import { createProfile, updateProfile } from "./services/profile";
 import { MEMBERS_TEST_MIGRATIONS } from "./test-db";
-import { approveMember, transitionStatus } from "./services/status";
+import { acceptAsAlumnus, approveMember, transitionStatus } from "./services/status";
 import { grantRole, revokeRole } from "./services/roles";
 import { getGrants } from "./services/get";
-import { resolveHasGroupScope } from "./services/me";
+import { resolveMembership } from "./services/me";
 import { listAlumnusScopes, listMembers } from "./services/list-members";
 import { countMembersByStatus, signupsOverTime } from "./services/stats";
 import { listGrantAudit, listRoleHolders } from "./services/role-views";
+import { effectiveGrants } from "./roles";
 import type { Grant } from "./types";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -458,6 +459,50 @@ describeIfDb("members integration", () => {
     expect(scoped.alumnus).toBe(1);
   });
 
+  it("countMembersByStatus zählt aktive Accounts nur, wenn sie Mitglieder sind (Spec 2026-09-16 §4)", async () => {
+    await createGroup("grp_hs", "aachen");
+    await t.client`
+      INSERT INTO groups (id, slug, name, city, kind, status)
+      VALUES ('grp_nw', 'netzwerk', 'BDAS Netzwerk', NULL, 'netzwerk', 'active')
+    `;
+    for (const u of ["usr_hs", "usr_f", "usr_f_al", "usr_al", "usr_pool"]) {
+      await createUser(u, `${u}@example.de`);
+    }
+    const hs = await createProfile(t.db, {
+      userId: "usr_hs",
+      firstName: "H",
+      lastName: "S",
+      primaryGroupId: "grp_hs",
+    });
+    const f = await createProfile(t.db, {
+      userId: "usr_f",
+      firstName: "Fee",
+      lastName: "Förderin",
+      primaryGroupId: "grp_nw",
+    });
+    // Ehemalige*r, der/die später ins Netzwerk wechselt: die Markierung trägt.
+    const fAl = await createProfile(t.db, {
+      userId: "usr_f_al",
+      firstName: "Ex",
+      lastName: "Förderer",
+      primaryGroupId: "grp_nw",
+    });
+    const al = await createProfile(t.db, { userId: "usr_al", firstName: "A", lastName: "L" });
+    await createProfile(t.db, { userId: "usr_pool", firstName: "P", lastName: "P" });
+
+    for (const m of [hs, f, fAl]) await approveMember(t.db, m.id, BOARD);
+    await grantRole(t.db, fAl.id, "alumnus", BOARD, null);
+    await acceptAsAlumnus(t.db, al.id, BOARD);
+
+    const counts = await countMembersByStatus(t.db);
+    expect(counts.active).toBe(3); // hs, fAl, al — nicht f
+    expect(counts.pending).toBe(1); // die gruppenlose Bewerbung bleibt gezählt
+    expect(counts.alumnus).toBe(2);
+
+    const nw = await countMembersByStatus(t.db, { groupId: "grp_nw" });
+    expect(nw.active).toBe(1);
+  });
+
   it("a local_board_lead grants page_editor within its group, but not across groups or higher roles", async () => {
     await createGroup("grp_a", "aachen");
     await createGroup("grp_b", "bonn");
@@ -541,6 +586,7 @@ describeIfDb("members integration", () => {
       lastName: "Mitglied",
       primaryGroupId: "grp_a",
     });
+    await approveMember(t.db, m.id, LEAD_A);
 
     // im eigenen Scope: erlaubt
     await grantRole(t.db, m.id, "alumnus", LEAD_A, "grp_a");
@@ -586,6 +632,7 @@ describeIfDb("members integration", () => {
       lastName: "Andere",
       primaryGroupId: "grp_b",
     });
+    await approveMember(t.db, other.id, BOARD);
 
     await expect(grantRole(t.db, other.id, "alumnus", LEAD_A, "grp_a")).rejects.toMatchObject({
       code: "FORBIDDEN",
@@ -613,6 +660,7 @@ describeIfDb("members integration", () => {
       lastName: "Moved",
       primaryGroupId: "grp_b",
     });
+    await approveMember(t.db, moved.id, BOARD);
     await grantRole(t.db, moved.id, "alumnus", BOARD, "grp_a");
     await grantRole(t.db, moved.id, "alumnus", BOARD, null);
 
@@ -622,6 +670,7 @@ describeIfDb("members integration", () => {
       lastName: "Stay",
       primaryGroupId: "grp_a",
     });
+    await approveMember(t.db, stay.id, BOARD);
     await grantRole(t.db, stay.id, "alumnus", BOARD, "grp_a");
     await grantRole(t.db, stay.id, "alumnus", BOARD, "grp_b");
     await revokeRole(t.db, stay.id, "alumnus", BOARD, "grp_b");
@@ -835,10 +884,115 @@ describeIfDb("members integration", () => {
     });
     const no = await createProfile(t.db, { userId: "usr_no", firstName: "N", lastName: "O" });
 
-    expect(await resolveHasGroupScope(t.db, hs)).toBe(true);
-    expect(await resolveHasGroupScope(t.db, af)).toBe(false);
-    expect(await resolveHasGroupScope(t.db, no)).toBe(false);
-    expect(await resolveHasGroupScope(t.db, null)).toBe(false);
+    expect((await resolveMembership(t.db, hs)).primaryGroupKind).toBe("hochschulgruppe");
+    expect((await resolveMembership(t.db, af)).primaryGroupKind).toBe("affiliate");
+    expect((await resolveMembership(t.db, no)).primaryGroupKind).toBeNull();
+    expect((await resolveMembership(t.db, null)).primaryGroupKind).toBeNull();
+  });
+
+  it("isBdasMember: Hochschulgruppe ja, Förderer nein, Alumnus ohne Gruppe ja (Spec 2026-09-16 §3.1)", async () => {
+    await createGroup("grp_hs", "aachen");
+    await t.client`
+      INSERT INTO groups (id, slug, name, city, kind, status)
+      VALUES ('grp_nw', 'netzwerk', 'BDAS Netzwerk', NULL, 'netzwerk', 'active')
+    `;
+    await createUser("usr_hs", "hs@example.de");
+    await createUser("usr_f", "foerderer@example.de");
+    await createUser("usr_al", "alumna@example.de");
+
+    const hs = await createProfile(t.db, {
+      userId: "usr_hs",
+      firstName: "H",
+      lastName: "S",
+      primaryGroupId: "grp_hs",
+    });
+    const f = await createProfile(t.db, {
+      userId: "usr_f",
+      firstName: "Fee",
+      lastName: "Förderin",
+      primaryGroupId: "grp_nw",
+    });
+    const al = await createProfile(t.db, { userId: "usr_al", firstName: "A", lastName: "L" });
+
+    // Vor der Aufnahme ist niemand Mitglied.
+    expect((await resolveMembership(t.db, hs)).isBdasMember).toBe(false);
+
+    const hsActive = await approveMember(t.db, hs.id, BOARD);
+    const fActive = await approveMember(t.db, f.id, BOARD);
+    const alActive = await approveMember(t.db, al.id, BOARD);
+    await grantRole(t.db, al.id, "alumnus", BOARD, null);
+
+    expect((await resolveMembership(t.db, hsActive)).isBdasMember).toBe(true);
+    expect((await resolveMembership(t.db, alActive)).isBdasMember).toBe(true);
+
+    const foerderer = await resolveMembership(t.db, fActive);
+    expect(foerderer.primaryGroupKind).toBe("netzwerk");
+    expect(foerderer.isBdasMember).toBe(false);
+    expect(effectiveGrants([], foerderer.dbGrants, foerderer.isBdasMember)).not.toContainEqual({
+      role: "member",
+      groupId: null,
+    });
+  });
+
+  it("nimmt eine Person ohne Gruppe als Alumnus auf (Spec 2026-09-16 §5.2)", async () => {
+    await createUser("usr_ehem", "ehemalig@example.de");
+    const m = await createProfile(t.db, {
+      userId: "usr_ehem",
+      firstName: "Eva",
+      lastName: "Ehemalig",
+    });
+
+    await expect(acceptAsAlumnus(t.db, m.id, PEASANT)).rejects.toMatchObject({
+      code: "FORBIDDEN",
+    });
+    await expect(acceptAsAlumnus(t.db, m.id, leadOf("usr_l", "grp_x"))).rejects.toMatchObject({
+      code: "FORBIDDEN",
+    });
+
+    const accepted = await acceptAsAlumnus(t.db, m.id, BOARD);
+    expect(accepted.status).toBe("active");
+    const grants = await getGrants(t.db, m.id);
+    expect(grants).toContainEqual(expect.objectContaining({ role: "alumnus", groupId: null }));
+    expect((await resolveMembership(t.db, accepted)).isBdasMember).toBe(true);
+
+    // Wiederholbar: vervollständigt einen abgebrochenen Lauf, ohne zu doppeln.
+    await acceptAsAlumnus(t.db, m.id, BOARD);
+    expect((await getGrants(t.db, m.id)).filter((g) => g.role === "alumnus")).toHaveLength(1);
+  });
+
+  it("acceptAsAlumnus verweigert eine Person mit Gruppe — dort entscheidet deren Vorstand", async () => {
+    await createGroup("grp_a", "aachen");
+    await createUser("usr_bew", "bewerber@example.de");
+    const m = await createProfile(t.db, {
+      userId: "usr_bew",
+      firstName: "Ben",
+      lastName: "Bewerber",
+      primaryGroupId: "grp_a",
+    });
+    await expect(acceptAsAlumnus(t.db, m.id, BOARD)).rejects.toMatchObject({
+      code: "VALIDATION",
+    });
+    const [row] = await t.client<{ status: string }[]>`
+      SELECT status FROM members WHERE id = ${m.id}`;
+    expect(row?.status).toBe("pending");
+  });
+
+  it("markiert niemanden als Alumnus, der nicht aufgenommen ist (Spec 2026-09-16 §5.2)", async () => {
+    await createGroup("grp_b", "bonn");
+    await createUser("usr_pend", "pending@example.de");
+    const m = await createProfile(t.db, {
+      userId: "usr_pend",
+      firstName: "Pia",
+      lastName: "Pending",
+      primaryGroupId: "grp_b",
+    });
+    await expect(grantRole(t.db, m.id, "alumnus", BOARD, "grp_b")).rejects.toMatchObject({
+      code: "VALIDATION",
+    });
+    await expect(grantRole(t.db, m.id, "alumnus", BOARD, null)).rejects.toMatchObject({
+      code: "VALIDATION",
+    });
+    expect(await getGrants(t.db, m.id)).toEqual([]);
   });
 
   it("verweigert local_board_lead auf einer Nicht-Hochschulgruppe (Spec §3.3)", async () => {

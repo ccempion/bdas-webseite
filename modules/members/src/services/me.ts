@@ -3,7 +3,7 @@
  *   - the auth user (or null if anonymous),
  *   - their member profile (null until they fill it out),
  *   - effective grants = JWT roles (unscoped) ∪ active member_role_grants ∪
- *     status-implied (ADR 0007).
+ *     membership-implied (ADR 0007, ADR 0045).
  *
  * Pages and Server Actions use this instead of stitching auth+members
  * themselves.
@@ -12,7 +12,7 @@ import type { PostgresJsDatabase } from "drizzle-orm/postgres-js";
 
 import { getCurrentUser, type CurrentUser } from "@bdas/auth";
 import { ForbiddenError } from "@bdas/errors";
-import { getGroupKind } from "@bdas/groups";
+import { getGroupKind, type GroupKind } from "@bdas/groups";
 
 import { effectiveGrants, isFederalBoard } from "../roles";
 import type { Grant, Member } from "../types";
@@ -25,6 +25,9 @@ export type CurrentMember = {
   readonly user: CurrentUser;
   readonly member: Member | null;
   readonly grants: ReadonlyArray<Grant>;
+  /** Art der primären Gruppe, null ohne Gruppe. Einmal gelesen, Grundlage
+   *  beider Flags darunter. */
+  readonly primaryGroupKind: GroupKind | null;
   /**
    * Hat dieser Account einen Hochschulgruppen-Scope? Abgeleitet aus der Art
    * der primären Gruppe (Spec 2026-09-12 §3.2) — die EINZIGE Stelle, an der
@@ -33,7 +36,24 @@ export type CurrentMember = {
    * den Bundesvorstand durch.
    */
   readonly hasGroupScope: boolean;
+  /**
+   * Ist dieser Account BDAS-Mitglied? Aufgenommen UND (Hochschulgruppe ODER
+   * Alumnus-Markierung) — Spec 2026-09-16 §3.1. Die EINZIGE Stelle, an der die
+   * Frage beantwortet wird. Förderer und Partnerorganisationen sind es nicht.
+   */
+  readonly isBdasMember: boolean;
 };
+
+/** Reine Ableitung, damit sie ohne Sitzung testbar ist. */
+export function isBdasMemberFrom(
+  member: Member | null,
+  kind: GroupKind | null,
+  grants: ReadonlyArray<Grant>,
+): boolean {
+  if (member?.status !== "active") return false;
+  if (kind === "hochschulgruppe") return true;
+  return grants.some((g) => g.role === "alumnus");
+}
 
 export async function getCurrentMember(
   db: Db,
@@ -43,27 +63,40 @@ export async function getCurrentMember(
   if (!user) return null;
 
   const member = await getMemberByUserId(db, user.id);
-  const [dbGrants, hasGroupScope] = await Promise.all([
-    member ? getGrants(db, member.id) : [],
-    resolveHasGroupScope(db, member),
-  ]);
+  const m = await resolveMembership(db, member);
   return {
     user,
     member,
-    grants: effectiveGrants(user.roles, member, dbGrants),
-    hasGroupScope,
+    grants: effectiveGrants(user.roles, m.dbGrants, m.isBdasMember),
+    primaryGroupKind: m.primaryGroupKind,
+    hasGroupScope: m.primaryGroupKind === "hochschulgruppe",
+    isBdasMember: m.isBdasMember,
   };
 }
 
 /**
- * `hasGroupScope` aus der Art der primären Gruppe. Liest nur, wenn das
- * Mitglied überhaupt eine Gruppe hat — für ein gruppenloses Mitglied entsteht
- * keine zusätzliche Abfrage. Nicht über index.ts exportiert; eigene Funktion,
- * damit die Ableitung ohne Sitzung gegen echtes Postgres testbar ist.
+ * Der sitzungsfreie Teil von `getCurrentMember`: gespeicherte Grants, Art der
+ * primären Gruppe und die Mitgliedschaft daraus. Liest die Art nur, wenn es
+ * eine Gruppe gibt. Nicht über index.ts exportiert; eigene Funktion, damit die
+ * Ableitung gegen echtes Postgres testbar ist.
  */
-export async function resolveHasGroupScope(db: Db, member: Member | null): Promise<boolean> {
-  if (!member?.primaryGroupId) return false;
-  return (await getGroupKind(db, member.primaryGroupId)) === "hochschulgruppe";
+export async function resolveMembership(
+  db: Db,
+  member: Member | null,
+): Promise<{
+  readonly dbGrants: ReadonlyArray<Grant>;
+  readonly primaryGroupKind: GroupKind | null;
+  readonly isBdasMember: boolean;
+}> {
+  const [dbGrants, primaryGroupKind] = await Promise.all([
+    member ? getGrants(db, member.id) : [],
+    member?.primaryGroupId ? getGroupKind(db, member.primaryGroupId) : null,
+  ]);
+  return {
+    dbGrants,
+    primaryGroupKind,
+    isBdasMember: isBdasMemberFrom(member, primaryGroupKind, dbGrants),
+  };
 }
 
 export function requireFederalBoard(me: CurrentMember | null): asserts me is CurrentMember {

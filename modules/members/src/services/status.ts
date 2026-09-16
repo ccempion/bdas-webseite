@@ -7,15 +7,16 @@
 import { and, eq, isNull } from "drizzle-orm";
 import type { PostgresJsDatabase } from "drizzle-orm/postgres-js";
 
-import { ConflictError, ForbiddenError, NotFoundError } from "@bdas/errors";
+import { ConflictError, ForbiddenError, NotFoundError, ValidationError } from "@bdas/errors";
 import { getEventBus } from "@bdas/events";
 
 import type { StatusChanged } from "../events";
-import { canDecideJoinRequest, canManageGroup, canTransition } from "../roles";
+import { canDecideJoinRequest, canManageGroup, canTransition, isFederalBoard } from "../roles";
 import { members, memberRoleGrants } from "../schema";
 import type { Grant, Member, MemberStatus } from "../types";
 
-import { row2member } from "./get";
+import { getMember, row2member } from "./get";
+import { grantRole } from "./roles";
 
 export type Db = PostgresJsDatabase<Record<string, never>>;
 
@@ -121,4 +122,32 @@ export function scopedGroupIds(actor: Actor): string[] {
         g.role === "local_board_lead" && g.groupId !== null,
     )
     .map((g) => g.groupId);
+}
+
+/**
+ * Aufnahme einer Person ohne Gruppe — der Weg für Ehemalige, die sich direkt
+ * auf der Plattform melden (Spec 2026-09-16 §5.2). Nur der Bundesvorstand:
+ * ohne Gruppe gibt es keinen lokalen Vorstand, der entscheiden könnte
+ * (ADR 0021).
+ *
+ * Zwei Schritte, bewusst ohne gemeinsame Transaktion — beide Services öffnen
+ * ihre eigene. Bricht es dazwischen ab, ist die Person aufgenommen, aber nicht
+ * markiert; ein zweiter Aufruf vervollständigt das. Die Reihenfolge ist
+ * Pflicht: `grantRole` markiert nur aufgenommene Personen.
+ */
+export async function acceptAsAlumnus(db: Db, memberId: string, actor: Actor): Promise<Member> {
+  if (!isFederalBoard(actor.grants)) {
+    throw new ForbiddenError("Nur der Bundesvorstand nimmt Personen ohne Gruppe auf.");
+  }
+  const existing = await getMember(db, memberId);
+  if (!existing) throw new NotFoundError("Mitglied nicht gefunden.");
+  if (existing.primaryGroupId !== null) {
+    throw new ValidationError(
+      "Diese Person gehört einer Gruppe an — über die Aufnahme entscheidet deren Vorstand.",
+    );
+  }
+
+  const member = await transitionStatus(db, memberId, "active", actor);
+  await grantRole(db, memberId, "alumnus", actor, null);
+  return member;
 }

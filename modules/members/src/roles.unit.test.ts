@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 
-import type { Grant, Member, MemberStatus } from "./types";
+import type { Grant, Member } from "./types";
+
+import { isBdasMemberFrom } from "./services/me";
 
 import {
   canDecideJoinRequest,
@@ -117,33 +119,46 @@ describe("canDecideJoinRequest", () => {
 });
 
 describe("effectiveGrants", () => {
-  const member = (status: MemberStatus): Member => ({
-    id: "mem_1",
-    userId: "usr_1",
-    firstName: "A",
-    lastName: "B",
-    primaryGroupId: "grp_a",
-    status,
-    joinedAt: new Date("2024-01-01"),
-    createdAt: new Date("2024-01-01"),
-    updatedAt: new Date("2024-01-01"),
-  });
-
-  it("leitet aus dem Status nur noch `member` ab, nie `alumnus` (ADR 0043)", () => {
-    const grants = effectiveGrants([], member("active"), []);
+  it("leitet aus der Mitgliedschaft nur `member` ab, nie `alumnus` (ADR 0043)", () => {
+    const grants = effectiveGrants([], [], true);
     expect(grants).toEqual([{ role: "member", groupId: null }]);
   });
 
-  it("gibt einer Bewerberin gar keinen impliziten Grant", () => {
-    expect(effectiveGrants([], member("pending"), [])).toEqual([]);
+  it("gibt einem Nicht-Mitglied gar keinen impliziten Grant", () => {
+    expect(effectiveGrants([], [], false)).toEqual([]);
   });
 
   it("reicht einen alumnus-Grant aus der Datenbank samt Scope durch", () => {
-    const grants = effectiveGrants([], member("active"), [{ role: "alumnus", groupId: "grp_a" }]);
+    const grants = effectiveGrants([], [{ role: "alumnus", groupId: "grp_a" }], true);
     expect(grants).toEqual([
       { role: "alumnus", groupId: "grp_a" },
       { role: "member", groupId: null },
     ]);
+  });
+});
+
+describe("isBdasMemberFrom (Spec 2026-09-16 §3.1)", () => {
+  const active = { status: "active" } as Member;
+  const pending = { status: "pending" } as Member;
+  const alumnusGrant: Grant[] = [{ role: "alumnus", groupId: "grp_a" }];
+
+  it("Hochschulgruppe genügt", () => {
+    expect(isBdasMemberFrom(active, "hochschulgruppe", [])).toBe(true);
+  });
+
+  it("die Alumnus-Markierung genügt ohne Gruppe", () => {
+    expect(isBdasMemberFrom(active, null, alumnusGrant)).toBe(true);
+  });
+
+  it("Förderer und Partnerorganisationen sind keine Mitglieder", () => {
+    expect(isBdasMemberFrom(active, "netzwerk", [])).toBe(false);
+    expect(isBdasMemberFrom(active, "affiliate", [])).toBe(false);
+  });
+
+  it("wer noch nicht aufgenommen ist, ist kein Mitglied", () => {
+    expect(isBdasMemberFrom(pending, "hochschulgruppe", [])).toBe(false);
+    expect(isBdasMemberFrom(pending, null, alumnusGrant)).toBe(false);
+    expect(isBdasMemberFrom(null, null, [])).toBe(false);
   });
 });
 

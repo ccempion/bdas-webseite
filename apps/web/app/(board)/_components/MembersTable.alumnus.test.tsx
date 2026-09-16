@@ -56,11 +56,14 @@ afterEach(() => {
   container.remove();
 });
 
-async function renderAndOpen(alumnusScopes: Record<string, ReadonlyArray<string | null>>) {
+async function renderAndOpen(
+  alumnusScopes: Record<string, ReadonlyArray<string | null>>,
+  m: typeof member | (Omit<typeof member, "status"> & { status: "pending" }) = member,
+) {
   await act(async () => {
     root.render(
       <MembersTable
-        members={[member]}
+        members={[m]}
         groupNames={{ grp_a: "BDAS Aachen" }}
         alumnusScopes={alumnusScopes}
         openChanges={[]}
@@ -83,6 +86,18 @@ async function click(selector: string, text: string) {
 }
 
 describe("Alumnus-Markierung im Mitglieder-Detail", () => {
+  it("bietet einer noch nicht aufgenommenen Person keine Markierung an (Spec 2026-09-16 §5.2)", async () => {
+    await renderAndOpen({}, { ...member, status: "pending" });
+    const labels = [...container.querySelectorAll("button")].map((b) => b.textContent);
+    expect(labels).not.toContain("Als Alumnus markieren");
+  });
+
+  it("lässt eine vorhandene Markierung auch bei ausstehendem Status entfernen", async () => {
+    await renderAndOpen({ mem_1: ["grp_a"] }, { ...member, status: "pending" });
+    await click("button", "Markierung entfernen");
+    expect(actions.revokeRoleAction).toHaveBeenCalledTimes(1);
+  });
+
   it("vergibt den Grant im Scope der Gruppe des Mitglieds", async () => {
     await renderAndOpen({});
     await click("button", "Als Alumnus markieren");

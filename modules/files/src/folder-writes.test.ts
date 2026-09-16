@@ -73,7 +73,9 @@ function actor(grants: Grant[], memberId = "mbr_board"): CurrentMember {
       updatedAt: new Date(),
     },
     grants,
+    primaryGroupKind: "hochschulgruppe",
     hasGroupScope: true,
+    isBdasMember: true,
   };
 }
 

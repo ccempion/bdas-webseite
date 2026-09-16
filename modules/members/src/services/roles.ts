@@ -33,7 +33,7 @@ export type Db = PostgresJsDatabase<Record<string, never>>;
  *  - `event_organizer`, `page_editor`, `file_manager`, `blogger` → federal_board OR the group's Lead
  *  - `alumnus`                                                   → federal_board OR the group's Lead
  *    (eine Kennzeichnung, keine Befugnis: der Lead kennt seine Ehemaligen,
- *     der Bundesvorstand vergibt sie ungescoped bei der Registrierung)
+ *     der Bundesvorstand vergibt sie ungescoped über `acceptAsAlumnus`)
  *  - everything else                                            → federal_board only
  *    (appointing leads and federal_board stays central).
  * `role` must already be validated to a known Role and `groupId` to its scope.
@@ -119,6 +119,12 @@ export async function grantRole(
     const row = rows[0];
     if (!row) throw new NotFoundError("Mitglied nicht gefunden.");
     const member = row2member(row);
+    // Wer nie aufgenommen wurde, ist kein Alumnus (ADR 0043: „wer abgelehnt
+    // wurde, war nie dabei"). Ohne diese Prüfung verschwände eine markierte
+    // Bewerbung aus „Ohne Gruppe", ohne je Zugang bekommen zu haben.
+    if (role === "alumnus" && member.status !== "active") {
+      throw new ValidationError("Nur aufgenommene Mitglieder können als Alumnus markiert werden.");
+    }
     // Ein Lead markiert nur Mitglieder der eigenen Gruppe (ADR 0043 §3): sonst
     // erschiene die Markierung in einer fremden Mitgliederliste, deren Lead sie
     // nicht entfernen darf.

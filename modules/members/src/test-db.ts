@@ -1,7 +1,7 @@
 /**
  * Private test harness for the members module. Not re-exported from index.ts.
  * Pulls in the auth + groups migrations because the members tables FK both —
- * von groups nur `0001_init` plus `0007_group_kind`: mehr braucht
+ * von groups nur `0001_init` plus `0007`/`0008` (Gruppenart): mehr braucht
  * `getGroupKind` nicht, und mehr nachzubauen wäre eine Kopplung an ein
  * fremdes Schema.
  */
@@ -20,6 +20,7 @@ export const MEMBERS_TEST_MIGRATIONS: ReadonlyArray<ReadonlyArray<string>> = [
   ["..", "..", "auth", "migrations", "0001_init.sql"],
   ["..", "..", "groups", "migrations", "0001_init.sql"],
   ["..", "..", "groups", "migrations", "0007_group_kind.sql"],
+  ["..", "..", "groups", "migrations", "0008_group_kind_netzwerk.sql"],
   ["..", "migrations", "0001_init.sql"],
   ["..", "migrations", "0002_role_grants.sql"],
   ["..", "migrations", "0003_local_board_lead.sql"],
