@@ -10,6 +10,7 @@ import { saveProfile } from "@bdas/profile";
 
 import { purgeUnreferencedPhoto } from "../_profile/photo-url";
 import { readSessionCookie } from "../../lib/auth-cookie";
+import { requireSelfServiceGroup } from "../../lib/self-service-group";
 
 export type EditProfileState = {
   /** See ProfileFormState.ok — same reason, same consumer. */
@@ -43,6 +44,7 @@ export async function saveProfileFieldsAction(
 
   try {
     if (groupId !== "") {
+      await requireSelfServiceGroup(db, groupId, me.member.primaryGroupId);
       await changePrimaryGroup(db, me.member.id, groupId, {
         userId: me.user.id,
         grants: me.grants,

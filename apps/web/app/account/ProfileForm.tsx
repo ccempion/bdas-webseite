@@ -39,7 +39,7 @@ export function ProfileForm({
   const groupOptions = useMemo(
     () => [
       ...(isNew ? [] : [{ value: "", label: "— keine Gruppe —" }]),
-      ...groups.map((g) => ({ value: g.id, label: `${g.name} (${g.city})` })),
+      ...groups.map((g) => ({ value: g.id, label: g.city ? `${g.name} (${g.city})` : g.name })),
     ],
     [groups, isNew],
   );

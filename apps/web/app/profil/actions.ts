@@ -11,6 +11,7 @@ import { saveProfile } from "@bdas/profile";
 import { purgeUnreferencedPhoto } from "../_profile/photo-url";
 import { SUBMITTED_URL } from "../_profile/submitted";
 import { readSessionCookie } from "../../lib/auth-cookie";
+import { requireSelfServiceGroup } from "../../lib/self-service-group";
 
 export type WizardActionState = {
   readonly error?: string;
@@ -46,6 +47,7 @@ export async function submitWizardAction(
     // Group first (members owns it). A pending member's choice applies directly;
     // an active member's would file a transfer request — either way the value is
     // recorded before we stamp completion.
+    await requireSelfServiceGroup(db, groupId, me.member.primaryGroupId);
     await changePrimaryGroup(db, me.member.id, groupId, { userId: me.user.id, grants: me.grants });
     const { supersededPhotoStorageKey } = await saveProfile(db, {
       userId: me.user.id,

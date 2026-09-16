@@ -14,6 +14,7 @@ import {
 } from "@bdas/members";
 
 import { readSessionCookie } from "../../lib/auth-cookie";
+import { requireSelfServiceGroup } from "../../lib/self-service-group";
 
 export type ProfileFormState = {
   /** Set only on a successful write. `useFormState` cannot otherwise tell an
@@ -41,6 +42,7 @@ export async function saveProfileAction(
   const primaryGroupId = groupId === "" ? null : groupId;
 
   try {
+    await requireSelfServiceGroup(db, primaryGroupId, me.member?.primaryGroupId ?? null);
     if (!me.member) {
       await createProfile(db, { userId: me.user.id, firstName, lastName, primaryGroupId });
       revalidatePath("/account");

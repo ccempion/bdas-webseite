@@ -21,6 +21,7 @@ import { isProfileComplete } from "../_profile/complete";
 import { signedProfilePhotoUrl } from "../_profile/photo-url";
 import { SUBMITTED_PARAM, SUBMITTED_VALUE } from "../_profile/submitted";
 import { readSessionCookie } from "../../lib/auth-cookie";
+import { selfServiceGroups } from "../../lib/self-service-group";
 import { EditableProfile } from "./EditableProfile";
 import { IdentityColumn } from "./IdentityColumn";
 import { buildProfileSummary } from "./profile-summary";
@@ -71,7 +72,12 @@ export default async function AccountPage({
       lastName: me.member?.lastName ?? "",
       primaryGroupId: me.member?.primaryGroupId ?? null,
     },
-    groups: groups.map((g) => ({ id: g.id, slug: g.slug, name: g.name, city: g.city ?? "" })),
+    groups: selfServiceGroups(groups, me.member?.primaryGroupId ?? null).map((g) => ({
+      id: g.id,
+      slug: g.slug,
+      name: g.name,
+      city: g.city ?? "",
+    })),
     openChangeGroupName: targetGroupName,
   };
 
