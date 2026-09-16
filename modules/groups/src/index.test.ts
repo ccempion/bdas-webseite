@@ -14,7 +14,7 @@ import { getEventBus, resetEventBus } from "@bdas/events";
 import type { GroupEvent } from "./events";
 import { getGroup, getGroupBySlug, getGroupKind } from "./services/get";
 import { getJoinPolicy } from "./services/join-policy";
-import { listGroups } from "./services/list";
+import { listGroupIdsByKind, listGroups } from "./services/list";
 import { archiveGroup, createGroup, updateGroup } from "./services/manage";
 import { upsertGroupBySlug } from "./services/upsert";
 
@@ -54,6 +54,7 @@ describeIfDb("groups integration", () => {
       "0005_image_key.sql",
       "0006_link_scheme_guard.sql",
       "0007_group_kind.sql",
+      "0008_group_kind_netzwerk.sql",
     ]) {
       const sql = await fs.readFile(path.join(__dirname, "..", "migrations", file), "utf8");
       await t.client.unsafe(sql);
@@ -414,6 +415,30 @@ describeIfDb("groups integration", () => {
       lng: 6.9285,
     });
     expect(active.find((g) => g.slug === "essen")?.location).toBeNull();
+  });
+
+  it("legt über den Upsert eine netzwerk-Gruppe ohne Stadt an (Spec §5.1)", async () => {
+    const res = await upsertGroupBySlug(t.db, {
+      slug: "netzwerk",
+      name: "BDAS Netzwerk",
+      kind: "netzwerk",
+    });
+    expect(res.created).toBe(true);
+    expect(res.group.kind).toBe("netzwerk");
+    expect(res.group.city).toBeNull();
+
+    const list = await listGroups(t.db, { kind: "netzwerk" });
+    expect(list.map((g) => g.slug)).toEqual(["netzwerk"]);
+    expect(await listGroupIdsByKind(t.db, "netzwerk")).toEqual([res.group.id]);
+  });
+
+  it("verlangt für eine Hochschulgruppe eine Stadt und verbietet sie sonst", async () => {
+    await expect(upsertGroupBySlug(t.db, { slug: "ohne", name: "Ohne Stadt" })).rejects.toMatchObject(
+      { code: "VALIDATION" },
+    );
+    await expect(
+      upsertGroupBySlug(t.db, { slug: "nw2", name: "Netzwerk Zwei", kind: "netzwerk", city: "Köln" }),
+    ).rejects.toMatchObject({ code: "VALIDATION" });
   });
 });
 
