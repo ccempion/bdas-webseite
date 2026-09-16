@@ -5,7 +5,12 @@
  */
 import { expect, test } from "@playwright/test";
 
-import { deleteUserByEmail, memberIdByEmail, uniqueEmail } from "./helpers/db";
+import {
+  declineNewsletterPromptByEmail,
+  deleteUserByEmail,
+  memberIdByEmail,
+  uniqueEmail,
+} from "./helpers/db";
 import { register, registerVerifyLogin } from "./helpers/flows";
 
 // Must match BDAS_FEDERAL_BOARD_EMAILS in the CI e2e job.
@@ -22,6 +27,12 @@ test("the board filters 'Ohne Profil' and deletes the bot's account", async ({ p
       firstName: "Bundes",
       lastName: "Vorstand",
     });
+    // Once the pool table has accumulated enough rows across the suite,
+    // scrolling the delete button into view can cross NewsletterScrollPanel's
+    // trigger depth, and the panel slides in over the button mid-click.
+    // Answer its own server-side gate (shouldPrompt) up front so it is never
+    // eligible to mount at all, rather than reacting to it mid-retry.
+    await declineNewsletterPromptByEmail(FEDERAL_EMAIL);
 
     await page.goto("/federal/pool");
     await page.getByRole("button", { name: "Ohne Profil", exact: true }).click();
@@ -35,7 +46,10 @@ test("the board filters 'Ohne Profil' and deletes the bot's account", async ({ p
 
     page.once("dialog", (dialog) => void dialog.accept());
     await row.getByRole("button", { name: "Löschen" }).click();
-    await expect(page.getByRole("status")).toHaveText(`Konto von S. ${lastName} gelöscht.`);
+    // Scoped to the notice <p>: the sidebar's own-count Badge is also
+    // role="status" (a <span>) and collides once other specs have left
+    // pending approvals behind, tripping Playwright's strict mode.
+    await expect(page.locator('p[role="status"]')).toHaveText(`Konto von S. ${lastName} gelöscht.`);
     await expect(row).toHaveCount(0);
     expect(await memberIdByEmail(bot)).toBeNull();
   } finally {

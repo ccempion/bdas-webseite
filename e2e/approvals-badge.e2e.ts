@@ -6,6 +6,7 @@ import { expect, test } from "@playwright/test";
 
 import {
   activateMemberByEmail,
+  deleteUserByEmail,
   grantLocalBoardLead,
   seedGroup,
   seedGroupTransferRequest,
@@ -23,35 +24,45 @@ test("ein Vorstand mit offener Freigabe sieht Zahl und Hinweis", async ({ page }
     city: "Bonn",
   });
 
+  // registerVerifyLogin alone never completes the extended profile, so this
+  // board account stays pending/groupless/profileless for the whole test —
+  // "Bea Vorstand" truncates to the same "B. Vorstand" other specs use for
+  // their federal fixture, and without cleanup it leaks into every later
+  // spec's groupless-applicant views (pool-delete.e2e.ts's "Ohne Profil").
   const boardEmail = uniqueEmail("board");
-  await registerVerifyLogin(page, { email: boardEmail, firstName: "Bea", lastName: "Vorstand" });
-  await createProfile(page, { firstName: "Bea", lastName: "Vorstand", groupId });
-  await grantLocalBoardLead(boardEmail, groupId);
-  await logout(page);
-
-  // The account page's alert only lists group transfers and open reports
-  // (fix(account) f66b2bd: applications stay in the header badge and the
-  // group's own queue). So the "board sees the alert" case needs an active
-  // member of one group requesting to move into the board's group, not a
-  // first-time application.
   const moverEmail = uniqueEmail("wechsel");
-  await registerVerifyLogin(page, { email: moverEmail, firstName: "Toni", lastName: "Wechsel" });
-  await createProfile(page, { firstName: "Toni", lastName: "Wechsel", groupId: otherGroupId });
-  await activateMemberByEmail(moverEmail);
-  await seedGroupTransferRequest(moverEmail, otherGroupId, groupId);
-  await logout(page);
+  try {
+    await registerVerifyLogin(page, { email: boardEmail, firstName: "Bea", lastName: "Vorstand" });
+    await createProfile(page, { firstName: "Bea", lastName: "Vorstand", groupId });
+    await grantLocalBoardLead(boardEmail, groupId);
+    await logout(page);
 
-  await login(page, boardEmail);
-  await page.goto("/account");
+    // The account page's alert only lists group transfers and open reports
+    // (fix(account) f66b2bd: applications stay in the header badge and the
+    // group's own queue). So the "board sees the alert" case needs an active
+    // member of one group requesting to move into the board's group, not a
+    // first-time application.
+    await registerVerifyLogin(page, { email: moverEmail, firstName: "Toni", lastName: "Wechsel" });
+    await createProfile(page, { firstName: "Toni", lastName: "Wechsel", groupId: otherGroupId });
+    await activateMemberByEmail(moverEmail);
+    await seedGroupTransferRequest(moverEmail, otherGroupId, groupId);
+    await logout(page);
 
-  await expect(page.getByRole("status", { name: /offene Freigaben/ }).first()).toBeVisible();
-  await expect(page.getByText("Es wartet etwas auf dich")).toBeVisible();
-  // Transfers are decided by the destination board (ADR 0022), and the board
-  // here is itself still groupless (its own application is open), so this also
-  // pins that the link is derived from the grant rather than primaryGroupId.
-  const link = page.getByRole("link", { name: /Gruppenwechsel entscheiden/ });
-  await expect(link).toBeVisible();
-  await expect(link).toHaveAttribute("href", `/gruppe/${slug}/members`);
+    await login(page, boardEmail);
+    await page.goto("/account");
+
+    await expect(page.getByRole("status", { name: /offene Freigaben/ }).first()).toBeVisible();
+    await expect(page.getByText("Es wartet etwas auf dich")).toBeVisible();
+    // Transfers are decided by the destination board (ADR 0022), and the board
+    // here is itself still groupless (its own application is open), so this also
+    // pins that the link is derived from the grant rather than primaryGroupId.
+    const link = page.getByRole("link", { name: /Gruppenwechsel entscheiden/ });
+    await expect(link).toBeVisible();
+    await expect(link).toHaveAttribute("href", `/gruppe/${slug}/members`);
+  } finally {
+    await deleteUserByEmail(boardEmail);
+    await deleteUserByEmail(moverEmail);
+  }
 });
 
 test("ein einfaches Mitglied sieht weder Zahl noch Hinweis", async ({ page }) => {

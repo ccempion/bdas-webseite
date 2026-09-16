@@ -70,7 +70,10 @@ test.describe("newsletter, the board list", () => {
       .getByRole("row", { name: new RegExp(FEDERAL_EMAIL) })
       .getByRole("button", { name: "Löschen" })
       .click();
-    await expect(page.getByRole("status")).toHaveText(`${FEDERAL_EMAIL} gelöscht.`);
+    // Scoped to the notice <p>: the sidebar's own-count Badge is also
+    // role="status" (a <span>) and collides once other specs have left
+    // pending approvals behind, tripping Playwright's strict mode.
+    await expect(page.locator('p[role="status"]')).toHaveText(`${FEDERAL_EMAIL} gelöscht.`);
     await page.reload();
     await expect(page.getByRole("cell", { name: FEDERAL_EMAIL })).toHaveCount(0);
   });

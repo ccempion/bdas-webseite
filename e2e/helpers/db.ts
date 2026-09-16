@@ -294,3 +294,18 @@ export async function newsletterStatus(email: string): Promise<string | null> {
     SELECT status FROM newsletter_subscribers WHERE email = ${email.toLowerCase()} LIMIT 1`;
   return rows[0]?.status ?? null;
 }
+
+/**
+ * Answers the scroll panel's own gate (shouldPrompt, spec §6.1) for this
+ * account, server-side, so a spec whose page happens to be tall enough for
+ * NewsletterScrollPanel to trigger never has to race its scroll listener —
+ * the panel simply never becomes eligible to mount.
+ */
+export async function declineNewsletterPromptByEmail(email: string): Promise<void> {
+  await sql`
+    INSERT INTO newsletter_prompts (user_id, dismiss_count)
+    SELECT u.id, 1 FROM auth_users u WHERE u.email_normalized = lower(${email})
+    ON CONFLICT (user_id) DO UPDATE
+      SET dismiss_count = newsletter_prompts.dismiss_count + 1,
+          last_dismissed_at = now()`;
+}

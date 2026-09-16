@@ -17,7 +17,7 @@ import {
   newsletterStatus,
   resetNewsletterRateLimits,
 } from "./helpers/db";
-import { registerVerifyLogin } from "./helpers/flows";
+import { registerVerifyLogin, submitAndSettle } from "./helpers/flows";
 
 const unique = () => `nl-${Date.now()}-${Math.random().toString(36).slice(2, 7)}@example.org`;
 
@@ -71,7 +71,11 @@ test.describe("newsletter, signed-in surfaces", () => {
       await registerVerifyLogin(page, { email });
 
       await page.goto("/account");
-      await page.getByRole("button", { name: "Später" }).click();
+      // dismissPromptAction has no client-visible acknowledgement (unlike the
+      // join flow's "Du bist dabei."), so a bare click races the server
+      // action's revalidatePath — the reload below can land before
+      // declineForUser has committed. Wait for the action's own response.
+      await submitAndSettle(page, page.getByRole("button", { name: "Später" }));
       await page.reload();
       await expect(page.getByRole("heading", { name: "Bleib auf dem Laufenden" })).toHaveCount(0);
     } finally {
