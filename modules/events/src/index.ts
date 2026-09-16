@@ -14,7 +14,7 @@ export {
   listManagedEvents,
   type ListOpts,
 } from "./services/list";
-export { getEvent, canView, canManage, ANON, type Viewer } from "./services/get";
+export { getEvent, canView, canManage, canCreateFor, ANON, type Viewer } from "./services/get";
 export {
   createEvent,
   updateEvent,

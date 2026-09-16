@@ -76,6 +76,7 @@ import {
   // authorization predicates + viewer
   canView,
   canManage,
+  canCreateFor,
   ANON,
   type Viewer,
   // rich content (Slice 1)
@@ -159,8 +160,14 @@ action layer using `@bdas/members` (`getCurrentMember`, `canManageGroup`,
 `isFederalBoard`). Build a `Viewer` from the current member and pass it to the
 read services for visibility filtering; pass `ANON` for anonymous visitors.
 
-- Create/edit/publish/cancel: group-scoped event → `canManageGroup(grants,
-groupId)`; federation-wide (null group) → `isFederalBoard(grants)`.
+- Create (and the target group of an edit): `canCreateFor(viewer, groupId)` —
+  federal board, or the group's Lead or Event-Manager; federation-wide (null
+  group) → federal board only.
+- Edit/publish/cancel/delete an existing event: `canManage(viewer, event)`. Same
+  as above, except that a viewer with `ownEventsOnly` (an account without a
+  Hochschulgruppe, ADR 0047) manages through the Event-Manager role only the
+  events whose `createdBy` is its own `userId`. `listManagedEvents` applies the
+  same rule.
 - Register/cancel: the current member acts on themselves.
 
 ## Visibility

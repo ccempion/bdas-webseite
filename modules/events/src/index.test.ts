@@ -57,6 +57,8 @@ const ACTIVE: Viewer = {
   isFederal: false,
   boardGroupIds: [],
   organizerGroupIds: [],
+  userId: null,
+  ownEventsOnly: false,
 };
 const ANON_VIEWER: Viewer = {
   isActiveMember: false,
@@ -64,6 +66,8 @@ const ANON_VIEWER: Viewer = {
   isFederal: false,
   boardGroupIds: [],
   organizerGroupIds: [],
+  userId: null,
+  ownEventsOnly: false,
 };
 const FEDERAL: Viewer = {
   isActiveMember: true,
@@ -71,6 +75,8 @@ const FEDERAL: Viewer = {
   isFederal: true,
   boardGroupIds: [],
   organizerGroupIds: [],
+  userId: null,
+  ownEventsOnly: false,
 };
 
 function future(daysAhead = 7): Date {
@@ -404,11 +410,35 @@ describeIfDb("events integration", () => {
       isFederal: false,
       boardGroupIds: [],
       organizerGroupIds: ["grp_a"],
+      userId: null,
+      ownEventsOnly: false,
     };
     const managed = await listManagedEvents(t.db, organizer);
     const titles = managed.map((e) => e.title);
     expect(titles).toContain("Aachen-Fest");
     expect(titles).not.toContain("Bonn-Fest");
+  });
+
+  it("listManagedEvents shows an organizer limited to its own events only those (ADR 0047)", async () => {
+    await t.client`INSERT INTO groups (id, slug, name, city) VALUES ('grp_a', 'grp-a', 'Group A', 'Aachen')`;
+    await createEvent(t.db, { title: "Eigenes", startsAt: future(), groupId: "grp_a" }, "usr_me");
+    await createEvent(t.db, { title: "Fremdes", startsAt: future(), groupId: "grp_a" }, "usr_c");
+
+    const own: Viewer = {
+      isActiveMember: true,
+      memberGroupIds: [],
+      isFederal: false,
+      boardGroupIds: [],
+      organizerGroupIds: ["grp_a"],
+      userId: "usr_me",
+      ownEventsOnly: true,
+    };
+    const titles = (await listManagedEvents(t.db, own)).map((e) => e.title);
+    expect(titles).toEqual(["Eigenes"]);
+
+    const lead: Viewer = { ...own, boardGroupIds: ["grp_a"] };
+    const leadTitles = (await listManagedEvents(t.db, lead)).map((e) => e.title);
+    expect(leadTitles).toEqual(expect.arrayContaining(["Eigenes", "Fremdes"]));
   });
 
   // --- Guest (non-member) registration, Slice 4 ---
