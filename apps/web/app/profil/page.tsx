@@ -26,7 +26,9 @@ export default async function ProfilPage() {
   // missing profile data backfill via /account (edit form), not the wizard.
   if (me.member?.status !== "pending") redirect("/account");
 
-  const groups = await listGroups(db, { status: "active" });
+  // Eine Bewerbung kann nur an eine Hochschulgruppe gehen; die netzwerk-Zeile
+  // hat keinen Vorstand, der darüber entscheiden könnte.
+  const groups = await listGroups(db, { status: "active", kind: "hochschulgruppe" });
   return (
     <main className="mx-auto flex max-w-2xl flex-col gap-6 px-4 py-12">
       <header className="flex flex-col gap-1">

@@ -14,7 +14,7 @@ import { getEventBus, resetEventBus } from "@bdas/events";
 import type { GroupEvent } from "./events";
 import { getGroup, getGroupBySlug, getGroupKind } from "./services/get";
 import { getJoinPolicy } from "./services/join-policy";
-import { listGroups } from "./services/list";
+import { listGroupIdsByKind, listGroups } from "./services/list";
 import { archiveGroup, createGroup, updateGroup } from "./services/manage";
 import { upsertGroupBySlug } from "./services/upsert";
 
@@ -54,6 +54,7 @@ describeIfDb("groups integration", () => {
       "0005_image_key.sql",
       "0006_link_scheme_guard.sql",
       "0007_group_kind.sql",
+      "0008_group_kind_netzwerk.sql",
     ]) {
       const sql = await fs.readFile(path.join(__dirname, "..", "migrations", file), "utf8");
       await t.client.unsafe(sql);
@@ -415,6 +416,46 @@ describeIfDb("groups integration", () => {
     });
     expect(active.find((g) => g.slug === "essen")?.location).toBeNull();
   });
+
+  it("legt über den Upsert eine netzwerk-Gruppe ohne Stadt an (Spec §5.1)", async () => {
+    const res = await upsertGroupBySlug(t.db, {
+      slug: "netzwerk",
+      name: "BDAS Netzwerk",
+      kind: "netzwerk",
+    });
+    expect(res.created).toBe(true);
+    expect(res.group.kind).toBe("netzwerk");
+    expect(res.group.city).toBeNull();
+
+    const list = await listGroups(t.db, { kind: "netzwerk" });
+    expect(list.map((g) => g.slug)).toEqual(["netzwerk"]);
+    expect(await listGroupIdsByKind(t.db, "netzwerk")).toEqual([res.group.id]);
+
+    const hgg = await upsertGroupBySlug(t.db, {
+      slug: "aachen",
+      name: "BDAS Aachen",
+      city: "Aachen",
+    });
+    expect(hgg.group.kind).toBe("hochschulgruppe");
+
+    const publicSurface = await listGroups(t.db, { status: "active", kind: "hochschulgruppe" });
+    expect(publicSurface.map((g) => g.slug)).toContain("aachen");
+    expect(publicSurface.map((g) => g.slug)).not.toContain("netzwerk");
+  });
+
+  it("verlangt für eine Hochschulgruppe eine Stadt und verbietet sie sonst", async () => {
+    await expect(
+      upsertGroupBySlug(t.db, { slug: "ohne", name: "Ohne Stadt" }),
+    ).rejects.toMatchObject({ code: "VALIDATION" });
+    await expect(
+      upsertGroupBySlug(t.db, {
+        slug: "nw2",
+        name: "Netzwerk Zwei",
+        kind: "netzwerk",
+        city: "Köln",
+      }),
+    ).rejects.toMatchObject({ code: "VALIDATION" });
+  });
 });
 
 describeIfDb("0007 group kind", () => {
@@ -481,6 +522,60 @@ describeIfDb("0007 group kind", () => {
       t.client`
         INSERT INTO groups (id, slug, name, city, kind)
         VALUES ('grp_z', 'netzwerk', 'Netzwerk', NULL, 'netzwerk')
+      `,
+    ).rejects.toThrow(/groups_kind_check/);
+  });
+});
+
+describeIfDb("0008 netzwerk kind", () => {
+  let t: TestDb;
+
+  beforeEach(async () => {
+    t = await createTestDb();
+    for (const file of [
+      "0001_init.sql",
+      "0002_status_check.sql",
+      "0003_drop_university_description.sql",
+      "0004_location.sql",
+      "0005_image_key.sql",
+      "0006_link_scheme_guard.sql",
+      "0007_group_kind.sql",
+      "0008_group_kind_netzwerk.sql",
+    ]) {
+      const sql = await fs.readFile(path.join(__dirname, "..", "migrations", file), "utf8");
+      await t.client.unsafe(sql);
+    }
+    resetEventBus();
+  });
+
+  afterEach(async () => {
+    await t.cleanup();
+  });
+
+  it("lässt eine netzwerk-Zeile ohne Stadt zu", async () => {
+    await t.client`
+      INSERT INTO groups (id, slug, name, city, kind)
+      VALUES ('grp_nw', 'netzwerk', 'BDAS Netzwerk', NULL, 'netzwerk')
+    `;
+    const [row] = await t.client`SELECT city, kind FROM groups WHERE id = 'grp_nw'`;
+    expect(row!["kind"]).toBe("netzwerk");
+    expect(row!["city"]).toBeNull();
+  });
+
+  it("verbietet einer netzwerk-Zeile eine Stadt", async () => {
+    await expect(
+      t.client`
+        INSERT INTO groups (id, slug, name, city, kind)
+        VALUES ('grp_nw2', 'netzwerk-zwei', 'Netzwerk Zwei', 'Köln', 'netzwerk')
+      `,
+    ).rejects.toThrow(/groups_kind_city_check/);
+  });
+
+  it("weist eine weiterhin unbekannte Art ab", async () => {
+    await expect(
+      t.client`
+        INSERT INTO groups (id, slug, name, city, kind)
+        VALUES ('grp_x', 'verein', 'Verein', NULL, 'verein')
       `,
     ).rejects.toThrow(/groups_kind_check/);
   });

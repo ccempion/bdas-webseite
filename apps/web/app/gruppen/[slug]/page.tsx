@@ -37,6 +37,8 @@ export default async function GruppeDetailPage({ params }: { params: { slug: str
 
   const group = await getGroupBySlug(getDb(), params.slug);
   if (!group || group.status === "archived") notFound();
+  // Eine netzwerk- oder affiliate-Zeile hat keine öffentliche Seite (Spec §4).
+  if (group.kind !== "hochschulgruppe") notFound();
 
   const contentOn = isFlagOn("content");
   const me = await loadCurrentMember();

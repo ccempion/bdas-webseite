@@ -19,21 +19,41 @@ import type { Group, GroupLocation, GroupStatus } from "../types";
 
 export type Db = PostgresJsDatabase<Record<string, never>>;
 
-export const UpsertGroupInput = z.object({
-  slug: z
-    .string()
-    .min(2)
-    .max(64)
-    .regex(/^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/, "Slug must be lowercase kebab-case"),
-  name: z.string().min(2).max(120),
-  city: z.string().min(2).max(120),
-  contactEmail: z.string().email().max(254).optional().nullable(),
-  instagramUrl: HttpUrlInput.optional().nullable(),
-  websiteUrl: HttpUrlInput.optional().nullable(),
-  status: z.enum(["active", "dormant", "new", "archived"]).default("active"),
-  location: GroupLocationInput.optional().nullable(),
-  imageKey: z.string().max(500).optional().nullable(),
-});
+export const UpsertGroupInput = z
+  .object({
+    slug: z
+      .string()
+      .min(2)
+      .max(64)
+      .regex(/^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/, "Slug must be lowercase kebab-case"),
+    name: z.string().min(2).max(120),
+    kind: z.enum(["hochschulgruppe", "affiliate", "netzwerk"]).default("hochschulgruppe"),
+    city: z.string().min(2).max(120).optional().nullable(),
+    contactEmail: z.string().email().max(254).optional().nullable(),
+    instagramUrl: HttpUrlInput.optional().nullable(),
+    websiteUrl: HttpUrlInput.optional().nullable(),
+    status: z.enum(["active", "dormant", "new", "archived"]).default("active"),
+    location: GroupLocationInput.optional().nullable(),
+    imageKey: z.string().max(500).optional().nullable(),
+  })
+  // Dieselbe Regel wie groups_kind_city_check, nur früher und mit einer
+  // Meldung, die im Seed-Lauf lesbar ist.
+  .superRefine((v, ctx) => {
+    if (v.kind === "hochschulgruppe" && !v.city) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["city"],
+        message: "Eine Hochschulgruppe braucht eine Stadt",
+      });
+    }
+    if (v.kind !== "hochschulgruppe" && v.city) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["city"],
+        message: "Nur eine Hochschulgruppe hat eine Stadt",
+      });
+    }
+  });
 export type UpsertGroupInput = z.infer<typeof UpsertGroupInput>;
 
 export type UpsertResult = {
@@ -61,7 +81,8 @@ export async function upsertGroupBySlug(db: Db, input: unknown): Promise<UpsertR
       .update(groups)
       .set({
         name: v.name,
-        city: v.city,
+        kind: v.kind,
+        city: v.city ?? null,
         contactEmail: v.contactEmail ?? null,
         instagramUrl: v.instagramUrl ?? null,
         websiteUrl: v.websiteUrl ?? null,
@@ -92,7 +113,8 @@ export async function upsertGroupBySlug(db: Db, input: unknown): Promise<UpsertR
     id,
     slug: v.slug,
     name: v.name,
-    city: v.city,
+    kind: v.kind,
+    city: v.city ?? null,
     contactEmail: v.contactEmail ?? null,
     instagramUrl: v.instagramUrl ?? null,
     websiteUrl: v.websiteUrl ?? null,
@@ -122,10 +144,8 @@ function toGroup(
     id,
     slug: v.slug,
     name: v.name,
-    city: v.city,
-    // Wie in manage.ts: der Seed kennt kein `kind` und legt nur
-    // Hochschulgruppen an; die Spalte trägt denselben DEFAULT.
-    kind: "hochschulgruppe",
+    city: v.city ?? null,
+    kind: v.kind,
     contactEmail: v.contactEmail ?? null,
     instagramUrl: v.instagramUrl ?? null,
     websiteUrl: v.websiteUrl ?? null,

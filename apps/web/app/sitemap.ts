@@ -30,7 +30,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const db = getDb();
   if (isFlagOn("groups")) {
     entries.push({ url: url("/gruppen"), changeFrequency: "weekly" });
-    const groups = await listGroups(db, { status: "active" });
+    const groups = await listGroups(db, { status: "active", kind: "hochschulgruppe" });
     entries.push(...groups.map((g) => ({ url: url(`/gruppen/${g.slug}`) })));
   }
   if (isFlagOn("events")) {

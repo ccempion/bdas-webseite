@@ -5,7 +5,7 @@
  * other workspaces. Internal files are not importable.
  */
 
-export { listGroups, type ListOpts } from "./services/list";
+export { listGroups, listGroupIdsByKind, type ListOpts } from "./services/list";
 export { getGroup, getGroupBySlug, getGroupKind } from "./services/get";
 export { getJoinPolicy } from "./services/join-policy";
 export { upsertGroupBySlug, UpsertGroupInput, type UpsertResult } from "./services/upsert";

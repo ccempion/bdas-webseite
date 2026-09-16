@@ -10,9 +10,11 @@ export type GroupStatus = "active" | "dormant" | "new" | "archived";
  * `affiliate` ist eine Partnerorganisation (BDAJ und weitere) — ein Zuhause
  * für Accounts ohne Hochschulgruppen-Scope. Die Art entscheidet zwei Dinge:
  * ob die Gruppe verortet ist (`city`), und ob auf ihr ein lokaler Vorstand
- * sitzen darf (siehe @bdas/members `grantRole`).
+ * sitzen darf (siehe @bdas/members `grantRole`). `netzwerk` ist das Zuhause
+ * für Accounts ohne Anspruch auf Mitgliedschaft; `affiliate` bleibt die
+ * Partnerorganisation.
  */
-export type GroupKind = "hochschulgruppe" | "affiliate";
+export type GroupKind = "hochschulgruppe" | "affiliate" | "netzwerk";
 
 export type GroupLocation = {
   readonly name: string;

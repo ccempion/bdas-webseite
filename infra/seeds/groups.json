@@ -6,5 +6,11 @@
     "contactEmail": "aachen@bdas.de",
     "instagramUrl": "https://www.instagram.com/bdas_aachen/",
     "status": "active"
+  },
+  {
+    "slug": "netzwerk",
+    "name": "BDAS Netzwerk",
+    "kind": "netzwerk",
+    "status": "active"
   }
 ]
