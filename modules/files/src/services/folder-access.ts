@@ -7,7 +7,7 @@
 import { and, eq, isNull, sql } from "drizzle-orm";
 
 import type { Db } from "@bdas/db";
-import { ForbiddenError, NotFoundError } from "@bdas/errors";
+import { ForbiddenError, NotFoundError, ValidationError } from "@bdas/errors";
 import { createId } from "@bdas/id";
 import { getMember, isFederalBoard, type CurrentMember } from "@bdas/members";
 
@@ -46,7 +46,11 @@ export async function grantFolderAccess(
     .where(eq(folders.id, folderId))
     .limit(1);
   if (!folder[0]) throw new NotFoundError("Ordner nicht gefunden.");
-  if (!(await getMember(db, memberId))) throw new NotFoundError("Person nicht gefunden.");
+  const member = await getMember(db, memberId);
+  if (!member) throw new NotFoundError("Person nicht gefunden.");
+  if (member.status !== "active") {
+    throw new ValidationError("Erst aufnehmen, dann freigeben.");
+  }
 
   const canWrite = opts.canWrite ?? false;
   await db
@@ -85,13 +89,15 @@ export async function listFolderAccess(
 }
 
 /**
- * Die offenen Freigaben einer Person als Ordner-ID → darf schreiben, auf alle
+ * Die offenen Freigaben des Betrachters als Ordner-ID → darf schreiben, auf alle
  * Unterordner ausgedehnt: ein Unterordner ist lesbar und beschreibbar für
  * genau die, für die es sein Elternordner ist. Treffen mehrere Freigaben
- * denselben Ordner, gewinnt die weitere.
+ * denselben Ordner, gewinnt die weitere. Eine Freigabe wirkt nur für
+ * aufgenommene Accounts.
  */
-export async function loadFolderAccess(db: Db, memberId: string | null): Promise<FolderAccess> {
-  if (!memberId) return EMPTY;
+export async function loadFolderAccess(db: Db, viewer: CurrentMember): Promise<FolderAccess> {
+  if (viewer.member?.status !== "active") return EMPTY;
+  const memberId = viewer.member.id;
   const grants = await db
     .select({ folderId: folderMemberGrants.folderId, canWrite: folderMemberGrants.canWrite })
     .from(folderMemberGrants)

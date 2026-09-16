@@ -36,7 +36,8 @@ folder still contains files or subfolders.
 (Spec 2026-09-16 §5.3) — the path for BDAJ officials who work with single
 groups without being members. A grant covers the folder and all its
 subfolders, read-only unless `can_write`. It never takes away what the scope
-already allows. Only the federal board may `grantFolderAccess`,
+already allows. Accept first, then grant: only an `active` account can receive
+a grant, and a grant has no effect while the account is not active. Only the federal board may `grantFolderAccess`,
 `revokeFolderAccess` or `listFolderAccess`; revoked rows stay as a record.
 Every file and folder service loads the caller's grants itself. The public
 `canReadFolder`/`canWriteFolder` accept them as an optional third argument, but

@@ -65,7 +65,7 @@ async function applyMigrations(t: TestDb): Promise<void> {
 function viewer(
   memberId: string,
   grants: Grant[],
-  opts: { groupId: string | null; isBdasMember: boolean },
+  opts: { groupId: string | null; isBdasMember: boolean; status?: "pending" | "active" },
 ): CurrentMember {
   return {
     user: { id: `usr_${memberId}`, email: "x@x.org", status: "active", roles: [], sessionId: "s" },
@@ -75,7 +75,7 @@ function viewer(
       firstName: "F",
       lastName: "L",
       primaryGroupId: opts.groupId,
-      status: "active",
+      status: opts.status ?? "active",
       joinedAt: null,
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -96,6 +96,7 @@ const LEAD_OF_OTHER_GROUP = viewer("mbr_lead_b", [{ role: "local_board_lead", gr
   isBdasMember: true,
 });
 const OUTSIDER = viewer("mbr_out", [], { groupId: null, isBdasMember: false });
+const APPLICANT = viewer("mbr_pend", [], { groupId: null, isBdasMember: false, status: "pending" });
 
 /** Seed groups, the three members above, provision folders; return group A's board root. */
 async function seed(t: TestDb): Promise<string> {
@@ -105,7 +106,7 @@ async function seed(t: TestDb): Promise<string> {
       ('grp_a', 'a', 'Gruppe A', 'Stadt', 'active'),
       ('grp_b', 'b', 'Gruppe B', 'Stadt', 'active')
   `;
-  for (const m of [BOARD, LEAD_OF_OTHER_GROUP, OUTSIDER]) {
+  for (const m of [BOARD, LEAD_OF_OTHER_GROUP, OUTSIDER, APPLICANT]) {
     const member = m.member!;
     await t.client`
       INSERT INTO auth_users (id, email_normalized, email_display, status)
@@ -113,7 +114,7 @@ async function seed(t: TestDb): Promise<string> {
     `;
     await t.client`
       INSERT INTO members (id, user_id, first_name, last_name, primary_group_id, status)
-      VALUES (${member.id}, ${member.userId}, 'F', 'L', ${member.primaryGroupId}, 'active')
+      VALUES (${member.id}, ${member.userId}, 'F', 'L', ${member.primaryGroupId}, ${member.status})
     `;
   }
   await ensureFolders(t.db);
@@ -138,16 +139,16 @@ describeIfDb("Ordnerfreigabe pro Person", () => {
 
   it("öffnet genau einen Ordner für genau eine Person, bis zum Widerruf", async () => {
     const folder = await getFolder(t.db, folderId);
-    expect(canRead(folder, OUTSIDER, await loadFolderAccess(t.db, "mbr_out"))).toBe(false);
+    expect(canRead(folder, OUTSIDER, await loadFolderAccess(t.db, OUTSIDER))).toBe(false);
 
     await grantFolderAccess(t.db, folderId, "mbr_out", { canWrite: false }, BOARD);
-    const access = await loadFolderAccess(t.db, "mbr_out");
+    const access = await loadFolderAccess(t.db, OUTSIDER);
     expect(canRead(folder, OUTSIDER, access)).toBe(true);
     expect(canWrite(folder, OUTSIDER, access)).toBe(false);
-    expect(await loadFolderAccess(t.db, "mbr_lead_b")).toEqual(new Map());
+    expect(await loadFolderAccess(t.db, LEAD_OF_OTHER_GROUP)).toEqual(new Map());
 
     await revokeFolderAccess(t.db, folderId, "mbr_out", BOARD);
-    expect(canRead(folder, OUTSIDER, await loadFolderAccess(t.db, "mbr_out"))).toBe(false);
+    expect(canRead(folder, OUTSIDER, await loadFolderAccess(t.db, OUTSIDER))).toBe(false);
   });
 
   it("nur der Bundesvorstand vergibt und widerruft Freigaben", async () => {
@@ -200,13 +201,33 @@ describeIfDb("Ordnerfreigabe pro Person", () => {
     });
   });
 
+  it("erst aufnehmen, dann freigeben: eine Bewerbung bekommt keine Freigabe", async () => {
+    await expect(grantFolderAccess(t.db, folderId, "mbr_pend", {}, BOARD)).rejects.toMatchObject({
+      code: "VALIDATION",
+    });
+    expect(await listFolderAccess(t.db, folderId, BOARD)).toEqual([]);
+  });
+
+  it("eine Freigabe wirkt nur, solange die Person aufgenommen ist", async () => {
+    await grantFolderAccess(t.db, folderId, "mbr_out", { canWrite: true }, BOARD);
+    await t.client`UPDATE members SET status = 'pending' WHERE id = 'mbr_out'`;
+    const demoted: CurrentMember = {
+      ...OUTSIDER,
+      member: { ...OUTSIDER.member!, status: "pending" },
+    };
+
+    expect(await loadFolderAccess(t.db, demoted)).toEqual(new Map());
+    await expect(listFiles(t.db, folderId, demoted)).rejects.toMatchObject({ code: "FORBIDDEN" });
+    expect(await listFolders(t.db, demoted)).toEqual([]);
+  });
+
   it("die Freigabe gilt auch für Unterordner, wie jede Ordnerberechtigung", async () => {
     const child = await createFolder(t.db, { parentId: folderId, name: "Protokolle" }, BOARD);
     const grandchild = await createFolder(t.db, { parentId: child.id, name: "2026" }, BOARD);
 
     await grantFolderAccess(t.db, folderId, "mbr_out", { canWrite: false }, BOARD);
     await grantFolderAccess(t.db, child.id, "mbr_out", { canWrite: true }, BOARD);
-    const access = await loadFolderAccess(t.db, "mbr_out");
+    const access = await loadFolderAccess(t.db, OUTSIDER);
 
     expect(canRead(await getFolder(t.db, folderId), OUTSIDER, access)).toBe(true);
     expect(canWrite(await getFolder(t.db, folderId), OUTSIDER, access)).toBe(false);
@@ -233,6 +254,6 @@ describeIfDb("Ordnerfreigabe pro Person", () => {
     const child = await createFolder(t.db, { parentId: folderId, name: "Weg" }, BOARD);
     await grantFolderAccess(t.db, child.id, "mbr_out", {}, BOARD);
     await t.client`DELETE FROM folders WHERE id = ${child.id}`;
-    expect(await loadFolderAccess(t.db, "mbr_out")).toEqual(new Map());
+    expect(await loadFolderAccess(t.db, OUTSIDER)).toEqual(new Map());
   });
 });

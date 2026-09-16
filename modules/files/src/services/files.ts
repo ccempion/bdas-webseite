@@ -74,7 +74,7 @@ export async function requestUpload(
 ): Promise<{ fileId: string; uploadUrl: SignedUrl }> {
   const actor = requireActingMember(byMember);
   const folder = await getFolder(db, folderId);
-  if (!canWrite(folder, byMember, await loadFolderAccess(db, actor.id)))
+  if (!canWrite(folder, byMember, await loadFolderAccess(db, byMember)))
     throw new ForbiddenError("Kein Schreibzugriff auf diesen Ordner.");
 
   if (!ALLOWED_MIME.has(input.mimeType)) throw new ValidationError("Dateityp nicht erlaubt.");
@@ -121,7 +121,7 @@ export async function confirmUpload(
   const actor = requireActingMember(byMember);
   const row = await getFileRow(db, fileId);
   const folder = await getFolder(db, row.folderId);
-  if (!canWrite(folder, byMember, await loadFolderAccess(db, actor.id)))
+  if (!canWrite(folder, byMember, await loadFolderAccess(db, byMember)))
     throw new ForbiddenError("Kein Schreibzugriff auf diesen Ordner.");
 
   const stat = await getStorage().statObject(row.storageKey);
@@ -159,9 +159,9 @@ export async function listFiles(
   folderId: string,
   forMember: CurrentMember,
 ): Promise<FileMeta[]> {
-  const actor = requireActingMember(forMember);
+  requireActingMember(forMember);
   const folder = await getFolder(db, folderId);
-  const access = await loadFolderAccess(db, actor.id);
+  const access = await loadFolderAccess(db, forMember);
   if (!canRead(folder, forMember, access))
     throw new ForbiddenError("Kein Lesezugriff auf diesen Ordner.");
   const rows = await db
@@ -181,9 +181,9 @@ export async function folderFileCounts(
   folderIds: string[],
   forMember: CurrentMember,
 ): Promise<Record<string, number>> {
-  const actor = requireActingMember(forMember);
+  requireActingMember(forMember);
   if (folderIds.length === 0) return {};
-  const access = await loadFolderAccess(db, actor.id);
+  const access = await loadFolderAccess(db, forMember);
   const folderRows = await db.select().from(folders).where(inArray(folders.id, folderIds));
   const readable = folderRows
     .map(rowToFolder)
@@ -213,7 +213,7 @@ export async function getDownloadUrl(
   const row = await getFileRow(db, fileId);
   if (row.status !== "ready") throw new NotFoundError("Datei nicht gefunden.");
   const folder = await getFolder(db, row.folderId);
-  if (!canRead(folder, forMember, await loadFolderAccess(db, actor.id)))
+  if (!canRead(folder, forMember, await loadFolderAccess(db, forMember)))
     throw new ForbiddenError("Kein Lesezugriff auf diese Datei.");
   const url = await getStorage().signedDownloadUrl({ storageKey: row.storageKey });
   await writeAccessLog(db, fileId, actor.id, "download");
@@ -225,7 +225,7 @@ export async function deleteFile(db: Db, fileId: string, byMember: CurrentMember
   const actor = requireActingMember(byMember);
   const row = await getFileRow(db, fileId);
   const folder = await getFolder(db, row.folderId);
-  if (!canWrite(folder, byMember, await loadFolderAccess(db, actor.id)))
+  if (!canWrite(folder, byMember, await loadFolderAccess(db, byMember)))
     throw new ForbiddenError("Kein Schreibzugriff auf diese Datei.");
   await writeAccessLog(db, fileId, actor.id, "delete");
   await getStorage().deleteObject(row.storageKey);

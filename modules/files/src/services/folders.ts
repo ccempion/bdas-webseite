@@ -113,6 +113,6 @@ export async function getFolder(db: Db, folderId: string): Promise<Folder> {
 /** Folders the member may read (spec §11). */
 export async function listFolders(db: Db, forMember: CurrentMember): Promise<Folder[]> {
   const rows = await db.select().from(folders);
-  const access = await loadFolderAccess(db, forMember.member?.id ?? null);
+  const access = await loadFolderAccess(db, forMember);
   return rows.map(rowToFolder).filter((f) => canRead(f, forMember, access));
 }
