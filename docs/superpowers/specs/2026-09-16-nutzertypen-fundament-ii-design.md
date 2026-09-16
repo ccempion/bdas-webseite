@@ -133,21 +133,28 @@ Gruppen-Events bleiben über die Gruppenzugehörigkeit ausgeschlossen, ohne Sond
   `superRefine`, dieselbe Regel wie der DB-Constraint). Damit ist der Seed der Weg, eine
   `affiliate`- oder `netzwerk`-Zeile anzulegen. `CreateGroupInput`/`UpdateGroupInput` — das
   Vorstandsformular — bleiben unverändert auf `hochschulgruppe` und Stadt-Pflicht.
-- `listGroups` bekommt `kind?: GroupKind` als Filter.
+- `listGroups` bekommt `kind?: GroupKind` als Filter, und `listGroupIdsByKind(db, kind)` kommt als
+  schmaler Leser dazu — `members` braucht ihn für die Statistik und darf die `groups`-Tabelle
+  nicht selbst abfragen (CLAUDE.md §1 Regel 1).
 - Seed `infra/seeds/groups.json`: ein Eintrag `netzwerk` (`slug: "netzwerk"`, `name: "BDAS
 Netzwerk"`, `kind: "netzwerk"`, ohne `city`).
 
 ### 5.2 `modules/members`
 
-- `resolveHasGroupScope` bleibt; daneben entsteht `resolveIsBdasMember(db, member, grants)` nach
-  3.1. `CurrentMember` bekommt `isBdasMember: boolean`.
+- `getCurrentMember` liest die Art der primären Gruppe ohnehin schon. Sie wird als
+  `CurrentMember.primaryGroupKind: GroupKind | null` durchgereicht, daraus entstehen ohne weitere
+  Abfrage `hasGroupScope` (`=== "hochschulgruppe"`) und das neue `isBdasMember` nach 3.1. Die
+  Ableitung selbst ist eine reine Funktion `isBdasMemberFrom(member, kind, grants)`, damit sie ohne
+  Sitzung testbar bleibt.
 - `effectiveGrants` vergibt `member` nur noch für Mitglieder. Die Funktion ist rein und kennt die
   Gruppenart nicht, bekommt sie also als zusätzliches Argument (`isMember: boolean`) von
   `getCurrentMember`.
-- **Aufnahme ohne Gruppe:** neuer Service `acceptAsAlumnus(db, memberId, actor)` — eine
-  Transaktion, `pending → active` plus ungescopter `alumnus`-Grant. Nur Bundesvorstand
-  (`canManageGroup(grants, null)` lässt ohnehin nur ihn durch). Er ersetzt kein bestehendes
-  Verfahren, sondern verdrahtet das vorhandene.
+- **Aufnahme ohne Gruppe:** neuer Service `acceptAsAlumnus(db, memberId, actor)` — nur
+  Bundesvorstand, nur für Mitglieder ohne Gruppe (bei einer Gruppe entscheidet deren Vorstand,
+  ADR 0021). Er verdrahtet zwei vorhandene Schritte: `transitionStatus(… "active")`, danach
+  `grantRole(… "alumnus", null)`. Bewusst **keine** gemeinsame Transaktion: beide Services öffnen
+  ihre eigene und sind idempotent, ein Abbruch zwischen ihnen hinterlässt ein aufgenommenes
+  Mitglied ohne Markierung, und ein zweiter Klick vervollständigt es.
 - **Selbstbedienter Beitritt zur `netzwerk`-Gruppe:** `changePrimaryGroup` wendet einen Wechsel zu
   einer Gruppe der Art `netzwerk` sofort an, statt einen Antrag zu erzeugen, und setzt dabei
   `status = 'active'`. Begründung: über eine Gruppe ohne Vorstand entscheidet nach ADR 0021 der
@@ -160,8 +167,9 @@ Netzwerk"`, `kind: "netzwerk"`, ohne `city`).
   nicht.
 - **Alumnus nur für Aufgenommene:** `grantRole` wirft `ValidationError`, wenn `role === "alumnus"`
   und das Zielmitglied nicht `active` ist. `acceptAsAlumnus` setzt deshalb zuerst den Status.
-- `countMembersByStatus` zählt nur Mitglieder nach 3.1 (Join auf `groups.kind`, plus
-  Alumnus-Grant). Der `alumnus`-Eimer bleibt unverändert.
+- `countMembersByStatus` zählt nur Mitglieder nach 3.1: die Hochschulgruppen-IDs kommen über
+  `listGroupIdsByKind` aus `@bdas/groups` (kein Zugriff auf deren Tabelle), dazu alle Zeilen mit
+  aktivem `alumnus`-Grant. Der `alumnus`-Eimer bleibt unverändert.
 
 ### 5.3 `modules/files`
 
@@ -170,10 +178,13 @@ Netzwerk"`, `kind: "netzwerk"`, ohne `city`).
 DEFAULT false`, `granted_at`, `granted_by`, `revoked_at`), Teilindex auf
   `(folder_id, member_id) WHERE revoked_at IS NULL`. Reihenrichtlinien (RLS) wie in
   `0002_rls_lockdown.sql`.
-- `canRead`/`canWrite` bleiben reine Funktionen. Sie bekommen den Zugriff pro Person als Teil des
-  Betrachters: `FileViewer = { me: CurrentMember; folderGrants: ReadonlyMap<string, boolean> }`
-  (Ordner-ID → darf schreiben), einmal pro Anfrage geladen. `canRead` gibt `true` zurück, wenn die
-  Scope-Regel **oder** eine Freigabe greift; `canWrite` entsprechend mit `can_write`.
+- `canRead`/`canWrite` bleiben reine Funktionen und behalten ihre Signatur bis auf einen
+  **optionalen dritten Parameter** `access: ReadonlyMap<string, boolean>` (Ordner-ID → darf
+  schreiben), Vorgabe leer. `canRead` gibt `true` zurück, wenn die Scope-Regel **oder** eine
+  Freigabe greift; `canWrite` entsprechend mit `can_write`. Die Dateidienste laden die Freigaben
+  des Aufrufers einmal und reichen sie durch; die App-Schicht und ihre acht Aufrufstellen bleiben
+  unverändert. Ein `FileViewer`-Typ, der `CurrentMember` ersetzt, wäre dieselbe Wirkung mit
+  deutlich mehr Umbau.
 - `members_all` prüft `isBdasMember` statt `status === "active"`.
 - Services `grantFolderAccess` / `revokeFolderAccess` / `listFolderAccess`, nur Bundesvorstand.
   Keine Oberfläche in dieser Spec — der Bundesvorstand bekommt sie mit dem BDAJ-PR; bis dahin ist
