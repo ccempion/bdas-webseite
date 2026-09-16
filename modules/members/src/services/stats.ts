@@ -1,5 +1,7 @@
-import { and, eq, gte, isNull, sql, type SQL } from "drizzle-orm";
+import { and, eq, exists, gte, inArray, isNull, or, sql, type SQL } from "drizzle-orm";
 import type { PostgresJsDatabase } from "drizzle-orm/postgres-js";
+
+import { listGroupIdsByKind } from "@bdas/groups";
 
 import { members, memberRoleGrants } from "../schema";
 
@@ -11,6 +13,11 @@ export type Db = PostgresJsDatabase<Record<string, never>>;
  * Grant — der Eimer bleibt trotzdem, sonst zählte der Bundesvorstand ab dem
  * Merge stillschweigend etwas anderes als vorher. Ein Alumnus zählt in BEIDEN
  * Eimern: er ist ein aktives Mitglied mit einer Kennzeichnung.
+ *
+ * `active` zählt seit ADR 0045 nur Mitglieder (Spec 2026-09-16 §3.1):
+ * aufgenommen UND (Hochschulgruppe ODER Alumnus-Markierung). Ein
+ * Förderer-Account ist aufgenommen, aber kein Mitglied. `pending` bleibt der
+ * Bewerbungs-Pool — diese Accounts haben noch keine Gruppe (ADR 0031).
  */
 export type MemberCounts = {
   readonly pending: number;
@@ -29,11 +36,34 @@ export async function countMembersByStatus(
 ): Promise<MemberCounts> {
   const scope = q.groupId ? eq(members.primaryGroupId, q.groupId) : undefined;
 
-  const statusRows = await db
-    .select({ status: members.status, n: sql<number>`count(*)::int` })
+  const pendingRows = await db
+    .select({ n: sql<number>`count(*)::int` })
     .from(members)
-    .where(scope)
-    .groupBy(members.status);
+    .where(and(eq(members.status, "pending"), scope));
+
+  // Die Gruppen-IDs kommen über die öffentliche Schnittstelle — members liest
+  // die groups-Tabelle nicht (CLAUDE.md §1).
+  const hochschulIds = await listGroupIdsByKind(db, "hochschulgruppe");
+  const hasAlumnusMark = exists(
+    db
+      .select({ one: sql`1` })
+      .from(memberRoleGrants)
+      .where(
+        and(
+          eq(memberRoleGrants.memberId, members.id),
+          eq(memberRoleGrants.role, "alumnus"),
+          isNull(memberRoleGrants.revokedAt),
+        ),
+      ),
+  );
+  const isMember =
+    hochschulIds.length > 0
+      ? or(inArray(members.primaryGroupId, hochschulIds), hasAlumnusMark)
+      : hasAlumnusMark;
+  const activeRows = await db
+    .select({ n: sql<number>`count(*)::int` })
+    .from(members)
+    .where(and(eq(members.status, "active"), isMember, scope));
 
   const alumnusConds: SQL[] = [
     eq(memberRoleGrants.role, "alumnus"),
@@ -46,13 +76,11 @@ export async function countMembersByStatus(
     .innerJoin(members, eq(members.id, memberRoleGrants.memberId))
     .where(and(...alumnusConds));
 
-  let pending = 0;
-  let active = 0;
-  for (const r of statusRows) {
-    if (r.status === "pending") pending = r.n;
-    if (r.status === "active") active = r.n;
-  }
-  return { pending, active, alumnus: alumnusRows[0]?.n ?? 0 };
+  return {
+    pending: pendingRows[0]?.n ?? 0,
+    active: activeRows[0]?.n ?? 0,
+    alumnus: alumnusRows[0]?.n ?? 0,
+  };
 }
 
 /**

@@ -459,6 +459,50 @@ describeIfDb("members integration", () => {
     expect(scoped.alumnus).toBe(1);
   });
 
+  it("countMembersByStatus zählt aktive Accounts nur, wenn sie Mitglieder sind (Spec 2026-09-16 §4)", async () => {
+    await createGroup("grp_hs", "aachen");
+    await t.client`
+      INSERT INTO groups (id, slug, name, city, kind, status)
+      VALUES ('grp_nw', 'netzwerk', 'BDAS Netzwerk', NULL, 'netzwerk', 'active')
+    `;
+    for (const u of ["usr_hs", "usr_f", "usr_f_al", "usr_al", "usr_pool"]) {
+      await createUser(u, `${u}@example.de`);
+    }
+    const hs = await createProfile(t.db, {
+      userId: "usr_hs",
+      firstName: "H",
+      lastName: "S",
+      primaryGroupId: "grp_hs",
+    });
+    const f = await createProfile(t.db, {
+      userId: "usr_f",
+      firstName: "Fee",
+      lastName: "Förderin",
+      primaryGroupId: "grp_nw",
+    });
+    // Ehemalige*r, der/die später ins Netzwerk wechselt: die Markierung trägt.
+    const fAl = await createProfile(t.db, {
+      userId: "usr_f_al",
+      firstName: "Ex",
+      lastName: "Förderer",
+      primaryGroupId: "grp_nw",
+    });
+    const al = await createProfile(t.db, { userId: "usr_al", firstName: "A", lastName: "L" });
+    await createProfile(t.db, { userId: "usr_pool", firstName: "P", lastName: "P" });
+
+    for (const m of [hs, f, fAl]) await approveMember(t.db, m.id, BOARD);
+    await grantRole(t.db, fAl.id, "alumnus", BOARD, null);
+    await acceptAsAlumnus(t.db, al.id, BOARD);
+
+    const counts = await countMembersByStatus(t.db);
+    expect(counts.active).toBe(3); // hs, fAl, al — nicht f
+    expect(counts.pending).toBe(1); // die gruppenlose Bewerbung bleibt gezählt
+    expect(counts.alumnus).toBe(2);
+
+    const nw = await countMembersByStatus(t.db, { groupId: "grp_nw" });
+    expect(nw.active).toBe(1);
+  });
+
   it("a local_board_lead grants page_editor within its group, but not across groups or higher roles", async () => {
     await createGroup("grp_a", "aachen");
     await createGroup("grp_b", "bonn");
