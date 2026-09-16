@@ -1,8 +1,8 @@
 /**
  * Keine Profil-Aktion darf ein selbst gewähltes Ziel außer einer Hochschulgruppe
- * annehmen: `changePrimaryGroup` nimmt in eine netzwerk-Gruppe sofort auf und
- * setzt den Account auf active (Spec 2026-09-16 §5.6). Server-Aktionen sind
- * öffentliche Endpunkte — das Dropdown ist keine Grenze.
+ * annehmen (Spec 2026-09-16 §5.6): über netzwerk- und affiliate-Gruppen
+ * entscheidet der Bundesvorstand, aus dem Profil ist das nicht vorgesehen.
+ * Server-Aktionen sind öffentliche Endpunkte — das Dropdown ist keine Grenze.
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
 

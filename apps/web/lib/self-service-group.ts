@@ -4,10 +4,9 @@ import { getGroupKind, type GroupKind } from "@bdas/groups";
 
 /**
  * Welche Gruppe darf ein Account selbst wählen? Nur eine Hochschulgruppe
- * (Spec 2026-09-16 §5.6). `changePrimaryGroup` nimmt jeden in eine
- * netzwerk-Gruppe sofort auf und setzt ihn auf active — ohne diese Prüfung
- * wäre jede Profil-Aktion ein Weg, die Aufnahme zu überspringen. Einen
- * Einstiegspunkt für Förderer bringt erst der Triage-Wizard.
+ * (Spec 2026-09-16 §5.6). Ein Antrag an eine netzwerk- oder affiliate-Gruppe
+ * landet beim Bundesvorstand (ADR 0046); aus dem Profil heraus ist das nicht
+ * vorgesehen. Einen Einstiegspunkt für Förderer bringt erst der Triage-Wizard.
  *
  * Die aktuelle Gruppe erneut zu wählen bleibt erlaubt: so speichert ein
  * Förderer sein Profil, ohne die Gruppe anzufassen. Eine unbekannte ID

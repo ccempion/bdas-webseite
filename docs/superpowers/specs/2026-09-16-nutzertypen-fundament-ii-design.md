@@ -45,7 +45,8 @@ einer Hochschulgruppe sitzt. Was fehlt, ist alles, was daraus folgt. Acht Lücke
 - **Sie dürfen ihre eigenen Dinge und intern-bundesweite Veranstaltungen** (`members_only`), also
   alles, wofür eine Anmeldung nötig ist, aber keine Gruppenzugehörigkeit. Keine Dateien, kein
   Kommentarrecht, keine Gruppen-Events.
-- **Registrieren genügt**, niemand entscheidet über sie.
+- ~~**Registrieren genügt**, niemand entscheidet über sie.~~ **Geändert 2026-09-16 (ADR 0046):**
+  Förderer nimmt der Bundesvorstand auf.
 - **Die Alumnus-Markierung ist der Mitgliedsnachweis** für Ehemalige ohne Gruppe.
 - **Neue interne Funktionen sperren Nicht-Mitglieder standardmäßig aus.**
 - **Interessierte wohnen in einer gemeinsamen `netzwerk`-Gruppe.**
@@ -87,7 +88,7 @@ dafür, wird es dort gestrichen; in dieser Spec wird es nicht entfernt.
 | Mitglied                        | Hochschulgruppe            | ja                       | Lead der Gruppe (ADR 0021/0031)      |
 | Alumnus                         | Hochschulgruppe oder keine | ja (über die Markierung) | Lead; ohne Gruppe der Bundesvorstand |
 | BDAJ / Partnerorganisation      | `affiliate`                | nein                     | Bundesvorstand (erzwungen, PR B)     |
-| Interessierte\*r / Förderer\*in | `netzwerk`                 | nein                     | niemand — Registrierung genügt       |
+| Interessierte\*r / Förderer\*in | `netzwerk`                 | nein                     | Bundesvorstand (ADR 0046)            |
 
 ### 3.3 Der `member`-Grant wird ehrlich
 
@@ -155,16 +156,11 @@ Netzwerk"`, `kind: "netzwerk"`, ohne `city`).
   `grantRole(… "alumnus", null)`. Bewusst **keine** gemeinsame Transaktion: beide Services öffnen
   ihre eigene und sind idempotent, ein Abbruch zwischen ihnen hinterlässt ein aufgenommenes
   Mitglied ohne Markierung, und ein zweiter Klick vervollständigt es.
-- **Selbstbedienter Beitritt zur `netzwerk`-Gruppe:** `changePrimaryGroup` wendet einen Wechsel zu
-  einer Gruppe der Art `netzwerk` sofort an, statt einen Antrag zu erzeugen, und setzt dabei
-  `status = 'active'`. Begründung: über eine Gruppe ohne Vorstand entscheidet nach ADR 0021 der
-  Bundesvorstand — für Förderer-Accounts ist diese Entscheidung aber ausdrücklich nicht gewollt.
-  Der Wechsel entzieht wie immer die gruppengebundenen Grants der alten Gruppe. Ein Mitglied
-  **ohne** Alumnus-Markierung ist danach kein Mitglied mehr (3.1) — der ehrliche Ausdruck von „ich
-  bin jetzt Förderer". Ein\*e Ehemalige\*r **mit** Markierung bleibt dagegen Mitglied, auch in der
-  `netzwerk`-Gruppe: die Markierung überlebt jeden Gruppenwechsel (ADR 0043), und wer einmal dabei
-  war, bleibt Alumnus. Beides ist gewollt; die Gruppenart allein entscheidet die Mitgliedschaft
-  nicht.
+- **Beitritt zur `netzwerk`-Gruppe:** ~~selbstbedient~~ — **geändert durch ADR 0046.** Der
+  Beitritt ist ein gewöhnlicher Antrag; die Gruppe hat keinen Vorstand, also entscheidet der
+  Bundesvorstand (Rückfall aus ADR 0021), und die Annahme setzt den Account auf `active`. Ein
+  Mitglied **ohne** Alumnus-Markierung ist nach dem genehmigten Wechsel kein Mitglied mehr (3.1);
+  ein\*e Ehemalige\*r **mit** Markierung bleibt es (ADR 0043).
 - **Alumnus nur für Aufgenommene:** `grantRole` wirft `ValidationError`, wenn `role === "alumnus"`
   und das Zielmitglied nicht `active` ist. `acceptAsAlumnus` setzt deshalb zuerst den Status.
 - `countMembersByStatus` zählt nur Mitglieder nach 3.1: die Hochschulgruppen-IDs kommen über
@@ -235,7 +231,7 @@ DEFAULT false`, `granted_at`, `granted_by`, `revoked_at`), Teilindex auf
 - `members`: `isBdasMember` für Hochschulgruppe / Alumnus ohne Gruppe / `netzwerk` / `affiliate` /
   `pending`; `member`-Grant fehlt bei Nicht-Mitgliedern; `acceptAsAlumnus` nur Bundesvorstand,
   setzt Status und Grant, ist idempotent; `grantRole` verweigert `alumnus` für `pending`;
-  `changePrimaryGroup` in eine `netzwerk`-Gruppe wendet sofort an und setzt `active`;
+  über einen Antrag an die `netzwerk`-Gruppe entscheidet nur der Bundesvorstand (ADR 0046);
   `countMembersByStatus` zählt Förderer nicht mit.
 - `groups`: `netzwerk` erlaubt, Stadt verboten; Upsert mit `kind`; `listGroups`-Filter.
 - `files`: `members_all` für Förderer gesperrt, für Alumni offen; Freigabe pro Person öffnet genau
@@ -267,7 +263,7 @@ Diese Spec ändert zwei bereits entschiedene Dinge und braucht dafür einen ADR 
 Nummer **0045**, da 0044 vergeben ist):
 
 - Der `member`-Grant folgt der Mitgliedschaft, nicht dem Kontostatus.
-- Der Beitritt zu einer `netzwerk`-Gruppe ist selbstbedient und damit die erste Ausnahme von
+- ~~Der Beitritt zu einer `netzwerk`-Gruppe ist selbstbedient~~ (überschrieben durch ADR 0046) und damit die erste Ausnahme von
   „über einen Gruppenbeitritt entscheidet ein Vorstand" (ADR 0021/0031).
 
 ## 10. PR-Zuschnitt
