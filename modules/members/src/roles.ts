@@ -1,6 +1,6 @@
 import type { Role } from "@bdas/auth";
 
-import type { Grant, Member, MemberStatus } from "./types";
+import type { Grant, MemberStatus } from "./types";
 
 const ALL_ROLES: ReadonlyArray<Role> = [
   "member",
@@ -21,14 +21,18 @@ export function isRole(value: string): value is Role {
  * Effective grants a request acts with (ADR 0007):
  *   - JWT roles (env allowlist at login per ADR 0002) → unscoped grants,
  *   - active rows from `member_role_grants` → their stored scope,
- *   - status-implied: active → member (unscoped). `alumnus` ist seit ADR 0043
- *     kein Status mehr, sondern ein regulärer Grant aus member_role_grants.
+ *   - membership-implied: BDAS-Mitglied → member (unscoped, ADR 0045).
+ *     `alumnus` ist seit ADR 0043 kein Status mehr, sondern ein regulärer
+ *     Grant aus member_role_grants.
  * Deduplicated on (role, groupId).
  */
 export function effectiveGrants(
   jwtRoles: ReadonlyArray<Role>,
-  member: Member | null,
   dbGrants: ReadonlyArray<Grant>,
+  /** Ergebnis von `isBdasMemberFrom`. Der ungescopte `member`-Grant folgt ab
+   *  ADR 0045 der Mitgliedschaft, nicht dem Kontostatus: ein Förderer-Account
+   *  ist aufgenommen, aber kein Mitglied. */
+  isMember: boolean,
 ): ReadonlyArray<Grant> {
   const out: Grant[] = [];
   const seen = new Set<string>();
@@ -41,7 +45,7 @@ export function effectiveGrants(
 
   for (const r of jwtRoles) add(r, null);
   for (const g of dbGrants) add(g.role, g.groupId);
-  if (member && member.status === "active") add("member", null);
+  if (isMember) add("member", null);
   return out;
 }
 

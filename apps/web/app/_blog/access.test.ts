@@ -54,7 +54,9 @@ function memberWithStatus(status: "pending" | "active"): CurrentMember {
       updatedAt: new Date(),
     },
     grants: [],
+    primaryGroupKind: null,
     hasGroupScope: false,
+    isBdasMember: status === "active",
   };
 }
 
@@ -73,7 +75,9 @@ function memberWithGrants(grants: CurrentMember["grants"]): CurrentMember {
       updatedAt: new Date(),
     },
     grants,
+    primaryGroupKind: "hochschulgruppe",
     hasGroupScope: true,
+    isBdasMember: true,
   };
 }
 
@@ -100,7 +104,9 @@ describe("canComment", () => {
       user: { id: "usr_2", email: "b@bdas.de", status: "active", roles: [], sessionId: "sess_2" },
       member: null,
       grants: [],
+      primaryGroupKind: null,
       hasGroupScope: false,
+      isBdasMember: false,
     };
     expect(canComment(me)).toBe(false);
   });

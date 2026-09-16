@@ -41,7 +41,9 @@ function me(grants: Grant[], m: Member | null = member()): CurrentMember {
     user: { id: "usr_1", email: "t@x.org", status: "active", roles: [], sessionId: "ses_1" },
     member: m,
     grants,
+    primaryGroupKind: m?.primaryGroupId ? "hochschulgruppe" : null,
     hasGroupScope: Boolean(m?.primaryGroupId),
+    isBdasMember: m?.status === "active" && Boolean(m.primaryGroupId),
   };
 }
 

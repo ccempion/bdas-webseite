@@ -92,7 +92,9 @@ function meWith(grants: Grant[], member: CurrentMember["member"]): CurrentMember
     user: { id: "usr_1", email: "t@x.org", status: "active", roles: [], sessionId: "ses_1" },
     member,
     grants,
+    primaryGroupKind: member?.primaryGroupId ? "hochschulgruppe" : null,
     hasGroupScope: Boolean(member?.primaryGroupId),
+    isBdasMember: member?.status === "active" && Boolean(member.primaryGroupId),
   };
 }
 

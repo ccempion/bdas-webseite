@@ -60,16 +60,17 @@ import {
 ## Scoped role grants (ADR 0007)
 
 A `Grant` is `{ role, groupId }`. `groupId === null` ⇔ unscoped
-(`federal_board`, status-implied `member`, an `alumnus` mark without a group); a
+(`federal_board`, membership-implied `member`, an `alumnus` mark without a group); a
 set `groupId` ⇔ scoped (`local_board_lead` of that group, one of its delegate
 roles, or an `alumnus` mark issued by that group).
 
-`effectiveGrants(jwtRoles, member, dbGrants)` unions:
+`effectiveGrants(jwtRoles, dbGrants, isMember)` unions:
 
 - JWT roles (env allowlist `federal_board` per ADR 0002) → unscoped grants,
 - active `member_role_grants` rows → their stored scope,
-- status-implied: `active → member` (unscoped). Nothing else is derived from
-  the status.
+- membership-implied: `isMember → member` (unscoped, ADR 0045). `isMember`
+  is `isBdasMemberFrom(...)` — accepted **and** (Hochschulgruppe **or**
+  `alumnus` mark). An accepted Förderer account gets no `member` grant.
 
 This is `getCurrentMember(...).grants`. Authorize against it via the
 predicates — never inspect a raw role list:
