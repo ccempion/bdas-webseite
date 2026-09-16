@@ -61,6 +61,28 @@ describe("canRead", () => {
     );
   });
 
+  it("members_all: Mitgliedern vorbehalten, nicht aufgenommenen Förderer-Accounts (ADR 0045)", () => {
+    const foerderer: CurrentMember = {
+      ...me([], member({ primaryGroupId: "grp_nw" })),
+      primaryGroupKind: "netzwerk",
+      hasGroupScope: false,
+      isBdasMember: false,
+    };
+    expect(canRead(folder("members_all", null), foerderer)).toBe(false);
+
+    const alumnaOhneGruppe: CurrentMember = {
+      ...me([{ role: "alumnus", groupId: null }], member({ primaryGroupId: null })),
+      isBdasMember: true,
+    };
+    expect(canRead(folder("members_all", null), alumnaOhneGruppe)).toBe(true);
+
+    const bundesvorstandOhneGruppe: CurrentMember = {
+      ...me(FED, member({ primaryGroupId: null })),
+      isBdasMember: false,
+    };
+    expect(canRead(folder("members_all", null), bundesvorstandOhneGruppe)).toBe(true);
+  });
+
   it("group_members: only active members of that group", () => {
     expect(canRead(folder("group_members", "grp_muc"), me(PLAIN))).toBe(true);
     expect(canRead(folder("group_members", "grp_other"), me(PLAIN))).toBe(false);

@@ -2,7 +2,7 @@ import { eq } from "drizzle-orm";
 
 import type { Db } from "@bdas/db";
 import { NotFoundError } from "@bdas/errors";
-import { listGroups } from "@bdas/groups";
+import { listGroups, type GroupKind } from "@bdas/groups";
 import { createId } from "@bdas/id";
 import type { CurrentMember } from "@bdas/members";
 
@@ -57,16 +57,22 @@ export async function ensureFolders(db: Db): Promise<void> {
 
   const groups = await listGroups(db);
   for (const g of groups) {
-    await provisionGroupFolders(db, g.id, g.name);
+    await provisionGroupFolders(db, g.id, g.name, g.kind);
   }
 }
 
-/** Create the two per-group folders for one group. Idempotent. */
+/**
+ * Create the two per-group folders for one group. Idempotent. Only for a
+ * Hochschulgruppe: any other kind has no board to fill the board folder and no
+ * members for the members folder (Spec 2026-09-16 §5.3).
+ */
 export async function provisionGroupFolders(
   db: Db,
   groupId: string,
   groupName: string,
+  kind: GroupKind,
 ): Promise<void> {
+  if (kind !== "hochschulgruppe") return;
   await db
     .insert(folders)
     .values({
