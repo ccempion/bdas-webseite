@@ -24,6 +24,9 @@ Federation-side member profiles. Identity lives in `@bdas/auth`; membership
    federal_board only) or marked as alumnus later — a grant, not a status
    (ADR 0043).
 
+A side door (ADR 0045): the federal board accepts a groupless former member
+with `acceptAsAlumnus()` — status `active`, then the unscoped `alumnus` mark.
+
 ## Public surface
 
 ```ts
@@ -39,6 +42,7 @@ import {
   updateProfile,
   transitionStatus,
   approveMember,
+  acceptAsAlumnus,
   grantRole,
   revokeRole,
   // Authorization helpers
@@ -105,7 +109,8 @@ never `federal_board`.
 
 `alumnus` (ADR 0043) is a mark, not a permission, and restricts nothing: an
 alumnus stays `active`, keeps the `member` grant and with it event
-registration. It is optionally scoped. Scoped to a group, the group's Lead or
+registration. Only accepted (`active`) accounts can be marked — `grantRole`
+throws `ValidationError` otherwise. It is optionally scoped. Scoped to a group, the group's Lead or
 the federal board may set or remove it; unscoped, only the federal board
 (`canManageGroup(grants, null)` passes federal only). A Lead may only mark
 members of its own group. The mark survives an exit or a transfer with its
@@ -117,7 +122,16 @@ grant, never from the status.
 `CurrentMember.hasGroupScope` is the only place that answers whether an account
 has a Hochschulgruppe scope: true exactly when the primary group's `kind` is
 `hochschulgruppe` (read via `getGroupKind` from `@bdas/groups`), false without
-a group. `grantRole` refuses `local_board_lead` on any other kind — even for
+a group. `CurrentMember.primaryGroupKind` carries the kind itself.
+
+`CurrentMember.isBdasMember` is the only place that answers whether an account
+is a BDAS member (ADR 0045): `active` **and** (Hochschulgruppe **or** an active
+`alumnus` mark). It drives the unscoped `member` grant, and
+`countMembersByStatus().active` counts by the same rule. A Förderer in a
+`netzwerk` group is `active` but not a member. New internal features check
+`isBdasMember` or the `member` grant — never `status === "active"`.
+
+`grantRole` refuses `local_board_lead` on any other kind — even for
 the federal board — because a group without a Lead escalates its join
 decisions to the federal board (ADR 0021); `revokeRole` deliberately does not
 check.
