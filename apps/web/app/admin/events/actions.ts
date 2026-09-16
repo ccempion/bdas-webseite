@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import { getDb } from "@bdas/db";
 import { ForbiddenError, isAppError } from "@bdas/errors";
 import {
+  canCreateFor,
   canManage,
   cancelEvent,
   cancelRegistrationById,
@@ -101,12 +102,12 @@ function eventFieldsFromForm(fd: FormData, groupId: string | null) {
 }
 
 /** Authorize the caller may target this group for an event write: federal (null
- *  group) or board/organizer of the group. Mirrors events `canManage`. */
+ *  group) or board/organizer of the group (events `canCreateFor`). */
 function groupAuthError(
   me: Awaited<ReturnType<typeof currentMember>>,
   groupId: string | null,
 ): string | null {
-  if (canManage(viewerFrom(me), { groupId })) return null;
+  if (canCreateFor(viewerFrom(me), groupId)) return null;
   return groupId
     ? "Du darfst für diese Gruppe keine Veranstaltung anlegen."
     : "Nur der Bundesvorstand darf föderationsweite Veranstaltungen anlegen.";

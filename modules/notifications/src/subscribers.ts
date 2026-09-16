@@ -54,6 +54,8 @@ const SYSTEM_VIEWER: Viewer = {
   isFederal: true,
   boardGroupIds: [],
   organizerGroupIds: [],
+  userId: null,
+  ownEventsOnly: false,
 };
 
 let subs: Subscription[] = [];
