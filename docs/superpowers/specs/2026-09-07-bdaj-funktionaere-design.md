@@ -1,7 +1,7 @@
 # BDAJ-Funktionäre als Plattform-Nutzer — Design
 
 **Date:** 2026-09-07
-**Status:** Approved (brainstorming)
+**Status:** Approved (brainstorming) — **korrigiert durch [ADR 0047](../../decisions/0047-bdaj-rechte-zuschnitt.md)**; wo beide abweichen, gilt das ADR. Umsetzung: [Plan 2026-09-16](../plans/2026-09-16-bdaj-rechte.md).
 **Scope:** Selbst-Registrierung + Bundesvorstand-Freigabe für BDAJ-Funktionär\*innen (Bund der Alevitischen Jugendlichen — eigenständige, mit dem BDAS eng verbundene Organisation, keine BDAS-Mitglieder). Individuell zuschaltbare Rechte für Events, Blog und Dateien; grundsätzlich beschränkt auf eigene Inhalte. Betrifft `groups`, `members`, `events`, `files`, `blog`.
 
 ---
