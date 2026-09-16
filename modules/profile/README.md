@@ -35,6 +35,19 @@ list-vs-free-text in the edit form. It also resolves the 27 names the earlier
 hand-curated list used, so profiles saved before the switch still show their
 university as a selection instead of free text.
 
+## The Studienfach list
+
+`data/studienfaecher.csv` is the German subject classification — 265 subjects
+under 11 categories (`Kategorie,Studienfach`), transcoded to UTF-8 without a BOM
+and otherwise verbatim. It is a source file only: nothing reads it yet, and
+`studiengang` is still stored and entered as free text.
+
+Wiring it up mirrors the Hochschule list — a generator writing a
+`src/studienfaecher.generated.ts`, then a Combobox with the "Sonstige" escape
+hatch. Open before that lands: whether the form offers the 265 subjects flat or
+narrows by category first, and whether existing free-text values get a
+`canonicalStudienfach` the way universities got one.
+
 Photos live in the **private** `profile-media` bucket (`core/storage`
 `getProfileMediaStorage()`); the app mints short-lived signed URLs — never a
 public URL, never proxied bytes.
