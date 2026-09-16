@@ -485,3 +485,57 @@ describeIfDb("0007 group kind", () => {
     ).rejects.toThrow(/groups_kind_check/);
   });
 });
+
+describeIfDb("0008 netzwerk kind", () => {
+  let t: TestDb;
+
+  beforeEach(async () => {
+    t = await createTestDb();
+    for (const file of [
+      "0001_init.sql",
+      "0002_status_check.sql",
+      "0003_drop_university_description.sql",
+      "0004_location.sql",
+      "0005_image_key.sql",
+      "0006_link_scheme_guard.sql",
+      "0007_group_kind.sql",
+      "0008_group_kind_netzwerk.sql",
+    ]) {
+      const sql = await fs.readFile(path.join(__dirname, "..", "migrations", file), "utf8");
+      await t.client.unsafe(sql);
+    }
+    resetEventBus();
+  });
+
+  afterEach(async () => {
+    await t.cleanup();
+  });
+
+  it("lässt eine netzwerk-Zeile ohne Stadt zu", async () => {
+    await t.client`
+      INSERT INTO groups (id, slug, name, city, kind)
+      VALUES ('grp_nw', 'netzwerk', 'BDAS Netzwerk', NULL, 'netzwerk')
+    `;
+    const [row] = await t.client`SELECT city, kind FROM groups WHERE id = 'grp_nw'`;
+    expect(row!["kind"]).toBe("netzwerk");
+    expect(row!["city"]).toBeNull();
+  });
+
+  it("verbietet einer netzwerk-Zeile eine Stadt", async () => {
+    await expect(
+      t.client`
+        INSERT INTO groups (id, slug, name, city, kind)
+        VALUES ('grp_nw2', 'netzwerk-zwei', 'Netzwerk Zwei', 'Köln', 'netzwerk')
+      `,
+    ).rejects.toThrow(/groups_kind_city_check/);
+  });
+
+  it("weist eine weiterhin unbekannte Art ab", async () => {
+    await expect(
+      t.client`
+        INSERT INTO groups (id, slug, name, city, kind)
+        VALUES ('grp_x', 'verein', 'Verein', NULL, 'verein')
+      `,
+    ).rejects.toThrow(/groups_kind_check/);
+  });
+});
