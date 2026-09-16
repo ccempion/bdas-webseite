@@ -21,6 +21,7 @@ export type IdentityInput = {
   groupName: string | null;
   joinedAt: Date | null;
   kind: GroupKind | null;
+  isBdasMember: boolean;
 };
 
 const STATUS_TEXT: Record<MemberStatus, string> = {
@@ -39,25 +40,30 @@ export function layoutMode(status: MemberStatus | null): AccountLayoutMode {
 }
 
 /**
- * Die Statuszeile der Identitätskarte. Ein Förderer-Account ist aufgenommen,
- * aber kein Mitglied (Spec 2026-09-16 §3.1) — „Aktives Mitglied" wäre dort
- * schlicht falsch.
+ * Die Statuszeile der Identitätskarte. Aufgenommen heißt nicht Mitglied
+ * (Spec 2026-09-16 §3.1): ein Förderer-Account heißt beim Namen, jeder andere
+ * Aufgenommene ohne Mitgliedschaft wartet auf den Beitritt zu einer Gruppe.
  */
-export function statusText(status: MemberStatus | null, kind: GroupKind | null): string | null {
+export function statusText(
+  status: MemberStatus | null,
+  kind: GroupKind | null,
+  isBdasMember: boolean,
+): string | null {
   if (status === null) return null;
-  if (status === "active" && kind === "netzwerk") return "Förderer:in";
+  if (status === "active" && !isBdasMember) {
+    return kind === "netzwerk" ? "Förderer:in" : "Warten auf Beitritt";
+  }
   return STATUS_TEXT[status];
 }
 
 export function buildIdentityRows(input: IdentityInput): IdentityRow[] {
   // Die Netzwerk-Gruppe hat keine Seite und keine Mitglieder: sie gehört nicht
-  // in die Karte, und wer dort ist, ist nicht „Mitglied seit".
-  const netzwerk = input.kind === "netzwerk";
+  // in die Karte. Wer kein Mitglied ist, ist auch nicht „Mitglied seit".
   const rows: Array<{ label: string; value: string | null }> = [
-    { label: "Status", value: statusText(input.status, input.kind) },
-    { label: "Gruppe", value: netzwerk ? null : input.groupName },
+    { label: "Status", value: statusText(input.status, input.kind, input.isBdasMember) },
+    { label: "Gruppe", value: input.kind === "netzwerk" ? null : input.groupName },
     {
-      label: netzwerk ? "Dabei seit" : "Mitglied seit",
+      label: input.isBdasMember ? "Mitglied seit" : "Dabei seit",
       value: input.joinedAt
         ? input.joinedAt.toLocaleDateString("de-DE", {
             day: "numeric",

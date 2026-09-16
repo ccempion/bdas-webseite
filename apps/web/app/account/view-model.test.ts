@@ -23,6 +23,7 @@ describe("buildIdentityRows", () => {
       groupName: "BDAS Berlin",
       joinedAt: new Date("2025-03-14T00:00:00Z"),
       kind: "hochschulgruppe",
+      isBdasMember: true,
     });
 
     expect(rows).toEqual([
@@ -38,6 +39,7 @@ describe("buildIdentityRows", () => {
       groupName: "BDAS Berlin",
       joinedAt: null,
       kind: "hochschulgruppe",
+      isBdasMember: true,
     });
 
     expect(rows.map((r) => r.label)).toEqual(["Status", "Gruppe"]);
@@ -49,6 +51,7 @@ describe("buildIdentityRows", () => {
       groupName: null,
       joinedAt: null,
       kind: null,
+      isBdasMember: true,
     });
 
     expect(rows.map((r) => r.label)).toEqual(["Status"]);
@@ -60,6 +63,7 @@ describe("buildIdentityRows", () => {
       groupName: "BDAS Netzwerk",
       joinedAt: new Date("2025-03-14T00:00:00Z"),
       kind: "netzwerk",
+      isBdasMember: false,
     });
 
     expect(rows).toEqual([
@@ -71,15 +75,36 @@ describe("buildIdentityRows", () => {
 
 describe("statusText", () => {
   it("nennt einen aufgenommenen Förderer-Account beim Namen", () => {
-    expect(statusText("active", "netzwerk")).toBe("Förderer:in");
+    expect(statusText("active", "netzwerk", false)).toBe("Förderer:in");
+  });
+
+  it('nennt einen Aufgenommenen ohne Mitgliedschaft „Warten auf Beitritt"', () => {
+    expect(statusText("active", null, false)).toBe("Warten auf Beitritt");
   });
 
   it("lässt Mitglieder und Bewerbungen unverändert", () => {
-    expect(statusText("active", "hochschulgruppe")).toBe("Aktives Mitglied");
-    expect(statusText("active", null)).toBe("Aktives Mitglied");
-    expect(statusText("pending", null)).toBe("Bewerbung eingereicht");
-    expect(statusText("pending", "netzwerk")).toBe("Bewerbung eingereicht");
-    expect(statusText(null, null)).toBeNull();
+    expect(statusText("active", "hochschulgruppe", true)).toBe("Aktives Mitglied");
+    expect(statusText("active", null, true)).toBe("Aktives Mitglied");
+    expect(statusText("pending", null, false)).toBe("Bewerbung eingereicht");
+    expect(statusText("pending", "netzwerk", false)).toBe("Bewerbung eingereicht");
+    expect(statusText(null, null, false)).toBeNull();
+  });
+});
+
+describe("buildIdentityRows ohne Mitgliedschaft", () => {
+  it('zeigt „Warten auf Beitritt" und „Dabei seit"', () => {
+    const rows = buildIdentityRows({
+      status: "active",
+      groupName: null,
+      joinedAt: new Date("2025-03-14T00:00:00Z"),
+      kind: null,
+      isBdasMember: false,
+    });
+
+    expect(rows).toEqual([
+      { label: "Status", value: "Warten auf Beitritt" },
+      { label: "Dabei seit", value: "14. März 2025" },
+    ]);
   });
 });
 
