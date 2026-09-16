@@ -2,7 +2,7 @@ import Link from "next/link";
 
 import type { Folder } from "@bdas/files";
 
-import { SCOPE_LABEL } from "./folder-meta";
+import { formatFolderCounts, SCOPE_LABEL } from "./folder-meta";
 
 /**
  * Folder index shared by the member surface (/dateien) and the board surfaces
@@ -13,12 +13,14 @@ export function FolderIndex({
   folders,
   groupNames,
   counts,
+  subfolderCounts,
   hrefBase,
   emptyLabel = "Keine Ordner.",
 }: {
   folders: Folder[];
   groupNames: Record<string, string>;
   counts: Record<string, number>;
+  subfolderCounts: Record<string, number>;
   hrefBase: string;
   emptyLabel?: string;
 }) {
@@ -46,7 +48,7 @@ export function FolderIndex({
               </p>
             </div>
             <span className="text-sm text-bdas-ink-muted">
-              {counts[f.id] ?? 0} {(counts[f.id] ?? 0) === 1 ? "Datei" : "Dateien"}
+              {formatFolderCounts(counts[f.id] ?? 0, subfolderCounts[f.id] ?? 0)}
             </span>
             <span aria-hidden className="text-bdas-ink-muted">
               ›
