@@ -9,12 +9,13 @@ import React, { act, StrictMode } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import type { DeleteApplicantResult } from "./actions";
+import type { AcceptResult, DeleteApplicantResult } from "./actions";
 import { PoolTable, type PoolRow } from "./PoolTable";
 
 let container: HTMLDivElement;
 let root: Root;
 let onDelete = vi.fn(async (_userId: string): Promise<DeleteApplicantResult> => ({ ok: true }));
+let onAccept = vi.fn(async (_userId: string): Promise<AcceptResult> => ({ ok: true }));
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -23,6 +24,7 @@ beforeEach(() => {
   document.body.appendChild(container);
   root = createRoot(container);
   onDelete = vi.fn(async (_userId: string): Promise<DeleteApplicantResult> => ({ ok: true }));
+  onAccept = vi.fn(async (_userId: string): Promise<AcceptResult> => ({ ok: true }));
 });
 
 afterEach(() => {
@@ -38,11 +40,18 @@ const row = (over: Partial<PoolRow> & { memberId: string; name: string }): PoolR
   kind: "Bewerber:in",
   hasProfile: false,
   deletable: false,
+  acceptable: false,
   ...over,
 });
 
 const ROWS: PoolRow[] = [
-  row({ memberId: "m1", name: "A. Profil", uni: "RWTH Aachen", hasProfile: true }),
+  row({
+    memberId: "m1",
+    name: "A. Profil",
+    uni: "RWTH Aachen",
+    hasProfile: true,
+    acceptable: true,
+  }),
   row({ memberId: "m2", name: "B. Bot", deletable: true }),
   row({ memberId: "m3", name: "C. Mitglied", kind: "Mitglied ohne Gruppe" }),
 ];
@@ -51,7 +60,7 @@ function render(rows: PoolRow[] = ROWS) {
   act(() =>
     root.render(
       <StrictMode>
-        <PoolTable rows={rows} onDelete={onDelete} />
+        <PoolTable rows={rows} onDelete={onDelete} onAcceptAlumnus={onAccept} />
       </StrictMode>,
     ),
   );
@@ -99,9 +108,42 @@ describe("PoolTable", () => {
 
   it("offers deletion only on the rows the page marked deletable", () => {
     render();
-    expect(rowOf("B. Bot").querySelector("button")?.textContent).toBe("Löschen");
-    expect(rowOf("A. Profil").querySelector("button")).toBeNull();
-    expect(rowOf("C. Mitglied").querySelector("button")).toBeNull();
+    const labels = (name: string) =>
+      Array.from(rowOf(name).querySelectorAll("button")).map((b) => b.textContent);
+    expect(labels("B. Bot")).toEqual(["Löschen"]);
+    expect(labels("A. Profil")).not.toContain("Löschen");
+    expect(labels("C. Mitglied")).toEqual([]);
+  });
+
+  it("bietet die Alumnus-Aufnahme nur auf den dafür markierten Zeilen an", () => {
+    render();
+    expect(() => button("Als Alumnus aufnehmen", rowOf("A. Profil"))).not.toThrow();
+    expect(() => button("Als Alumnus aufnehmen", rowOf("B. Bot"))).toThrow();
+    expect(() => button("Als Alumnus aufnehmen", rowOf("C. Mitglied"))).toThrow();
+  });
+
+  it("nimmt nach Bestätigung per Account-ID auf und meldet es", async () => {
+    const confirm = vi.spyOn(window, "confirm").mockReturnValue(true);
+    render();
+    await click(button("Als Alumnus aufnehmen", rowOf("A. Profil")));
+    expect(confirm).toHaveBeenCalledTimes(1);
+    expect(onAccept).toHaveBeenCalledWith("usr_m1");
+    expect(status()).toBe("A. Profil ist als Alumnus aufgenommen.");
+  });
+
+  it("nimmt ohne Bestätigung niemanden auf", async () => {
+    vi.spyOn(window, "confirm").mockReturnValue(false);
+    render();
+    await click(button("Als Alumnus aufnehmen", rowOf("A. Profil")));
+    expect(onAccept).not.toHaveBeenCalled();
+  });
+
+  it("zeigt die Ablehnung des Servers statt einer Erfolgsmeldung", async () => {
+    vi.spyOn(window, "confirm").mockReturnValue(true);
+    onAccept.mockResolvedValueOnce({ ok: false, error: "Keine Berechtigung." });
+    render();
+    await click(button("Als Alumnus aufnehmen", rowOf("A. Profil")));
+    expect(status()).toBe("Keine Berechtigung.");
   });
 
   it("deletes by account id once confirmed, and says so", async () => {

@@ -9,7 +9,7 @@ import { listGrouplessMembers, listOpenGroupChanges } from "@bdas/members";
 import { getProfile } from "@bdas/profile";
 
 import { requireFederalScope } from "../../../_dashboard/session";
-import { deleteApplicantAction } from "./actions";
+import { acceptAsAlumnusAction, deleteApplicantAction } from "./actions";
 import { isDeletableApplicant } from "./deletable";
 import { PoolTable, type PoolRow } from "./PoolTable";
 
@@ -53,6 +53,7 @@ export default async function PoolPage() {
         kind: member.status === "active" ? "Mitglied ohne Gruppe" : "Bewerber:in",
         hasProfile: profile !== null,
         deletable: verdict.ok,
+        acceptable: member.status === "pending" && profile !== null,
       };
     }),
   );
@@ -68,7 +69,11 @@ export default async function PoolPage() {
           </p>
         </div>
 
-        <PoolTable rows={rows} onDelete={deleteApplicantAction} />
+        <PoolTable
+          rows={rows}
+          onDelete={deleteApplicantAction}
+          onAcceptAlumnus={acceptAsAlumnusAction}
+        />
       </section>
 
       <section className="flex flex-col gap-3">

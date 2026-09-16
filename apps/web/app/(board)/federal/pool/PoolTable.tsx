@@ -4,7 +4,7 @@ import React, { useMemo, useState, useTransition } from "react";
 
 import { Button, Card, FilterChip } from "@bdas/design-system";
 
-import type { DeleteApplicantResult } from "./actions";
+import type { AcceptResult, DeleteApplicantResult } from "./actions";
 
 export type PoolRow = {
   readonly memberId: string;
@@ -17,6 +17,8 @@ export type PoolRow = {
   readonly hasProfile: boolean;
   /** Same rules the action checks again (ADR 0044). */
   readonly deletable: boolean;
+  /** Groupless applicant with a profile: the board may accept them as alumnus. */
+  readonly acceptable: boolean;
 };
 
 type Filter = "all" | "no_profile";
@@ -34,10 +36,12 @@ const FILTERS: ReadonlyArray<{ key: Filter; label: string }> = [
 export function PoolTable({
   rows,
   onDelete,
+  onAcceptAlumnus,
 }: {
   rows: ReadonlyArray<PoolRow>;
-  /** Server action, handed in by the page so the table stays testable. */
+  /** Server actions, handed in by the page so the table stays testable. */
   onDelete: (userId: string) => Promise<DeleteApplicantResult>;
+  onAcceptAlumnus: (userId: string) => Promise<AcceptResult>;
 }) {
   const [filter, setFilter] = useState<Filter>("all");
   const [busy, start] = useTransition();
@@ -59,6 +63,21 @@ export function PoolTable({
     start(async () => {
       const res = await onDelete(row.userId);
       setNotice(res.ok ? `Konto von ${row.name} gelöscht.` : res.error);
+    });
+  }
+
+  function acceptAlumnus(row: PoolRow) {
+    // Acceptance is final: the marker can be removed later, the status cannot.
+    if (
+      !window.confirm(
+        `${row.name} als Alumnus aufnehmen? Die Aufnahme lässt sich nicht rückgängig machen.`,
+      )
+    ) {
+      return;
+    }
+    start(async () => {
+      const res = await onAcceptAlumnus(row.userId);
+      setNotice(res.ok ? `${row.name} ist als Alumnus aufgenommen.` : res.error);
     });
   }
 
@@ -105,6 +124,16 @@ export function PoolTable({
                 <td className="p-3">{r.days} Tage</td>
                 <td className="p-3 text-bdas-ink-muted">{r.kind}</td>
                 <td className="p-3 text-right">
+                  {r.acceptable && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      disabled={busy}
+                      onClick={() => acceptAlumnus(r)}
+                    >
+                      Als Alumnus aufnehmen
+                    </Button>
+                  )}
                   {r.deletable && (
                     <Button variant="ghost" size="sm" disabled={busy} onClick={() => remove(r)}>
                       Löschen
