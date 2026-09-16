@@ -97,6 +97,7 @@ export default async function AccountPage({
     groupName: currentGroupName,
     joinedAt: me.member?.joinedAt ?? null,
     kind: me.primaryGroupKind,
+    isBdasMember: me.isBdasMember,
   });
   const chips = roleChips(me.grants);
 
