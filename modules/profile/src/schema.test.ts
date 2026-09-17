@@ -71,9 +71,11 @@ describeIfDb("member_profiles: nutzertyp (0004)", () => {
     geburtsdatum: "2000-01-01",
   };
 
-  it("requires the type on new rows", async () => {
+  it("stores a row without a type as a student, as code from before 0004 writes", async () => {
     const { nutzertyp: _omit, ...rest } = student;
-    await expect(insert(rest)).rejects.toThrow(/null value/i);
+    await insert(rest);
+    const [row] = await t.client`SELECT nutzertyp FROM member_profiles`;
+    expect(row?.["nutzertyp"]).toBe("student");
   });
 
   it("accepts each type with its own fields", async () => {

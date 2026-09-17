@@ -8,8 +8,10 @@
 -- birth date.
 --
 -- Every existing row is a student's and satisfies the student branch, so the
--- temporary default below backfills them correctly. It is dropped right after:
--- a new row must say what it is.
+-- default backfills them correctly. It also stays: code deployed before this
+-- migration (a rollback, or the old build still serving mid-deploy) inserts
+-- without `nutzertyp` and must keep saving student profiles. The current code
+-- always writes the type explicitly.
 
 ALTER TABLE member_profiles
   ADD COLUMN nutzertyp text NOT NULL DEFAULT 'student'
@@ -20,8 +22,6 @@ ALTER TABLE member_profiles
   ADD COLUMN interesse text,
   ADD COLUMN bdaj_funktion text
     CHECK (bdaj_funktion IN ('vorstandsmitglied', 'mitglied', 'geschaeftsstelle'));
-
-ALTER TABLE member_profiles ALTER COLUMN nutzertyp DROP DEFAULT;
 
 ALTER TABLE member_profiles
   ALTER COLUMN studiengang DROP NOT NULL,
