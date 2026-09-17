@@ -1,3 +1,4 @@
+import { STUDIENFACH_KATEGORIEN } from "./studienfaecher.generated";
 import { UNIVERSITIES } from "./universities.generated";
 
 /** Stable enum keys + German UI labels. Keys are stored; labels are display. */
@@ -18,6 +19,26 @@ export const GEFUNDEN_DURCH_OPTIONS = [
 
 export const ABSCHLUSSART_KEYS = ABSCHLUSSART_OPTIONS.map((o) => o.value);
 export const GEFUNDEN_DURCH_KEYS = GEFUNDEN_DURCH_OPTIONS.map((o) => o.value);
+
+/** Die Funktion einer BDAJ-Funktionärin (Spec 2026-09-16 §4.3). */
+export const BDAJ_FUNKTION_OPTIONS = [
+  { value: "vorstandsmitglied", label: "Vorstandsmitglied" },
+  { value: "mitglied", label: "Mitglied" },
+  { value: "geschaeftsstelle", label: "Geschäftsstelle" },
+] as const;
+
+export const BDAJ_FUNKTION_KEYS = BDAJ_FUNKTION_OPTIONS.map((o) => o.value);
+
+export { STUDIENFACH_KATEGORIEN };
+
+export const STUDIENFACH_KATEGORIE_NAMES: ReadonlyArray<string> = STUDIENFACH_KATEGORIEN.map(
+  (k) => k.name,
+);
+
+/** Die Fächer einer Kategorie; leer, wenn es die Kategorie nicht gibt. */
+export function faecherIn(kategorie: string): ReadonlyArray<string> {
+  return STUDIENFACH_KATEGORIEN.find((k) => k.name === kategorie)?.faecher ?? [];
+}
 
 /** The "not in the list" affordance value. Selecting it reveals a free-text
  *  field whose typed value is stored directly in `uni`. */
