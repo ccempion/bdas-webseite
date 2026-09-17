@@ -7,8 +7,15 @@ import { getEventBus } from "@bdas/events";
 
 import type { ProfileCompleted, ProfileUpdated } from "../events";
 import { memberProfiles, type MemberProfileRow } from "../schema";
-import { SaveProfileFields } from "../types";
-import type { MemberProfile, ProfileActor, SaveProfileInput, SaveProfileResult } from "../types";
+import { isNutzertyp, PROFILE_FIELD_SCHEMAS } from "../types";
+import type {
+  AnyProfileFields,
+  MemberProfile,
+  Nutzertyp,
+  ProfileActor,
+  SaveProfileInput,
+  SaveProfileResult,
+} from "../types";
 
 export type Db = PostgresJsDatabase<Record<string, never>>;
 
@@ -17,10 +24,14 @@ const MAX_INPUT_BYTES = 16 * 1024; // profile JSON is tiny; reject anything huge
 function row2profile(row: MemberProfileRow): MemberProfile {
   return {
     userId: row.userId,
+    nutzertyp: isNutzertyp(row.nutzertyp) ? row.nutzertyp : "student",
     studiengang: row.studiengang,
+    studienfachKategorie: row.studienfachKategorie,
     abschlussart: row.abschlussart,
     uni: row.uni,
     geburtsdatum: row.geburtsdatum,
+    interesse: row.interesse,
+    bdajFunktion: row.bdajFunktion,
     gefundenDurch: row.gefundenDurch,
     empfehlerName: row.empfehlerName,
     vorstellung: row.vorstellung,
@@ -57,6 +68,11 @@ export function canViewProfile(actor: ProfileActor, ownerUserId: string): boolea
  * that can swap a photo — the account avatar, the account edit form and the
  * signup wizard — come through here, which is why the bookkeeping lives here
  * rather than in each of them.
+ *
+ * The field set follows `nutzertyp` (spec 2026-09-16 §4.3): taken from the
+ * submit, else from the stored row, else `student` — the /account form sends
+ * no type and must keep editing a student's profile as before. Columns that
+ * belong to another type are written as null.
  */
 export async function saveProfile(db: Db, input: SaveProfileInput): Promise<SaveProfileResult> {
   if (input.actor.userId !== input.userId) {
@@ -66,23 +82,39 @@ export async function saveProfile(db: Db, input: SaveProfileInput): Promise<Save
     throw new ValidationError("Eingabe zu groß.");
   }
 
-  const parsed = SaveProfileFields.safeParse(input.fields);
+  // Preserves an existing photo and category when this submit omits them, and
+  // tells us which type the row already has.
+  const existing = await getProfile(db, input.userId);
+
+  const raw = (input.fields ?? {}) as Record<string, unknown>;
+  const requested = raw["nutzertyp"];
+  if (requested !== undefined && !isNutzertyp(requested)) {
+    throw new ValidationError("Unbekannter Nutzertyp.");
+  }
+  const nutzertyp: Nutzertyp = isNutzertyp(requested)
+    ? requested
+    : (existing?.nutzertyp ?? "student");
+
+  const parsed = PROFILE_FIELD_SCHEMAS[nutzertyp].safeParse(raw);
   if (!parsed.success) {
     throw new ValidationError("Profil-Eingabe ungültig", { fields: flatten(parsed.error) });
   }
-  const v = parsed.data;
+  const v: AnyProfileFields = parsed.data;
   const now = new Date();
 
-  // Preserves an existing photo when this submit omits one, and tells us which
-  // object a replacement superseded.
-  const existing = await getProfile(db, input.userId);
-
+  const hasStudy = "studiengang" in v;
   const values = {
     userId: input.userId,
-    studiengang: v.studiengang,
-    abschlussart: v.abschlussart,
-    uni: v.uni,
-    geburtsdatum: v.geburtsdatum,
+    nutzertyp,
+    studiengang: hasStudy ? v.studiengang : null,
+    studienfachKategorie: hasStudy
+      ? (v.studienfachKategorie ?? existing?.studienfachKategorie ?? null)
+      : null,
+    abschlussart: "abschlussart" in v ? v.abschlussart : null,
+    uni: "uni" in v ? v.uni : null,
+    geburtsdatum: "geburtsdatum" in v ? v.geburtsdatum : null,
+    interesse: "interesse" in v ? v.interesse : null,
+    bdajFunktion: "bdajFunktion" in v ? v.bdajFunktion : null,
     gefundenDurch: v.gefundenDurch,
     empfehlerName: v.gefundenDurch === "empfehlung" ? (v.empfehlerName ?? null) : null,
     // Unlike empfehlerName this is not tied to a channel, so it is never
@@ -101,10 +133,14 @@ export async function saveProfile(db: Db, input: SaveProfileInput): Promise<Save
     .onConflictDoUpdate({
       target: memberProfiles.userId,
       set: {
+        nutzertyp: values.nutzertyp,
         studiengang: values.studiengang,
+        studienfachKategorie: values.studienfachKategorie,
         abschlussart: values.abschlussart,
         uni: values.uni,
         geburtsdatum: values.geburtsdatum,
+        interesse: values.interesse,
+        bdajFunktion: values.bdajFunktion,
         gefundenDurch: values.gefundenDurch,
         empfehlerName: values.empfehlerName,
         vorstellung: values.vorstellung,
@@ -186,6 +222,47 @@ export async function clearProfilePhoto(
   const event: ProfileUpdated = { type: "profile.updated", userId: input.userId, at: now };
   await getEventBus().publish(event);
   return { cleared: true, previousStorageKey: existing.photoStorageKey };
+}
+
+/**
+ * Set the profile photo on an existing profile, whatever its type. Owner-only.
+ *
+ * The avatar control used to re-submit the whole student record with a new
+ * key; that cannot work for types without study fields. Returns the key it
+ * replaced so the caller can delete that object (this module does not own the
+ * bytes). No profile yet → nothing to attach the photo to.
+ */
+export async function setProfilePhoto(
+  db: Db,
+  input: {
+    readonly userId: string;
+    readonly actor: ProfileActor;
+    readonly photoStorageKey: string;
+  },
+): Promise<{ readonly updated: boolean; readonly supersededPhotoStorageKey: string | null }> {
+  if (input.actor.userId !== input.userId) {
+    throw new ForbiddenError("Du darfst nur dein eigenes Profil bearbeiten.");
+  }
+  const key = input.photoStorageKey.trim();
+  if (key === "" || key.length > 200) throw new ValidationError("Ungültiger Bildschlüssel.");
+
+  const existing = await getProfile(db, input.userId);
+  if (!existing) return { updated: false, supersededPhotoStorageKey: null };
+
+  const now = new Date();
+  await db
+    .update(memberProfiles)
+    .set({ photoStorageKey: key, updatedAt: now, updatedBy: input.actor.userId })
+    .where(eq(memberProfiles.userId, input.userId));
+
+  const event: ProfileUpdated = { type: "profile.updated", userId: input.userId, at: now };
+  await getEventBus().publish(event);
+
+  const previous = existing.photoStorageKey;
+  return {
+    updated: true,
+    supersededPhotoStorageKey: previous && previous !== key ? previous : null,
+  };
 }
 
 function flatten(err: z.ZodError): Record<string, string> {
