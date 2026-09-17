@@ -1,10 +1,12 @@
 import { getDb } from "@bdas/db";
+import { getGroupKind } from "@bdas/groups";
 import { ROLE_LABELS, listGrantAudit, listMembers, listRoleHolders } from "@bdas/members";
 
 import { requireLeadScope } from "../../../../_dashboard/session";
 import { AuditLog } from "../../../_components/AuditLog";
 import { GrantRoleModal } from "../../../_components/GrantRoleModal";
 import { RoleRoster } from "../../../_components/RoleRoster";
+import { delegateRoles } from "./role-options";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Vorstand" };
@@ -18,11 +20,13 @@ export default async function VorstandPage({
 }) {
   const { me, groupId } = await requireLeadScope(params.slug);
   const db = getDb();
-  const [holders, audit, groupMembers] = await Promise.all([
+  const [holders, audit, groupMembers, kind] = await Promise.all([
     listRoleHolders(db),
     listGrantAudit(db, { groupId }),
     listMembers(db, { groupId, status: "active" }),
+    getGroupKind(db, groupId),
   ]);
+  const roles = delegateRoles(kind);
   const ofGroup = holders.filter((h) => h.groupId === groupId);
   const revalidate = `/gruppe/${params.slug}/vorstand`;
   const tab = searchParams["tab"];
@@ -38,12 +42,7 @@ export default async function VorstandPage({
             memberId: m.id,
             name: `${m.firstName} ${m.lastName}`,
           }))}
-          roleOptions={[
-            { role: "event_organizer", label: "Event-Manager", groupId },
-            { role: "page_editor", label: "Seiten-Editor", groupId },
-            { role: "file_manager", label: "Datei-Manager", groupId },
-            { role: "blogger", label: "Blogger", groupId },
-          ]}
+          roleOptions={roles.map((r) => ({ role: r.role, label: r.option, groupId }))}
           revalidatePath={revalidate}
         />
       </div>
@@ -67,22 +66,10 @@ export default async function VorstandPage({
         <RoleRoster
           sections={[
             { title: "Leads", holders: ofGroup.filter((h) => h.role === "local_board_lead") },
-            {
-              title: "Event-Manager",
-              holders: ofGroup.filter((h) => h.role === "event_organizer"),
-            },
-            {
-              title: "Seiten-Editoren",
-              holders: ofGroup.filter((h) => h.role === "page_editor"),
-            },
-            {
-              title: "Datei-Manager",
-              holders: ofGroup.filter((h) => h.role === "file_manager"),
-            },
-            {
-              title: "Blogger",
-              holders: ofGroup.filter((h) => h.role === "blogger"),
-            },
+            ...roles.map((r) => ({
+              title: r.section,
+              holders: ofGroup.filter((h) => h.role === r.role),
+            })),
           ]}
           groupNames={{}}
           revalidatePath={revalidate}

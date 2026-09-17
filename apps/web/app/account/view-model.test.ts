@@ -73,9 +73,31 @@ describe("buildIdentityRows", () => {
   });
 });
 
+describe("buildIdentityRows für eine Partnerorganisation", () => {
+  it('behält die Gruppenzeile, damit „BDAJ" sichtbar bleibt', () => {
+    const rows = buildIdentityRows({
+      status: "active",
+      groupName: "BDAJ",
+      joinedAt: null,
+      kind: "affiliate",
+      isBdasMember: false,
+    });
+
+    expect(rows).toEqual([
+      { label: "Status", value: "Partnerorganisation" },
+      { label: "Gruppe", value: "BDAJ" },
+    ]);
+  });
+});
+
 describe("statusText", () => {
   it("nennt einen aufgenommenen Förderer-Account beim Namen", () => {
     expect(statusText("active", "netzwerk", false)).toBe("Förderer:in");
+  });
+
+  it("nennt einen aufgenommenen BDAJ-Account Partnerorganisation (ADR 0047)", () => {
+    expect(statusText("active", "affiliate", false)).toBe("Partnerorganisation");
+    expect(statusText("pending", "affiliate", false)).toBe("Bewerbung eingereicht");
   });
 
   it('nennt einen Aufgenommenen ohne Mitgliedschaft „Warten auf Beitritt"', () => {
