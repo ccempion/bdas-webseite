@@ -26,6 +26,11 @@ Eine neue Frage ist eine Änderung an `flow.ts`. Wer eine Frage entfernt oder
 umbenennt, erhöht `version`; gespeicherte Antworten zu verschwundenen Fragen
 fallen still heraus.
 
+Der Browser importiert den Ablauf aus `@bdas/onboarding/client` (ADR 0049), nicht
+aus `@bdas/onboarding`: das Haupt-`index.ts` zieht über die Dienste Server-Code
+nach. Der Client-Einstieg ist eine Teilmenge davon; `client.test.ts` sichert ab,
+dass die Dateien dahinter nichts außer einander importieren.
+
 ## Sicherheitsregel
 
 `completeJourney` beantragt ohne den App-Guard `requireSelfServiceGroup`, also
