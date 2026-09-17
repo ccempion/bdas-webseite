@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import type * as OnboardingModule from "@bdas/onboarding";
+
 vi.mock("next/headers", () => ({ headers: () => ({ get: () => undefined }) }));
 vi.mock("@bdas/db", () => ({ getDb: () => ({}) }));
 vi.mock("../../lib/auth-bootstrap", () => ({ bootAuth: () => {} }));
@@ -26,7 +28,7 @@ const ENV = {
   netzwerkGroupId: "grp_netz",
 };
 vi.mock("@bdas/onboarding", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@bdas/onboarding")>()),
+  ...(await importOriginal<typeof OnboardingModule>()),
   loadFlowEnv: async () => ENV,
   startJourney: (...a: unknown[]) => startJourneyMock(...a),
 }));
