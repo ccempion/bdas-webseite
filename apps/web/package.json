@@ -27,6 +27,7 @@
     "@bdas/members": "workspace:*",
     "@bdas/newsletter": "workspace:*",
     "@bdas/notifications": "workspace:*",
+    "@bdas/onboarding": "workspace:*",
     "@bdas/profile": "workspace:*",
     "@bdas/storage": "workspace:*",
     "@node-rs/argon2": "^2.0.2",
