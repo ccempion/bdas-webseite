@@ -1,6 +1,15 @@
 import { describe, expect, it } from "vitest";
 
-import { MAX_VORSTELLUNG, SaveProfileFields } from "./types";
+import {
+  AlumnusProfileFields,
+  BdajProfileFields,
+  FIELD_SETS,
+  FoerdererProfileFields,
+  isNutzertyp,
+  MAX_INTERESSE,
+  MAX_VORSTELLUNG,
+  SaveProfileFields,
+} from "./types";
 
 const valid = {
   studiengang: "Informatik",
@@ -95,5 +104,93 @@ describe("SaveProfileFields", () => {
   it("accepts valid leap day", () => {
     const r = SaveProfileFields.safeParse({ ...valid, geburtsdatum: "2000-02-29" });
     expect(r.success).toBe(true);
+  });
+});
+
+describe("student: Studienfach-Kategorie", () => {
+  it("accepts a known category and none at all", () => {
+    expect(
+      SaveProfileFields.safeParse({ ...valid, studienfachKategorie: "Ingenieurwissenschaften" })
+        .success,
+    ).toBe(true);
+    expect(SaveProfileFields.safeParse({ ...valid, studienfachKategorie: null }).success).toBe(
+      true,
+    );
+  });
+
+  it("rejects an unknown category", () => {
+    expect(
+      SaveProfileFields.safeParse({ ...valid, studienfachKategorie: "Zauberei" }).success,
+    ).toBe(false);
+  });
+
+  it("rejects a mismatching explicit type", () => {
+    expect(SaveProfileFields.safeParse({ ...valid, nutzertyp: "alumnus" }).success).toBe(false);
+  });
+});
+
+describe("AlumnusProfileFields", () => {
+  const alumnus = { studiengang: "Jura", uni: "Universität zu Köln", gefundenDurch: "instagram" };
+
+  it("needs no degree and no birth date", () => {
+    expect(AlumnusProfileFields.safeParse(alumnus).success).toBe(true);
+  });
+
+  it("strips student-only fields instead of failing", () => {
+    const r = AlumnusProfileFields.safeParse({ ...alumnus, abschlussart: "", geburtsdatum: "" });
+    expect(r.success && !("abschlussart" in r.data)).toBe(true);
+  });
+
+  it("still needs subject, university and channel", () => {
+    expect(AlumnusProfileFields.safeParse({ ...alumnus, uni: "" }).success).toBe(false);
+    expect(AlumnusProfileFields.safeParse({ ...alumnus, studiengang: "" }).success).toBe(false);
+    expect(AlumnusProfileFields.safeParse({ ...alumnus, gefundenDurch: "" }).success).toBe(false);
+  });
+});
+
+describe("FoerdererProfileFields", () => {
+  it("needs an interest within the cap", () => {
+    const base = { gefundenDurch: "webseite" };
+    expect(FoerdererProfileFields.safeParse({ ...base, interesse: "Kulturarbeit" }).success).toBe(
+      true,
+    );
+    expect(FoerdererProfileFields.safeParse({ ...base, interesse: "  " }).success).toBe(false);
+    expect(
+      FoerdererProfileFields.safeParse({ ...base, interesse: "x".repeat(MAX_INTERESSE + 1) })
+        .success,
+    ).toBe(false);
+  });
+});
+
+describe("BdajProfileFields", () => {
+  it("accepts only the three functions", () => {
+    const base = { gefundenDurch: "webseite" };
+    expect(BdajProfileFields.safeParse({ ...base, bdajFunktion: "geschaeftsstelle" }).success).toBe(
+      true,
+    );
+    expect(BdajProfileFields.safeParse({ ...base, bdajFunktion: "chef" }).success).toBe(false);
+  });
+
+  it("keeps the referral rule", () => {
+    expect(
+      BdajProfileFields.safeParse({ gefundenDurch: "empfehlung", bdajFunktion: "mitglied" })
+        .success,
+    ).toBe(false);
+  });
+});
+
+describe("FIELD_SETS", () => {
+  it("follows the spec order", () => {
+    expect(FIELD_SETS).toEqual({
+      student: ["studienfach", "abschlussart", "uni", "geburtsdatum", "gefundenDurch", "photo"],
+      alumnus: ["studienfach", "uni", "gefundenDurch"],
+      foerderer: ["interesse", "gefundenDurch"],
+      bdaj: ["bdajFunktion", "gefundenDurch"],
+    });
+  });
+
+  it("knows its types", () => {
+    expect(isNutzertyp("alumnus")).toBe(true);
+    expect(isNutzertyp("gast")).toBe(false);
   });
 });
