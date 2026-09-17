@@ -4,7 +4,15 @@ import { fileURLToPath } from "node:url";
 
 import { describe, expect, it } from "vitest";
 
-import { canonicalUniversity, UNIVERSITIES } from "./data";
+import {
+  BDAJ_FUNKTION_KEYS,
+  canonicalUniversity,
+  faecherIn,
+  STUDIENFACH_KATEGORIE_NAMES,
+  STUDIENFACH_KATEGORIEN,
+  UNIVERSITIES,
+  universityCity,
+} from "./data";
 
 const DATA_DIR = join(dirname(fileURLToPath(import.meta.url)), "..", "data");
 
@@ -135,5 +143,68 @@ describe("canonicalUniversity", () => {
   it("is not fooled by inherited object properties", () => {
     expect(canonicalUniversity("constructor")).toBeNull();
     expect(canonicalUniversity("__proto__")).toBeNull();
+  });
+});
+
+describe("STUDIENFACH_KATEGORIEN", () => {
+  const all = STUDIENFACH_KATEGORIEN.flatMap((k) => k.faecher);
+
+  it("covers every row of the CSV", () => {
+    const source = readFileSync(join(DATA_DIR, "studienfaecher.csv"), "utf8");
+    const records = source.split("\n").filter((l) => l.trim() !== "").length - 1;
+    expect(all).toHaveLength(records);
+    expect(all).toHaveLength(265);
+  });
+
+  it("has the eleven categories, Sonstige last", () => {
+    expect(STUDIENFACH_KATEGORIE_NAMES).toHaveLength(11);
+    expect(STUDIENFACH_KATEGORIE_NAMES.at(-1)).toBe("Sonstige");
+    expect(STUDIENFACH_KATEGORIE_NAMES).toContain("Ingenieurwissenschaften");
+    expect(STUDIENFACH_KATEGORIE_NAMES).toContain(
+      "Agrar-, Forst- und Ernährungswissenschaften, Veterinärmedizin",
+    );
+  });
+
+  it("keeps quoted subjects with commas intact", () => {
+    expect(faecherIn("Geisteswissenschaften")).toContain(
+      "Evang. Religionspädagogik, kirchliche Bildungsarbeit",
+    );
+  });
+
+  it("sorts subjects with German collation and trims them", () => {
+    for (const k of STUDIENFACH_KATEGORIEN) {
+      expect([...k.faecher].sort((a, b) => a.localeCompare(b, "de"))).toEqual(k.faecher);
+      expect(k.faecher.filter((f) => f !== f.trim() || f === "")).toEqual([]);
+    }
+  });
+
+  it("fits the stored column", () => {
+    expect(Math.max(...all.map((f) => f.length))).toBeLessThanOrEqual(200);
+    expect(Math.max(...STUDIENFACH_KATEGORIE_NAMES.map((k) => k.length))).toBeLessThanOrEqual(200);
+  });
+
+  it("returns nothing for an unknown category", () => {
+    expect(faecherIn("Zauberei")).toEqual([]);
+  });
+});
+
+describe("BDAJ_FUNKTION_KEYS", () => {
+  it("offers exactly the three functions from the spec", () => {
+    expect(BDAJ_FUNKTION_KEYS).toEqual(["vorstandsmitglied", "mitglied", "geschaeftsstelle"]);
+  });
+});
+
+describe("universityCity", () => {
+  it("knows the city of every listed university", () => {
+    expect(UNIVERSITIES.filter((u) => universityCity(u) === null)).toEqual([]);
+  });
+
+  it("returns the address city", () => {
+    expect(universityCity("RWTH Aachen")).toBe("Aachen");
+  });
+
+  it("resolves legacy names and rejects unknown ones", () => {
+    expect(universityCity("Technische Universität Berlin")).toBe(universityCity("TU Berlin"));
+    expect(universityCity("Hochschule Nirgendwo")).toBeNull();
   });
 });

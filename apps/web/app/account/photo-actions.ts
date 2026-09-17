@@ -6,7 +6,7 @@ import { getDb } from "@bdas/db";
 import { isAppError } from "@bdas/errors";
 import { requireFlag } from "@bdas/feature-flags";
 import { getCurrentMember } from "@bdas/members";
-import { clearProfilePhoto, getProfile, saveProfile } from "@bdas/profile";
+import { clearProfilePhoto, setProfilePhoto } from "@bdas/profile";
 
 import { purgeUnreferencedPhoto } from "../_profile/photo-url";
 import { readSessionCookie } from "../../lib/auth-cookie";
@@ -19,13 +19,8 @@ export type SavePhotoState = {
 /**
  * Persist a freshly uploaded profile photo on its own, so the avatar control at
  * the top of /account saves immediately instead of waiting on the extended
- * profile form far below it.
- *
- * `member_profiles` carries NOT NULL study fields and `saveProfile` validates
- * the whole record, so there is no photo-only write at the module level. This
- * re-submits the stored values unchanged with the new key — which also means a
- * member without a profile row yet cannot set a photo here; they get pointed at
- * the extended profile instead of a silent no-op.
+ * profile form far below it. Works for every user type. A member without a
+ * profile row yet is pointed at the extended profile instead of a silent no-op.
  */
 export async function savePhotoAction(storageKey: string): Promise<SavePhotoState> {
   requireFlag("profile");
@@ -37,28 +32,17 @@ export async function savePhotoAction(storageKey: string): Promise<SavePhotoStat
   const key = storageKey.trim();
   if (key === "") return { error: "Kein Bild ausgewählt." };
 
-  const existing = await getProfile(db, me.user.id);
-  if (!existing) {
-    return {
-      error: "Bitte fülle zuerst das erweiterte Profil aus, dann kannst du ein Bild setzen.",
-    };
-  }
-
   try {
-    const { supersededPhotoStorageKey } = await saveProfile(db, {
+    const { updated, supersededPhotoStorageKey } = await setProfilePhoto(db, {
       userId: me.user.id,
-      fields: {
-        studiengang: existing.studiengang,
-        abschlussart: existing.abschlussart,
-        uni: existing.uni,
-        geburtsdatum: existing.geburtsdatum,
-        gefundenDurch: existing.gefundenDurch,
-        empfehlerName: existing.empfehlerName,
-        photoStorageKey: key,
-      },
       actor: { userId: me.user.id, grants: me.grants },
-      groupId: me.member.primaryGroupId ?? null,
+      photoStorageKey: key,
     });
+    if (!updated) {
+      return {
+        error: "Bitte fülle zuerst das erweiterte Profil aus, dann kannst du ein Bild setzen.",
+      };
+    }
     // The photo it just replaced is now unreachable — personal data (spec §7)
     // should not outlive the profile that referenced it.
     await purgeUnreferencedPhoto(supersededPhotoStorageKey, me.user.id);
@@ -74,8 +58,7 @@ export async function savePhotoAction(storageKey: string): Promise<SavePhotoStat
 /**
  * Drop the profile photo, leaving the rest of the profile alone.
  *
- * Unlike `savePhotoAction` this does not re-submit the whole record: clearing
- * has a dedicated module service precisely because a null photo key inside
+ * Clearing has its own module service because a null photo key inside
  * `saveProfile` means "unchanged", not "delete".
  */
 export async function removePhotoAction(): Promise<SavePhotoState> {

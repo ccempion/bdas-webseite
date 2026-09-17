@@ -10,6 +10,9 @@ const complete: SummaryInput = {
   abschlussart: "master",
   uni: "RWTH Aachen",
   geburtsdatum: "1999-01-02",
+  studienfachKategorie: null,
+  interesse: null,
+  bdajFunktion: null,
   gefundenDurch: "instagram",
   empfehlerName: null,
   vorstellung: null,
@@ -89,5 +92,47 @@ describe("buildProfileSummary", () => {
     expect(rowsByLabel({ ...complete, abschlussart: "habilitation" })["Abschlussart"]).toBe(
       "habilitation",
     );
+  });
+});
+
+describe("buildProfileSummary — user types", () => {
+  const base = {
+    firstName: "Lea",
+    lastName: "Yıldız",
+    groupName: null,
+    studiengang: null,
+    studienfachKategorie: null,
+    abschlussart: null,
+    uni: null,
+    geburtsdatum: null,
+    interesse: null,
+    bdajFunktion: null,
+    gefundenDurch: "webseite",
+    empfehlerName: null,
+    vorstellung: null,
+  };
+
+  it("shows a supporter's interest and no empty study rows", () => {
+    const rows = buildProfileSummary({ ...base, interesse: "Kulturarbeit" });
+    expect(rows.map((r) => r.label)).toEqual([
+      "Vorname",
+      "Nachname",
+      "Interesse",
+      "Gefunden durch",
+    ]);
+  });
+
+  it("shows the bdaj function by its label", () => {
+    const rows = buildProfileSummary({ ...base, bdajFunktion: "geschaeftsstelle" });
+    expect(rows).toContainEqual({ label: "Funktion in der BDAJ", value: "Geschäftsstelle" });
+  });
+
+  it("shows the study category next to the subject", () => {
+    const rows = buildProfileSummary({
+      ...base,
+      studiengang: "Maschinenbau",
+      studienfachKategorie: "Ingenieurwissenschaften",
+    });
+    expect(rows).toContainEqual({ label: "Studienbereich", value: "Ingenieurwissenschaften" });
   });
 });

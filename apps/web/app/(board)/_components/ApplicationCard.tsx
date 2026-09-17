@@ -80,8 +80,12 @@ export function ApplicationCard({
             <>
               <p className="mt-1 text-sm text-bdas-ink-body">
                 {profile.uni} · {profile.studiengang}, {profile.abschlussart}
-                <br />
-                geb. {new Date(profile.geburtsdatum).toLocaleDateString("de-DE")}
+                {profile.geburtsdatum ? (
+                  <>
+                    <br />
+                    geb. {new Date(profile.geburtsdatum).toLocaleDateString("de-DE")}
+                  </>
+                ) : null}
                 <br />
                 Gefunden durch: {profile.gefundenDurch}
                 {profile.empfehlerName ? ` — empfohlen von ${profile.empfehlerName}` : ""}

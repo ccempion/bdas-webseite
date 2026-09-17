@@ -6,13 +6,18 @@ import { pgTable, text, date, timestamp } from "drizzle-orm/pg-core";
  * profile with it (profile/0002) — the same shape members.user_id has. The
  * constraint lives in the migration, not here, so this schema needs no
  * cross-module import. `completed_at` stamps the first successful full submit.
+ * `nutzertyp` decides which columns are required; the CHECK in 0004 enforces it.
  */
 export const memberProfiles = pgTable("member_profiles", {
   userId: text("user_id").primaryKey(),
-  studiengang: text("studiengang").notNull(),
-  abschlussart: text("abschlussart").notNull(),
-  uni: text("uni").notNull(),
-  geburtsdatum: date("geburtsdatum").notNull(),
+  nutzertyp: text("nutzertyp").notNull(),
+  studiengang: text("studiengang"),
+  studienfachKategorie: text("studienfach_kategorie"),
+  abschlussart: text("abschlussart"),
+  uni: text("uni"),
+  geburtsdatum: date("geburtsdatum"),
+  interesse: text("interesse"),
+  bdajFunktion: text("bdaj_funktion"),
   gefundenDurch: text("gefunden_durch").notNull(),
   empfehlerName: text("empfehler_name"),
   vorstellung: text("vorstellung"),

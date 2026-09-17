@@ -81,6 +81,10 @@ export default async function AccountPage({
     openChangeGroupName: targetGroupName,
   };
 
+  // Das Bearbeiten-Formular kennt nur die Studierenden-Felder. Alumni,
+  // Förderer*innen und BDAJ sehen ihre Angaben vorerst nur als Zusammenfassung
+  // (Nacharbeit zum Onboarding-Wizard).
+  const editableAsStudent = !profile || profile.nutzertyp === "student";
   const extendedInitial = {
     studiengang: profile?.studiengang ?? "",
     abschlussart: profile?.abschlussart ?? "",
@@ -183,16 +187,21 @@ export default async function AccountPage({
           firstName: me.member?.firstName ?? "",
           lastName: me.member?.lastName ?? "",
           groupName: currentGroupName,
-          studiengang: profile?.studiengang ?? "",
-          abschlussart: profile?.abschlussart ?? "",
-          uni: profile?.uni ?? "",
-          geburtsdatum: profile?.geburtsdatum ?? "",
+          studiengang: profile?.studiengang ?? null,
+          studienfachKategorie: profile?.studienfachKategorie ?? null,
+          abschlussart: profile?.abschlussart ?? null,
+          uni: profile?.uni ?? null,
+          geburtsdatum: profile?.geburtsdatum ?? null,
+          interesse: profile?.interesse ?? null,
+          bdajFunktion: profile?.bdajFunktion ?? null,
           gefundenDurch: profile?.gefundenDurch ?? "",
           empfehlerName: profile?.empfehlerName ?? null,
           vorstellung: profile?.vorstellung ?? null,
         })}
         profileForm={{ ...membersFormProps, isNew: !me.member }}
-        extendedForm={profileFlagOn && me.member ? { initial: extendedInitial } : null}
+        extendedForm={
+          profileFlagOn && me.member && editableAsStudent ? { initial: extendedInitial } : null
+        }
       />
     </Card>
   );
