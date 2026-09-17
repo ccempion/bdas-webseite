@@ -1,3 +1,5 @@
+import React from "react";
+
 import { cx } from "@bdas/design-system";
 import type { ChoiceOption } from "@bdas/onboarding";
 

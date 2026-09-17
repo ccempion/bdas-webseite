@@ -1,3 +1,5 @@
+import React from "react";
+
 import type { ChoiceOption } from "@bdas/onboarding";
 
 const PATHS: Record<ChoiceOption["icon"], string> = {

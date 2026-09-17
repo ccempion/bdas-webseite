@@ -1,3 +1,5 @@
+import React from "react";
+
 import { Button } from "@bdas/design-system";
 import { fillText, type Outcome, type TextContext } from "@bdas/onboarding";
 

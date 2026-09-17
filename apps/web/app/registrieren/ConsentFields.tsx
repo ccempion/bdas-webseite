@@ -1,3 +1,5 @@
+import React from "react";
+
 /** Einwilligung und Newsletter-Kästchen — geteilt von `/registrieren` und dem Wizard. */
 export function ConsentFields({
   privacyUrl,

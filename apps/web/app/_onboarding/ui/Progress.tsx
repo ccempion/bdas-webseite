@@ -1,3 +1,5 @@
+import React from "react";
+
 import { cx } from "@bdas/design-system";
 
 const PARTS = ["Über dich", "Konto", "Angaben"] as const;
