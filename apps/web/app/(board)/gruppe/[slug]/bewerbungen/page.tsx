@@ -62,10 +62,12 @@ export default async function BewerbungenPage({ params }: { params: { slug: stri
           profile={
             profile
               ? {
-                  uni: profile.uni,
-                  studiengang: profile.studiengang,
-                  abschlussart: label(ABSCHLUSSART_OPTIONS, profile.abschlussart),
-                  geburtsdatum: profile.geburtsdatum,
+                  uni: profile.uni ?? "",
+                  studiengang: profile.studiengang ?? "",
+                  abschlussart: profile.abschlussart
+                    ? label(ABSCHLUSSART_OPTIONS, profile.abschlussart)
+                    : "",
+                  geburtsdatum: profile.geburtsdatum ?? "",
                   gefundenDurch: label(GEFUNDEN_DURCH_OPTIONS, profile.gefundenDurch),
                   empfehlerName: profile.empfehlerName,
                   vorstellung: profile.vorstellung,

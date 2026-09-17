@@ -1,4 +1,4 @@
-import { ABSCHLUSSART_OPTIONS, GEFUNDEN_DURCH_OPTIONS } from "@bdas/profile";
+import { ABSCHLUSSART_OPTIONS, BDAJ_FUNKTION_OPTIONS, GEFUNDEN_DURCH_OPTIONS } from "@bdas/profile";
 
 export type SummaryRow = { label: string; value: string };
 
@@ -6,10 +6,13 @@ export type SummaryInput = {
   firstName: string;
   lastName: string;
   groupName: string | null;
-  studiengang: string;
-  abschlussart: string;
-  uni: string;
-  geburtsdatum: string;
+  studiengang: string | null;
+  studienfachKategorie: string | null;
+  abschlussart: string | null;
+  uni: string | null;
+  geburtsdatum: string | null;
+  interesse: string | null;
+  bdajFunktion: string | null;
   gefundenDurch: string;
   empfehlerName: string | null;
   vorstellung: string | null;
@@ -36,6 +39,7 @@ export function buildProfileSummary(input: SummaryInput): SummaryRow[] {
     { label: "Vorname", value: input.firstName },
     { label: "Nachname", value: input.lastName },
     { label: "BDAS-Gruppe", value: input.groupName },
+    { label: "Studienbereich", value: input.studienfachKategorie },
     { label: "Studiengang", value: input.studiengang },
     {
       label: "Abschlussart",
@@ -43,6 +47,11 @@ export function buildProfileSummary(input: SummaryInput): SummaryRow[] {
     },
     { label: "Hochschule", value: input.uni },
     { label: "Geburtsdatum", value: input.geburtsdatum ? formatDate(input.geburtsdatum) : "" },
+    { label: "Interesse", value: input.interesse },
+    {
+      label: "Funktion in der BDAJ",
+      value: input.bdajFunktion ? label(BDAJ_FUNKTION_OPTIONS, input.bdajFunktion) : "",
+    },
     {
       label: "Gefunden durch",
       value: input.gefundenDurch ? label(GEFUNDEN_DURCH_OPTIONS, input.gefundenDurch) : "",
