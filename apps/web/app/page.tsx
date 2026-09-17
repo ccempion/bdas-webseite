@@ -1,6 +1,7 @@
 import { isFlagOn } from "@bdas/feature-flags";
 
 import { loadCurrentMember } from "./_dashboard/session";
+import { joinHref } from "./_onboarding/flag";
 import { AgBlock } from "./_public/landing/AgBlock";
 import { AktuellesBlock } from "./_public/landing/AktuellesBlock";
 import { ConnectBlock } from "./_public/landing/ConnectBlock";
@@ -17,12 +18,12 @@ export default async function HomePage() {
   const hasGroup = me?.member?.primaryGroupId != null;
   return (
     <main className="flex flex-col">
-      <Hero loggedIn={loggedIn} hasGroup={hasGroup} />
+      <Hero loggedIn={loggedIn} hasGroup={hasGroup} joinHref={joinHref()} />
       {isFlagOn("groups") ? <GruppenBlock /> : null}
       <AktuellesBlock />
       {isFlagOn("events") ? <KalenderBlock /> : null}
       <AgBlock />
-      <ConnectBlock loggedIn={loggedIn} />
+      <ConnectBlock loggedIn={loggedIn} joinHref={joinHref()} />
     </main>
   );
 }

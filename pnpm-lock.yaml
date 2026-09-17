@@ -135,6 +135,9 @@ importers:
       '@bdas/notifications':
         specifier: workspace:*
         version: link:../../modules/notifications
+      '@bdas/onboarding':
+        specifier: workspace:*
+        version: link:../../modules/onboarding
       '@bdas/profile':
         specifier: workspace:*
         version: link:../../modules/profile

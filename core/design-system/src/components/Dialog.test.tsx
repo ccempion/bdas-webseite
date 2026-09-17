@@ -45,4 +45,24 @@ describe("Dialog", () => {
     screen.getByLabelText("Schließen").click();
     expect(onClose).toHaveBeenCalledOnce();
   });
+
+  it("fills the phone screen when sheet is set", () => {
+    render(
+      <Dialog open onClose={() => {}} title="Mitglied werden" sheet>
+        <p>Inhalt</p>
+      </Dialog>,
+    );
+    const dialog = screen.getByRole("dialog", { hidden: true });
+    expect(dialog.className).toContain("max-sm:h-dvh");
+    expect(dialog.className).toContain("max-sm:max-w-none");
+  });
+
+  it("keeps the centred box without sheet", () => {
+    render(
+      <Dialog open onClose={() => {}} title="Frage">
+        <p>Inhalt</p>
+      </Dialog>,
+    );
+    expect(screen.getByRole("dialog", { hidden: true }).className).not.toContain("max-sm:h-dvh");
+  });
 });
