@@ -1,19 +1,18 @@
 "use server";
 
-import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
-import { buildVerifyUrl, getNotifier, register } from "@bdas/auth";
+import { register } from "@bdas/auth";
 import { getDb } from "@bdas/db";
 import { isAppError, ValidationError } from "@bdas/errors";
 import { requireFlag } from "@bdas/feature-flags";
 import { createProfile } from "@bdas/members";
-import { subscribeAtRegistration } from "@bdas/newsletter";
 
 import { bootAuth } from "../../lib/auth-bootstrap";
-import { bootNewsletter } from "../../lib/newsletter-bootstrap";
 import { newsletterEnabled } from "../_newsletter/flag";
 import { setSignupCookie } from "../_newsletter/signup-cookie";
+
+import { clientIp, finishRegistration } from "./finish";
 
 export type RegisterFormState = {
   readonly error?: string;
@@ -71,46 +70,27 @@ export async function registerAction(
     console.error("[auth] createProfile after register failed:", err);
   }
 
-  const verifyUrl = buildVerifyUrl(
-    process.env["PUBLIC_SITE_URL"] ?? "http://localhost:3000",
-    result.verifyToken,
-  );
-  try {
-    await getNotifier().send({ kind: "verify", to: email, verifyUrl });
-  } catch (err) {
-    // Account is already created; the resend-verification flow is the recovery
-    // path. Don't fail the response — surface the failure in logs instead.
-    console.error("[auth] verify email send failed:", err);
-  }
+  const ticked = formData.get("newsletter") === "true";
+  await finishRegistration({
+    userId: result.userId,
+    email,
+    verifyToken: result.verifyToken,
+    newsletter: ticked,
+    sourcePath: "/registrieren",
+    ip,
+  });
 
-  // A newsletter hiccup must never cost someone their account: log and move on.
-  // Deliberately outside the redirect below — Next implements redirect() as a
-  // throw, and an enclosing catch would swallow the navigation.
-  if (newsletterEnabled()) {
+  // Unticked: keep the address for the one softer second attempt on the
+  // success page. Ticked means done — nobody gets asked twice (§6).
+  // Deliberately outside any try around the redirect below — Next implements
+  // redirect() as a throw, and an enclosing catch would swallow the navigation.
+  if (newsletterEnabled() && !ticked) {
     try {
-      bootNewsletter();
-      if (formData.get("newsletter") === "true") {
-        await subscribeAtRegistration(getDb(), {
-          userId: result.userId,
-          email,
-          source: "registrierung",
-          sourcePath: "/registrieren",
-          context: { ip },
-        });
-      } else {
-        // Unticked: keep the address for the one softer second attempt on the
-        // success page. Ticked means done — nobody gets asked twice (§6).
-        setSignupCookie({ userId: result.userId, email: email.trim().toLowerCase() });
-      }
+      setSignupCookie({ userId: result.userId, email: email.trim().toLowerCase() });
     } catch (err) {
-      console.error("[newsletter] registration signup failed:", err);
+      console.error("[newsletter] signup cookie failed:", err);
     }
   }
 
   redirect("/registrieren/erfolg");
-}
-
-function clientIp(): string {
-  const h = headers();
-  return h.get("x-forwarded-for")?.split(",")[0]?.trim() ?? h.get("x-real-ip") ?? "0.0.0.0";
 }
