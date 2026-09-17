@@ -1,5 +1,7 @@
 "use client";
 
+import React from "react";
+
 import { Field } from "@bdas/design-system";
 import { ABSCHLUSSART_OPTIONS, BDAJ_FUNKTION_OPTIONS, MAX_INTERESSE } from "@bdas/profile";
 

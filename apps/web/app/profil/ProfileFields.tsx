@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import React, { useMemo } from "react";
 
 import { Combobox, Field, Input } from "@bdas/design-system";
 import {
