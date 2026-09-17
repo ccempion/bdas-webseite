@@ -1,4 +1,4 @@
-import React from "react";
+import React, { type ReactNode } from "react";
 
 import { Button } from "@bdas/design-system";
 import { fillText, type Outcome, type TextContext } from "@bdas/onboarding/client";
@@ -9,11 +9,13 @@ export function ErgebnisScreen({
   ctx,
   onConfirm,
   onChange,
+  confirm,
 }: {
   outcome: Outcome;
   ctx: TextContext;
   onConfirm: () => void;
   onChange: () => void;
+  confirm?: ReactNode | undefined;
 }) {
   return (
     <section className="flex flex-col gap-4">
@@ -39,9 +41,11 @@ export function ErgebnisScreen({
         </p>
       </div>
       <div className="flex flex-wrap gap-3">
-        <Button type="button" onClick={onConfirm}>
-          Passt — Konto anlegen
-        </Button>
+        {confirm ?? (
+          <Button type="button" onClick={onConfirm}>
+            Passt — Konto anlegen
+          </Button>
+        )}
         <Button type="button" variant="secondary" onClick={onChange}>
           Doch etwas anderes
         </Button>

@@ -9,4 +9,6 @@ export type WizardProps = {
   readonly privacyUrl: string;
   readonly passwordHint: string;
   readonly newsletterOn: boolean;
+  /** Eingeloggtes Konto ohne Journey (Spec §6): Name steht fest, kein Konto-Formular. */
+  readonly resume?: { readonly firstName: string; readonly lastName: string };
 };

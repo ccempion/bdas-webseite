@@ -20,6 +20,7 @@ vi.mock("react-dom", async (importOriginal) => {
 });
 vi.mock("./actions", () => ({ createAccountAction: vi.fn() }));
 vi.mock("../verifizierung-erneut-senden/actions", () => ({ resendAction: vi.fn() }));
+vi.mock("./resume-action", () => ({ resumeJourneyAction: vi.fn() }));
 
 import { OnboardingWizard } from "./OnboardingWizard";
 import { STORAGE_KEY } from "./storage";
@@ -139,5 +140,23 @@ describe("OnboardingWizard", () => {
     expect(container.querySelector<HTMLInputElement>('input[name="answers"]')?.value).toContain(
       '"typ":"unterstuetzen"',
     );
+  });
+
+  it("prefills the name for a signed-in account and confirms without an account form", () => {
+    act(() =>
+      root.render(
+        <OnboardingWizard
+          {...PROPS}
+          resume={{ firstName: "Lea", lastName: "Yıldız" }}
+          onClose={() => {}}
+        />,
+      ),
+    );
+    click("Ich möchte unterstützen");
+    expect(container.querySelector<HTMLInputElement>("#onb-vorname")?.value).toBe("Lea");
+    submit();
+    expect(heading()).toBe("Du passt zu uns als Förderer*in.");
+    expect(container.textContent).not.toContain("Passt — Konto anlegen");
+    expect(container.textContent).toContain("Passt — weiter");
   });
 });
