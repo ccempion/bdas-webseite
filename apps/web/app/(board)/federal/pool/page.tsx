@@ -6,11 +6,14 @@ import { Card } from "@bdas/design-system";
 import { isFlagOn } from "@bdas/feature-flags";
 import { listGroups } from "@bdas/groups";
 import { listGrouplessMembers, listOpenGroupChanges } from "@bdas/members";
+import { getApplicationIntents, type ApplicationIntent } from "@bdas/onboarding";
 import { getProfile } from "@bdas/profile";
 
 import { requireFederalScope } from "../../../_dashboard/session";
+import { onboardingEnabled } from "../../../_onboarding/flag";
 import { acceptAsAlumnusAction, deleteApplicantAction } from "./actions";
 import { isDeletableApplicant } from "./deletable";
+import { poolKindLabel } from "./kind-label";
 import { PoolTable, type PoolRow } from "./PoolTable";
 
 export const dynamic = "force-dynamic";
@@ -36,6 +39,12 @@ export default async function PoolPage() {
     db,
     pool.map((p) => p.member.userId),
   );
+  const intents = onboardingEnabled()
+    ? await getApplicationIntents(
+        db,
+        pool.map((p) => p.member.userId),
+      )
+    : new Map<string, ApplicationIntent>();
   const rows: PoolRow[] = await Promise.all(
     pool.map(async ({ member, registeredAt }) => {
       const profile = await getProfile(db, member.userId);
@@ -50,7 +59,7 @@ export default async function PoolPage() {
         name: `${member.firstName[0]}. ${member.lastName}`,
         uni: profileFlagOn ? (profile?.uni ?? "—") : "—",
         days: days(registeredAt),
-        kind: member.status === "active" ? "Mitglied ohne Gruppe" : "Bewerber:in",
+        kind: poolKindLabel({ status: member.status, intent: intents.get(member.userId) ?? null }),
         hasProfile: profile !== null,
         deletable: verdict.ok,
         acceptable: member.status === "pending" && profile !== null,
