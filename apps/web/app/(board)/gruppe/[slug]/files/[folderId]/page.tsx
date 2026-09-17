@@ -17,6 +17,7 @@ import { FileList } from "../../../../../_files/FileList";
 import { requireFilesFlag } from "../../../../../_files/flag";
 import { FolderAdminControls } from "../../../../../_files/FolderAdminControls";
 import { FolderIndex } from "../../../../../_files/FolderIndex";
+import { subfolderCounts } from "../../../../../_files/folder-meta";
 import { NewFolderButton } from "../../../../../_files/NewFolderButton";
 
 export const dynamic = "force-dynamic";
@@ -75,6 +76,7 @@ export default async function GroupFolderPage({
           folders={children}
           groupNames={group ? { [group.id]: group.name } : {}}
           counts={counts}
+          subfolderCounts={subfolderCounts(readable)}
           hrefBase={hrefBase}
           emptyLabel="Keine Unterordner."
         />

@@ -5,6 +5,7 @@ import { getGroupBySlug } from "@bdas/groups";
 import { requireGroupScope } from "../../../../_dashboard/session";
 import { requireFilesFlag } from "../../../../_files/flag";
 import { FolderIndex } from "../../../../_files/FolderIndex";
+import { subfolderCounts } from "../../../../_files/folder-meta";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Dateien" };
@@ -32,6 +33,7 @@ export default async function GroupFilesPage({ params }: { params: { slug: strin
         folders={groupFolders}
         groupNames={group ? { [group.id]: group.name } : {}}
         counts={counts}
+        subfolderCounts={subfolderCounts(folders)}
         hrefBase={`/gruppe/${params.slug}/files`}
       />
     </section>

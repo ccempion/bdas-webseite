@@ -10,6 +10,7 @@ import { getCurrentMember, type CurrentMember } from "@bdas/members";
 import { requireFilesFlag } from "../_files/flag";
 import { FolderIndex } from "../_files/FolderIndex";
 import { entryFolders } from "../_files/folder-path";
+import { subfolderCounts } from "../_files/folder-meta";
 import { FaqHinweis } from "../_faq/FaqHinweis";
 import { readSessionCookie } from "../../lib/auth-cookie";
 
@@ -28,7 +29,13 @@ async function folderIndexFor(me: CurrentMember): Promise<ReactNode> {
   );
   const groupNames = Object.fromEntries(groups.map((g) => [g.id, g.name]));
   return (
-    <FolderIndex folders={roots} groupNames={groupNames} counts={counts} hrefBase="/dateien" />
+    <FolderIndex
+      folders={roots}
+      groupNames={groupNames}
+      counts={counts}
+      subfolderCounts={subfolderCounts(folders)}
+      hrefBase="/dateien"
+    />
   );
 }
 

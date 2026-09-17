@@ -5,7 +5,7 @@ import { folderFileCounts, listFolders } from "@bdas/files";
 import { listGroups } from "@bdas/groups";
 
 import { loadCurrentMember } from "../../../_dashboard/session";
-import { FEDERAL_FILES_ROOT_SCOPES } from "../../../_files/folder-meta";
+import { FEDERAL_FILES_ROOT_SCOPES, subfolderCounts } from "../../../_files/folder-meta";
 import { requireFilesFlag } from "../../../_files/flag";
 import { FolderIndex } from "../../../_files/FolderIndex";
 
@@ -42,6 +42,7 @@ export default async function FederalFilesPage() {
         folders={roots}
         groupNames={groupNames}
         counts={counts}
+        subfolderCounts={subfolderCounts(folders)}
         hrefBase="/federal/files"
       />
     </section>

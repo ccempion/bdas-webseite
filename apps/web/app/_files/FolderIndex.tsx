@@ -2,7 +2,8 @@ import Link from "next/link";
 
 import type { Folder } from "@bdas/files";
 
-import { SCOPE_LABEL } from "./folder-meta";
+import { formatFolderCounts, SCOPE_LABEL } from "./folder-meta";
+import { FolderGlyph } from "./icons";
 
 /**
  * Folder index shared by the member surface (/dateien) and the board surfaces
@@ -13,12 +14,14 @@ export function FolderIndex({
   folders,
   groupNames,
   counts,
+  subfolderCounts,
   hrefBase,
   emptyLabel = "Keine Ordner.",
 }: {
   folders: Folder[];
   groupNames: Record<string, string>;
   counts: Record<string, number>;
+  subfolderCounts: Record<string, number>;
   hrefBase: string;
   emptyLabel?: string;
 }) {
@@ -38,6 +41,9 @@ export function FolderIndex({
             href={`${hrefBase}/${f.id}`}
             className="group flex items-center gap-4 rounded-bdas border border-bdas-soft bg-bdas-surface p-4 shadow-bdas-card transition-transform duration-bdas-card ease-bdas hover:-translate-y-0.5"
           >
+            <span className="text-bdas-ink-muted">
+              <FolderGlyph />
+            </span>
             <div className="flex-1">
               <p className="font-medium text-bdas-ink">{f.name}</p>
               <p className="mt-0.5 text-sm text-bdas-ink-muted">
@@ -46,7 +52,7 @@ export function FolderIndex({
               </p>
             </div>
             <span className="text-sm text-bdas-ink-muted">
-              {counts[f.id] ?? 0} {(counts[f.id] ?? 0) === 1 ? "Datei" : "Dateien"}
+              {formatFolderCounts(counts[f.id] ?? 0, subfolderCounts[f.id] ?? 0)}
             </span>
             <span aria-hidden className="text-bdas-ink-muted">
               ›

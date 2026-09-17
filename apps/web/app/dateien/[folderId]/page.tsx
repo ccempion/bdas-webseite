@@ -17,6 +17,7 @@ import { FileList } from "../../_files/FileList";
 import { requireFilesFlag } from "../../_files/flag";
 import { FolderAdminControls } from "../../_files/FolderAdminControls";
 import { FolderIndex } from "../../_files/FolderIndex";
+import { subfolderCounts } from "../../_files/folder-meta";
 import { NewFolderButton } from "../../_files/NewFolderButton";
 import { readSessionCookie } from "../../../lib/auth-cookie";
 
@@ -76,6 +77,7 @@ export default async function DateiOrdnerPage({ params }: { params: { folderId: 
           folders={children}
           groupNames={groupNames}
           counts={counts}
+          subfolderCounts={subfolderCounts(readable)}
           hrefBase="/dateien"
           emptyLabel="Keine Unterordner."
         />

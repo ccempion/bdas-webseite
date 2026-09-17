@@ -1,11 +1,12 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 
 import { DropZone } from "../_upload/DropZone";
 import { confirmUploadAction, requestUploadAction } from "./file-actions";
-import { formatFileSize, mimeIcon } from "./folder-meta";
+import { formatFileSize } from "./folder-meta";
+import { FileTypeIcon, UploadGlyph } from "./icons";
 import { runUploads, validateFile, type UploadInput, type UploadItem } from "./upload-manager";
 
 /** PUT bytes straight to the signed URL via XHR so upload progress is reported. */
@@ -36,15 +37,21 @@ function putViaXhr(
  * module's MIME allowlist + 25 MB cap, then runs the request → PUT → confirm
  * pipeline (bounded concurrency) via the framework-free upload-manager. Refreshes
  * the route when uploads settle so the server-rendered list re-fetches.
+ *
+ * `children` (typically the existing file list) renders inside the same
+ * DropZone as the upload bar, so the whole card — not just the bar — is a
+ * drop target (spec #229).
  */
 export function FileUploader({
   folderId,
   maxBytes,
   acceptMime,
+  children,
 }: {
   folderId: string;
   maxBytes: number;
   acceptMime: readonly string[];
+  children?: ReactNode;
 }) {
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -99,28 +106,37 @@ export function FileUploader({
         label="Dateien hier ablegen"
         disabled={busy}
       >
-        <div
-          onClick={() => inputRef.current?.click()}
-          role="button"
-          tabIndex={0}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" || e.key === " ") inputRef.current?.click();
-          }}
-          className="flex cursor-pointer flex-col items-center justify-center gap-1 rounded-bdas border border-dashed border-bdas-soft bg-bdas-surface p-8 text-center transition-colors duration-bdas-quick hover:bg-bdas-overlay-hover"
-        >
-          <p className="font-medium text-bdas-ink">Dateien hierher ziehen oder klicken</p>
-          <p className="text-sm text-bdas-ink-muted">Bis zu {formatFileSize(maxBytes)} pro Datei</p>
-          <input
-            ref={inputRef}
-            type="file"
-            multiple
-            accept={accept}
-            className="hidden"
-            onChange={(e) => {
-              void upload(Array.from(e.target.files ?? []));
-              e.target.value = "";
+        <div className="flex flex-col gap-2">
+          <div
+            onClick={() => inputRef.current?.click()}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") inputRef.current?.click();
             }}
-          />
+            className="flex cursor-pointer items-center gap-3 rounded-bdas border border-bdas-soft bg-bdas-surface px-4 py-3 transition-colors duration-bdas-quick hover:bg-bdas-overlay-hover"
+          >
+            <UploadGlyph className="text-bdas-ink-muted" />
+            <p className="text-sm text-bdas-ink-body">
+              Dateien hierher ziehen oder klicken
+              <span className="text-bdas-ink-muted">
+                {" "}
+                — bis zu {formatFileSize(maxBytes)} pro Datei
+              </span>
+            </p>
+            <input
+              ref={inputRef}
+              type="file"
+              multiple
+              accept={accept}
+              className="hidden"
+              onChange={(e) => {
+                void upload(Array.from(e.target.files ?? []));
+                e.target.value = "";
+              }}
+            />
+          </div>
+          {children}
         </div>
       </DropZone>
 
@@ -141,8 +157,8 @@ export function FileUploader({
               key={it.id}
               className="flex items-center gap-3 rounded-bdas border border-bdas-soft bg-bdas-surface p-3 text-sm shadow-bdas-card"
             >
-              <span aria-hidden className="text-lg">
-                {mimeIcon(it.mimeType)}
+              <span className="text-bdas-ink-muted">
+                <FileTypeIcon mimeType={it.mimeType} />
               </span>
               <div className="flex-1">
                 <p className="font-medium text-bdas-ink">{it.name}</p>

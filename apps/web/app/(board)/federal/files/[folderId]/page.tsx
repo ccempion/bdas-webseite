@@ -17,6 +17,7 @@ import { FileList } from "../../../../_files/FileList";
 import { requireFilesFlag } from "../../../../_files/flag";
 import { FolderAdminControls } from "../../../../_files/FolderAdminControls";
 import { FolderIndex } from "../../../../_files/FolderIndex";
+import { subfolderCounts } from "../../../../_files/folder-meta";
 import { NewFolderButton } from "../../../../_files/NewFolderButton";
 
 export const dynamic = "force-dynamic";
@@ -70,6 +71,7 @@ export default async function FederalFolderPage({ params }: { params: { folderId
           folders={children}
           groupNames={groupNames}
           counts={counts}
+          subfolderCounts={subfolderCounts(readable)}
           hrefBase="/federal/files"
           emptyLabel="Keine Unterordner."
         />
