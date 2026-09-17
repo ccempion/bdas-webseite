@@ -7,11 +7,10 @@ import { createId } from "@bdas/id";
 import type { CurrentMember } from "@bdas/members";
 
 import { MAX_FOLDER_DEPTH, MAX_FOLDER_NAME_LENGTH } from "../constants";
-import { canWrite } from "../permissions";
+import { canManage } from "../permissions";
 import { files, folders } from "../schema";
 import { slugifyFolderName } from "../slug";
 import type { Folder } from "../types";
-import { loadFolderAccess } from "./folder-access";
 import { getFolder, rowToFolder } from "./folders";
 
 function requireActingMember(me: CurrentMember): { id: string } {
@@ -49,8 +48,8 @@ async function assertSlugFree(
 /**
  * Create a subfolder. It permanently inherits the parent's scope and group
  * (spec D1), so no permission choice is offered and none can be made. The
- * right to create is exactly the right to upload into the parent (D2) — no
- * new role logic.
+ * right to create is the scope right to write the parent (D2); a personal
+ * grant opens uploading, not folder management (ADR 0047).
  */
 export async function createFolder(
   db: Db,
@@ -59,7 +58,7 @@ export async function createFolder(
 ): Promise<Folder> {
   const actor = requireActingMember(byMember);
   const parent = await getFolder(db, input.parentId);
-  if (!canWrite(parent, byMember, await loadFolderAccess(db, byMember))) {
+  if (!canManage(parent, byMember)) {
     throw new ForbiddenError("Kein Schreibzugriff auf diesen Ordner.");
   }
   if (parent.depth >= MAX_FOLDER_DEPTH) {
@@ -90,10 +89,9 @@ export async function createFolder(
 }
 
 /**
- * Renaming or deleting a folder changes its parent, so it needs write access
- * there. For scope-based writers that is the same as the folder itself (a
- * subfolder inherits its parent's scope); a personal grant on a folder opens
- * its contents but not the folder itself (Spec 2026-09-16 §5.3).
+ * Renaming or deleting a folder changes its parent, so it needs the scope
+ * right there — the same as on the folder itself, since a subfolder inherits
+ * its parent's scope. A personal grant never manages folders (ADR 0047).
  */
 async function requireWriteOnParent(
   db: Db,
@@ -101,7 +99,7 @@ async function requireWriteOnParent(
   byMember: CurrentMember,
 ): Promise<void> {
   const parent = await getFolder(db, parentId);
-  if (!canWrite(parent, byMember, await loadFolderAccess(db, byMember))) {
+  if (!canManage(parent, byMember)) {
     throw new ForbiddenError("Kein Schreibzugriff auf diesen Ordner.");
   }
 }

@@ -5,7 +5,7 @@ import {
   type CurrentMember,
 } from "@bdas/members";
 
-import type { Folder } from "./types";
+import type { FileMeta, Folder } from "./types";
 
 /** Ordner-ID → darf schreiben; die persönlichen Freigaben des Betrachters. */
 export type FolderAccess = ReadonlyMap<string, boolean>;
@@ -46,7 +46,9 @@ export function canRead(folder: Folder, me: CurrentMember, access = NO_ACCESS): 
 }
 
 /**
- * May this member upload/delete/manage folders here?
+ * May this member manage the folder — create, rename, delete subfolders, and
+ * delete anyone's file? The scope rule alone; a personal grant never manages
+ * (ADR 0047).
  *  members_all / federal_board / board_broadcast → federal only (nobody
  *                                  else may add to the distribution folder —
  *                                  local boards get read-only access)
@@ -56,10 +58,8 @@ export function canRead(folder: Folder, me: CurrentMember, access = NO_ACCESS): 
  *                                  a Datei-Manager gets full write access, but
  *                                  ONLY to the members folder, never the board
  *                                  folder, never another group)
- * A personal grant with can_write opens writing on top of the scope rule.
  */
-export function canWrite(folder: Folder, me: CurrentMember, access = NO_ACCESS): boolean {
-  if (access.get(folder.id) === true) return true;
+export function canManage(folder: Folder, me: CurrentMember): boolean {
   const { grants } = me;
   switch (folder.scope) {
     case "members_all":
@@ -74,4 +74,35 @@ export function canWrite(folder: Folder, me: CurrentMember, access = NO_ACCESS):
         grants.some((g) => g.role === "file_manager" && g.groupId === folder.groupId)
       );
   }
+}
+
+/**
+ * May this member upload here? Whoever manages the folder, plus a personal
+ * grant with can_write (Spec 2026-09-16 §5.3).
+ */
+export function canWrite(folder: Folder, me: CurrentMember, access = NO_ACCESS): boolean {
+  return access.get(folder.id) === true || canManage(folder, me);
+}
+
+/** What a member may do in one folder, as the pages need it. */
+export type FolderRights = {
+  readonly canUpload: boolean;
+  readonly canManage: boolean;
+};
+
+export function folderRights(folder: Folder, me: CurrentMember, access = NO_ACCESS): FolderRights {
+  return { canUpload: canWrite(folder, me, access), canManage: canManage(folder, me) };
+}
+
+/**
+ * May this member delete this file? A manager deletes any file; an uploader
+ * with write access only their own (ADR 0047).
+ */
+export function mayDeleteFile(
+  rights: FolderRights,
+  file: Pick<FileMeta, "uploadedBy">,
+  me: CurrentMember,
+): boolean {
+  if (rights.canManage) return true;
+  return rights.canUpload && me.member !== null && file.uploadedBy === me.member.id;
 }

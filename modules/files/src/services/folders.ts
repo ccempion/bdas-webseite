@@ -6,10 +6,10 @@ import { listGroups, type GroupKind } from "@bdas/groups";
 import { createId } from "@bdas/id";
 import type { CurrentMember } from "@bdas/members";
 
-import { canRead } from "../permissions";
+import { canRead, folderRights, type FolderRights } from "../permissions";
 import { folders } from "../schema";
 import type { Folder } from "../types";
-import { loadFolderAccess } from "./folder-access";
+import { loadFolderAccess, requireFederal } from "./folder-access";
 
 type FolderRow = typeof folders.$inferSelect;
 
@@ -115,4 +115,24 @@ export async function listFolders(db: Db, forMember: CurrentMember): Promise<Fol
   const rows = await db.select().from(folders);
   const access = await loadFolderAccess(db, forMember);
   return rows.map(rowToFolder).filter((f) => canRead(f, forMember, access));
+}
+
+/** What the member may do in this folder (upload, manage) — for the pages. */
+export async function getFolderRights(
+  db: Db,
+  folder: Folder,
+  forMember: CurrentMember,
+): Promise<FolderRights> {
+  return folderRights(folder, forMember, await loadFolderAccess(db, forMember));
+}
+
+/**
+ * Jeder Ordner, unabhängig von der Leseberechtigung. Der Bundesvorstand kann
+ * fremde Mitgliederordner nicht öffnen, muss sie aber freigeben können
+ * (ADR 0047) — er bekommt dafür die Ordner, nicht deren Dateien.
+ */
+export async function listFolderTree(db: Db, byMember: CurrentMember): Promise<Folder[]> {
+  requireFederal(byMember);
+  const rows = await db.select().from(folders);
+  return rows.map(rowToFolder);
 }

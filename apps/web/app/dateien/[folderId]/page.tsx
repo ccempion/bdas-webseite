@@ -1,7 +1,13 @@
 import { notFound } from "next/navigation";
 
 import { getDb } from "@bdas/db";
-import { canWriteFolder, folderFileCounts, listFiles, listFolders } from "@bdas/files";
+import {
+  folderFileCounts,
+  getFolderRights,
+  listFiles,
+  listFolders,
+  mayDeleteFile,
+} from "@bdas/files";
 import { listGroups } from "@bdas/groups";
 import { getCurrentMember } from "@bdas/members";
 
@@ -41,7 +47,8 @@ export default async function DateiOrdnerPage({ params }: { params: { folderId: 
     ),
   ]);
   const groupNames = Object.fromEntries(groups.map((g) => [g.id, g.name]));
-  const canWrite = canWriteFolder(folder, me);
+  const rights = await getFolderRights(db, folder, me);
+  const deletableIds = files.filter((f) => mayDeleteFile(rights, f, me)).map((f) => f.id);
   const trail = buildBreadcrumbs(readable, folder.id);
 
   return (
@@ -50,7 +57,7 @@ export default async function DateiOrdnerPage({ params }: { params: { folderId: 
         <Breadcrumbs trail={trail} hrefBase="/dateien" />
         <div className="flex items-start justify-between gap-4">
           <h1 className="text-3xl font-semibold text-bdas-ink">{folder.name}</h1>
-          {canWrite && folder.parentId !== null ? (
+          {rights.canManage && folder.parentId !== null ? (
             <FolderAdminControls
               folderId={folder.id}
               name={folder.name}
@@ -64,7 +71,7 @@ export default async function DateiOrdnerPage({ params }: { params: { folderId: 
       <section className="flex flex-col gap-3">
         <div className="flex items-center justify-between gap-4">
           <h2 className="text-lg font-medium text-bdas-ink">Unterordner</h2>
-          {canWrite ? <NewFolderButton parentId={folder.id} /> : null}
+          {rights.canManage ? <NewFolderButton parentId={folder.id} /> : null}
         </div>
         <FolderIndex
           folders={children}
@@ -76,7 +83,12 @@ export default async function DateiOrdnerPage({ params }: { params: { folderId: 
         />
       </section>
 
-      <FileList files={files} folderId={params.folderId} canWrite={canWrite} />
+      <FileList
+        files={files}
+        folderId={params.folderId}
+        canUpload={rights.canUpload}
+        deletableIds={deletableIds}
+      />
     </main>
   );
 }

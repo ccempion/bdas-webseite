@@ -2,8 +2,8 @@ import { describe, expect, it } from "vitest";
 
 import type { CurrentMember, Grant, Member } from "@bdas/members";
 
-import { canRead, canWrite } from "./permissions";
-import { canReadFolder, canWriteFolder } from "./index";
+import { canManage, canRead, canWrite, folderRights, mayDeleteFile } from "./permissions";
+import { canReadFolder, mayDeleteFile as publicMayDeleteFile } from "./index";
 import type { Folder } from "./types";
 
 function folder(scope: Folder["scope"], groupId: string | null): Folder {
@@ -195,18 +195,34 @@ describe("Freigabe pro Person (Spec 2026-09-16 §5.3)", () => {
     const access = new Map([["fld_x", false]]);
     expect(canWrite(board, me(LEAD_MUC), access)).toBe(true);
   });
+
+  it("eine Schreibfreigabe verwaltet den Ordner nicht (ADR 0047)", () => {
+    const access = new Map([["fld_x", true]]);
+    expect(canManage(board, outsider)).toBe(false);
+    expect(folderRights(board, outsider, access)).toEqual({ canUpload: true, canManage: false });
+    expect(folderRights(board, me(LEAD_MUC))).toEqual({ canUpload: true, canManage: true });
+  });
+
+  it("mit Schreibfreigabe nur eigene Dateien löschen, als Verwalter alle", () => {
+    const upload = { canUpload: true, canManage: false };
+    const own = { uploadedBy: outsider.member!.id };
+    const foreign = { uploadedBy: "mbr_other" };
+    expect(mayDeleteFile(upload, own, outsider)).toBe(true);
+    expect(mayDeleteFile(upload, foreign, outsider)).toBe(false);
+    expect(mayDeleteFile({ canUpload: false, canManage: false }, own, outsider)).toBe(false);
+    expect(mayDeleteFile({ canUpload: true, canManage: true }, foreign, me(LEAD_MUC))).toBe(true);
+  });
 });
 
 describe("public folder predicates (re-exported)", () => {
-  it("canReadFolder / canWriteFolder match the internal predicates", () => {
+  it("canReadFolder / mayDeleteFile match the internal predicates", () => {
     const f = folder("local_board", "grp_muc");
     expect(canReadFolder(f, me(LEAD_MUC))).toBe(true);
-    expect(canWriteFolder(f, me(LEAD_MUC))).toBe(true);
+    expect(publicMayDeleteFile).toBe(mayDeleteFile);
   });
 
-  it("a plain member can neither read nor write a local_board folder", () => {
+  it("a plain member cannot read a local_board folder", () => {
     const f = folder("local_board", "grp_muc");
     expect(canReadFolder(f, me(PLAIN))).toBe(false);
-    expect(canWriteFolder(f, me(PLAIN))).toBe(false);
   });
 });

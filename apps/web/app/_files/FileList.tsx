@@ -13,11 +13,13 @@ import { FileUploader } from "./FileUploader";
 export function FileList({
   files,
   folderId,
-  canWrite = false,
+  canUpload = false,
+  deletableIds = [],
 }: {
   files: FileMeta[];
   folderId: string;
-  canWrite?: boolean;
+  canUpload?: boolean;
+  deletableIds?: ReadonlyArray<string>;
 }) {
   const list =
     files.length === 0 ? (
