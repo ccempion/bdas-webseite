@@ -56,9 +56,11 @@ function DesktopItem({ item }: { item: NavItem }) {
 export function PublicHeaderView({
   items,
   konto,
+  joinHref = "/registrieren",
 }: {
   items: NavItem[];
   konto: { displayName: string; isBoard: boolean; openCount: number; showFaq: boolean } | null;
+  joinHref?: string;
 }) {
   const openCount = konto?.openCount ?? 0;
   return (
@@ -124,7 +126,7 @@ export function PublicHeaderView({
                 <>
                   <li>
                     <Link
-                      href="/registrieren"
+                      href={joinHref}
                       className="inline-flex items-center rounded-bdas-pill bg-bdas-red px-4 py-1.5 text-bdas-pill font-medium text-white transition-colors duration-bdas-quick ease-bdas hover:brightness-110"
                     >
                       Mitglied werden
@@ -224,7 +226,7 @@ export function PublicHeaderView({
                   <>
                     <li>
                       <Link
-                        href="/registrieren"
+                        href={joinHref}
                         className="mt-2 inline-flex items-center rounded-bdas-pill bg-bdas-red px-4 py-2 font-medium text-white"
                       >
                         Mitglied werden

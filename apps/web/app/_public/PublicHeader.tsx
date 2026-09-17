@@ -6,6 +6,7 @@ import { getGroup } from "@bdas/groups";
 import { faqEnabled } from "../../lib/faq/enabled";
 import { loadApprovalCounts } from "../_dashboard/approvals";
 import { loadCurrentMember } from "../_dashboard/session";
+import { joinHref } from "../_onboarding/flag";
 import { navItems } from "./nav-items";
 import { PublicHeaderView } from "./PublicHeaderView";
 
@@ -33,6 +34,7 @@ export async function PublicHeader() {
 
   return (
     <PublicHeaderView
+      joinHref={joinHref()}
       items={items}
       konto={
         me

@@ -85,4 +85,20 @@ describe("PublicHeaderView", () => {
     expect(withFaq).toContain('href="/faq"');
     expect(withoutFaq).not.toContain('href="/faq"');
   });
+
+  it("points 'Mitglied werden' at the given target", () => {
+    const out = renderToStaticMarkup(
+      <PublicHeaderView
+        items={navItems({ isLoggedIn: false })}
+        konto={null}
+        joinHref="/mitmachen"
+      />,
+    );
+    expect(out).toContain('href="/mitmachen"');
+    expect(out).not.toContain('href="/registrieren"');
+  });
+
+  it("keeps /registrieren by default", () => {
+    expect(renderToStaticMarkup(visitor())).toContain('href="/registrieren"');
+  });
 });

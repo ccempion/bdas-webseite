@@ -11,7 +11,13 @@ const FEATURES = [
   { title: "Dein Netzwerk", text: "Deine Gruppe, deine Leute — bundesweit verbunden." },
 ] as const;
 
-export function ConnectBlock({ loggedIn }: { loggedIn: boolean }) {
+export function ConnectBlock({
+  loggedIn,
+  joinHref = "/registrieren",
+}: {
+  loggedIn: boolean;
+  joinHref?: string;
+}) {
   return (
     <Section title="BDAS-Connect" intro="Die Plattform für Mitglieder.">
       <div className="grid gap-4 sm:grid-cols-3">
@@ -26,7 +32,7 @@ export function ConnectBlock({ loggedIn }: { loggedIn: boolean }) {
       </div>
       <div className="mt-6">
         <Link
-          href={loggedIn ? "/account" : "/registrieren"}
+          href={loggedIn ? "/account" : joinHref}
           className="inline-flex items-center rounded-bdas bg-bdas-red px-5 py-2.5 font-medium text-white transition-colors duration-bdas-quick ease-bdas hover:brightness-110"
         >
           {loggedIn ? "Zu deinem Bereich" : "Jetzt registrieren"}
