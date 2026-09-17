@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, gte, inArray, isNull, lt, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gte, inArray, isNull, lt, or, sql } from "drizzle-orm";
 import type { PostgresJsDatabase } from "drizzle-orm/postgres-js";
 
 import { eventRegistrations, events } from "../schema";
@@ -92,7 +92,8 @@ export function listPastEvents(
 
 /**
  * Every event the viewer manages (any status), for the board admin views.
- * Federal board sees all; local board and event organizers see their groups' events.
+ * Federal board sees all; local board and event organizers see their groups' events —
+ * an organizer limited to its own events (`ownEventsOnly`) sees only those.
  */
 export async function listManagedEvents(
   db: Db,
@@ -102,12 +103,20 @@ export async function listManagedEvents(
     const rows = await db.select().from(events).orderBy(asc(events.startsAt));
     return withCounts(db, rows);
   }
-  const manageGroupIds = [...new Set([...viewer.boardGroupIds, ...viewer.organizerGroupIds])];
-  if (manageGroupIds.length === 0) return withCounts(db, []);
+  const board = viewer.boardGroupIds;
+  const organizer = viewer.organizerGroupIds;
+  const conds = [];
+  if (board.length > 0) conds.push(inArray(events.groupId, [...board]));
+  if (organizer.length > 0) {
+    if (!viewer.ownEventsOnly) conds.push(inArray(events.groupId, [...organizer]));
+    else if (viewer.userId !== null)
+      conds.push(and(inArray(events.groupId, [...organizer]), eq(events.createdBy, viewer.userId)));
+  }
+  if (conds.length === 0) return withCounts(db, []);
   const rows = await db
     .select()
     .from(events)
-    .where(inArray(events.groupId, manageGroupIds))
+    .where(or(...conds))
     .orderBy(asc(events.startsAt));
   return withCounts(db, rows);
 }

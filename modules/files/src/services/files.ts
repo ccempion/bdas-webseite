@@ -7,7 +7,7 @@ import type { CurrentMember } from "@bdas/members";
 import { getStorage, type SignedUrl } from "@bdas/storage";
 
 import { ALLOWED_MIME, FOLDER_QUOTA_BYTES, MAX_FILE_BYTES } from "../constants";
-import { canRead, canWrite } from "../permissions";
+import { canRead, canWrite, folderRights, mayDeleteFile } from "../permissions";
 import { fileAccessLog, files, folders } from "../schema";
 import type { AccessAction, FileMeta, UploadRequest } from "../types";
 
@@ -220,12 +220,17 @@ export async function getDownloadUrl(
   return url;
 }
 
-/** Delete a file: object then row. Write-gated; logs 'delete' before removal. */
+/**
+ * Delete a file: object then row. A folder manager deletes any file, an
+ * uploader with write access only their own (ADR 0047). Logs 'delete' before
+ * removal.
+ */
 export async function deleteFile(db: Db, fileId: string, byMember: CurrentMember): Promise<void> {
   const actor = requireActingMember(byMember);
   const row = await getFileRow(db, fileId);
   const folder = await getFolder(db, row.folderId);
-  if (!canWrite(folder, byMember, await loadFolderAccess(db, byMember)))
+  const rights = folderRights(folder, byMember, await loadFolderAccess(db, byMember));
+  if (!mayDeleteFile(rights, row, byMember))
     throw new ForbiddenError("Kein Schreibzugriff auf diese Datei.");
   await writeAccessLog(db, fileId, actor.id, "delete");
   await getStorage().deleteObject(row.storageKey);

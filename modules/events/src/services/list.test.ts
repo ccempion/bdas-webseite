@@ -43,6 +43,8 @@ const FEDERAL: Viewer = {
   isFederal: true,
   boardGroupIds: [],
   organizerGroupIds: [],
+  userId: null,
+  ownEventsOnly: false,
 };
 
 describeIfDb("listUpcomingEvents / listPastEvents", () => {

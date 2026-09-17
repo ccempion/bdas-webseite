@@ -12,5 +12,11 @@
     "name": "BDAS Netzwerk",
     "kind": "netzwerk",
     "status": "active"
+  },
+  {
+    "slug": "bdaj",
+    "name": "BDAJ",
+    "kind": "affiliate",
+    "status": "active"
   }
 ]

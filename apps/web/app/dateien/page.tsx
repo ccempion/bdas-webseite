@@ -9,6 +9,8 @@ import { getCurrentMember, type CurrentMember } from "@bdas/members";
 
 import { requireFilesFlag } from "../_files/flag";
 import { FolderIndex } from "../_files/FolderIndex";
+import { entryFolders } from "../_files/folder-path";
+import { subfolderCounts } from "../_files/folder-meta";
 import { FaqHinweis } from "../_faq/FaqHinweis";
 import { readSessionCookie } from "../../lib/auth-cookie";
 
@@ -17,9 +19,9 @@ export const metadata = { title: "Dateien" };
 async function folderIndexFor(me: CurrentMember): Promise<ReactNode> {
   const db = getDb();
   const [folders, groups] = await Promise.all([listFolders(db, me), listGroups(db)]);
-  // listFolders returns the whole readable tree; the index shows roots only —
-  // subfolders are reached by entering their parent.
-  const roots = folders.filter((f) => f.parentId === null);
+  // listFolders returns the whole readable tree; the index shows where the
+  // member enters it — subfolders are reached by entering their parent.
+  const roots = entryFolders(folders);
   const counts = await folderFileCounts(
     db,
     roots.map((f) => f.id),
@@ -27,7 +29,13 @@ async function folderIndexFor(me: CurrentMember): Promise<ReactNode> {
   );
   const groupNames = Object.fromEntries(groups.map((g) => [g.id, g.name]));
   return (
-    <FolderIndex folders={roots} groupNames={groupNames} counts={counts} hrefBase="/dateien" />
+    <FolderIndex
+      folders={roots}
+      groupNames={groupNames}
+      counts={counts}
+      subfolderCounts={subfolderCounts(folders)}
+      hrefBase="/dateien"
+    />
   );
 }
 

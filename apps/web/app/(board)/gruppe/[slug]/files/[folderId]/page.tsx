@@ -1,7 +1,13 @@
 import { notFound } from "next/navigation";
 
 import { getDb } from "@bdas/db";
-import { canWriteFolder, folderFileCounts, listFiles, listFolders } from "@bdas/files";
+import {
+  folderFileCounts,
+  getFolderRights,
+  listFiles,
+  listFolders,
+  mayDeleteFile,
+} from "@bdas/files";
 import { getGroupBySlug } from "@bdas/groups";
 
 import { requireGroupScope } from "../../../../../_dashboard/session";
@@ -11,6 +17,7 @@ import { FileList } from "../../../../../_files/FileList";
 import { requireFilesFlag } from "../../../../../_files/flag";
 import { FolderAdminControls } from "../../../../../_files/FolderAdminControls";
 import { FolderIndex } from "../../../../../_files/FolderIndex";
+import { subfolderCounts } from "../../../../../_files/folder-meta";
 import { NewFolderButton } from "../../../../../_files/NewFolderButton";
 
 export const dynamic = "force-dynamic";
@@ -42,14 +49,15 @@ export default async function GroupFolderPage({
       me,
     ),
   ]);
-  const canWrite = canWriteFolder(folder, me);
+  const rights = await getFolderRights(db, folder, me);
+  const deletableIds = files.filter((f) => mayDeleteFile(rights, f, me)).map((f) => f.id);
 
   return (
     <section className="flex flex-col gap-4">
       <Breadcrumbs trail={buildBreadcrumbs(readable, folder.id)} hrefBase={hrefBase} />
       <div className="flex items-start justify-between gap-4">
         <h1 className="text-2xl font-semibold text-bdas-ink">{folder.name}</h1>
-        {canWrite && folder.parentId !== null ? (
+        {rights.canManage && folder.parentId !== null ? (
           <FolderAdminControls
             folderId={folder.id}
             name={folder.name}
@@ -62,18 +70,24 @@ export default async function GroupFolderPage({
       <div className="flex flex-col gap-3">
         <div className="flex items-center justify-between gap-4">
           <h2 className="text-lg font-medium text-bdas-ink">Unterordner</h2>
-          {canWrite ? <NewFolderButton parentId={folder.id} /> : null}
+          {rights.canManage ? <NewFolderButton parentId={folder.id} /> : null}
         </div>
         <FolderIndex
           folders={children}
           groupNames={group ? { [group.id]: group.name } : {}}
           counts={counts}
+          subfolderCounts={subfolderCounts(readable)}
           hrefBase={hrefBase}
           emptyLabel="Keine Unterordner."
         />
       </div>
 
-      <FileList files={files} folderId={params.folderId} canWrite={canWrite} />
+      <FileList
+        files={files}
+        folderId={params.folderId}
+        canUpload={rights.canUpload}
+        deletableIds={deletableIds}
+      />
     </section>
   );
 }

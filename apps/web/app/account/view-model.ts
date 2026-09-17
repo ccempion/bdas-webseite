@@ -41,8 +41,9 @@ export function layoutMode(status: MemberStatus | null): AccountLayoutMode {
 
 /**
  * Die Statuszeile der Identitätskarte. Aufgenommen heißt nicht Mitglied
- * (Spec 2026-09-16 §3.1): ein Förderer-Account heißt beim Namen, jeder andere
- * Aufgenommene ohne Mitgliedschaft wartet auf den Beitritt zu einer Gruppe.
+ * (Spec 2026-09-16 §3.1): Förderer- und Partnerorganisations-Accounts heißen
+ * beim Namen, jeder andere Aufgenommene ohne Mitgliedschaft wartet auf den
+ * Beitritt zu einer Gruppe.
  */
 export function statusText(
   status: MemberStatus | null,
@@ -51,7 +52,9 @@ export function statusText(
 ): string | null {
   if (status === null) return null;
   if (status === "active" && !isBdasMember) {
-    return kind === "netzwerk" ? "Förderer:in" : "Warten auf Beitritt";
+    if (kind === "netzwerk") return "Förderer:in";
+    if (kind === "affiliate") return "Partnerorganisation";
+    return "Warten auf Beitritt";
   }
   return STATUS_TEXT[status];
 }

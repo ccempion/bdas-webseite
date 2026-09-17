@@ -1,4 +1,4 @@
-import type { FolderScope } from "@bdas/files";
+import type { Folder, FolderScope } from "@bdas/files";
 
 /** German labels for each folder visibility scope (was inline in FoldersTable). */
 export const SCOPE_LABEL: Record<FolderScope, string> = {
@@ -58,23 +58,37 @@ export function mimeCategory(mimeType: string): FileCategory {
   return "generic";
 }
 
-const CATEGORY_ICON: Record<FileCategory, string> = {
-  pdf: "📕",
-  image: "🖼️",
-  spreadsheet: "📊",
-  document: "📄",
-  generic: "📦",
-};
-
-/** Emoji icon for a file's MIME type. No in-app previews beyond this (spec §11). */
-export function mimeIcon(mimeType: string): string {
-  return CATEGORY_ICON[mimeCategory(mimeType)];
-}
-
 /** Human-readable file size: bytes / KB / MB (one decimal above 1 KB). */
 export function formatFileSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
   const kb = bytes / 1024;
   if (kb < 1024) return `${kb.toFixed(1)} KB`;
   return `${(kb / 1024).toFixed(1)} MB`;
+}
+
+/**
+ * Direct-child folder count per parent id (not recursive). Folders with no
+ * children are simply absent from the result — callers default with `?? 0`.
+ */
+export function subfolderCounts(allFolders: Folder[]): Record<string, number> {
+  const out: Record<string, number> = {};
+  for (const f of allFolders) {
+    if (f.parentId === null) continue;
+    out[f.parentId] = (out[f.parentId] ?? 0) + 1;
+  }
+  return out;
+}
+
+/**
+ * Folder-index count label: files and subfolders shown separately, a zero
+ * segment dropped rather than printed as "0 Ordner", "Leer" when both are
+ * zero (spec: issue #228).
+ */
+export function formatFolderCounts(fileCount: number, folderCount: number): string {
+  const filesPart = fileCount > 0 ? `${fileCount} ${fileCount === 1 ? "Datei" : "Dateien"}` : null;
+  const foldersPart = folderCount > 0 ? `${folderCount} Ordner` : null;
+  if (filesPart && foldersPart) return `${filesPart} · ${foldersPart}`;
+  if (filesPart) return filesPart;
+  if (foldersPart) return foldersPart;
+  return "Leer";
 }

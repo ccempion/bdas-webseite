@@ -8,14 +8,15 @@ import type { FileMeta } from "@bdas/files";
 import { formatDate } from "../../lib/format";
 import { DeleteFileButton } from "./DeleteFileButton";
 import { getDownloadUrlAction } from "./file-actions";
-import { formatFileSize, mimeIcon } from "./folder-meta";
+import { formatFileSize } from "./folder-meta";
+import { FileTypeIcon } from "./icons";
 
 /**
  * One file row. Both the filename and the "Herunterladen" button trigger the
  * same download (signed URL → open in a new tab), sharing one busy/error state.
- * Delete is shown only when `canWrite`.
+ * Delete is shown only when `canDelete`.
  */
-export function FileRow({ file, canWrite }: { file: FileMeta; canWrite: boolean }) {
+export function FileRow({ file, canDelete }: { file: FileMeta; canDelete: boolean }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -33,8 +34,8 @@ export function FileRow({ file, canWrite }: { file: FileMeta; canWrite: boolean 
 
   return (
     <li className="flex items-center gap-4 rounded-bdas border border-bdas-soft bg-bdas-surface p-4 shadow-bdas-card">
-      <span aria-hidden className="text-xl">
-        {mimeIcon(file.mimeType)}
+      <span className="text-bdas-ink-muted">
+        <FileTypeIcon mimeType={file.mimeType} />
       </span>
       <div className="min-w-0 flex-1">
         <button
@@ -53,7 +54,7 @@ export function FileRow({ file, canWrite }: { file: FileMeta; canWrite: boolean 
       <Button variant="secondary" size="sm" onClick={download} disabled={busy}>
         {busy ? "…" : "Herunterladen"}
       </Button>
-      {canWrite ? <DeleteFileButton fileId={file.id} filename={file.filename} /> : null}
+      {canDelete ? <DeleteFileButton fileId={file.id} filename={file.filename} /> : null}
     </li>
   );
 }
