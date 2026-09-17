@@ -14,7 +14,11 @@ describe("onboardingLanding", () => {
     ["no member row", { memberStatus: null }, null],
     ["active member", { memberStatus: "active" }, null],
     ["open journey", { journeyStatus: "details_offen" }, "/mitmachen/angaben"],
-    ["open journey wins over an old profile", { journeyStatus: "details_offen", profileComplete: true }, "/mitmachen/angaben"],
+    [
+      "open journey wins over an old profile",
+      { journeyStatus: "details_offen", profileComplete: true },
+      "/mitmachen/angaben",
+    ],
     ["submitted journey", { journeyStatus: "abgeschickt" }, null],
     ["old flow, application open", { hasOpenApplication: true }, null],
     ["old flow, profile done", { profileComplete: true }, null],

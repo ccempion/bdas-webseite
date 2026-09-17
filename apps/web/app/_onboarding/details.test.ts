@@ -35,7 +35,11 @@ describe("detailScreens", () => {
   });
 
   it("follows the field set of each type", () => {
-    expect(detailScreens("alumnus").map((s) => s.id)).toEqual(["studienfach", "uni", "gefundenDurch"]);
+    expect(detailScreens("alumnus").map((s) => s.id)).toEqual([
+      "studienfach",
+      "uni",
+      "gefundenDurch",
+    ]);
     expect(detailScreens("foerderer").map((s) => s.id)).toEqual(["interesse", "gefundenDurch"]);
     expect(detailScreens("bdaj").map((s) => s.id)).toEqual(["bdajFunktion", "gefundenDurch"]);
   });
@@ -92,7 +96,10 @@ describe("validateDetailScreen", () => {
   });
 
   it("requires the study category in the wizard", () => {
-    const errors = validateDetailScreen("student", studium!, { ...student, studienfachKategorie: "" });
+    const errors = validateDetailScreen("student", studium!, {
+      ...student,
+      studienfachKategorie: "",
+    });
     expect(errors["studienfachKategorie"]).toBe("Bitte wähle einen Studienbereich.");
   });
 
@@ -138,9 +145,9 @@ describe("summaryLines", () => {
 
   it("names the bdaj function and marks a missing photo", () => {
     const [funktion] = detailScreens("bdaj");
-    expect(summaryLines(funktion!, { ...EMPTY_DETAILS, bdajFunktion: "geschaeftsstelle" })).toEqual([
-      "Geschäftsstelle",
-    ]);
+    expect(summaryLines(funktion!, { ...EMPTY_DETAILS, bdajFunktion: "geschaeftsstelle" })).toEqual(
+      ["Geschäftsstelle"],
+    );
     expect(summaryLines(detailScreens("student").at(-1)!, EMPTY_DETAILS)).toEqual(["Kein Foto"]);
   });
 });

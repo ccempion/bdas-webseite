@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import type * as OnboardingModule from "@bdas/onboarding";
+
 const redirectMock = vi.fn((..._a: unknown[]) => {
   throw new Error("REDIRECT");
 });
@@ -17,7 +19,7 @@ vi.mock("./landing", () => ({ resolveOnboardingLanding: (...a: unknown[]) => lan
 const ENV = { groups: [], bdajGroupId: null, netzwerkGroupId: "grp_netz" };
 const startJourneyMock = vi.fn();
 vi.mock("@bdas/onboarding", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@bdas/onboarding")>()),
+  ...(await importOriginal<typeof OnboardingModule>()),
   loadFlowEnv: async () => ENV,
   startJourney: (...a: unknown[]) => startJourneyMock(...a),
 }));
@@ -64,7 +66,9 @@ describe("resumeJourneyAction", () => {
 
   it("sends people who do not need it elsewhere", async () => {
     landingMock.mockResolvedValueOnce(null);
-    await expect(resumeJourneyAction({}, form({ typ: "unterstuetzen" }))).rejects.toThrow("REDIRECT");
+    await expect(resumeJourneyAction({}, form({ typ: "unterstuetzen" }))).rejects.toThrow(
+      "REDIRECT",
+    );
     expect(redirectMock).toHaveBeenCalledWith("/account");
     expect(startJourneyMock).not.toHaveBeenCalled();
   });

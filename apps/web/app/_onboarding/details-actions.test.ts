@@ -1,5 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import type * as OnboardingModule from "@bdas/onboarding";
+import type * as ProfileModule from "@bdas/profile";
+
 const redirectMock = vi.fn((..._a: unknown[]) => {
   throw new Error("REDIRECT");
 });
@@ -22,7 +25,7 @@ vi.mock("@bdas/members", () => ({
 }));
 const saveProfileMock = vi.fn();
 vi.mock("@bdas/profile", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@bdas/profile")>()),
+  ...(await importOriginal<typeof ProfileModule>()),
   saveProfile: (...a: unknown[]) => saveProfileMock(...a),
 }));
 
@@ -31,7 +34,7 @@ const getJourneyMock = vi.fn();
 const saveDetailsMock = vi.fn();
 const completeMock = vi.fn();
 vi.mock("@bdas/onboarding", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@bdas/onboarding")>()),
+  ...(await importOriginal<typeof OnboardingModule>()),
   loadFlowEnv: async () => ENV,
   getJourneyForUser: (...a: unknown[]) => getJourneyMock(...a),
   saveDetails: (...a: unknown[]) => saveDetailsMock(...a),
@@ -102,7 +105,10 @@ describe("submitApplicationAction", () => {
     await expect(
       submitApplicationAction(
         {},
-        form({ interesse: "Kultur", gefundenDurch: "webseite" }, { groupId: "grp_x", outcome: "bdaj" }),
+        form(
+          { interesse: "Kultur", gefundenDurch: "webseite" },
+          { groupId: "grp_x", outcome: "bdaj" },
+        ),
       ),
     ).rejects.toThrow("REDIRECT");
     expect(completeMock.mock.calls[0]?.[1]).not.toHaveProperty("groupId");
@@ -122,7 +128,10 @@ describe("submitApplicationAction", () => {
   it("surfaces a conflicting open application", async () => {
     const { ConflictError } = await import("@bdas/errors");
     completeMock.mockRejectedValueOnce(new ConflictError("Du hast bereits eine offene Bewerbung."));
-    const state = await submitApplicationAction({}, form({ interesse: "K", gefundenDurch: "webseite" }));
+    const state = await submitApplicationAction(
+      {},
+      form({ interesse: "K", gefundenDurch: "webseite" }),
+    );
     expect(state.error).toMatch(/offene Bewerbung/);
   });
 
