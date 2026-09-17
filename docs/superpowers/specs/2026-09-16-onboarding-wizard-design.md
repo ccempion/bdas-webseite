@@ -14,12 +14,12 @@ Bestätigung der E-Mail führt `/profil` durch einen Formular-Wizard mit sechs S
 eine Hochschulgruppe verlangt. Die Plattform kennt inzwischen aber vier Wege hinein, von denen der
 Formular-Wizard nur einen abbildet:
 
-| Nutzertyp | Aufnahme | Stand |
-|---|---|---|
-| Student\*in | Antrag an die Hochschulgruppe, deren Vorstand entscheidet (ADR 0031) | gebaut |
-| Alumnus/Alumna | Aufnahme ohne Gruppe durch den Bundesvorstand (`acceptAsAlumnus`) | Mechanik gebaut, kein Einstieg |
-| Förderer/Interessierte | Antrag an die `netzwerk`-Gruppe, Bundesvorstand entscheidet (ADR 0046) | Mechanik gebaut, kein Einstieg (`self-service-group.ts` verweist ausdrücklich auf diesen Wizard) |
-| BDAJ-Funktionär\*in | Antrag an die `affiliate`-Gruppe BDAJ, Bundesvorstand entscheidet (ADR 0021-Rückfall) | Gruppenart gebaut, BDAJ-Zeile entsteht parallel |
+| Nutzertyp              | Aufnahme                                                                              | Stand                                                                                            |
+| ---------------------- | ------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| Student\*in            | Antrag an die Hochschulgruppe, deren Vorstand entscheidet (ADR 0031)                  | gebaut                                                                                           |
+| Alumnus/Alumna         | Aufnahme ohne Gruppe durch den Bundesvorstand (`acceptAsAlumnus`)                     | Mechanik gebaut, kein Einstieg                                                                   |
+| Förderer/Interessierte | Antrag an die `netzwerk`-Gruppe, Bundesvorstand entscheidet (ADR 0046)                | Mechanik gebaut, kein Einstieg (`self-service-group.ts` verweist ausdrücklich auf diesen Wizard) |
+| BDAJ-Funktionär\*in    | Antrag an die `affiliate`-Gruppe BDAJ, Bundesvorstand entscheidet (ADR 0021-Rückfall) | Gruppenart gebaut, BDAJ-Zeile entsteht parallel                                                  |
 
 Wer sich heute registriert, muss unsere Struktur schon verstehen, um richtig anzukommen. Das soll
 der Wizard übernehmen.
@@ -77,30 +77,30 @@ Höhe.
 ### 4.1 Teil 1 — Triage (ohne Konto, ca. 30 s)
 
 1. **Willkommen.** Text abhängig vom Einstiegskontext („Schön, dass du da bist!" bzw. „Du warst
-   beim Sommerfest in Köln — willkommen!"). Knopf *Los geht's*, Link *Ich habe schon ein Konto*.
+   beim Sommerfest in Köln — willkommen!"). Knopf _Los geht's_, Link _Ich habe schon ein Konto_.
 2. **„Was beschreibt dich am besten?"** Vier große Karten mit Icon und einer Zeile; ein Tippen geht
    direkt weiter:
-   - *Ich studiere gerade*
-   - *Ich habe studiert*
-   - *Ich bin in der BDAJ aktiv* (nur wenn die BDAJ-Gruppe existiert)
-   - *Ich möchte BDAS unterstützen / bin einfach neugierig*
+   - _Ich studiere gerade_
+   - _Ich habe studiert_
+   - _Ich bin in der BDAJ aktiv_ (nur wenn die BDAJ-Gruppe existiert)
+   - _Ich möchte BDAS unterstützen / bin einfach neugierig_
 3. **„Wie dürfen wir dich nennen?"** Vor- und Nachname. Ab hier sprechen die Texte die Person mit
    Vornamen an. (Der Name steht hier und nicht in Teil 3, weil `members.first_name` NOT NULL ist
    und ADR 0044 die Member-Zeile bei der Registrierung voraussetzt.)
 4. **Folgefrage je Karte:**
-   - *studiere gerade* → „Wo studierst du?": Suche nach Stadt oder Hochschule, Treffer zeigen
+   - _studiere gerade_ → „Wo studierst du?": Suche nach Stadt oder Hochschule, Treffer zeigen
      Gruppen live („✓ BDAS Berlin"). Ohne Gruppe: „In Passau gibt es noch keine Gruppe —
      vielleicht gründest du sie?"
-   - *habe studiert* → „Wo warst du aktiv?": Gruppe **oder** Stadt, *Überspringen* möglich.
+   - _habe studiert_ → „Wo warst du aktiv?": Gruppe **oder** Stadt, _Überspringen_ möglich.
    - BDAJ und Unterstützer\*innen: keine Folgefrage.
 5. **Ergebnis.** „Du passt zu uns als **Studentin in Berlin**." Darunter: was man bekommt, wer
    entscheidet („Der Vorstand von BDAS Berlin"), wie lange es ungefähr dauert. Knöpfe
-   *Passt — Konto anlegen* und *Doch etwas anderes*.
+   _Passt — Konto anlegen_ und _Doch etwas anderes_.
 
 ### 4.2 Teil 2 — Konto (ca. 20 s)
 
 6. **E-Mail, Passwort, Einwilligung** im selben Fenster; eine E-Mail aus dem Einstiegskontext ist
-   vorausgefüllt. Danach: „Wir haben dir eine Mail geschickt", Knopf *Erneut senden*. Das Fenster
+   vorausgefüllt. Danach: „Wir haben dir eine Mail geschickt", Knopf _Erneut senden_. Das Fenster
    darf jetzt geschlossen werden.
 
 ### 4.3 Teil 3 — Angaben (nach der Bestätigung)
@@ -108,18 +108,18 @@ Höhe.
 7. Der Bestätigungslink öffnet den Wizard an dieser Stelle, auf jedem Gerät. „Willkommen zurück,
    Lea — fast geschafft." Dann nur die Felder des Typs, weiterhin ein Thema pro Bildschirm:
 
-| Typ | Felder |
-|---|---|
-| Student\*in | Studienfach (Kategorie → Fach) + Abschlussart → Hochschule → Geburtsdatum → Wie hast du uns gefunden? → Foto (optional) |
-| Alumnus/Alumna | Studienfach (Kategorie → Fach) → ehemalige Hochschule → Wie hast du uns gefunden? |
-| Förderer/Interessierte (inkl. Student\*in ohne Gruppe) | „Was interessiert dich an BDAS?" (Kurztext) → Wie hast du uns gefunden? |
-| BDAJ | „Welche Funktion hast du in der BDAJ?" (eine Karte: *Vorstandsmitglied*, *Mitglied*, *Geschäftsstelle*) → Wie hast du uns gefunden? |
+| Typ                                                    | Felder                                                                                                                              |
+| ------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------- |
+| Student\*in                                            | Studienfach (Kategorie → Fach) + Abschlussart → Hochschule → Geburtsdatum → Wie hast du uns gefunden? → Foto (optional)             |
+| Alumnus/Alumna                                         | Studienfach (Kategorie → Fach) → ehemalige Hochschule → Wie hast du uns gefunden?                                                   |
+| Förderer/Interessierte (inkl. Student\*in ohne Gruppe) | „Was interessiert dich an BDAS?" (Kurztext) → Wie hast du uns gefunden?                                                             |
+| BDAJ                                                   | „Welche Funktion hast du in der BDAJ?" (eine Karte: _Vorstandsmitglied_, _Mitglied_, _Geschäftsstelle_) → Wie hast du uns gefunden? |
 
-   Das Studienfach ist zweistufig, die Kategorie wird mitgespeichert (Entscheidung 2026-09-16).
-   Quelle ist `modules/profile/data/studienfaecher.csv` (11 Kategorien, 265 Fächer) — **liegt noch
-   nicht auf main**, sondern auf `docs/studienfach-liste`; der Teil-3-PR setzt sie voraus.
+Das Studienfach ist zweistufig, die Kategorie wird mitgespeichert (Entscheidung 2026-09-16).
+Quelle ist `modules/profile/data/studienfaecher.csv` (11 Kategorien, 265 Fächer) — **liegt noch
+nicht auf main**, sondern auf `docs/studienfach-liste`; der Teil-3-PR setzt sie voraus.
 
-8. **Zusammenfassung** mit *Ändern* je Block → *Bewerbung abschicken*.
+8. **Zusammenfassung** mit _Ändern_ je Block → _Bewerbung abschicken_.
 9. **Fertig.** „Deine Bewerbung liegt jetzt bei …, wir melden uns per Mail." Nächste Schritte als
    kleine Zeitleiste, darunter ein Nudge-Platz (z. B. „Schau dir die nächsten Events an").
 
@@ -148,9 +148,9 @@ Bestandteile:
   type Flow = {
     version: number;
     start: QuestionId;
-    questions: Record<QuestionId, Question>;   // Text, Hilfezeile, Antworttyp, Optionen
-    rules: Rule[];                             // wenn Antworten X → nächste Frage oder Ergebnis
-    outcomes: Record<OutcomeId, Outcome>;      // Typ, Detailfelder, Antragsziel, Texte
+    questions: Record<QuestionId, Question>; // Text, Hilfezeile, Antworttyp, Optionen
+    rules: Rule[]; // wenn Antworten X → nächste Frage oder Ergebnis
+    outcomes: Record<OutcomeId, Outcome>; // Typ, Detailfelder, Antragsziel, Texte
   };
   type OutcomeId = "student" | "student_ohne_gruppe" | "alumnus" | "foerderer" | "bdaj";
   ```
@@ -168,7 +168,7 @@ Bestandteile:
   wird. Läuft als Test.
 
 - **Einstiegskontext `EntryContext`.** `{ source: string; prefill?: Partial<Answers>; greeting?:
-  string }`, gelesen aus einer Whitelist bekannter Quellen (`event:<id>`, `newsletter`,
+string }`, gelesen aus einer Whitelist bekannter Quellen (`event:<id>`, `newsletter`,
   `kampagne:<slug>`, `inhalt:<id>`). Unbekannte Quellen werden zu `direkt`. `prefill` füllt nur
   vor, beantwortet nie eine Frage verbindlich.
 
@@ -188,12 +188,12 @@ Bestandteile:
 `completeJourney` öffnet den Antrag ausschließlich über die öffentliche Schnittstelle von
 `@bdas/members`:
 
-| Ergebnis | Aufruf | Entscheidet |
-|---|---|---|
-| `student` | `changePrimaryGroup(memberId, gruppeAusAntworten)` | Vorstand der Gruppe |
-| `student_ohne_gruppe`, `foerderer` | `changePrimaryGroup(memberId, netzwerkGruppe)` | Bundesvorstand |
-| `bdaj` | `changePrimaryGroup(memberId, bdajGruppe)` | Bundesvorstand |
-| `alumnus` | kein Gruppenantrag; Member bleibt `pending` ohne Gruppe, Absicht steht in der Journey | Bundesvorstand über „Ohne Gruppe" (`acceptAsAlumnus`) |
+| Ergebnis                           | Aufruf                                                                                | Entscheidet                                           |
+| ---------------------------------- | ------------------------------------------------------------------------------------- | ----------------------------------------------------- |
+| `student`                          | `changePrimaryGroup(memberId, gruppeAusAntworten)`                                    | Vorstand der Gruppe                                   |
+| `student_ohne_gruppe`, `foerderer` | `changePrimaryGroup(memberId, netzwerkGruppe)`                                        | Bundesvorstand                                        |
+| `bdaj`                             | `changePrimaryGroup(memberId, bdajGruppe)`                                            | Bundesvorstand                                        |
+| `alumnus`                          | kein Gruppenantrag; Member bleibt `pending` ohne Gruppe, Absicht steht in der Journey | Bundesvorstand über „Ohne Gruppe" (`acceptAsAlumnus`) |
 
 `changePrimaryGroup` verbietet heute über den App-Guard `requireSelfServiceGroup` Anträge an
 `netzwerk`/`affiliate`. Der Wizard ruft den Dienst ohne diesen Guard auf; die Autorisierung
@@ -255,18 +255,18 @@ Eingeloggte Personen sehen statt „Mitmachen" ihren Stand („Deine Bewerbung l
 
 ## 6. Fehlerfälle
 
-| Fall | Verhalten |
-|---|---|
-| E-Mail schon registriert | wie heute in `register` |
-| Fenster vor dem Konto geschlossen | Antworten bleiben in diesem Tab; auf dem Server liegt nichts |
-| E-Mail nie bestätigt | bestehende Aufräumlogik (ADR 0044) löscht das Konto, die Journey fällt per Cascade mit |
-| Bestätigung auf anderem Gerät | Journey liegt auf dem Server, Teil 3 öffnet sich dort |
-| Gewählte Gruppe inzwischen gelöscht oder inaktiv | Ergebnis wird `student_ohne_gruppe`, kurzer Hinweis auf dem Zusammenfassungsbildschirm |
-| BDAJ-Gruppe existiert nicht | §5.4 |
-| Vom Browser gesendetes Ergebnis oder Gruppen-ID | wird ignoriert, Server rechnet nach |
-| Bots | kein neuer öffentlicher Schreibweg vor dem Konto; bestehende Rate-Limits in `register` |
-| Bereits eingeloggt | Einstiegspunkte zeigen den Stand statt „Mitmachen" |
-| Bestehende Konten ohne Bewerbung (alter Wizard) | Beim Login ohne Journey und ohne offenen Antrag startet der Wizard nach der Namensfrage |
+| Fall                                             | Verhalten                                                                               |
+| ------------------------------------------------ | --------------------------------------------------------------------------------------- |
+| E-Mail schon registriert                         | wie heute in `register`                                                                 |
+| Fenster vor dem Konto geschlossen                | Antworten bleiben in diesem Tab; auf dem Server liegt nichts                            |
+| E-Mail nie bestätigt                             | bestehende Aufräumlogik (ADR 0044) löscht das Konto, die Journey fällt per Cascade mit  |
+| Bestätigung auf anderem Gerät                    | Journey liegt auf dem Server, Teil 3 öffnet sich dort                                   |
+| Gewählte Gruppe inzwischen gelöscht oder inaktiv | Ergebnis wird `student_ohne_gruppe`, kurzer Hinweis auf dem Zusammenfassungsbildschirm  |
+| BDAJ-Gruppe existiert nicht                      | §5.4                                                                                    |
+| Vom Browser gesendetes Ergebnis oder Gruppen-ID  | wird ignoriert, Server rechnet nach                                                     |
+| Bots                                             | kein neuer öffentlicher Schreibweg vor dem Konto; bestehende Rate-Limits in `register`  |
+| Bereits eingeloggt                               | Einstiegspunkte zeigen den Stand statt „Mitmachen"                                      |
+| Bestehende Konten ohne Bewerbung (alter Wizard)  | Beim Login ohne Journey und ohne offenen Antrag startet der Wizard nach der Namensfrage |
 
 ## 7. Tests
 
