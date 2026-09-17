@@ -13,6 +13,9 @@ export type DialogProps = {
   children: ReactNode;
   /** `max-w-lg` (default) | `max-w-2xl` (editor forms, PR 3). */
   wide?: boolean;
+  /** Below `sm` the dialog fills the screen instead of floating — for flows
+   *  that need the whole phone (onboarding wizard). */
+  sheet?: boolean;
 };
 
 /**
@@ -23,7 +26,7 @@ export type DialogProps = {
  * Confirming unsaved changes before close is the calling form's job (PR 3),
  * not this primitive's.
  */
-export function Dialog({ open, onClose, title, children, wide }: DialogProps) {
+export function Dialog({ open, onClose, title, children, wide, sheet }: DialogProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const titleId = useId();
 
@@ -59,6 +62,7 @@ export function Dialog({ open, onClose, title, children, wide }: DialogProps) {
         "motion-safe:animate-bdas-fade-slide-down",
         wide ? "max-w-2xl" : "max-w-lg",
         "w-full max-h-[calc(100vh-4rem)] overflow-y-auto",
+        sheet && "max-sm:m-0 max-sm:h-dvh max-sm:max-h-none max-sm:max-w-none max-sm:rounded-none",
       )}
     >
       <button
