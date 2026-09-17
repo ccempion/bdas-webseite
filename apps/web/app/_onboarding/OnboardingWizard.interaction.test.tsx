@@ -152,9 +152,9 @@ describe("OnboardingWizard", () => {
         />,
       ),
     );
+    expect(container.textContent).not.toContain("Du hast schon ein Konto?");
     click("Ich möchte unterstützen");
-    expect(container.querySelector<HTMLInputElement>("#onb-vorname")?.value).toBe("Lea");
-    submit();
+    expect(container.querySelector("#onb-vorname")).toBeNull();
     expect(heading()).toBe("Du passt zu uns als Förderer*in.");
     expect(container.textContent).not.toContain("Passt — Konto anlegen");
     expect(container.textContent).toContain("Passt — weiter");

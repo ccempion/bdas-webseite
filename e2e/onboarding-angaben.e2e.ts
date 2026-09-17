@@ -123,8 +123,8 @@ test("an account from the old registration continues after the name", async ({ p
 
   await expect(page).toHaveURL(/\/mitmachen$/);
   await page.getByRole("button", { name: /Ich möchte unterstützen/ }).click();
-  await expect(page.getByLabel("Vorname")).toHaveValue("Alt");
-  await weiter(page);
+  // Der Name steht fest; die Frage wird übersprungen.
+  await expect(page.getByLabel("Vorname")).toHaveCount(0);
   await page.getByRole("button", { name: "Passt — weiter" }).click();
   await expect(page).toHaveURL(/\/mitmachen\/angaben$/);
 });

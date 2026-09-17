@@ -9,6 +9,7 @@ import {
   INITIAL,
   partOf,
   reduce,
+  resumeState,
   type WizardAction,
   type WizardState,
 } from "./wizard-state";
@@ -90,5 +91,42 @@ describe("wizard-state", () => {
     );
     expect(s).toEqual({ stage: "gesendet", answers: {}, cursor: null, email: "lea@example.org" });
     expect(canGoBack(FLOW, s, ENV)).toBe(false);
+  });
+
+  describe("resume mode (signed-in account, name fixed)", () => {
+    const LOCKED = ["name"];
+    const step = (state: WizardState, action: WizardAction) =>
+      reduce(FLOW, ENV, state, action, LOCKED);
+    const start = resumeState(INITIAL, NAME);
+
+    it("skips the name question forwards and backwards", () => {
+      const afterTyp = step(start, { type: "answer", question: "typ", value: "studiere" });
+      expect(currentQuestion(FLOW, afterTyp, ENV)).toBe("studienort");
+      expect(currentQuestion(FLOW, step(afterTyp, { type: "back" }), ENV)).toBe("typ");
+
+      const supporter = step(start, { type: "answer", question: "typ", value: "unterstuetzen" });
+      expect(supporter.stage).toBe("ergebnis");
+      expect(step(supporter, { type: "back" }).cursor).toBe("typ");
+    });
+
+    it("never restores the account form or a typed name", () => {
+      const saved: WizardState = {
+        stage: "konto",
+        answers: { typ: "unterstuetzen", name: { firstName: "Alex", lastName: "Z" } },
+        cursor: null,
+        email: "",
+      };
+      expect(resumeState(saved, NAME)).toEqual({
+        stage: "ergebnis",
+        answers: { typ: "unterstuetzen", name: NAME },
+        cursor: null,
+        email: "",
+      });
+      expect(resumeState({ ...saved, stage: "fragen", cursor: "name" }, NAME).cursor).toBeNull();
+      expect(resumeState({ ...saved, stage: "gesendet" }, NAME)).toEqual({
+        ...INITIAL,
+        answers: { name: NAME },
+      });
+    });
   });
 });

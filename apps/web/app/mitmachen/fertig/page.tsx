@@ -9,6 +9,7 @@ import {
   FLOW,
   getJourneyForUser,
   loadFlowEnv,
+  nextStep,
   resolveTarget,
   textContext,
 } from "@bdas/onboarding";
@@ -36,8 +37,11 @@ export default async function FertigPage() {
   const journey = await getJourneyForUser(db, me.user.id);
   if (!journey) redirect("/mitmachen");
 
+  // Offene Journeys mit der Lage von jetzt nachrechnen, wie /mitmachen/angaben
+  // (Spec §6: gelöschte Gruppe); abgeschickte zeigen, wohin sie gingen.
   const env = await loadFlowEnv(db);
-  const outcome = FLOW.outcomes[journey.outcome];
+  const step = journey.status === "details_offen" ? nextStep(FLOW, journey.answers, env) : null;
+  const outcome = FLOW.outcomes[step?.kind === "outcome" ? step.outcome : journey.outcome];
   const waiting =
     journey.status === "details_offen" &&
     resolveTarget(FLOW, outcome.target, journey.answers, env).kind === "unavailable";

@@ -4,7 +4,6 @@ import {
   FIELD_SETS,
   GEFUNDEN_DURCH_OPTIONS,
   PROFILE_FIELD_SCHEMAS,
-  SONSTIGE,
   type Nutzertyp,
   type ProfileField,
 } from "@bdas/profile";
@@ -105,8 +104,12 @@ export function detailScreens(t: Nutzertyp): DetailScreen[] {
   return screens;
 }
 
+/** Auswahlwert für „Mein Fach fehlt …". Nicht `SONSTIGE`: die Kategorie
+ *  „Sonstige" enthält ein gleichnamiges Fach, das wählbar bleiben muss. */
+export const FACH_FEHLT = "__fach_fehlt__";
+
 export function resolveStudiengang(v: DetailValues): string {
-  return v.studiengang === SONSTIGE ? v.studiengangOther.trim() : v.studiengang;
+  return v.studiengang === FACH_FEHLT ? v.studiengangOther.trim() : v.studiengang;
 }
 
 const orNull = (s: string): string | null => (s.trim() === "" ? null : s.trim());

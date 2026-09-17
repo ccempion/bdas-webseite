@@ -3,9 +3,9 @@
 import React, { useMemo } from "react";
 
 import { Combobox, Field, Input } from "@bdas/design-system";
-import { faecherIn, SONSTIGE, STUDIENFACH_KATEGORIEN } from "@bdas/profile";
+import { faecherIn, STUDIENFACH_KATEGORIEN } from "@bdas/profile";
 
-import type { DetailValues } from "../details";
+import { FACH_FEHLT, type DetailValues } from "../details";
 import type { DetailSetter } from "./DetailFields";
 
 const KATEGORIE_OPTIONS = STUDIENFACH_KATEGORIEN.map((k) => ({ value: k.name, label: k.name }));
@@ -23,7 +23,7 @@ export function StudienfachFields({
   const faecher = useMemo(
     () => [
       ...faecherIn(values.studienfachKategorie).map((f) => ({ value: f, label: f })),
-      { value: SONSTIGE, label: "Mein Fach fehlt …" },
+      { value: FACH_FEHLT, label: "Mein Fach fehlt …" },
     ],
     [values.studienfachKategorie],
   );
@@ -62,7 +62,7 @@ export function StudienfachFields({
             onChange={(v) => set("studiengang", v)}
             invalid={Boolean(errors["studiengang"])}
           />
-          {values.studiengang === SONSTIGE ? (
+          {values.studiengang === FACH_FEHLT ? (
             <Input
               aria-label="Anderes Studienfach"
               placeholder="Name deines Fachs"

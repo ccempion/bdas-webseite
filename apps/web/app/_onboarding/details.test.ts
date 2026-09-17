@@ -5,6 +5,7 @@ import { PROFILE_FIELD_SCHEMAS, SONSTIGE } from "@bdas/profile";
 import {
   detailScreens,
   EMPTY_DETAILS,
+  FACH_FEHLT,
   restoreDetails,
   summaryLines,
   toProfileFields,
@@ -59,16 +60,27 @@ describe("toProfileFields", () => {
     expect(PROFILE_FIELD_SCHEMAS.student.safeParse(fields).success).toBe(true);
   });
 
-  it("uses the free text behind Sonstige", () => {
+  it("uses the free text when the subject is missing", () => {
     const fields = toProfileFields("alumnus", {
       ...student,
-      studiengang: SONSTIGE,
+      studiengang: FACH_FEHLT,
       studiengangOther: " Bionik ",
       uni: SONSTIGE,
       uniOther: "Hochschule Irgendwo",
     });
     expect(fields).toMatchObject({ studiengang: "Bionik", uni: "Hochschule Irgendwo" });
     expect(fields).not.toHaveProperty("geburtsdatum");
+  });
+
+  it("keeps the listed subject called Sonstige", () => {
+    const fields = toProfileFields("student", {
+      ...student,
+      studienfachKategorie: "Sonstige",
+      studiengang: SONSTIGE,
+      studiengangOther: "",
+    });
+    expect(fields).toMatchObject({ studienfachKategorie: "Sonstige", studiengang: "Sonstige" });
+    expect(PROFILE_FIELD_SCHEMAS.student.safeParse(fields).success).toBe(true);
   });
 
   it("sends only the type's own fields for supporters and bdaj", () => {
@@ -103,10 +115,10 @@ describe("validateDetailScreen", () => {
     expect(errors["studienfachKategorie"]).toBe("Bitte wähle einen Studienbereich.");
   });
 
-  it("requires the free text behind Sonstige", () => {
+  it("requires the free text when the subject is missing", () => {
     const errors = validateDetailScreen("student", studium!, {
       ...student,
-      studiengang: SONSTIGE,
+      studiengang: FACH_FEHLT,
       studiengangOther: "",
     });
     expect(errors["studiengang"]).toBeTruthy();
