@@ -2,13 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import type { Folder } from "@bdas/files";
 
-import {
-  formatFileSize,
-  formatFolderCounts,
-  mimeCategory,
-  mimeIcon,
-  subfolderCounts,
-} from "./folder-meta";
+import { formatFileSize, formatFolderCounts, mimeCategory, subfolderCounts } from "./folder-meta";
 
 function folder(id: string, parentId: string | null): Folder {
   return {
@@ -42,11 +36,6 @@ describe("mimeCategory", () => {
   it("falls back to generic for archives and unknown types", () => {
     expect(mimeCategory("application/zip")).toBe("generic");
     expect(mimeCategory("application/octet-stream")).toBe("generic");
-  });
-
-  it("mimeIcon returns a non-empty glyph per category", () => {
-    expect(mimeIcon("application/pdf")).not.toBe("");
-    expect(mimeIcon("application/zip")).toBe(mimeIcon("application/octet-stream"));
   });
 });
 

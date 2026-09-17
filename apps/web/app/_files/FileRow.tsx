@@ -8,7 +8,8 @@ import type { FileMeta } from "@bdas/files";
 import { formatDate } from "../../lib/format";
 import { DeleteFileButton } from "./DeleteFileButton";
 import { getDownloadUrlAction } from "./file-actions";
-import { formatFileSize, mimeIcon } from "./folder-meta";
+import { formatFileSize } from "./folder-meta";
+import { FileTypeIcon } from "./icons";
 
 /**
  * One file row. Both the filename and the "Herunterladen" button trigger the
@@ -33,8 +34,8 @@ export function FileRow({ file, canWrite }: { file: FileMeta; canWrite: boolean 
 
   return (
     <li className="flex items-center gap-4 rounded-bdas border border-bdas-soft bg-bdas-surface p-4 shadow-bdas-card">
-      <span aria-hidden className="text-xl">
-        {mimeIcon(file.mimeType)}
+      <span className="text-bdas-ink-muted">
+        <FileTypeIcon mimeType={file.mimeType} />
       </span>
       <div className="min-w-0 flex-1">
         <button

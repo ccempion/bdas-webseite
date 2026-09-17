@@ -58,19 +58,6 @@ export function mimeCategory(mimeType: string): FileCategory {
   return "generic";
 }
 
-const CATEGORY_ICON: Record<FileCategory, string> = {
-  pdf: "📕",
-  image: "🖼️",
-  spreadsheet: "📊",
-  document: "📄",
-  generic: "📦",
-};
-
-/** Emoji icon for a file's MIME type. No in-app previews beyond this (spec §11). */
-export function mimeIcon(mimeType: string): string {
-  return CATEGORY_ICON[mimeCategory(mimeType)];
-}
-
 /** Human-readable file size: bytes / KB / MB (one decimal above 1 KB). */
 export function formatFileSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
