@@ -320,3 +320,27 @@ export async function declineNewsletterPromptByEmail(email: string): Promise<voi
       SET dismiss_count = newsletter_prompts.dismiss_count + 1,
           last_dismissed_at = now()`;
 }
+
+/** Die Journey eines Kontos (onboarding_journeys), oder null. */
+export async function journeyByEmail(email: string): Promise<{
+  outcome: string;
+  status: string;
+  entry_source: string;
+  stadt: string | null;
+  application_ref: string | null;
+} | null> {
+  const rows = await sql<
+    {
+      outcome: string;
+      status: string;
+      entry_source: string;
+      stadt: string | null;
+      application_ref: string | null;
+    }[]
+  >`
+    SELECT j.outcome, j.status, j.entry_source, j.stadt, j.application_ref
+    FROM onboarding_journeys j
+    JOIN auth_users u ON u.id = j.user_id
+    WHERE u.email_normalized = ${email.trim().toLowerCase()}`;
+  return rows[0] ?? null;
+}

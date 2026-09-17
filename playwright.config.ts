@@ -15,6 +15,32 @@ import { defineConfig, devices } from "@playwright/test";
 const PORT = 3000;
 const baseURL = process.env["PUBLIC_SITE_URL"] ?? `http://localhost:${PORT}`;
 
+/** Zweiter Server mit eingeschaltetem Onboarding-Wizard. Die übrigen Specs
+ *  laufen weiter ohne das Flag, bis der alte Registrierungsweg entfernt ist. */
+const ONBOARDING_PORT = 3001;
+const onboardingURL = `http://localhost:${ONBOARDING_PORT}`;
+const ONBOARDING_SPECS = /onboarding-.*\.e2e\.ts$/;
+
+const APP_ENV = {
+  BDAS_FLAG_AUTH: "true",
+  BDAS_FLAG_MEMBERS: "true",
+  BDAS_FLAG_GROUPS: "true",
+  BDAS_FLAG_DASHBOARD: "true",
+  BDAS_FLAG_PUBLIC_SHELL: "true",
+  BDAS_FLAG_CONTENT: "true",
+  BDAS_FLAG_BLOG: "true",
+  BDAS_FLAG_BLOG_COMMENTS: "true",
+  BDAS_FLAG_PROFILE: "true",
+  BDAS_FLAG_FAQ: "true",
+  BDAS_FLAG_FAQ_SUITE: "true",
+  BDAS_FLAG_NEWSLETTER: "true",
+};
+
+const dismissedNotice = (origin: string) => ({
+  cookies: [],
+  origins: [{ origin, localStorage: [{ name: "bdas-cookie-notice", value: "dismissed" }] }],
+});
+
 export default defineConfig({
   testDir: "./e2e",
   testMatch: "**/*.e2e.ts",
@@ -39,39 +65,40 @@ export default defineConfig({
     // strip — Playwright considers such an element visible and never scrolls
     // it clear, so the click retries until the test times out. The specs that
     // exercise the notice itself opt back out via `test.use`.
-    storageState: {
-      cookies: [],
-      origins: [
-        { origin: baseURL, localStorage: [{ name: "bdas-cookie-notice", value: "dismissed" }] },
-      ],
-    },
+    storageState: dismissedNotice(baseURL),
   },
   projects: [
     {
       name: "mobile-chromium",
       // §23 asks for mobile; use a mobile viewport/UA.
       use: { ...devices["Pixel 7"] },
+      testIgnore: ONBOARDING_SPECS,
+    },
+    {
+      name: "onboarding",
+      use: {
+        ...devices["Pixel 7"],
+        baseURL: onboardingURL,
+        storageState: dismissedNotice(onboardingURL),
+      },
+      testMatch: ONBOARDING_SPECS,
     },
   ],
   // Start the production server unless one is already running (local reuse).
-  webServer: {
-    command: "pnpm --filter @bdas/web start",
-    url: baseURL,
-    timeout: 120_000,
-    reuseExistingServer: !process.env["CI"],
-    env: {
-      BDAS_FLAG_AUTH: "true",
-      BDAS_FLAG_MEMBERS: "true",
-      BDAS_FLAG_GROUPS: "true",
-      BDAS_FLAG_DASHBOARD: "true",
-      BDAS_FLAG_PUBLIC_SHELL: "true",
-      BDAS_FLAG_CONTENT: "true",
-      BDAS_FLAG_BLOG: "true",
-      BDAS_FLAG_BLOG_COMMENTS: "true",
-      BDAS_FLAG_PROFILE: "true",
-      BDAS_FLAG_FAQ: "true",
-      BDAS_FLAG_FAQ_SUITE: "true",
-      BDAS_FLAG_NEWSLETTER: "true",
+  webServer: [
+    {
+      command: "pnpm --filter @bdas/web start",
+      url: baseURL,
+      timeout: 120_000,
+      reuseExistingServer: !process.env["CI"],
+      env: APP_ENV,
     },
-  },
+    {
+      command: `pnpm --filter @bdas/web exec next start -p ${ONBOARDING_PORT}`,
+      url: onboardingURL,
+      timeout: 120_000,
+      reuseExistingServer: !process.env["CI"],
+      env: { ...APP_ENV, BDAS_FLAG_ONBOARDING: "true", PUBLIC_SITE_URL: onboardingURL },
+    },
+  ],
 });
