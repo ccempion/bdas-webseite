@@ -39,21 +39,28 @@ university as a selection instead of free text.
 
 `data/studienfaecher.csv` is the German subject classification — 265 subjects
 under 11 categories (`Kategorie,Studienfach`), transcoded to UTF-8 without a BOM
-and otherwise verbatim. It is a source file only: nothing reads it yet, and
-`studiengang` is still stored and entered as free text.
+and otherwise verbatim. `studiengang` itself stays free text.
 
-Decided: the form asks in two steps — category first, then subject within it.
-The category is the point, not a convenience. The 265 subjects will never be
-complete, so a subject the list misses still lands in a known category and the
-answer stays usable; a flat list would have to fall back to free text and lose
-that. The 11 categories are the fallback, which is why they are stored, not just
-used to filter the second step.
+The subject list is generated: `node modules/profile/scripts/generate-studienfaecher.mjs`
+writes `src/studienfaecher.generated.ts` (`STUDIENFACH_KATEGORIEN`, 11 categories,
+265 subjects). The form asks in two steps — category first, then subject within it.
+The category is stored in `studienfach_kategorie`, not just used to filter: the
+subject list will never be complete, so a subject it misses still lands in a known
+category. Existing free-text `studiengang` values keep working; there is no
+`canonicalStudienfach`.
 
-This is not bolted onto today's form: it ships with the new registration wizard
-covering all user types. Until then `studiengang` stays free text and nothing
-reads the CSV. Still open for that work: a generator and the generated list
-(mirroring the Hochschule list), and whether existing free-text values get a
-`canonicalStudienfach` the way universities got a `canonicalUniversity`.
+## User types
+
+`nutzertyp` (`student` | `alumnus` | `foerderer` | `bdaj`) decides which fields a
+profile has (spec 2026-09-16 §4.3, `FIELD_SETS`). A CHECK in migration 0004
+enforces the required columns per type; columns of other types are stored as
+null. `saveProfile` takes the type from the submit, else from the stored row,
+else `student` — the /account edit form sends none.
+
+The /account edit form only knows the student fields. For the other three types
+the page shows the summary without an edit button; editing their own fields there
+is follow-up work to the onboarding wizard. `setProfilePhoto` sets the avatar for
+every type.
 
 Photos live in the **private** `profile-media` bucket (`core/storage`
 `getProfileMediaStorage()`); the app mints short-lived signed URLs — never a
