@@ -11,6 +11,7 @@ import {
   STUDIENFACH_KATEGORIE_NAMES,
   STUDIENFACH_KATEGORIEN,
   UNIVERSITIES,
+  universityCity,
 } from "./data";
 
 const DATA_DIR = join(dirname(fileURLToPath(import.meta.url)), "..", "data");
@@ -190,5 +191,20 @@ describe("STUDIENFACH_KATEGORIEN", () => {
 describe("BDAJ_FUNKTION_KEYS", () => {
   it("offers exactly the three functions from the spec", () => {
     expect(BDAJ_FUNKTION_KEYS).toEqual(["vorstandsmitglied", "mitglied", "geschaeftsstelle"]);
+  });
+});
+
+describe("universityCity", () => {
+  it("knows the city of every listed university", () => {
+    expect(UNIVERSITIES.filter((u) => universityCity(u) === null)).toEqual([]);
+  });
+
+  it("returns the address city", () => {
+    expect(universityCity("RWTH Aachen")).toBe("Aachen");
+  });
+
+  it("resolves legacy names and rejects unknown ones", () => {
+    expect(universityCity("Technische Universität Berlin")).toBe(universityCity("TU Berlin"));
+    expect(universityCity("Hochschule Nirgendwo")).toBeNull();
   });
 });

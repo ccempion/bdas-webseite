@@ -1,5 +1,6 @@
 import { STUDIENFACH_KATEGORIEN } from "./studienfaecher.generated";
 import { UNIVERSITIES } from "./universities.generated";
+import { UNIVERSITY_CITIES } from "./university-cities.generated";
 
 /** Stable enum keys + German UI labels. Keys are stored; labels are display. */
 export const ABSCHLUSSART_OPTIONS = [
@@ -90,4 +91,12 @@ const UNI_SET = new Set(UNIVERSITIES);
 export function canonicalUniversity(value: string): string | null {
   if (UNI_SET.has(value)) return value;
   return LEGACY_ALIASES.get(value) ?? null;
+}
+
+const CITY_BY_UNI = new Map(UNIVERSITY_CITIES);
+
+/** Der Ort der Hauptanschrift einer gelisteten Hochschule; null für Freitext. */
+export function universityCity(name: string): string | null {
+  const canonical = canonicalUniversity(name);
+  return canonical ? (CITY_BY_UNI.get(canonical) ?? null) : null;
 }
