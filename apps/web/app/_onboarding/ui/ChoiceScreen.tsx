@@ -7,7 +7,7 @@ import {
   type FlowEnv,
   type Question,
   type TextContext,
-} from "@bdas/onboarding";
+} from "@bdas/onboarding/client";
 
 import { AnswerCard } from "./AnswerCard";
 

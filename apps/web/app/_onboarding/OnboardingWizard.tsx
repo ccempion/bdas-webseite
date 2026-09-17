@@ -4,7 +4,7 @@ import Link from "next/link";
 import React, { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 
 import { Button } from "@bdas/design-system";
-import { FLOW, textContext, type AnswerValue } from "@bdas/onboarding";
+import { FLOW, textContext, type AnswerValue } from "@bdas/onboarding/client";
 
 import { clearState, loadState, saveState } from "./storage";
 import type { WizardProps } from "./types";

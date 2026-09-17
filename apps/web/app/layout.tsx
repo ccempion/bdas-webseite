@@ -31,7 +31,7 @@ export const metadata: Metadata = {
     "Der Bund der Alevitischen Studierenden in Deutschland: Hochschulgruppen, Veranstaltungen und BDAS-Connect, die Plattform für Mitglieder.",
 };
 
-export default function RootLayout({ children }: { children: ReactNode }) {
+export default function RootLayout({ children, modal }: { children: ReactNode; modal: ReactNode }) {
   const { privacy, imprint, terms } = legalUrls();
   return (
     <html lang="de">
@@ -56,6 +56,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <FaqHelpMount />
         <NewsletterScrollPanelMount />
         <CookieNotice privacyUrl={privacy} />
+        {modal}
       </body>
     </html>
   );

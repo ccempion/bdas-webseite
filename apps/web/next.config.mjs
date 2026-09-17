@@ -53,7 +53,6 @@ const nextConfig = {
         permanent: true,
       },
       { source: "/kontakt", destination: "/", permanent: true },
-      { source: "/mitmachen", destination: "/registrieren", permanent: true },
     ];
   },
 };

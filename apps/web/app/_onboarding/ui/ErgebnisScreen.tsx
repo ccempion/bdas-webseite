@@ -1,7 +1,7 @@
 import React from "react";
 
 import { Button } from "@bdas/design-system";
-import { fillText, type Outcome, type TextContext } from "@bdas/onboarding";
+import { fillText, type Outcome, type TextContext } from "@bdas/onboarding/client";
 
 /** Ehrliches Ergebnis (Spec §2 Punkt 6): was man bekommt, wer entscheidet, wie lange. */
 export function ErgebnisScreen({

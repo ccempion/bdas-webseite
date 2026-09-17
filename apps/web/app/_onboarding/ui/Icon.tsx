@@ -1,6 +1,6 @@
 import React from "react";
 
-import type { ChoiceOption } from "@bdas/onboarding";
+import type { ChoiceOption } from "@bdas/onboarding/client";
 
 const PATHS: Record<ChoiceOption["icon"], string> = {
   studium: "M22 10 12 5 2 10l10 5 10-5z M6 12v5c3 2 9 2 12 0v-5",

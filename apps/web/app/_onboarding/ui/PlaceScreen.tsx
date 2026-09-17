@@ -11,7 +11,7 @@ import {
   type PlaceAnswer,
   type Question,
   type TextContext,
-} from "@bdas/onboarding";
+} from "@bdas/onboarding/client";
 
 import { groupInCity, MIN_QUERY, searchPlaces } from "../place-search";
 

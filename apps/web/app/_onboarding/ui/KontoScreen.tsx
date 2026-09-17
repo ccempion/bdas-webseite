@@ -4,7 +4,7 @@ import React, { useEffect } from "react";
 import { useFormState, useFormStatus } from "react-dom";
 
 import { Alert, Button, Field, Form, Input, PasswordInput } from "@bdas/design-system";
-import type { Answers, EntryContext } from "@bdas/onboarding";
+import type { Answers, EntryContext } from "@bdas/onboarding/client";
 
 import { ConsentFields } from "../../registrieren/ConsentFields";
 import { createAccountAction, type CreateAccountState } from "../actions";

@@ -5,7 +5,7 @@ import {
   type Flow,
   type FlowEnv,
   type OutcomeId,
-} from "@bdas/onboarding";
+} from "@bdas/onboarding/client";
 
 export type Stage = "fragen" | "ergebnis" | "konto" | "gesendet";
 

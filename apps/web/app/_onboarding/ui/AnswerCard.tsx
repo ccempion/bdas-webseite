@@ -1,7 +1,7 @@
 import React from "react";
 
 import { cx } from "@bdas/design-system";
-import type { ChoiceOption } from "@bdas/onboarding";
+import type { ChoiceOption } from "@bdas/onboarding/client";
 
 import { Icon } from "./Icon";
 

@@ -10,7 +10,7 @@ import {
   type NameAnswer,
   type Question,
   type TextContext,
-} from "@bdas/onboarding";
+} from "@bdas/onboarding/client";
 
 export function NameScreen({
   question,

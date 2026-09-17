@@ -1,4 +1,4 @@
-import type { EntryContext, FlowEnv } from "@bdas/onboarding";
+import type { EntryContext, FlowEnv } from "@bdas/onboarding/client";
 
 /** Alles, was der Wizard vom Server bekommt. Serialisierbar (Server → Client). */
 export type WizardProps = {

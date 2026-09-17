@@ -1,4 +1,4 @@
-import type { FlowGroup } from "@bdas/onboarding";
+import type { FlowGroup } from "@bdas/onboarding/client";
 
 export const MIN_QUERY = 2;
 

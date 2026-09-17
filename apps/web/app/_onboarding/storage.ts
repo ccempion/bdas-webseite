@@ -1,4 +1,4 @@
-import { sanitizeAnswers, type Flow } from "@bdas/onboarding";
+import { sanitizeAnswers, type Flow } from "@bdas/onboarding/client";
 
 import { INITIAL, type Stage, type WizardState } from "./wizard-state";
 
