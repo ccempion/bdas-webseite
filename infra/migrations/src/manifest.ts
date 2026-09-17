@@ -31,4 +31,6 @@ export const MIGRATION_MANIFEST: ReadonlyArray<string> = [
   "faq",
   // Newsletter (spec 2026-09-06): newsletter_* tables, no cross-module FK.
   "newsletter",
+  // Onboarding wizard (spec 2026-09-16): onboarding_journeys, FK to auth_users.
+  "onboarding",
 ];

@@ -28,6 +28,7 @@ export const FLAGS = [
   "faq_suite",
   "newsletter",
   "podcast",
+  "onboarding",
 ] as const;
 
 export type FlagName = (typeof FLAGS)[number];

@@ -34,6 +34,13 @@ describe("isFlagOn", () => {
     process.env["BDAS_FLAG_GROUP_MAP"] = "true";
     expect(isFlagOn("group_map")).toBe(true);
   });
+
+  it("onboarding maps to BDAS_FLAG_ONBOARDING", () => {
+    delete process.env["BDAS_FLAG_ONBOARDING"];
+    expect(isFlagOn("onboarding")).toBe(false);
+    process.env["BDAS_FLAG_ONBOARDING"] = "true";
+    expect(isFlagOn("onboarding")).toBe(true);
+  });
 });
 
 describe("requireFlag", () => {
