@@ -54,7 +54,9 @@ describe("fillText", () => {
   });
 
   it("fills {eingabe} from the third argument", () => {
-    expect(fillText("In {eingabe} gibt es nichts.", ctx, "Passau")).toBe("In Passau gibt es nichts.");
+    expect(fillText("In {eingabe} gibt es nichts.", ctx, "Passau")).toBe(
+      "In Passau gibt es nichts.",
+    );
   });
 
   it("leaves unknown placeholders alone", () => {

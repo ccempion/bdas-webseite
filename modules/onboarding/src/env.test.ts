@@ -44,6 +44,10 @@ describeIfDb("loadFlowEnv", () => {
   });
 
   it("is empty on an empty table", async () => {
-    expect(await loadFlowEnv(t.db)).toEqual({ groups: [], bdajGroupId: null, netzwerkGroupId: null });
+    expect(await loadFlowEnv(t.db)).toEqual({
+      groups: [],
+      bdajGroupId: null,
+      netzwerkGroupId: null,
+    });
   });
 });

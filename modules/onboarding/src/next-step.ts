@@ -32,7 +32,8 @@ export function walk(flow: Flow, answers: Answers, env: FlowEnv): { path: string
 
   for (let i = 0; i <= limit; i++) {
     path.push(current);
-    if (clean[current] === undefined) return { path, step: { kind: "question", question: current } };
+    if (clean[current] === undefined)
+      return { path, step: { kind: "question", question: current } };
     const rule = flow.rules.find(
       (r) => r.from === current && (r.when === undefined || matches(r.when, clean, env)),
     );

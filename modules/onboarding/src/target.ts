@@ -26,7 +26,9 @@ export function resolveTarget(
         ? { kind: "group", groupId: env.netzwerkGroupId }
         : { kind: "unavailable" };
     case "bdaj":
-      return env.bdajGroupId ? { kind: "group", groupId: env.bdajGroupId } : { kind: "unavailable" };
+      return env.bdajGroupId
+        ? { kind: "group", groupId: env.bdajGroupId }
+        : { kind: "unavailable" };
     case "gewaehlte_gruppe": {
       const { groupId } = placeOf(flow, answers, env);
       return groupId ? { kind: "group", groupId } : { kind: "unavailable" };

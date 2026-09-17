@@ -13,18 +13,31 @@ const ENV: FlowEnv = {
 describe("resolveTarget", () => {
   it("uses the chosen group only when the server lists it", () => {
     expect(
-      resolveTarget(FLOW, "gewaehlte_gruppe", { studienort: { kind: "group", groupId: "grp_ber" } }, ENV),
+      resolveTarget(
+        FLOW,
+        "gewaehlte_gruppe",
+        { studienort: { kind: "group", groupId: "grp_ber" } },
+        ENV,
+      ),
     ).toEqual({ kind: "group", groupId: "grp_ber" });
   });
 
   it("refuses a group id the server does not list — e.g. the netzwerk row itself", () => {
     expect(
-      resolveTarget(FLOW, "gewaehlte_gruppe", { studienort: { kind: "group", groupId: "grp_netz" } }, ENV),
+      resolveTarget(
+        FLOW,
+        "gewaehlte_gruppe",
+        { studienort: { kind: "group", groupId: "grp_netz" } },
+        ENV,
+      ),
     ).toEqual({ kind: "unavailable" });
   });
 
   it("maps netzwerk and bdaj to their rows", () => {
-    expect(resolveTarget(FLOW, "netzwerk", {}, ENV)).toEqual({ kind: "group", groupId: "grp_netz" });
+    expect(resolveTarget(FLOW, "netzwerk", {}, ENV)).toEqual({
+      kind: "group",
+      groupId: "grp_netz",
+    });
     expect(resolveTarget(FLOW, "bdaj", {}, ENV)).toEqual({ kind: "group", groupId: "grp_bdaj" });
   });
 

@@ -69,7 +69,9 @@ describe("sanitizeAnswers", () => {
   });
 
   it("keeps only the fields of a place answer", () => {
-    const clean = sanitizeAnswers(FLOW, { p: { kind: "city", city: " Passau ", groupId: "grp_x" } });
+    const clean = sanitizeAnswers(FLOW, {
+      p: { kind: "city", city: " Passau ", groupId: "grp_x" },
+    });
     expect(clean).toEqual({ p: { kind: "city", city: "Passau" } });
   });
 });

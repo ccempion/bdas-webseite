@@ -96,7 +96,9 @@ function checkPlaceholders(
         errors.push(`${where}: {vorname} wird benutzt, bevor der Name sicher gefragt wurde.`);
       }
       if ((p === "stadt" || p === "gruppe") && !hasPlace) {
-        errors.push(`${where}: {${p}} wird benutzt, ohne dass ein Pflicht-Ort davor gefragt wurde.`);
+        errors.push(
+          `${where}: {${p}} wird benutzt, ohne dass ein Pflicht-Ort davor gefragt wurde.`,
+        );
       }
     }
   }
@@ -120,7 +122,9 @@ export function validateFlow(flow: Flow): string[] {
       } else if (r.when.kind === "equals") {
         const value = r.when.value;
         if (q.kind !== "choice" || !q.options.some((o) => o.value === value)) {
-          errors.push(`Regel ab „${r.from}": „${value}" ist keine Antwort auf „${r.when.question}".`);
+          errors.push(
+            `Regel ab „${r.from}": „${value}" ist keine Antwort auf „${r.when.question}".`,
+          );
         }
       } else if (q.kind !== "place") {
         errors.push(`Regel ab „${r.from}": has_group braucht eine Orts-Frage.`);

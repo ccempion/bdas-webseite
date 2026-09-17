@@ -31,8 +31,6 @@ export function fillText(text: string, ctx: TextContext, eingabe = ""): string {
   const withoutEmptyName = ctx.vorname === "" ? text.replace(/,\s*\{vorname\}/g, "") : text;
   return withoutEmptyName.replace(TOKEN, (whole, key: string) => {
     if (key === "eingabe") return eingabe;
-    return (PLACEHOLDERS as ReadonlyArray<string>).includes(key)
-      ? ctx[key as Placeholder]
-      : whole;
+    return (PLACEHOLDERS as ReadonlyArray<string>).includes(key) ? ctx[key as Placeholder] : whole;
   });
 }

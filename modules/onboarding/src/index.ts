@@ -4,13 +4,7 @@
  * Private and deliberately not re-exported: `schema.ts`, `test-db.ts`,
  * `row2journey`.
  */
-export {
-  FLOW,
-  QUESTION_AKTIV_WO,
-  QUESTION_NAME,
-  QUESTION_STUDIENORT,
-  QUESTION_TYP,
-} from "./flow";
+export { FLOW, QUESTION_AKTIV_WO, QUESTION_NAME, QUESTION_STUDIENORT, QUESTION_TYP } from "./flow";
 export { nextStep, visibleOptions, walk } from "./next-step";
 export { validateFlow } from "./validate-flow";
 export { isValidAnswer, placeOf, sanitizeAnswers, MAX_CITY, MAX_NAME } from "./answers";

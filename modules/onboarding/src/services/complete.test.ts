@@ -54,39 +54,54 @@ describeIfDb("completeJourney", () => {
   }
 
   it.each([
-    ["student", { typ: "studiere", name: NAME, studienort: { kind: "group", groupId: "grp_ber" } }, "grp_ber"],
-    ["student_ohne_gruppe", { typ: "studiere", name: NAME, studienort: { kind: "city", city: "Passau" } }, "grp_netz"],
+    [
+      "student",
+      { typ: "studiere", name: NAME, studienort: { kind: "group", groupId: "grp_ber" } },
+      "grp_ber",
+    ],
+    [
+      "student_ohne_gruppe",
+      { typ: "studiere", name: NAME, studienort: { kind: "city", city: "Passau" } },
+      "grp_netz",
+    ],
     ["foerderer", { typ: "unterstuetzen", name: NAME }, "grp_netz"],
     ["bdaj", { typ: "bdaj", name: NAME }, "grp_bdaj"],
-  ] as const)("%s opens exactly one request to the right group", async (outcome, answers, groupId) => {
-    await start(answers);
-    const result = await complete();
+  ] as const)(
+    "%s opens exactly one request to the right group",
+    async (outcome, answers, groupId) => {
+      await start(answers);
+      const result = await complete();
 
-    const open = await openRequests();
-    expect(open).toHaveLength(1);
-    expect(open[0]?.["to_group_id"]).toBe(groupId);
-    expect(result.kind).toBe("submitted");
-    expect(result.journey).toMatchObject({
-      outcome,
-      status: "abgeschickt",
-      applicationRef: open[0]?.["id"],
-    });
-    expect(seen).toEqual([
-      expect.objectContaining({
-        type: "onboarding.completed",
-        memberId: "mem_1",
+      const open = await openRequests();
+      expect(open).toHaveLength(1);
+      expect(open[0]?.["to_group_id"]).toBe(groupId);
+      expect(result.kind).toBe("submitted");
+      expect(result.journey).toMatchObject({
         outcome,
-        entrySource: "newsletter",
-      }),
-    ]);
-  });
+        status: "abgeschickt",
+        applicationRef: open[0]?.["id"],
+      });
+      expect(seen).toEqual([
+        expect.objectContaining({
+          type: "onboarding.completed",
+          memberId: "mem_1",
+          outcome,
+          entrySource: "newsletter",
+        }),
+      ]);
+    },
+  );
 
   it("files no request for an alumnus and leaves the member pending without a group", async () => {
     await start({ typ: "studiert", name: NAME, aktiv_wo: { kind: "skipped" } });
     const result = await complete();
 
     expect(await openRequests()).toHaveLength(0);
-    expect(result.journey).toMatchObject({ outcome: "alumnus", status: "abgeschickt", applicationRef: null });
+    expect(result.journey).toMatchObject({
+      outcome: "alumnus",
+      status: "abgeschickt",
+      applicationRef: null,
+    });
     const [m] = await t.client`SELECT status, primary_group_id FROM members WHERE id = 'mem_1'`;
     expect(m).toEqual({ status: "pending", primary_group_id: null });
   });
@@ -134,7 +149,11 @@ describeIfDb("completeJourney", () => {
 
   it("never files to a group id the server does not list", async () => {
     // A forged answer naming the affiliate row as the student's own group.
-    await start({ typ: "studiere", name: NAME, studienort: { kind: "group", groupId: "grp_bdaj" } });
+    await start({
+      typ: "studiere",
+      name: NAME,
+      studienort: { kind: "group", groupId: "grp_bdaj" },
+    });
     await complete();
     expect((await openRequests())[0]?.["to_group_id"]).toBe("grp_netz");
   });

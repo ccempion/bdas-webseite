@@ -10,7 +10,7 @@
 ADR 0046 lässt den Bundesvorstand über Anträge an die `netzwerk`-Gruppe entscheiden und hält fest,
 dass die Gruppenauswahl im Profil auf Hochschulgruppen beschränkt bleibt
 (`apps/web/lib/self-service-group.ts`), bis die Registrierung überarbeitet ist. Der
-Onboarding-Wizard ist diese Überarbeitung: er muss an `netzwerk` (Förderer*innen, Studierende ohne
+Onboarding-Wizard ist diese Überarbeitung: er muss an `netzwerk` (Förderer\*innen, Studierende ohne
 Gruppe) und an die `affiliate`-Gruppe BDAJ beantragen können.
 
 `changePrimaryGroup` selbst prüft die Gruppenart nicht. Wer den App-Guard auslässt und eine

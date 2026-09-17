@@ -101,7 +101,10 @@ export async function saveDetails(
     .update(onboardingJourneys)
     .set({ details: d as Record<string, unknown>, updatedAt: new Date() })
     .where(
-      and(eq(onboardingJourneys.userId, input.userId), eq(onboardingJourneys.status, "details_offen")),
+      and(
+        eq(onboardingJourneys.userId, input.userId),
+        eq(onboardingJourneys.status, "details_offen"),
+      ),
     )
     .returning();
   if (row) return row2journey(row);

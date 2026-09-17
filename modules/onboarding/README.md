@@ -7,8 +7,8 @@ dann die passenden Angaben, am Ende die richtige Bewerbung (Spec:
 
 ## Eigene Tabelle
 
-| Tabelle               | Zweck                                                        |
-| --------------------- | ------------------------------------------------------------ |
+| Tabelle               | Zweck                                                         |
+| --------------------- | ------------------------------------------------------------- |
 | `onboarding_journeys` | Eine Zeile pro Konto: Antworten, Ergebnis, Status, Antrags-ID |
 
 Nichts außerhalb dieses Moduls liest oder schreibt sie (CLAUDE.md §1 Regel 1).

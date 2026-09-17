@@ -69,7 +69,12 @@ describeIfDb("journeys", () => {
 
   it("refuses answers that do not reach an outcome", async () => {
     await expect(
-      startJourney(t.db, { userId: "usr_1", answers: { typ: "studiere" }, entrySource: "", env: ENV }),
+      startJourney(t.db, {
+        userId: "usr_1",
+        answers: { typ: "studiere" },
+        entrySource: "",
+        env: ENV,
+      }),
     ).rejects.toThrow(/Fragen/);
   });
 
@@ -111,15 +116,25 @@ describeIfDb("journeys", () => {
 
   describe("saveDetails", () => {
     it("stores a draft and bumps updated_at", async () => {
-      const j = await startJourney(t.db, { userId: "usr_1", answers: STUDENT, entrySource: "", env: ENV });
-      const saved = await saveDetails(t.db, { userId: "usr_1", details: { studiengang: "Informatik" } });
+      const j = await startJourney(t.db, {
+        userId: "usr_1",
+        answers: STUDENT,
+        entrySource: "",
+        env: ENV,
+      });
+      const saved = await saveDetails(t.db, {
+        userId: "usr_1",
+        details: { studiengang: "Informatik" },
+      });
       expect(saved.details).toEqual({ studiengang: "Informatik" });
       expect(saved.updatedAt.getTime()).toBeGreaterThanOrEqual(j.updatedAt.getTime());
     });
 
     it("rejects non-objects and oversized drafts", async () => {
       await startJourney(t.db, { userId: "usr_1", answers: STUDENT, entrySource: "", env: ENV });
-      await expect(saveDetails(t.db, { userId: "usr_1", details: ["x"] })).rejects.toThrow(/ungültig/);
+      await expect(saveDetails(t.db, { userId: "usr_1", details: ["x"] })).rejects.toThrow(
+        /ungültig/,
+      );
       await expect(
         saveDetails(t.db, { userId: "usr_1", details: { x: "y".repeat(20_000) } }),
       ).rejects.toThrow(/groß/);
