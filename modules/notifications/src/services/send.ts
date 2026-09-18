@@ -24,6 +24,7 @@ type Extra = {
   readonly confirmUrl?: string | undefined;
   readonly unsubscribeUrl?: string | undefined;
   readonly newEmail?: string | undefined;
+  readonly accountUrl?: string | undefined;
 };
 
 /** The resolved recipient: a member (memberId set) or a guest (memberId null). */
@@ -62,6 +63,7 @@ async function sendToRecipient(
     confirmUrl: extra.confirmUrl,
     unsubscribeUrl: extra.unsubscribeUrl,
     newEmail: extra.newEmail,
+    accountUrl: extra.accountUrl,
   };
   const email = render(template, data);
   const id = createId("ntfy");

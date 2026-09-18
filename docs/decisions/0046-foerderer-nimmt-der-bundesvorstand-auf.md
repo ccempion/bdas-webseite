@@ -38,6 +38,7 @@ Entfernt werden der Sonderfall in `changePrimaryGroup` und dessen Opt-in `allowN
 - **Die Aufnahme verschickt die bestehende Mail „Bewerbung angenommen".** Der Beitritt ist jetzt
   eine echte Entscheidung und veröffentlicht das `decided`-Ereignis wie jede andere. Ein eigener
   Text für Förderer gehört in die Überarbeitung der Registrierung.
+  **Nachtrag 2026-09-17:** Mit dem Onboarding-Wizard wählt `notifications` den Text nach der Art der Zielgruppe; Förderer bekommen „Willkommen im Netzwerk", Partnerorganisationen „Dein Zugang ist freigeschaltet", Alumni (über die Rolle) „Willkommen bei den Alumni".
 - **Die Gruppenauswahl im Profil bleibt auf Hochschulgruppen beschränkt**
   (`apps/web/lib/self-service-group.ts`). Einen Einstiegspunkt, über den sich jemand als Förderer
   bewirbt, gibt es bis zur Überarbeitung der Registrierung nicht.

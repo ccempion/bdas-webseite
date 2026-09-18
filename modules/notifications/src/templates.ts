@@ -17,6 +17,7 @@ export function render(template: TransactionalTemplate, data: TemplateData): Ren
   const details = eventUrl
     ? { label: "Alle aktuellen Details findest du hier:", url: eventUrl }
     : undefined;
+  const account = data.accountUrl ? { label: "Zu deinem Konto:", url: data.accountUrl } : undefined;
   switch (template) {
     case "event_registration_confirmed":
       return body(
@@ -88,6 +89,29 @@ export function render(template: TransactionalTemplate, data: TemplateData): Ren
         "BDAS — Du bist aufgenommen",
         firstName,
         "dein lokaler Vorstand hat deine Bewerbung angenommen — willkommen im BDAS! Deine Mitgliedschaft ist ab sofort aktiv.",
+      );
+    // Aufnahme je Nutzertyp (Onboarding-Spec §5.6, ADR 0046). Der Studierenden-
+    // Text oben nennt den lokalen Vorstand; hier entscheidet der Bundesvorstand.
+    case "member_supporter_approved":
+      return body(
+        "BDAS — Willkommen im Netzwerk",
+        firstName,
+        "der Bundesvorstand hat dich ins BDAS-Netzwerk aufgenommen. Ab jetzt bekommst du Einladungen zu offenen Veranstaltungen und Neuigkeiten aus dem Verband.",
+        account,
+      );
+    case "member_partner_approved":
+      return body(
+        "BDAS — Dein Zugang ist freigeschaltet",
+        firstName,
+        `der Bundesvorstand hat deinen Zugang für ${data.groupName ?? "deine Partnerorganisation"} freigeschaltet. Den gemeinsamen Bereich findest du ab sofort in deinem Konto.`,
+        account,
+      );
+    case "member_alumnus_approved":
+      return body(
+        "BDAS — Willkommen bei den Alumni",
+        firstName,
+        "du bist jetzt als Alumna oder Alumnus bei BDAS eingetragen. Wir laden dich zu Alumni-Treffen ein und halten dich auf dem Laufenden.",
+        account,
       );
     case "member_application_declined":
       return body(
