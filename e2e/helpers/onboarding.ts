@@ -6,10 +6,17 @@ import { PASSWORD } from "./flows";
 /** Teil 1 und 2 des Wizards bis „Mail geschickt". */
 export async function wizardSignup(
   page: Page,
-  opts: { email: string; typ: RegExp; firstName: string; place?: string; skipPlace?: boolean },
+  opts: {
+    email: string;
+    typ: RegExp;
+    firstName: string;
+    place?: string;
+    skipPlace?: boolean;
+    from?: string;
+  },
 ): Promise<void> {
   await resetRateLimits();
-  await page.goto("/mitmachen");
+  await page.goto(opts.from ? `/mitmachen?from=${encodeURIComponent(opts.from)}` : "/mitmachen");
   await page.getByRole("button", { name: opts.typ }).click();
   await page.getByLabel("Vorname").fill(opts.firstName);
   await page.getByLabel("Nachname").fill("E2E");
