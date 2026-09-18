@@ -18,7 +18,12 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { createTestDb, type TestDb } from "@bdas/db/test";
 import { getEventBus, resetEventBus } from "@bdas/events";
-import type { GroupChangeDecided, GroupChangeRequested, GroupChangeWithdrawn } from "@bdas/members";
+import type {
+  GroupChangeDecided,
+  GroupChangeRequested,
+  GroupChangeWithdrawn,
+  RoleGranted,
+} from "@bdas/members";
 
 import { setNotifier, type OutboundEmail } from "./notifier";
 import { setRecipientResolver } from "./resolver";
@@ -61,6 +66,7 @@ describeIfDb("notifications: the application mails", () => {
       ["..", "..", "groups", "migrations", "0005_image_key.sql"],
       ["..", "..", "groups", "migrations", "0006_link_scheme_guard.sql"],
       ["..", "..", "groups", "migrations", "0007_group_kind.sql"],
+      ["..", "..", "groups", "migrations", "0008_group_kind_netzwerk.sql"],
       ["..", "..", "members", "migrations", "0001_init.sql"],
       ["..", "..", "members", "migrations", "0002_role_grants.sql"],
       ["..", "..", "members", "migrations", "0003_local_board_lead.sql"],
@@ -90,9 +96,11 @@ describeIfDb("notifications: the application mails", () => {
     });
 
     await t.client`
-      INSERT INTO groups (id, slug, name, city, status)
-      VALUES ('grp_a', 'aachen', 'BDAS Aachen', 'Teststadt', 'active'),
-             ('grp_b', 'berlin', 'BDAS Berlin', 'Teststadt', 'active')`;
+      INSERT INTO groups (id, slug, name, city, kind, status)
+      VALUES ('grp_a', 'aachen', 'BDAS Aachen', 'Teststadt', 'hochschulgruppe', 'active'),
+             ('grp_b', 'berlin', 'BDAS Berlin', 'Teststadt', 'hochschulgruppe', 'active'),
+             ('grp_netz', 'netzwerk', 'BDAS Netzwerk', NULL, 'netzwerk', 'active'),
+             ('grp_bdaj', 'bdaj', 'BDAJ', NULL, 'affiliate', 'active')`;
     await t.client`
       INSERT INTO auth_users (id, email_normalized, email_display, status)
       VALUES ('usr_applicant', 'anna@example.org', 'anna@example.org', 'active')`;
@@ -140,7 +148,7 @@ describeIfDb("notifications: the application mails", () => {
   }
 
   async function publish(
-    event: GroupChangeRequested | GroupChangeDecided | GroupChangeWithdrawn,
+    event: GroupChangeRequested | GroupChangeDecided | GroupChangeWithdrawn | RoleGranted,
   ): Promise<void> {
     registerNotificationSubscribers(t.db);
     await getEventBus().publish(event);
@@ -282,5 +290,58 @@ describeIfDb("notifications: the application mails", () => {
     });
 
     expect(sent).toHaveLength(0);
+  });
+
+  const decided = (toGroupId: string): GroupChangeDecided => ({
+    type: "members.group_change.decided",
+    requestId: "mgc_1",
+    memberId: "mem_applicant",
+    fromGroupId: null,
+    toGroupId,
+    decision: "approved",
+    actorUserId: "usr_board",
+    at: new Date(),
+  });
+
+  it("welcomes a first-time joiner of the netzwerk group as a supporter", async () => {
+    await publish(decided("grp_netz"));
+    expect(sent).toHaveLength(1);
+    expect(sent[0]?.subject).toBe("BDAS — Willkommen im Netzwerk");
+  });
+
+  it("tells a partner which organisation was unlocked", async () => {
+    await publish(decided("grp_bdaj"));
+    expect(sent[0]?.subject).toBe("BDAS — Dein Zugang ist freigeschaltet");
+    expect(sent[0]?.text).toContain("BDAJ");
+  });
+
+  it("keeps the student text for a university group", async () => {
+    await publish(decided("grp_a"));
+    expect(sent[0]?.subject).toContain("aufgenommen");
+  });
+
+  it("welcomes a new alumnus when the role is granted", async () => {
+    await publish({
+      type: "members.role.granted",
+      memberId: "mem_applicant",
+      role: "alumnus",
+      groupId: null,
+      actorUserId: "usr_board",
+      at: new Date(),
+    });
+    expect(sent).toHaveLength(1);
+    expect(sent[0]?.subject).toBe("BDAS — Willkommen bei den Alumni");
+  });
+
+  it("sends nothing for other granted roles", async () => {
+    await publish({
+      type: "members.role.granted",
+      memberId: "mem_applicant",
+      role: "page_editor",
+      groupId: null,
+      actorUserId: "usr_board",
+      at: new Date(),
+    });
+    expect(sent).toEqual([]);
   });
 });

@@ -39,6 +39,7 @@ import type {
   RoleRevoked,
 } from "@bdas/members";
 import { getPostById, type PostReported } from "@bdas/blog";
+import type { GroupKind } from "@bdas/groups";
 import {
   UNSUBSCRIBE_PATH,
   type AlreadySubscribed,
@@ -46,6 +47,7 @@ import {
 } from "@bdas/newsletter";
 
 import { sendTransactional, sendTransactionalToGuest } from "./services/send";
+import type { TransactionalTemplate } from "./types";
 
 /** System reader: sees everything, so the title lookup is never visibility-gated. */
 const SYSTEM_VIEWER: Viewer = {
@@ -57,6 +59,17 @@ const SYSTEM_VIEWER: Viewer = {
   userId: null,
   ownEventsOnly: false,
 };
+
+/**
+ * Welche Aufnahme-Mail zu einer ersten Aufnahme passt (Onboarding-Spec §5.6).
+ * Entschieden wird nach der Art der Zielgruppe — sie ist die Tatsache, über
+ * die der Vorstand entschieden hat, egal auf welchem Weg der Antrag entstand.
+ */
+function acceptanceTemplate(kind: GroupKind | null): TransactionalTemplate {
+  if (kind === "netzwerk") return "member_supporter_approved";
+  if (kind === "affiliate") return "member_partner_approved";
+  return "member_application_approved";
+}
 
 let subs: Subscription[] = [];
 
@@ -108,6 +121,9 @@ export function registerNotificationSubscribers(db: Db, opts: { siteUrl?: string
     opts.siteUrl
       ? `${opts.siteUrl.replace(/\/$/, "")}/events/${encodeURIComponent(eventId)}`
       : undefined;
+
+  const accountUrl = (): string | undefined =>
+    opts.siteUrl ? `${opts.siteUrl.replace(/\/$/, "")}/account` : undefined;
 
   // A guest's self-cancel link — the "manage/cancel" link in their emails, since
   // guests have no login. Requires both the site URL and the per-guest token.
@@ -246,6 +262,14 @@ export function registerNotificationSubscribers(db: Db, opts: { siteUrl?: string
     getEventBus().subscribe<RoleGranted>(
       "members.role.granted",
       safe<RoleGranted>(async (e) => {
+        // Die Alumni-Aufnahme läuft über keinen Antrag (acceptAsAlumnus);
+        // die vergebene Rolle ist ihr einziges Ereignis.
+        if (e.role === "alumnus") {
+          await sendTransactional(db, "member_alumnus_approved", e.memberId, {
+            accountUrl: accountUrl(),
+          });
+          return;
+        }
         if (e.role !== "event_organizer" || !e.groupId) return;
         const group = await getGroup(db, e.groupId);
         await sendTransactional(db, "event_organizer_granted", e.memberId, {
@@ -314,7 +338,8 @@ export function registerNotificationSubscribers(db: Db, opts: { siteUrl?: string
     // here. The board still sees pending Freigaben as the in-app badge.
     // The board decided — tell the applicant, who otherwise waits without ever
     // hearing back. A transfer between groups gets its own, distinct wording
-    // (it's an existing member, not a first-time joiner).
+    // (it's an existing member, not a first-time joiner). The acceptance text
+    // follows the destination group's kind (`acceptanceTemplate`).
     getEventBus().subscribe<GroupChangeDecided>(
       "members.group_change.decided",
       safe<GroupChangeDecided>(async (e) => {
@@ -326,7 +351,11 @@ export function registerNotificationSubscribers(db: Db, opts: { siteUrl?: string
               groupName: group?.name,
             });
           } else {
-            await sendTransactional(db, "member_application_approved", e.memberId, {});
+            const group = e.toGroupId ? await getGroup(db, e.toGroupId) : null;
+            await sendTransactional(db, acceptanceTemplate(group?.kind ?? null), e.memberId, {
+              groupName: group?.name,
+              accountUrl: accountUrl(),
+            });
           }
         } else {
           // The reason lives on the row, not on the event.
