@@ -1,10 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import React, { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 
 import { Button } from "@bdas/design-system";
-import { FLOW, textContext, type AnswerValue } from "@bdas/onboarding/client";
+import { FLOW, QUESTION_NAME, textContext, type AnswerValue } from "@bdas/onboarding/client";
 
 import { clearState, loadState, saveState } from "./storage";
 import type { WizardProps } from "./types";
@@ -15,6 +15,7 @@ import { MailGesendet } from "./ui/MailGesendet";
 import { NameScreen } from "./ui/NameScreen";
 import { PlaceScreen } from "./ui/PlaceScreen";
 import { Progress } from "./ui/Progress";
+import { ResumeButton } from "./ui/ResumeButton";
 import {
   canGoBack,
   currentOutcome,
@@ -22,6 +23,7 @@ import {
   INITIAL,
   partOf,
   reduce,
+  resumeState,
   type WizardAction,
   type WizardState,
 } from "./wizard-state";
@@ -33,13 +35,19 @@ import {
  */
 export function OnboardingWizard(props: WizardProps & { onClose: () => void }) {
   const { env, entry, universities, onClose } = props;
-  const [state, setState] = useState<WizardState>(INITIAL);
+  const start: WizardState = props.resume ? resumeState(INITIAL, props.resume) : INITIAL;
+  const [state, setState] = useState<WizardState>(start);
   const [restored, setRestored] = useState(false);
+  // Der Name eines eingeloggten Kontos steht fest (Spec §6); der Server nimmt
+  // ohnehin den aus der Member-Zeile.
+  const locked = useMemo(() => (props.resume ? [QUESTION_NAME] : []), [props.resume]);
   const frame = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const saved = loadState(FLOW);
-    if (saved) setState(saved);
+    if (saved) {
+      setState(props.resume ? resumeState(saved, props.resume) : saved);
+    }
     setRestored(true);
   }, []);
 
@@ -48,8 +56,8 @@ export function OnboardingWizard(props: WizardProps & { onClose: () => void }) {
   }, [restored, state]);
 
   const dispatch = useCallback(
-    (action: WizardAction) => setState((s) => reduce(FLOW, env, s, action)),
-    [env],
+    (action: WizardAction) => setState((s) => reduce(FLOW, env, s, action, locked)),
+    [env, locked],
   );
   const onSent = useCallback((email: string) => dispatch({ type: "sent", email }), [dispatch]);
 
@@ -117,6 +125,9 @@ export function OnboardingWizard(props: WizardProps & { onClose: () => void }) {
         ctx={ctx}
         onConfirm={() => dispatch({ type: "to_account" })}
         onChange={() => dispatch({ type: "change_type" })}
+        confirm={
+          props.resume ? <ResumeButton answers={state.answers} source={entry.source} /> : undefined
+        }
       />
     );
   } else if (state.stage === "konto") {
@@ -157,7 +168,7 @@ export function OnboardingWizard(props: WizardProps & { onClose: () => void }) {
         </Button>
       ) : null}
       {screen}
-      {state.stage === "fragen" && questionId === FLOW.start ? (
+      {!props.resume && state.stage === "fragen" && questionId === FLOW.start ? (
         <p className="mt-6 text-center text-sm text-bdas-ink-body">
           Du hast schon ein Konto?{" "}
           <Link href="/anmelden" className="text-bdas-red hover:underline">

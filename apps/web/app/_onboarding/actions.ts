@@ -16,6 +16,7 @@ import {
 } from "@bdas/onboarding";
 
 import { bootAuth } from "../../lib/auth-bootstrap";
+import { loadViewer } from "../_dashboard/session";
 import { clientIp, finishRegistration } from "../registrieren/finish";
 
 export type CreateAccountState = {
@@ -36,6 +37,11 @@ export async function createAccountAction(
   requireFlag("auth");
   requireFlag("onboarding");
   bootAuth();
+  // Wer angemeldet ist, setzt fort (resume-action.ts) — ein zweites Konto
+  // entstünde sonst aus einem im Tab wiederhergestellten Konto-Formular.
+  if (await loadViewer()) {
+    return { error: "Du bist bereits angemeldet. Bitte lade die Seite neu." };
+  }
   const db = getDb();
 
   const rawAnswers = String(formData.get("answers") ?? "");

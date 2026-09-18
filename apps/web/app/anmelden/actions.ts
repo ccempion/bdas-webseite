@@ -12,6 +12,8 @@ import { getMemberByUserId } from "@bdas/members";
 import { bootAuth } from "../../lib/auth-bootstrap";
 import { setSessionCookie } from "../../lib/auth-cookie";
 import { sanitizeReturnTo } from "../_auth/return-to";
+import { onboardingEnabled } from "../_onboarding/flag";
+import { resolveOnboardingLanding } from "../_onboarding/landing";
 import { isProfileComplete } from "../_profile/complete";
 
 export type LoginFormState = {
@@ -54,7 +56,12 @@ export async function loginAction(
   // into the wizard, even if they were bounced from a different page before
   // login — onboarding isn't skippable via returnTo. Everyone else lands on
   // the page they originally asked for, or the public home page.
-  if (isFlagOn("profile")) {
+  // Mit dem Onboarding-Flag entscheidet eine Regel für alle Einstiege
+  // (app/_onboarding/landing.ts); ohne gilt der alte Wizard.
+  if (onboardingEnabled()) {
+    const landing = await resolveOnboardingLanding(getDb(), result.userId);
+    if (landing) redirect(landing);
+  } else if (isFlagOn("profile")) {
     const db = getDb();
     const member = await getMemberByUserId(db, result.userId);
     if (member?.status === "pending" && !(await isProfileComplete(db, result.userId))) {

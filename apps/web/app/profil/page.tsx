@@ -6,6 +6,8 @@ import { getCurrentMember } from "@bdas/members";
 
 import { buildAnmeldenUrl } from "../_auth/return-to";
 import { requireAuthFlag } from "../_auth/flag";
+import { onboardingEnabled } from "../_onboarding/flag";
+import { resolveOnboardingLanding } from "../_onboarding/landing";
 import { requireProfileFlag } from "../_profile/flag";
 import { isProfileComplete } from "../_profile/complete";
 import { readSessionCookie } from "../../lib/auth-cookie";
@@ -20,6 +22,11 @@ export default async function ProfilPage() {
   const db = getDb();
   const me = await getCurrentMember(db, readSessionCookie());
   if (!me) redirect(buildAnmeldenUrl("/profil"));
+  // Mit dem neuen Einstieg ist der alte Wizard nicht mehr erreichbar; er wird
+  // nach dem Go-Live gelöscht.
+  if (onboardingEnabled()) {
+    redirect((await resolveOnboardingLanding(db, me.user.id)) ?? "/account");
+  }
   if (await isProfileComplete(db, me.user.id)) redirect("/account");
 
   // Wizard is onboarding for pending members only. Active members with

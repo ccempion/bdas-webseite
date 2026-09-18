@@ -21,6 +21,9 @@ vi.mock("@bdas/newsletter", () => ({
   subscribeAtRegistration: (...a: unknown[]) => subscribeMock(...a),
 }));
 
+const viewerMock = vi.fn();
+vi.mock("../_dashboard/session", () => ({ loadViewer: () => viewerMock() }));
+
 const startJourneyMock = vi.fn();
 const ENV = {
   groups: [{ id: "grp_ber", name: "BDAS Berlin", city: "Berlin" }],
@@ -57,6 +60,15 @@ describe("createAccountAction", () => {
     startJourneyMock.mockReset().mockResolvedValue({});
     sendMock.mockReset().mockResolvedValue(undefined);
     subscribeMock.mockReset().mockResolvedValue(undefined);
+    viewerMock.mockReset().mockResolvedValue(null);
+  });
+
+  it("creates no second account for someone who is signed in", async () => {
+    viewerMock.mockResolvedValueOnce({ id: "usr_existing" });
+    const state = await createAccountAction({}, form({ typ: "unterstuetzen", name: NAME }));
+    expect(state.error).toMatch(/bereits angemeldet/);
+    expect(registerMock).not.toHaveBeenCalled();
+    expect(startJourneyMock).not.toHaveBeenCalled();
   });
 
   it("creates account, member row and journey, then reports the address", async () => {

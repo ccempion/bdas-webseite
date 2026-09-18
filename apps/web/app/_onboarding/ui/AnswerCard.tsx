@@ -17,7 +17,7 @@ export function AnswerCard({
   selected,
   onSelect,
 }: {
-  option: ChoiceOption;
+  option: { readonly label: string; readonly hint?: string; readonly icon?: ChoiceOption["icon"] };
   selected: boolean;
   onSelect: () => void;
 }) {
@@ -28,11 +28,13 @@ export function AnswerCard({
       aria-pressed={selected}
       className={cx(CARD, selected ? "border-bdas-red" : "border-bdas-soft")}
     >
-      <span className={selected ? "text-bdas-red" : "text-bdas-ink-muted"}>
-        <Icon name={option.icon} />
-      </span>
+      {option.icon ? (
+        <span className={selected ? "text-bdas-red" : "text-bdas-ink-muted"}>
+          <Icon name={option.icon} />
+        </span>
+      ) : null}
       <span className="font-semibold text-bdas-ink">{option.label}</span>
-      <span className="text-sm text-bdas-ink-body">{option.hint}</span>
+      {option.hint ? <span className="text-sm text-bdas-ink-body">{option.hint}</span> : null}
     </button>
   );
 }

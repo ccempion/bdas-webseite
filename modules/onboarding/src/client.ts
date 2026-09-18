@@ -7,7 +7,7 @@
  * database, no services, no other module (ADR 0049). Everything here is also
  * exported from `index.ts`; the server keeps importing from there.
  */
-export { FLOW } from "./flow";
+export { FLOW, QUESTION_NAME } from "./flow";
 export { visibleOptions, walk } from "./next-step";
 export { MAX_CITY, MAX_NAME, sanitizeAnswers } from "./answers";
 export { fillText, textContext, type TextContext } from "./text";

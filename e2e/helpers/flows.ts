@@ -68,14 +68,15 @@ export async function verify(page: Page, email: string): Promise<void> {
 /**
  * Sign in. With the `profile` flag on, a pending member whose extended profile
  * is unfinished is routed to the onboarding wizard instead of the home page
- * (anmelden/actions.ts) — accept either landing page. Pass `expect: "profil"`
- * to require the wizard.
+ * (anmelden/actions.ts), or to the new entry (`/mitmachen`) with the onboarding
+ * flag — accept any of them. Pass `expect: "profil"` or `"mitmachen"` to
+ * require one.
  */
 export async function login(
   page: Page,
   email: string,
   password: string = PASSWORD,
-  opts: { expect?: "home" | "profil" | "either" } = {},
+  opts: { expect?: "home" | "profil" | "mitmachen" | "either" } = {},
 ): Promise<void> {
   await resetRateLimits();
   await page.goto("/anmelden");
@@ -83,13 +84,13 @@ export async function login(
   await page.getByLabel("Passwort", { exact: true }).fill(password);
   await page.getByRole("button", { name: "Anmelden" }).click();
   const want = opts.expect ?? "either";
-  await page.waitForURL((url) =>
-    want === "profil"
-      ? url.pathname.startsWith("/profil")
-      : want === "home"
-        ? url.pathname === "/"
-        : url.pathname === "/" || url.pathname.startsWith("/profil"),
-  );
+  await page.waitForURL((url) => {
+    const p = url.pathname;
+    if (want === "profil") return p.startsWith("/profil");
+    if (want === "mitmachen") return p.startsWith("/mitmachen");
+    if (want === "home") return p === "/";
+    return p === "/" || p.startsWith("/profil") || p.startsWith("/mitmachen");
+  });
 }
 
 /** Force-open the mobile "Menü" disclosure (PublicHeader, public_shell flag)

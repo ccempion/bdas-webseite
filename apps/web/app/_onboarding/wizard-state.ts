@@ -1,9 +1,11 @@
 import {
+  QUESTION_NAME,
   walk,
   type AnswerValue,
   type Answers,
   type Flow,
   type FlowEnv,
+  type NameAnswer,
   type OutcomeId,
 } from "@bdas/onboarding/client";
 
@@ -48,16 +50,36 @@ export function partOf(stage: Stage): 1 | 2 {
   return stage === "konto" || stage === "gesendet" ? 2 : 1;
 }
 
+/**
+ * Zustand für ein eingeloggtes Konto ohne Journey (Spec §6). Der Name steht
+ * fest, und ein Konto-Formular gibt es nicht: ein aus dem Tab wiederhergestellter
+ * Stand „konto" oder „gesendet" stammt aus einem anonymen Durchlauf davor.
+ */
+export function resumeState(saved: WizardState, name: NameAnswer): WizardState {
+  if (saved.stage === "gesendet") return { ...INITIAL, answers: { [QUESTION_NAME]: name } };
+  return {
+    ...saved,
+    answers: { ...saved.answers, [QUESTION_NAME]: name },
+    stage: saved.stage === "konto" ? "ergebnis" : saved.stage,
+    cursor: saved.cursor === QUESTION_NAME ? null : saved.cursor,
+  };
+}
+
+/** `locked`: Fragen, deren Antwort feststeht; der Wizard zeigt sie nicht. */
 export function reduce(
   flow: Flow,
   env: FlowEnv,
   state: WizardState,
   action: WizardAction,
+  locked: readonly string[] = [],
 ): WizardState {
+  const shown = (path: readonly string[]) => path.filter((q) => !locked.includes(q));
   switch (action.type) {
     case "answer": {
       const answers = { ...state.answers, [action.question]: action.value };
-      const { path, step } = walk(flow, answers, env);
+      const walked = walk(flow, answers, env);
+      const path = shown(walked.path);
+      const step = walked.step;
       const i = path.indexOf(action.question);
       const next = i >= 0 ? path[i + 1] : undefined;
       if (next !== undefined) return { ...state, answers, stage: "fragen", cursor: next };
@@ -66,7 +88,7 @@ export function reduce(
     }
     case "back": {
       if (state.stage === "konto") return { ...state, stage: "ergebnis" };
-      const { path } = walk(flow, state.answers, env);
+      const path = shown(walk(flow, state.answers, env).path);
       if (state.stage === "ergebnis") {
         return { ...state, stage: "fragen", cursor: path[path.length - 1] ?? null };
       }

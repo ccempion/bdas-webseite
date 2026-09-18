@@ -6,15 +6,18 @@ import { getDb } from "@bdas/db";
 import { Alert } from "@bdas/design-system";
 import { isAppError } from "@bdas/errors";
 import { isFlagOn } from "@bdas/feature-flags";
+import { getJourneyForUser } from "@bdas/onboarding";
 
 import { requireAuthFlag } from "../../_auth/flag";
+import { buildAnmeldenUrl } from "../../_auth/return-to";
+import { onboardingEnabled } from "../../_onboarding/flag";
 
 export const metadata = { title: "E-Mail bestätigen" };
 
 export default async function VerifizierenTokenPage({ params }: { params: { token: string } }) {
   requireAuthFlag();
 
-  let result: { alreadyVerified: boolean } | null = null;
+  let result: { userId: string; alreadyVerified: boolean } | null = null;
   let error: string | null = null;
   try {
     result = await verifyEmail(getDb(), params.token);
@@ -22,8 +25,17 @@ export default async function VerifizierenTokenPage({ params }: { params: { toke
     error = isAppError(err) ? err.message : "Unbekannter Fehler.";
   }
 
-  if (result && !result.alreadyVerified && isFlagOn("profile")) {
-    redirect("/profil");
+  if (result && !result.alreadyVerified) {
+    // Der Link kommt ohne Sitzung an; die Zielseite schickt über die Anmeldung
+    // dorthin zurück (Spec §5.3 Punkt 3) — auf jedem Gerät, weil die Journey
+    // auf dem Server liegt.
+    if (onboardingEnabled()) {
+      const journey = await getJourneyForUser(getDb(), result.userId);
+      redirect(
+        journey?.status === "details_offen" ? "/mitmachen/angaben" : buildAnmeldenUrl("/mitmachen"),
+      );
+    }
+    if (isFlagOn("profile")) redirect("/profil");
   }
 
   return (

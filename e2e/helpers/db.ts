@@ -344,3 +344,24 @@ export async function journeyByEmail(email: string): Promise<{
     WHERE u.email_normalized = ${email.trim().toLowerCase()}`;
   return rows[0] ?? null;
 }
+
+/** Die Netzwerk-Zeile, die `infra/seeds/groups.json` in echten Umgebungen anlegt. */
+export async function ensureNetzwerkGroup(): Promise<string> {
+  await sql`
+    INSERT INTO groups (id, slug, name, city, kind, status)
+    VALUES ('grp_netzwerk_e2e', 'netzwerk', 'BDAS Netzwerk', NULL, 'netzwerk', 'active')
+    ON CONFLICT (slug) DO NOTHING`;
+  const rows = await sql<{ id: string }[]>`SELECT id FROM groups WHERE slug = 'netzwerk'`;
+  return rows[0]!.id;
+}
+
+/** Ziel des offenen Gruppenantrags eines Kontos, oder null. */
+export async function openRequestTargetByEmail(email: string): Promise<string | null> {
+  const rows = await sql<{ to_group_id: string | null }[]>`
+    SELECT r.to_group_id
+    FROM member_group_change_requests r
+    JOIN members m ON m.id = r.member_id
+    JOIN auth_users u ON u.id = m.user_id
+    WHERE u.email_normalized = ${email.trim().toLowerCase()} AND r.status = 'pending'`;
+  return rows[0]?.to_group_id ?? null;
+}

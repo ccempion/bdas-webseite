@@ -13,7 +13,7 @@ export type PoolRow = {
   readonly name: string;
   readonly uni: string;
   readonly days: number;
-  readonly kind: "Mitglied ohne Gruppe" | "Bewerber:in";
+  readonly kind: string;
   readonly hasProfile: boolean;
   /** Same rules the action checks again (ADR 0044). */
   readonly deletable: boolean;
