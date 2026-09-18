@@ -236,3 +236,47 @@ describe("newsletter templates", () => {
     expect(mail.html).not.toContain("<script>");
   });
 });
+
+describe("acceptance per user type", () => {
+  const who = { firstName: "Mara", eventTitle: "" };
+
+  it("welcomes a supporter into the network, not into a local group", () => {
+    const out = render("member_supporter_approved", who);
+    expect(out.subject).toBe("BDAS — Willkommen im Netzwerk");
+    expect(out.text).toContain("Bundesvorstand");
+    expect(out.text).not.toContain("lokaler Vorstand");
+  });
+
+  it("names the partner organisation", () => {
+    const out = render("member_partner_approved", { ...who, groupName: "BDAJ" });
+    expect(out.subject).toBe("BDAS — Dein Zugang ist freigeschaltet");
+    expect(out.text).toContain("BDAJ");
+    expect(render("member_partner_approved", who).text).toContain("deine Partnerorganisation");
+  });
+
+  it("welcomes an alumnus", () => {
+    const out = render("member_alumnus_approved", who);
+    expect(out.subject).toBe("BDAS — Willkommen bei den Alumni");
+    expect(out.text).toContain("Alumna oder Alumnus");
+  });
+
+  it("links to the account when a URL is given", () => {
+    const out = render("member_alumnus_approved", {
+      ...who,
+      accountUrl: "https://bdas.de/account",
+    });
+    expect(out.text).toContain("https://bdas.de/account");
+    expect(out.html).toContain('href="https://bdas.de/account"');
+  });
+
+  it("differs from the student text", () => {
+    const student = render("member_application_approved", who).subject;
+    for (const t of [
+      "member_supporter_approved",
+      "member_partner_approved",
+      "member_alumnus_approved",
+    ] as const) {
+      expect(render(t, who).subject).not.toBe(student);
+    }
+  });
+});
