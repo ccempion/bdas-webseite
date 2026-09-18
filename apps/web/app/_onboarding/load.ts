@@ -1,12 +1,13 @@
 import { PASSWORD_RULE_HINT } from "@bdas/auth";
 import { getDb } from "@bdas/db";
 import { getMemberByUserId } from "@bdas/members";
-import { loadFlowEnv, parseEntryContext } from "@bdas/onboarding";
+import { loadFlowEnv } from "@bdas/onboarding";
 import { UNIVERSITIES, universityCity } from "@bdas/profile";
 
 import { legalUrls } from "../../lib/legal";
 import { loadViewer } from "../_dashboard/session";
 import { newsletterEnabled } from "../_newsletter/flag";
+import { defaultEntryDeps, resolveEntryContext } from "./entry";
 import { resolveOnboardingLanding } from "./landing";
 import { cityMatches } from "./place-search";
 import type { WizardProps } from "./types";
@@ -19,7 +20,10 @@ export async function loadWizardProps(from: string | string[] | undefined): Prom
   });
   return {
     env,
-    entry: parseEntryContext(typeof from === "string" ? from : undefined),
+    entry: await resolveEntryContext(
+      typeof from === "string" ? from : undefined,
+      defaultEntryDeps(),
+    ),
     universities,
     privacyUrl: legalUrls().privacy,
     passwordHint: PASSWORD_RULE_HINT,

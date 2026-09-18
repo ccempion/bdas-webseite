@@ -65,6 +65,14 @@ describe("FEDERAL_NAV", () => {
     expect(hrefs.indexOf("/federal/newsletter")).toBe(hrefs.indexOf("/federal/faq") + 1);
     expect(FEDERAL_NAV.find((i) => i.href === "/federal/newsletter")?.flag).toBe("newsletter");
   });
+
+  it("offers the entry links only with the onboarding flag", () => {
+    const item = FEDERAL_NAV.find((i) => i.href === "/federal/einstiegslinks");
+    expect(item?.flag).toBe("onboarding");
+    expect(visibleNavItems(FEDERAL_NAV, []).map((i) => i.href)).not.toContain(
+      "/federal/einstiegslinks",
+    );
+  });
 });
 
 describe("visibleNavItems", () => {

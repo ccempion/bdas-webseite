@@ -98,7 +98,12 @@ export default defineConfig({
       url: onboardingURL,
       timeout: 120_000,
       reuseExistingServer: !process.env["CI"],
-      env: { ...APP_ENV, BDAS_FLAG_ONBOARDING: "true", PUBLIC_SITE_URL: onboardingURL },
+      env: {
+        ...APP_ENV,
+        BDAS_FLAG_ONBOARDING: "true",
+        BDAS_FLAG_EVENTS: "true",
+        PUBLIC_SITE_URL: onboardingURL,
+      },
     },
   ],
 });
