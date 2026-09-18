@@ -27,6 +27,7 @@ export const FEDERAL_NAV: ReadonlyArray<NavItem> = [
   { href: "/federal/roles", label: "Rollen" },
   { href: "/federal/faq", label: "FAQ" },
   { href: "/federal/newsletter", label: "Newsletter", flag: "newsletter" },
+  { href: "/federal/einstiegslinks", label: "Einstiegslinks", flag: "onboarding" },
   { href: "/federal/files", label: "Dateien" },
 ];
 
