@@ -40,6 +40,11 @@ function clean(question: Question, value: unknown): AnswerValue | null {
       if (value["kind"] === "skipped") return question.skippable ? { kind: "skipped" } : null;
       return null;
     }
+    case "group_choice": {
+      if (!isObj(value) || value["kind"] !== "group") return null;
+      const groupId = text(value["groupId"], MAX_ID);
+      return groupId ? { kind: "group", groupId } : null;
+    }
   }
 }
 

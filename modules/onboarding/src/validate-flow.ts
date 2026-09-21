@@ -68,6 +68,7 @@ function questionTexts(q: Question): Array<{ text: string; allowsEingabe: boolea
     ];
   }
   if (q.kind === "place") return [...base, { text: q.noGroupHint, allowsEingabe: true }];
+  if (q.kind === "group_choice") return base;
   return base;
 }
 
@@ -126,8 +127,8 @@ export function validateFlow(flow: Flow): string[] {
             `Regel ab „${r.from}": „${value}" ist keine Antwort auf „${r.when.question}".`,
           );
         }
-      } else if (q.kind !== "place") {
-        errors.push(`Regel ab „${r.from}": has_group braucht eine Orts-Frage.`);
+      } else if (q.kind !== "place" && q.kind !== "group_choice") {
+        errors.push(`Regel ab „${r.from}": has_group braucht eine Orts- oder Gruppenfrage.`);
       }
     }
   }

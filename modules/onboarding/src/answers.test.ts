@@ -106,6 +106,29 @@ describe("placeOf", () => {
   });
 });
 
+describe("sanitizeAnswers für group_choice", () => {
+  const flow = {
+    version: 1,
+    start: "wahl",
+    questions: {
+      wahl: { kind: "group_choice" as const, title: "Welche Gruppe?", help: "Such dir eine aus." },
+    },
+    rules: [{ from: "wahl", to: { outcome: "student" as const } }],
+    outcomes: FLOW.outcomes,
+  };
+
+  it("nimmt eine Gruppen-Antwort an", () => {
+    expect(sanitizeAnswers(flow, { wahl: { kind: "group", groupId: "grp_1" } })).toEqual({
+      wahl: { kind: "group", groupId: "grp_1" },
+    });
+  });
+
+  it("verwirft Stadt und Überspringen", () => {
+    expect(sanitizeAnswers(flow, { wahl: { kind: "city", city: "Köln" } })).toEqual({});
+    expect(sanitizeAnswers(flow, { wahl: { kind: "skipped" } })).toEqual({});
+  });
+});
+
 describe("placeOf mit mehreren Orts-Antworten", () => {
   const env = {
     groups: [{ id: "grp_koeln", name: "BDAS Köln", city: "Köln" }],

@@ -44,6 +44,12 @@ export type Question =
       /** Gezeigt, wenn die eingegebene Stadt keine Gruppe hat. `{eingabe}` ist
        *  die gerade getippte Stadt — kein Platzhalter aus früheren Antworten. */
       readonly noGroupHint: string;
+    }
+  | {
+      /** Eine Gruppe aus der Liste aller aktiven Hochschulgruppen. */
+      readonly kind: "group_choice";
+      readonly title: string;
+      readonly help: string;
     };
 
 export type Condition =
