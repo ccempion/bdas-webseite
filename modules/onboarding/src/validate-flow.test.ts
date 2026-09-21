@@ -83,6 +83,33 @@ describe("validateFlow", () => {
     expect(validateFlow(flow)).toContainEqual(expect.stringContaining("has_group"));
   });
 
+  it("accepts has_group on a group_choice question", () => {
+    const flow: Flow = {
+      version: 1,
+      start: "wahl",
+      questions: {
+        wahl: { kind: "group_choice", title: "Welche Gruppe?", help: "Wähl deine Gruppe." },
+      },
+      rules: [
+        { from: "wahl", when: { kind: "has_group", question: "wahl" }, to: { outcome: "student" } },
+        { from: "wahl", to: { outcome: "student_ohne_gruppe" } },
+      ],
+      outcomes: FLOW.outcomes,
+    };
+    expect(validateFlow(flow)).not.toContainEqual(expect.stringContaining("has_group"));
+  });
+
+  it("rejects {eingabe} in a group_choice question", () => {
+    const flow: Flow = {
+      version: 1,
+      start: "wahl",
+      questions: { wahl: { kind: "group_choice", title: "{eingabe}", help: "h" } },
+      rules: [{ from: "wahl", to: { outcome: "student" } }],
+      outcomes: FLOW.outcomes,
+    };
+    expect(validateFlow(flow)).toContainEqual(expect.stringContaining("{eingabe}"));
+  });
+
   it("rejects a cycle", () => {
     const flow = broken((f) => {
       f.rules = [{ from: "aktiv_wo", to: { question: "typ" } }, ...f.rules];

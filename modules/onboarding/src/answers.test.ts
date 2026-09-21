@@ -124,8 +124,10 @@ describe("sanitizeAnswers für group_choice", () => {
   });
 
   it("verwirft Stadt und Überspringen", () => {
-    expect(sanitizeAnswers(flow, { wahl: { kind: "city", city: "Köln" } })).toEqual({});
-    expect(sanitizeAnswers(flow, { wahl: { kind: "skipped" } })).toEqual({});
+    expect(Object.keys(sanitizeAnswers(flow, { wahl: { kind: "city", city: "Köln" } }))).toEqual(
+      [],
+    );
+    expect(Object.keys(sanitizeAnswers(flow, { wahl: { kind: "skipped" } }))).toEqual([]);
   });
 });
 
