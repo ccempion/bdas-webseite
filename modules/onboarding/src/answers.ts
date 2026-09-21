@@ -66,24 +66,29 @@ const isPlace = (v: AnswerValue | undefined): v is PlaceAnswer =>
   typeof v === "object" && v !== null && "kind" in v;
 
 /**
- * Die erste Orts-Antwort in Fragen-Reihenfolge. Eine Gruppen-ID zählt nur, wenn
- * sie in `env.groups` steht — die Liste kommt vom Server, die ID vom Browser.
+ * Der Ort, auf den sich das Ergebnis bezieht. Eine gewählte Gruppe schlägt eine
+ * getippte Stadt: wer in einer Stadt ohne Gruppe studiert und einer Gruppe
+ * anderswo beitritt, bewirbt sich dort, nicht im Netzwerk. Eine Gruppen-ID
+ * zählt nur, wenn sie in `env.groups` steht — die Liste kommt vom Server, die
+ * ID vom Browser.
  */
 export function placeOf(
   flow: Flow,
   answers: Answers,
   env: FlowEnv,
 ): { groupId: string | null; groupName: string | null; city: string | null } {
+  let city: string | null = null;
+
   for (const id of Object.keys(flow.questions)) {
     const value = answers[id];
     if (!isPlace(value)) continue;
     if (value.kind === "group") {
       const group = env.groups.find((g) => g.id === value.groupId);
-      return group
-        ? { groupId: group.id, groupName: group.name, city: group.city }
-        : { groupId: null, groupName: null, city: null };
+      if (group) return { groupId: group.id, groupName: group.name, city: group.city };
+      continue;
     }
-    if (value.kind === "city") return { groupId: null, groupName: null, city: value.city };
+    if (value.kind === "city" && city === null) city = value.city;
   }
-  return { groupId: null, groupName: null, city: null };
+
+  return { groupId: null, groupName: null, city };
 }
