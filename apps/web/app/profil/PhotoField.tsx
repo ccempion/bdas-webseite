@@ -73,7 +73,7 @@ export function PhotoField({
             "flex h-32 w-32 shrink-0 items-center justify-center overflow-hidden rounded-full " +
             "border border-dashed border-bdas-strong bg-bdas-overlay-faint text-bdas-ink-muted " +
             "transition-colors duration-bdas-quick ease-bdas hover:bg-bdas-surface-hover " +
-            "focus:outline-none focus-visible:ring-2 focus-visible:ring-bdas-red/40"
+            "focus:outline-none focus-visible:ring-2 focus-visible:ring-bdas-red/40 disabled:opacity-50"
           }
         >
           {preview ? (
@@ -87,14 +87,16 @@ export function PhotoField({
             <>
               <button
                 type="button"
-                className="text-left text-bdas-red hover:underline"
+                disabled={busy}
+                className="text-left text-bdas-red hover:underline disabled:opacity-50"
                 onClick={() => inputRef.current?.click()}
               >
                 Foto ändern
               </button>
               <button
                 type="button"
-                className="text-left text-bdas-ink-body hover:underline"
+                disabled={busy}
+                className="text-left text-bdas-ink-body hover:underline disabled:opacity-50"
                 onClick={() => {
                   setLocalPreview(null);
                   onChange("");
