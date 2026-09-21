@@ -14,7 +14,7 @@ export async function LegacyLanding() {
       <header className="flex flex-col gap-2">
         <h1 className="text-3xl font-semibold text-bdas-ink">BDAS</h1>
         <p className="text-bdas-ink-body">
-          Bund der Alevitischen Studierenden — die Hochschulgruppen-Plattform.
+          Bund der Alevitischen Studierenden: die Hochschulgruppen-Plattform.
         </p>
       </header>
 

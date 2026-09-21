@@ -88,7 +88,7 @@ export function ApplicationCard({
                 ) : null}
                 <br />
                 Gefunden durch: {profile.gefundenDurch}
-                {profile.empfehlerName ? ` — empfohlen von ${profile.empfehlerName}` : ""}
+                {profile.empfehlerName ? `, empfohlen von ${profile.empfehlerName}` : ""}
               </p>
               {/* Optional and unverified (#122) — the applicant's own words, so
                   it is quoted rather than folded into the facts above. */}
@@ -106,7 +106,7 @@ export function ApplicationCard({
 
           {priorRejections.length > 0 ? (
             <p className="mt-2 rounded-bdas-sm bg-bdas-surface-hover px-2 py-1 text-sm text-bdas-red">
-              {priorRejections.length + 1}. Bewerbung — zuletzt abgelehnt am{" "}
+              {priorRejections.length + 1}. Bewerbung, zuletzt abgelehnt am{" "}
               {fmt(priorRejections[0]!.decidedAt)} ({priorRejections[0]!.categoryLabel})
             </p>
           ) : null}

@@ -596,7 +596,7 @@ export const puckConfig: Config<Blocks> = {
           className={`rounded-bdas border-l-4 border-bdas-red bg-bdas-overlay-hover px-4 py-3 ${ausrichtungText(ausrichtung)}`}
         >
           <p className="whitespace-pre-line text-bdas-ink-body">{text}</p>
-          {quelle ? <footer className="mt-2 text-sm text-bdas-ink-muted">— {quelle}</footer> : null}
+          {quelle ? <footer className="mt-2 text-sm text-bdas-ink-muted">Quelle: {quelle}</footer> : null}
         </blockquote>
       ),
     },
@@ -671,7 +671,7 @@ export const puckConfig: Config<Blocks> = {
               type: "select",
               label: "Ebene",
               options: [
-                { label: "1 — oberste Ebene", value: "1" },
+                { label: "1: oberste Ebene", value: "1" },
                 { label: "2", value: "2" },
                 { label: "3", value: "3" },
                 { label: "4", value: "4" },
@@ -840,7 +840,7 @@ export const puckConfig: Config<Blocks> = {
           return puck?.isEditing ? (
             <BlockPlatzhalter
               titel="Hero / Aufmacher"
-              hinweis="Noch kein Inhalt — Überschrift, Untertext, Bild oder Button ergänzen."
+              hinweis="Noch kein Inhalt: Überschrift, Untertext, Bild oder Button ergänzen."
             />
           ) : (
             <></>
@@ -1029,7 +1029,7 @@ export const puckConfig: Config<Blocks> = {
           return puck?.isEditing ? (
             <BlockPlatzhalter
               titel="CTA-Banner"
-              hinweis="Noch kein Inhalt — Überschrift, Text oder Button ergänzen."
+              hinweis="Noch kein Inhalt: Überschrift, Text oder Button ergänzen."
             />
           ) : (
             <></>

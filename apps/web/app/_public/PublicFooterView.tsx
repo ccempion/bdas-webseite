@@ -105,10 +105,10 @@ export function PublicFooterView({
         <nav aria-label="Partner" className="flex flex-col gap-2">
           <h2 className="font-semibold text-bdas-ink">Verbund</h2>
           <a href="https://bdaj.de" rel="noopener noreferrer" target="_blank" className={LINK}>
-            BDAJ — Bund der Alevitischen Jugendlichen
+            BDAJ: Bund der Alevitischen Jugendlichen
           </a>
           <a href="https://alevi.com" rel="noopener noreferrer" target="_blank" className={LINK}>
-            AABF — Alevitische Gemeinde Deutschland
+            AABF: Alevitische Gemeinde Deutschland
           </a>
         </nav>
         <nav aria-label="Rechtliches" className="flex flex-col gap-2">

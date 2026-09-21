@@ -17,7 +17,7 @@ export const dynamic = "force-dynamic";
 const SLUG = "ueber-uns";
 
 export const metadata: Metadata = {
-  title: "Seite bearbeiten — Über uns",
+  title: "Seite bearbeiten: Über uns",
   robots: { index: false },
 };
 

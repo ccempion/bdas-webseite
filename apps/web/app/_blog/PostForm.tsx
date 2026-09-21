@@ -76,7 +76,7 @@ export function PostForm({
           defaultValue={post?.visibility ?? "public"}
           className={SELECT_CLASS}
         >
-          <option value="public">Öffentlich — für alle sichtbar</option>
+          <option value="public">Öffentlich: für alle sichtbar</option>
           <option value="members">Nur Mitglieder</option>
           <option value="board">Nur Vorstände</option>
         </select>

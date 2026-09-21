@@ -22,7 +22,7 @@ const BREITE: Breite = "breit";
 export const metadata: Metadata = {
   title: "Bundessprecher*innenrat",
   description:
-    "Der Bundessprecher*innenrat des BDAS — die Mitglieder des Bundesvorstands mit Rolle, Universität und Studiengang.",
+    "Der Bundessprecher*innenrat des BDAS: die Mitglieder des Bundesvorstands mit Rolle, Universität und Studiengang.",
 };
 
 export default async function BsrPage() {

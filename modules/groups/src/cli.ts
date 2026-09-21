@@ -63,7 +63,7 @@ async function main(): Promise<void> {
     );
   }
   await closeDb();
-  process.stdout.write(`\ndone — ${created} created, ${updated} updated\n`);
+  process.stdout.write(`\ndone, ${created} created, ${updated} updated\n`);
 }
 
 main().catch(async (err: unknown) => {

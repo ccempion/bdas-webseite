@@ -165,7 +165,7 @@ export function SubscriberTable({
                     disabled={busy}
                     onClick={() =>
                       run(
-                        `${r.email} endgültig löschen? Der Einwilligungsnachweis wird mitgelöscht — für echte Personen ist Abmelden der richtige Weg.`,
+                        `${r.email} endgültig löschen? Der Einwilligungsnachweis wird mitgelöscht, für echte Personen ist Abmelden der richtige Weg.`,
                         () => onRemove(r.id),
                         () => `${r.email} gelöscht.`,
                       )

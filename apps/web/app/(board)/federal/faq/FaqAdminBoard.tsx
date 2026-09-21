@@ -215,7 +215,7 @@ export function FaqAdminBoard({
             </div>
           ))}
           {groups.length === 0 && (
-            <p className="text-sm text-bdas-ink-muted">Noch keine Einträge — leg den ersten an.</p>
+            <p className="text-sm text-bdas-ink-muted">Noch keine Einträge, leg den ersten an.</p>
           )}
         </>
       )}

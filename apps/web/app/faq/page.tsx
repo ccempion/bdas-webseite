@@ -35,7 +35,7 @@ function StaticFaq({ me }: { me: Me }) {
       <header className="mb-6">
         <h1 className="text-3xl font-bold text-bdas-ink">FAQ &amp; Hilfe</h1>
         <p className="mt-2 text-bdas-ink-muted">
-          Wie die Plattform funktioniert — nach Rollen gegliedert. Dein Bereich steht oben und ist
+          Wie die Plattform funktioniert, nach Rollen gegliedert. Dein Bereich steht oben und ist
           bereits geöffnet.
         </p>
       </header>
@@ -74,7 +74,7 @@ export default async function FaqPage() {
       <header className="mb-8">
         <h1 className="text-3xl font-bold text-bdas-ink">FAQ &amp; Hilfe</h1>
         <p className="mt-2 text-bdas-ink-muted">
-          Wie die Plattform funktioniert — durchsuchbar, nach Rollen gegliedert.
+          Wie die Plattform funktioniert: durchsuchbar, nach Rollen gegliedert.
         </p>
       </header>
       <FaqExplorer sections={sections} topics={usedTopics} />

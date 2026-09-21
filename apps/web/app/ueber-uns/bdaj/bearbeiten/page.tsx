@@ -17,7 +17,7 @@ export const dynamic = "force-dynamic";
 const SLUG = "ueber-uns/bdaj";
 
 export const metadata: Metadata = {
-  title: "Seite bearbeiten — BDAJ",
+  title: "Seite bearbeiten: BDAJ",
   robots: { index: false },
 };
 

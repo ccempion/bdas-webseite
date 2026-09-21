@@ -17,7 +17,7 @@ export const dynamic = "force-dynamic";
 const SLUG = "impressum";
 
 export const metadata: Metadata = {
-  title: "Seite bearbeiten — Impressum",
+  title: "Seite bearbeiten: Impressum",
   robots: { index: false },
 };
 

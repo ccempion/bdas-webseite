@@ -43,7 +43,7 @@ export async function NewsletterToggle({ account }: { account: NewsletterAccount
         </p>
         <p className="text-sm text-bdas-ink-body">
           {pending
-            ? "Fast geschafft — bestätige noch den Link in deiner E-Mail."
+            ? "Fast geschafft, bestätige noch den Link in deiner E-Mail."
             : "Ein paar Mal im Jahr: was im Verband ansteht und was wir vorhaben."}
         </p>
       </div>

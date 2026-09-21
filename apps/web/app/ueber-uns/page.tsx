@@ -20,7 +20,7 @@ const SLUG = "ueber-uns";
 export const metadata: Metadata = {
   title: "Über uns",
   description:
-    "Der Bund der Alevitischen Studierenden in Deutschland (BDAS) — wer wir sind und wofür wir stehen.",
+    "Der Bund der Alevitischen Studierenden in Deutschland (BDAS): wer wir sind und wofür wir stehen.",
 };
 
 export default async function KurzportraitPage() {
@@ -52,7 +52,7 @@ export default async function KurzportraitPage() {
           </p>
           <p className="text-bdas-ink-body">
             Von der Erstsemester-Begrüßung bis zur Bundeskonferenz: Unsere Hochschulgruppen leben
-            alevitische Werte im Studienalltag — offen, demokratisch und solidarisch.
+            alevitische Werte im Studienalltag: offen, demokratisch und solidarisch.
           </p>
         </div>
       )}

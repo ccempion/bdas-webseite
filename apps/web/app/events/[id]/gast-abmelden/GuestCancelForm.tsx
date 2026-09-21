@@ -14,7 +14,7 @@ export function GuestCancelForm({ eventId, token }: { eventId: string; token: st
   if (state.ok) {
     return (
       <Alert variant="success" title="Abmeldung bestätigt">
-        Deine Anmeldung wurde storniert. Schade, dass es nicht klappt — vielleicht beim nächsten
+        Deine Anmeldung wurde storniert. Schade, dass es nicht klappt, vielleicht beim nächsten
         Mal.
       </Alert>
     );

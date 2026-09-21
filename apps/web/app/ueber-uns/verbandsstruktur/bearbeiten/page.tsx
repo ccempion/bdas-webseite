@@ -17,7 +17,7 @@ export const dynamic = "force-dynamic";
 const SLUG = "ueber-uns/verbandsstruktur";
 
 export const metadata: Metadata = {
-  title: "Seite bearbeiten — Verbandsstruktur",
+  title: "Seite bearbeiten: Verbandsstruktur",
   robots: { index: false },
 };
 

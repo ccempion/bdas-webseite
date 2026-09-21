@@ -28,7 +28,7 @@ export function UnsubscribeConfirm({ token, email }: { token: string; email: str
   if (state.ok) {
     return (
       <Alert variant="success" title="Abgemeldet">
-        Du bekommst von uns keinen Newsletter mehr. Schade — aber du kannst dich jederzeit wieder
+        Du bekommst von uns keinen Newsletter mehr. Schade, aber du kannst dich jederzeit wieder
         eintragen.
       </Alert>
     );

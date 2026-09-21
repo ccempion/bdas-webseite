@@ -33,7 +33,7 @@ export function YouTubeFacade({ youtubeId, title }: { youtubeId: string; title: 
         </svg>
       </span>
       <span className="absolute bottom-3 left-0 right-0 px-4 text-center text-sm text-bdas-ink-muted">
-        Video-Tutorial laden — dabei gilt die Datenschutzerklärung von YouTube
+        Video-Tutorial laden, dabei gilt die Datenschutzerklärung von YouTube
       </span>
     </button>
   );
