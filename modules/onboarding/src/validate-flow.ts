@@ -68,7 +68,6 @@ function questionTexts(q: Question): Array<{ text: string; allowsEingabe: boolea
     ];
   }
   if (q.kind === "place") return [...base, { text: q.noGroupHint, allowsEingabe: true }];
-  if (q.kind === "group_choice") return base;
   return base;
 }
 
