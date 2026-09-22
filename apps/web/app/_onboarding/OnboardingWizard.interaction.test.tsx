@@ -159,4 +159,35 @@ describe("OnboardingWizard", () => {
     expect(container.textContent).not.toContain("Passt — Konto anlegen");
     expect(container.textContent).toContain("Passt — weiter");
   });
+
+  it("führt von der Absicht zur Gruppenwahl und wählt eine Gruppe", () => {
+    render();
+    click("Ich studiere gerade");
+    type("onb-vorname", "Lea");
+    type("onb-nachname", "Muster");
+    submit();
+
+    type("onb-ort", "Passau");
+    click("Weiter");
+    expect(heading()).toBe("In Passau gibt es noch kein BDAS. Was möchtest du?");
+
+    click("Dem nächstgelegenen BDAS beitreten");
+    expect(heading()).toBe("Welchem BDAS möchtest du beitreten?");
+
+    click("BDAS Berlin");
+    expect(heading()).toBe("Du passt zu uns als Student*in in Berlin.");
+  });
+
+  it("führt die Gründung zum eigenen Ergebnis", () => {
+    render();
+    click("Ich studiere gerade");
+    type("onb-vorname", "Lea");
+    type("onb-nachname", "Muster");
+    submit();
+
+    type("onb-ort", "Passau");
+    click("Weiter");
+    click("Ein BDAS in Passau gründen");
+    expect(heading()).toContain("mit uns an deiner Seite");
+  });
 });

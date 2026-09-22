@@ -10,6 +10,7 @@ import { clearState, loadState, saveState } from "./storage";
 import type { WizardProps } from "./types";
 import { ChoiceScreen } from "./ui/ChoiceScreen";
 import { ErgebnisScreen } from "./ui/ErgebnisScreen";
+import { GruppenwahlScreen } from "./ui/GruppenwahlScreen";
 import { KontoScreen } from "./ui/KontoScreen";
 import { MailGesendet } from "./ui/MailGesendet";
 import { NameScreen } from "./ui/NameScreen";
@@ -101,6 +102,17 @@ export function OnboardingWizard(props: WizardProps & { onClose: () => void }) {
           key={questionId}
           question={q}
           ctx={ctx}
+          value={value}
+          onAnswer={answer(questionId)}
+        />
+      );
+    } else if (q?.kind === "group_choice") {
+      screen = (
+        <GruppenwahlScreen
+          key={questionId}
+          question={q}
+          ctx={ctx}
+          env={env}
           value={value}
           onAnswer={answer(questionId)}
         />
