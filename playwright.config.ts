@@ -34,6 +34,9 @@ const APP_ENV = {
   BDAS_FLAG_FAQ: "true",
   BDAS_FLAG_FAQ_SUITE: "true",
   BDAS_FLAG_NEWSLETTER: "true",
+  BDAS_FLAG_NOTIFICATIONS: "true",
+  BDAS_FLAG_ACCOUNT_DELETION: "true",
+  E2E_EMAIL_CAPTURE: "true",
 };
 
 const dismissedNotice = (origin: string) => ({
