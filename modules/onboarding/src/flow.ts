@@ -159,7 +159,8 @@ export const FLOW: Flow = {
     student_gruendung: {
       userType: "student",
       target: "keine",
-      title: "Du wärst als Student*in in {stadt} angemeldet, mit uns an deiner Seite für die Gründung.",
+      title:
+        "Du wärst als Student*in in {stadt} angemeldet, mit uns an deiner Seite für die Gründung.",
       benefits: [
         "Unterstützung, wenn du in {stadt} eine Gruppe gründen willst",
         "Bundesweites Netzwerk alevitischer Studierender",

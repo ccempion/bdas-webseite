@@ -44,15 +44,15 @@ Die Leitlinien des Wizard-Designs gelten weiter. Für diesen Durchgang kommen dr
 
 ## 3. Entscheidungen
 
-| Nr. | Frage                                           | Entscheidung                                                                                                |
-| --- | ----------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| E1  | Studierende ohne Gruppe vor Ort                 | Nutzertyp bleibt `student`, Hauptgruppe bleibt leer, Aufnahme über den Bundesvorstand im Pool                |
-| E2  | Wunsch „nächstem BDAS beitreten"                | Gruppenauswahl im Wizard, Antrag geht an den Vorstand dieser Gruppe, Hauptgruppe wird gesetzt                |
-| E3  | BDAJ und BDAS gleichzeitig                      | Nicht in diesem Durchgang. BDAJ bleibt Hauptgruppe; wer wechseln will, nutzt den vorhandenen Gruppenwechsel  |
-| E4  | Bestätigungslink                                | Meldet direkt an und führt auf „Deine Angaben". Gültigkeit und Einmaligkeit wie bisher                       |
-| E5  | Bezeichnung der BDAJ-Leute                      | „BDAJ-Mitglied", nicht „Funktionär\*in". Die Funktions-Auswahl im dritten Teil bleibt unverändert            |
-| E6  | Herkunftsfrage                                  | Variante B: fragt nach der Person, die einen gebracht hat, statt nach dem Kanal                              |
-| E7  | Lange Gedankenstriche                           | Plattformweiter Durchgang durch alle Texte, als eigener PR am Ende                                           |
+| Nr. | Frage                            | Entscheidung                                                                                                |
+| --- | -------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| E1  | Studierende ohne Gruppe vor Ort  | Nutzertyp bleibt `student`, Hauptgruppe bleibt leer, Aufnahme über den Bundesvorstand im Pool               |
+| E2  | Wunsch „nächstem BDAS beitreten" | Gruppenauswahl im Wizard, Antrag geht an den Vorstand dieser Gruppe, Hauptgruppe wird gesetzt               |
+| E3  | BDAJ und BDAS gleichzeitig       | Nicht in diesem Durchgang. BDAJ bleibt Hauptgruppe; wer wechseln will, nutzt den vorhandenen Gruppenwechsel |
+| E4  | Bestätigungslink                 | Meldet direkt an und führt auf „Deine Angaben". Gültigkeit und Einmaligkeit wie bisher                      |
+| E5  | Bezeichnung der BDAJ-Leute       | „BDAJ-Mitglied", nicht „Funktionär\*in". Die Funktions-Auswahl im dritten Teil bleibt unverändert           |
+| E6  | Herkunftsfrage                   | Variante B: fragt nach der Person, die einen gebracht hat, statt nach dem Kanal                             |
+| E7  | Lange Gedankenstriche            | Plattformweiter Durchgang durch alle Texte, als eigener PR am Ende                                          |
 
 ## 4. Nutzertyp ohne Gruppe (E1)
 
@@ -66,11 +66,11 @@ entscheidet über den Antrag.
 
 Der Ausgang zerfällt in zwei, beide mit `userType: "student"` und `target: "keine"`:
 
-| Ausgang               | Wann                                          | Hauptgruppe | Entscheidung                     |
-| --------------------- | --------------------------------------------- | ----------- | -------------------------------- |
-| `student_gruendung`   | Absicht „hier ein BDAS gründen"               | leer        | Bundesvorstand über den Pool     |
-| `student_ohne_gruppe` | Absicht „erst mal einfach dabei sein"         | leer        | Bundesvorstand über den Pool     |
-| `student`             | Gruppe vor Ort gefunden oder selbst gewählt   | diese Gruppe| Vorstand dieser Gruppe           |
+| Ausgang               | Wann                                        | Hauptgruppe  | Entscheidung                 |
+| --------------------- | ------------------------------------------- | ------------ | ---------------------------- |
+| `student_gruendung`   | Absicht „hier ein BDAS gründen"             | leer         | Bundesvorstand über den Pool |
+| `student_ohne_gruppe` | Absicht „erst mal einfach dabei sein"       | leer         | Bundesvorstand über den Pool |
+| `student`             | Gruppe vor Ort gefunden oder selbst gewählt | diese Gruppe | Vorstand dieser Gruppe       |
 
 `target: "keine"` heißt: `completeJourney` legt keinen Gruppenantrag an, die Journey wird
 abgeschickt, die Person steht im Pool des Bundesvorstands. Das ist derselbe Weg, den Alumni heute
@@ -91,11 +91,11 @@ App (Regel 1).
 
 `poolKindLabel` bekommt zwei Fälle:
 
-| Lage                                                 | Text                                        |
-| ---------------------------------------------------- | ------------------------------------------- |
-| `outcome === "student_gruendung"`                    | „Möchte eine Gruppe gründen"                |
-| `outcome === "student_ohne_gruppe"`                  | „Bewirbt sich ohne Gruppe"                  |
-| `outcome === "alumnus"`                              | „Bewirbt sich als Alumna oder Alumnus"      |
+| Lage                                | Text                                   |
+| ----------------------------------- | -------------------------------------- |
+| `outcome === "student_gruendung"`   | „Möchte eine Gruppe gründen"           |
+| `outcome === "student_ohne_gruppe"` | „Bewirbt sich ohne Gruppe"             |
+| `outcome === "alumnus"`             | „Bewirbt sich als Alumna oder Alumnus" |
 
 Der Knopf heißt nicht mehr „Als Alumnus aufnehmen", sondern „Ohne Gruppe aufnehmen"; die
 Rückfrage nennt den Namen wie bisher.
@@ -174,9 +174,9 @@ setzt `fillText` ein.
 
 ### 6.1 Typ-Frage
 
-| Stelle             | Neu                              |
-| ------------------ | -------------------------------- |
-| Karte BDAJ, Hinweis| „Für alle Mitglieder der BDAJ"   |
+| Stelle              | Neu                            |
+| ------------------- | ------------------------------ |
+| Karte BDAJ, Hinweis | „Für alle Mitglieder der BDAJ" |
 
 Alles andere bleibt.
 
@@ -190,11 +190,11 @@ Alles andere bleibt.
 > **In {stadt} gibt es noch kein BDAS. Was möchtest du?**
 > Beides geht: mit uns etwas aufbauen oder erst mal nur dabei sein.
 
-| Karte | Titel                                | Hinweis                              |
-| ----- | ------------------------------------ | ------------------------------------ |
-| a     | „Ein BDAS in {stadt} gründen"        | „Wir helfen dir beim Aufbau"         |
-| b     | „Erst mal einfach dabei sein"        | „Ohne Gruppe vor Ort"                |
-| c     | „Dem nächstgelegenen BDAS beitreten" | „Auch wenn es etwas weiter weg ist"  |
+| Karte | Titel                                | Hinweis                             |
+| ----- | ------------------------------------ | ----------------------------------- |
+| a     | „Ein BDAS in {stadt} gründen"        | „Wir helfen dir beim Aufbau"        |
+| b     | „Erst mal einfach dabei sein"        | „Ohne Gruppe vor Ort"               |
+| c     | „Dem nächstgelegenen BDAS beitreten" | „Auch wenn es etwas weiter weg ist" |
 
 ### 6.4 Gruppenwahl
 
@@ -209,14 +209,14 @@ Absicht.
 Die Überschrift beschreibt den Zugang, darunter stehen wie bisher Vorteile und Entscheider, darüber
 der Knopf die Frage.
 
-| Ausgang               | Überschrift                                                                             |
-| --------------------- | ---------------------------------------------------------------------------------------- |
-| `student`             | „Du wärst als Student\*in in {stadt} auf der Plattform angemeldet."                      |
-| `student_gruendung`   | „Du wärst als Student\*in in {stadt} angemeldet, mit uns an deiner Seite für die Gründung."|
-| `student_ohne_gruppe` | „Du wärst als Student\*in in {stadt} angemeldet, auch ohne Gruppe vor Ort."              |
-| `alumnus`             | „Du wärst als Alumna oder Alumnus angemeldet."                                           |
-| `foerderer`           | „Du wärst als Förderer\*in angemeldet."                                                  |
-| `bdaj`                | „Du wärst als BDAJ-Mitglied angemeldet."                                                 |
+| Ausgang               | Überschrift                                                                                 |
+| --------------------- | ------------------------------------------------------------------------------------------- |
+| `student`             | „Du wärst als Student\*in in {stadt} auf der Plattform angemeldet."                         |
+| `student_gruendung`   | „Du wärst als Student\*in in {stadt} angemeldet, mit uns an deiner Seite für die Gründung." |
+| `student_ohne_gruppe` | „Du wärst als Student\*in in {stadt} angemeldet, auch ohne Gruppe vor Ort."                 |
+| `alumnus`             | „Du wärst als Alumna oder Alumnus angemeldet."                                              |
+| `foerderer`           | „Du wärst als Förderer\*in angemeldet."                                                     |
+| `bdaj`                | „Du wärst als BDAJ-Mitglied angemeldet."                                                    |
 
 Vorteile für `student_gruendung`:
 
@@ -229,7 +229,7 @@ Vorteile für `student_ohne_gruppe`: wie heute, ohne die Gründungszeile.
 Unter dem Entscheider-Kasten:
 
 > Passt das so?
-> \[ Passt so, Konto anlegen ]  \[ Etwas ändern ]
+> \[ Passt so, Konto anlegen ] \[ Etwas ändern ]
 
 ### 6.6 Dauer und Entscheider
 
@@ -249,11 +249,11 @@ Entscheider am Zeilenanfang und ist richtig großgeschrieben.
 > Die meisten kommen über jemanden, den sie kennen. Nenn uns diese Person, dann weiß der Vorstand
 > gleich, wo du herkommst.
 
-| Feld                    | Text                                                            |
-| ----------------------- | --------------------------------------------------------------- |
-| Auswahl                 | „Wie bist du zu uns gekommen?" mit Webseite, Instagram, Empfehlung|
-| Zusatz bei Empfehlung   | „Wer hat dich empfohlen?"                                       |
-| Freitext                | „Magst du kurz erzählen, warum du dabei sein willst? (optional)" |
+| Feld                  | Text                                                               |
+| --------------------- | ------------------------------------------------------------------ |
+| Auswahl               | „Wie bist du zu uns gekommen?" mit Webseite, Instagram, Empfehlung |
+| Zusatz bei Empfehlung | „Wer hat dich empfohlen?"                                          |
+| Freitext              | „Magst du kurz erzählen, warum du dabei sein willst? (optional)"   |
 
 Überschrift und Feldbeschriftung sind damit nicht mehr dieselbe Frage.
 
@@ -299,19 +299,19 @@ mitgezählt würden.
 
 ## 10. Tests
 
-| Ebene       | Was                                                                                              |
-| ----------- | ------------------------------------------------------------------------------------------------ |
-| Modul       | Flow-Regeln der neuen Abzweigung, `placeOf` bevorzugt die Gruppe, Entfernungssortierung, `validate-flow` |
-| Modul       | `acceptWithoutGroup` mit und ohne Rolle, Ablehnung bei gesetzter Hauptgruppe                      |
-| App         | `poolKindLabel` für die neuen Ausgänge, Interaktionstests für Absicht und Gruppenwahl             |
-| E2E         | Studentin ohne Gruppe, Absicht Gründung, landet im Pool; Studentin wählt Gruppe in der Nähe, Antrag liegt dort |
-| E2E         | Bestätigungslink meldet an und landet auf „Deine Angaben"                                         |
+| Ebene | Was                                                                                                            |
+| ----- | -------------------------------------------------------------------------------------------------------------- |
+| Modul | Flow-Regeln der neuen Abzweigung, `placeOf` bevorzugt die Gruppe, Entfernungssortierung, `validate-flow`       |
+| Modul | `acceptWithoutGroup` mit und ohne Rolle, Ablehnung bei gesetzter Hauptgruppe                                   |
+| App   | `poolKindLabel` für die neuen Ausgänge, Interaktionstests für Absicht und Gruppenwahl                          |
+| E2E   | Studentin ohne Gruppe, Absicht Gründung, landet im Pool; Studentin wählt Gruppe in der Nähe, Antrag liegt dort |
+| E2E   | Bestätigungslink meldet an und landet auf „Deine Angaben"                                                      |
 
 Die E2E-Läufe gehören in die bestehende `onboarding`-Projektgruppe auf Port 3001.
 
 ## 11. Schnitt
 
-| PR  | Inhalt                                                                                  | ADR  |
+| PR  | Inhalt                                                                                    | ADR  |
 | --- | ----------------------------------------------------------------------------------------- | ---- |
 | A   | Flow, Absicht, Gruppenwahl, Ausgänge, `acceptWithoutGroup`, Pool-Seite, Tests             | 0050 |
 | B   | Texte: Ergebnis, Dauer, Fertig-Seite, Herkunft, BDAJ-Wording, Gedankenstriche im Einstieg | 0052 |

@@ -217,7 +217,7 @@ Expected: FAIL, TypeScript kennt `group_choice` nicht.
 `modules/onboarding/src/validate-flow.ts`, in `questionTexts` vor dem Schluss-`return base`:
 
 ```ts
-  if (q.kind === "group_choice") return base;
+if (q.kind === "group_choice") return base;
 ```
 
 und in `validateFlow` die `has_group`-Prüfung weiten, damit auch eine Gruppenwahl geprüft werden darf:
@@ -797,10 +797,16 @@ In `apps/web/app/(board)/federal/pool/kind-label.test.ts`:
 ```ts
 it("benennt die Ausgänge ohne Gruppe", () => {
   expect(
-    poolKindLabel({ status: "pending", intent: { outcome: "student_gruendung", status: "abgeschickt" } }),
+    poolKindLabel({
+      status: "pending",
+      intent: { outcome: "student_gruendung", status: "abgeschickt" },
+    }),
   ).toBe("Möchte eine Gruppe gründen");
   expect(
-    poolKindLabel({ status: "pending", intent: { outcome: "student_ohne_gruppe", status: "abgeschickt" } }),
+    poolKindLabel({
+      status: "pending",
+      intent: { outcome: "student_ohne_gruppe", status: "abgeschickt" },
+    }),
   ).toBe("Bewirbt sich ohne Gruppe");
   expect(
     poolKindLabel({ status: "pending", intent: { outcome: "alumnus", status: "abgeschickt" } }),
@@ -818,12 +824,12 @@ Expected: FAIL, die ersten beiden Fälle liefern „Bewerber:in".
 `kind-label.ts`:
 
 ```ts
-  if (input.status === "active") return "Mitglied ohne Gruppe";
-  if (input.intent?.status === "details_offen") return "Angaben offen";
-  if (input.intent?.outcome === "student_gruendung") return "Möchte eine Gruppe gründen";
-  if (input.intent?.outcome === "student_ohne_gruppe") return "Bewirbt sich ohne Gruppe";
-  if (input.intent?.outcome === "alumnus") return "Bewirbt sich als Alumna oder Alumnus";
-  return "Bewerber:in";
+if (input.status === "active") return "Mitglied ohne Gruppe";
+if (input.intent?.status === "details_offen") return "Angaben offen";
+if (input.intent?.outcome === "student_gruendung") return "Möchte eine Gruppe gründen";
+if (input.intent?.outcome === "student_ohne_gruppe") return "Bewirbt sich ohne Gruppe";
+if (input.intent?.outcome === "alumnus") return "Bewirbt sich als Alumna oder Alumnus";
+return "Bewerber:in";
 ```
 
 `actions.ts`, die Aktion ersetzen (Importe `acceptWithoutGroup` aus `@bdas/members` und `getProfile` aus `@bdas/profile` ergänzen):
@@ -862,19 +868,19 @@ export async function acceptWithoutGroupAction(userId: string): Promise<AcceptRe
 `PoolTable.tsx`: Prop `onAcceptAlumnus` in `onAccept` umbenennen, Funktion `acceptAlumnus` in `accept`, und die Texte:
 
 ```tsx
-      !window.confirm(
-        `${row.name} ohne Gruppe aufnehmen? Die Aufnahme lässt sich nicht rückgängig machen.`,
-      )
+!window.confirm(
+  `${row.name} ohne Gruppe aufnehmen? Die Aufnahme lässt sich nicht rückgängig machen.`,
+);
 ```
 
 ```tsx
-      setNotice(res.ok ? `${row.name} ist aufgenommen.` : res.error);
+setNotice(res.ok ? `${row.name} ist aufgenommen.` : res.error);
 ```
 
 ```tsx
-                    <Button variant="ghost" size="sm" disabled={busy} onClick={() => accept(r)}>
-                      Ohne Gruppe aufnehmen
-                    </Button>
+<Button variant="ghost" size="sm" disabled={busy} onClick={() => accept(r)}>
+  Ohne Gruppe aufnehmen
+</Button>
 ```
 
 `page.tsx`: Import auf `acceptWithoutGroupAction` umstellen und `onAccept={acceptWithoutGroupAction}` übergeben.
@@ -931,7 +937,9 @@ test("Studentin ohne Gruppe vor Ort: Gründung landet ohne Gruppenantrag im Pool
   await page.getByLabel("Passwort", { exact: true }).fill(PASSWORD);
   await page.locator("#consent").check();
   await page.getByRole("button", { name: "Konto erstellen" }).click();
-  await expect(page.getByRole("heading", { name: /Wir haben dir eine Mail geschickt/ })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: /Wir haben dir eine Mail geschickt/ }),
+  ).toBeVisible();
 
   await verify(page, email);
   await login(page, email, undefined, { expect: "mitmachen" });
@@ -1119,7 +1127,13 @@ it("kommt ohne lange Gedankenstriche aus", () => {
 });
 
 it("verspricht dem Bundesvorstand zwei Tage", () => {
-  for (const id of ["student_gruendung", "student_ohne_gruppe", "alumnus", "foerderer", "bdaj"] as const) {
+  for (const id of [
+    "student_gruendung",
+    "student_ohne_gruppe",
+    "alumnus",
+    "foerderer",
+    "bdaj",
+  ] as const) {
     expect(FLOW.outcomes[id].duration).toBe("meist innerhalb von zwei Tagen");
   }
   expect(FLOW.outcomes.student.duration).toBe("meist innerhalb weniger Tage");
@@ -1135,17 +1149,17 @@ Expected: FAIL, mehrere Texte enthalten `—`, und die Dauern stehen noch auf zw
 
 In `modules/onboarding/src/flow.ts` ersetzen:
 
-| Stelle                            | Neuer Text                                                                     |
-| --------------------------------- | ------------------------------------------------------------------------------ |
-| `typ.help`                        | „Damit wir dich an die richtige Stelle bringen, dauert keine Minute."          |
-| Karte `bdaj`, `hint`              | „Für alle Mitglieder der BDAJ"                                                 |
-| `aktiv_wo.help`                   | „Gruppe oder Stadt, so finden dich Leute von damals. Du kannst das überspringen." |
-| `student.title`                   | „Du wärst als Student\*in bei {gruppe} angemeldet."                            |
-| `alumnus.title`                   | „Du wärst als Alumna oder Alumnus angemeldet."                                 |
-| `foerderer.title`                 | „Du wärst als Förderer\*in angemeldet."                                        |
-| `bdaj.title`                      | „Du wärst als BDAJ-Mitglied angemeldet."                                       |
-| `duration` bei allen Bundesvorstands-Ausgängen | „meist innerhalb von zwei Tagen"                                  |
-| `student.duration`                | „meist innerhalb weniger Tage"                                                 |
+| Stelle                                         | Neuer Text                                                                        |
+| ---------------------------------------------- | --------------------------------------------------------------------------------- |
+| `typ.help`                                     | „Damit wir dich an die richtige Stelle bringen, dauert keine Minute."             |
+| Karte `bdaj`, `hint`                           | „Für alle Mitglieder der BDAJ"                                                    |
+| `aktiv_wo.help`                                | „Gruppe oder Stadt, so finden dich Leute von damals. Du kannst das überspringen." |
+| `student.title`                                | „Du wärst als Student\*in bei {gruppe} angemeldet."                               |
+| `alumnus.title`                                | „Du wärst als Alumna oder Alumnus angemeldet."                                    |
+| `foerderer.title`                              | „Du wärst als Förderer\*in angemeldet."                                           |
+| `bdaj.title`                                   | „Du wärst als BDAJ-Mitglied angemeldet."                                          |
+| `duration` bei allen Bundesvorstands-Ausgängen | „meist innerhalb von zwei Tagen"                                                  |
+| `student.duration`                             | „meist innerhalb weniger Tage"                                                    |
 
 Der Titel von `student` nennt die Gruppe statt der Stadt: nach einem Beitritt zu einer Gruppe
 anderswo wäre „in {stadt}" die Stadt der Gruppe, nicht der Studienort. Die übrigen Titel für
@@ -1302,7 +1316,7 @@ export function waitingSentence(outcome: Outcome): string {
 In `page.tsx` den Absatz ersetzen:
 
 ```tsx
-            <p className="text-bdas-ink-body">{waitingSentence(outcome)}</p>
+<p className="text-bdas-ink-body">{waitingSentence(outcome)}</p>
 ```
 
 - [ ] **Step 4: Tests laufen lassen**
@@ -1414,14 +1428,14 @@ Expected: FAIL, „Erst der Bereich, dann das Fach — so finden dich …" und �
 
 - [ ] **Step 3: Texte setzen**
 
-| Datei                    | Alt                                                        | Neu                                                        |
-| ------------------------ | ---------------------------------------------------------- | ---------------------------------------------------------- |
-| `details.ts` Studienfach | „Erst der Bereich, dann das Fach — so finden dich …"       | „Erst der Bereich, dann das Fach, so finden dich …"        |
-| `details.ts` Foto        | „Freiwillig — so erkennt dich dein Vorstand …"             | „Freiwillig. So erkennt dich dein Vorstand …"              |
-| `MailGesendet.tsx`       | „… mit ein paar Angaben weiter — auf jedem Gerät."         | „… mit ein paar Angaben weiter, auf jedem Gerät."          |
-| `AngabenWizard.tsx`      | „Willkommen zurück, {Vorname} — fast geschafft."           | „Willkommen zurück, {Vorname}, fast geschafft."            |
-| `KontoScreen.tsx`        | „Fast geschafft — dein Konto"                              | „Fast geschafft, dein Konto"                               |
-| `angaben/page.tsx`       | Hinweis zur verschwundenen Gruppe                          | unverändert, enthält keinen langen Gedankenstrich          |
+| Datei                    | Alt                                                  | Neu                                                 |
+| ------------------------ | ---------------------------------------------------- | --------------------------------------------------- |
+| `details.ts` Studienfach | „Erst der Bereich, dann das Fach — so finden dich …" | „Erst der Bereich, dann das Fach, so finden dich …" |
+| `details.ts` Foto        | „Freiwillig — so erkennt dich dein Vorstand …"       | „Freiwillig. So erkennt dich dein Vorstand …"       |
+| `MailGesendet.tsx`       | „… mit ein paar Angaben weiter — auf jedem Gerät."   | „… mit ein paar Angaben weiter, auf jedem Gerät."   |
+| `AngabenWizard.tsx`      | „Willkommen zurück, {Vorname} — fast geschafft."     | „Willkommen zurück, {Vorname}, fast geschafft."     |
+| `KontoScreen.tsx`        | „Fast geschafft — dein Konto"                        | „Fast geschafft, dein Konto"                        |
+| `angaben/page.tsx`       | Hinweis zur verschwundenen Gruppe                    | unverändert, enthält keinen langen Gedankenstrich   |
 
 Die E2E-Erwartung „Willkommen zurück, Lea — fast geschafft." in `e2e/onboarding-angaben.e2e.ts` mit umstellen.
 
@@ -1572,25 +1586,25 @@ export async function verifyEmail(
 Im `alreadyVerified`-Zweig `sessionToken: null` ergänzen. Nach dem Veröffentlichen des Ereignisses:
 
 ```ts
-  const session = await createSession(db, {
-    userId: row.user.id,
-    ip: ctx?.ip ?? null,
-    ...(ctx?.userAgent !== undefined ? { userAgent: ctx.userAgent } : {}),
-  });
-  const roles: Role[] = isFederalBoardEmail(row.user.emailNormalized) ? ["federal_board"] : [];
-  const sessionToken = await issueToken({
-    userId: row.user.id,
-    email: row.user.emailNormalized,
-    roles,
-    sessionId: session.id,
-  });
+const session = await createSession(db, {
+  userId: row.user.id,
+  ip: ctx?.ip ?? null,
+  ...(ctx?.userAgent !== undefined ? { userAgent: ctx.userAgent } : {}),
+});
+const roles: Role[] = isFederalBoardEmail(row.user.emailNormalized) ? ["federal_board"] : [];
+const sessionToken = await issueToken({
+  userId: row.user.id,
+  email: row.user.emailNormalized,
+  roles,
+  sessionId: session.id,
+});
 
-  return {
-    userId: row.user.id,
-    email: row.user.emailNormalized,
-    alreadyVerified: false,
-    sessionToken,
-  };
+return {
+  userId: row.user.id,
+  email: row.user.emailNormalized,
+  alreadyVerified: false,
+  sessionToken,
+};
 ```
 
 Den Import von `isFederalBoardEmail` an den Pfad anpassen, den `services/login.ts` benutzt.
@@ -1655,32 +1669,32 @@ Expected: FAIL, die Seite landet auf `/anmelden`.
 `apps/web/app/verifizieren/[token]/page.tsx`, den Block nach `verifyEmail` ersetzen:
 
 ```tsx
-  const h = headers();
-  const ip = h.get("x-forwarded-for")?.split(",")[0]?.trim() ?? h.get("x-real-ip") ?? "0.0.0.0";
-  const userAgent = h.get("user-agent") ?? undefined;
+const h = headers();
+const ip = h.get("x-forwarded-for")?.split(",")[0]?.trim() ?? h.get("x-real-ip") ?? "0.0.0.0";
+const userAgent = h.get("user-agent") ?? undefined;
 
-  let result: VerifyResult | null = null;
-  let error: string | null = null;
-  try {
-    result = await verifyEmail(getDb(), params.token, {
-      ip,
-      ...(userAgent !== undefined ? { userAgent } : {}),
-    });
-  } catch (err) {
-    error = isAppError(err) ? err.message : "Unbekannter Fehler.";
-  }
+let result: VerifyResult | null = null;
+let error: string | null = null;
+try {
+  result = await verifyEmail(getDb(), params.token, {
+    ip,
+    ...(userAgent !== undefined ? { userAgent } : {}),
+  });
+} catch (err) {
+  error = isAppError(err) ? err.message : "Unbekannter Fehler.";
+}
 
-  if (result && !result.alreadyVerified) {
-    // Der Link ist einmalig und befristet, also darf er anmelden (ADR 0051).
-    // Das Ziel rechnet der Server aus, nichts davon kommt aus der URL.
-    if (result.sessionToken) setSessionCookie(result.sessionToken);
-    if (onboardingEnabled()) {
-      const landing = await resolveOnboardingLanding(getDb(), result.userId);
-      redirect(landing ?? "/account");
-    }
-    if (isFlagOn("profile")) redirect("/profil");
-    redirect("/account");
+if (result && !result.alreadyVerified) {
+  // Der Link ist einmalig und befristet, also darf er anmelden (ADR 0051).
+  // Das Ziel rechnet der Server aus, nichts davon kommt aus der URL.
+  if (result.sessionToken) setSessionCookie(result.sessionToken);
+  if (onboardingEnabled()) {
+    const landing = await resolveOnboardingLanding(getDb(), result.userId);
+    redirect(landing ?? "/account");
   }
+  if (isFlagOn("profile")) redirect("/profil");
+  redirect("/account");
+}
 ```
 
 Importe ergänzen: `headers` aus `next/headers`, `setSessionCookie` aus `../../../lib/auth-cookie`, `resolveOnboardingLanding` aus `../../_onboarding/landing`, Typ `VerifyResult` aus `@bdas/auth`. `buildAnmeldenUrl` und `getJourneyForUser` werden hier nicht mehr gebraucht; die Importe entfernen, falls sie sonst nirgends in der Datei stehen.
@@ -1823,51 +1837,51 @@ In `apps/web/app/profil/PhotoField.tsx` den Inhalt der `DropZone` ersetzen. Der 
 Kreis, das Vorschaubild sitzt darin, darunter stehen die Aktionen:
 
 ```tsx
-      <div className="flex items-center gap-4">
+<div className="flex items-center gap-4">
+  <button
+    type="button"
+    aria-label="Foto auswählen"
+    disabled={busy}
+    onClick={() => inputRef.current?.click()}
+    className={
+      "flex h-32 w-32 shrink-0 items-center justify-center overflow-hidden rounded-full " +
+      "border border-dashed border-bdas-strong bg-bdas-overlay-faint text-bdas-ink-muted " +
+      "transition-colors duration-bdas-quick ease-bdas hover:bg-bdas-surface-hover " +
+      "focus:outline-none focus-visible:ring-2 focus-visible:ring-bdas-red/40"
+    }
+  >
+    {preview ? (
+      <img src={preview} alt="Dein Profilbild" className="h-full w-full object-cover" />
+    ) : (
+      <span className="px-3 text-center text-sm">Foto hierher ziehen oder tippen</span>
+    )}
+  </button>
+  <div className="flex flex-col gap-1 text-sm">
+    {preview || storageKey ? (
+      <>
         <button
           type="button"
-          aria-label="Foto auswählen"
-          disabled={busy}
+          className="text-left text-bdas-red hover:underline"
           onClick={() => inputRef.current?.click()}
-          className={
-            "flex h-32 w-32 shrink-0 items-center justify-center overflow-hidden rounded-full " +
-            "border border-dashed border-bdas-strong bg-bdas-overlay-faint text-bdas-ink-muted " +
-            "transition-colors duration-bdas-quick ease-bdas hover:bg-bdas-surface-hover " +
-            "focus:outline-none focus-visible:ring-2 focus-visible:ring-bdas-red/40"
-          }
         >
-          {preview ? (
-            <img src={preview} alt="Dein Profilbild" className="h-full w-full object-cover" />
-          ) : (
-            <span className="px-3 text-center text-sm">Foto hierher ziehen oder tippen</span>
-          )}
+          Foto ändern
         </button>
-        <div className="flex flex-col gap-1 text-sm">
-          {preview || storageKey ? (
-            <>
-              <button
-                type="button"
-                className="text-left text-bdas-red hover:underline"
-                onClick={() => inputRef.current?.click()}
-              >
-                Foto ändern
-              </button>
-              <button
-                type="button"
-                className="text-left text-bdas-ink-body hover:underline"
-                onClick={() => {
-                  setLocalPreview(null);
-                  onChange("");
-                }}
-              >
-                Entfernen
-              </button>
-            </>
-          ) : (
-            <p className="text-bdas-ink-muted">JPG oder PNG, bis 5 MB.</p>
-          )}
-        </div>
-      </div>
+        <button
+          type="button"
+          className="text-left text-bdas-ink-body hover:underline"
+          onClick={() => {
+            setLocalPreview(null);
+            onChange("");
+          }}
+        >
+          Entfernen
+        </button>
+      </>
+    ) : (
+      <p className="text-bdas-ink-muted">JPG oder PNG, bis 5 MB.</p>
+    )}
+  </div>
+</div>
 ```
 
 Der vorhandene `<input type="file">`, der Fehlertext und der Zuschnitt-Dialog bleiben unverändert
