@@ -26,7 +26,7 @@ function Submit() {
   const { pending } = useFormStatus();
   return (
     <Button type="submit" disabled={pending}>
-      {pending ? "Einen Moment…" : "Passt — weiter"}
+      {pending ? "Einen Moment…" : "Passt so, weiter"}
     </Button>
   );
 }

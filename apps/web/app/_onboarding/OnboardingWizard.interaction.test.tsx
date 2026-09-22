@@ -129,13 +129,26 @@ describe("OnboardingWizard", () => {
     expect(heading()).toBe("Wie dürfen wir dich nennen?");
   });
 
+  it("fragt auf dem Ergebnis nach und bietet beide Wege an", () => {
+    render();
+    click("Ich möchte unterstützen");
+    type("onb-vorname", "Ada");
+    type("onb-nachname", "Muster");
+    submit();
+
+    expect(container.textContent).toContain("Passt das so?");
+    const labels = [...container.querySelectorAll("button")].map((b) => b.textContent);
+    expect(labels).toContain("Passt so, Konto anlegen");
+    expect(labels).toContain("Etwas ändern");
+  });
+
   it("opens the account form from the result", () => {
     render();
     click("Ich möchte unterstützen");
     type("onb-vorname", "Lea");
     type("onb-nachname", "Y");
     submit();
-    click("Passt — Konto anlegen");
+    click("Passt so, Konto anlegen");
     expect(heading()).toBe("Fast geschafft — dein Konto");
     expect(container.querySelector<HTMLInputElement>('input[name="answers"]')?.value).toContain(
       '"typ":"unterstuetzen"',
@@ -156,8 +169,8 @@ describe("OnboardingWizard", () => {
     click("Ich möchte unterstützen");
     expect(container.querySelector("#onb-vorname")).toBeNull();
     expect(heading()).toBe("Du wärst als Förderer*in angemeldet.");
-    expect(container.textContent).not.toContain("Passt — Konto anlegen");
-    expect(container.textContent).toContain("Passt — weiter");
+    expect(container.textContent).not.toContain("Passt so, Konto anlegen");
+    expect(container.textContent).toContain("Passt so, weiter");
   });
 
   it("führt von der Absicht zur Gruppenwahl und wählt eine Gruppe", () => {

@@ -135,7 +135,7 @@ test("an account from the old registration continues after the name", async ({ p
   await page.getByRole("button", { name: /Ich möchte unterstützen/ }).click();
   // Der Name steht fest; die Frage wird übersprungen.
   await expect(page.getByLabel("Vorname")).toHaveCount(0);
-  await page.getByRole("button", { name: "Passt — weiter" }).click();
+  await page.getByRole("button", { name: "Passt so, weiter" }).click();
   await expect(page).toHaveURL(/\/mitmachen\/angaben$/);
 });
 
@@ -172,7 +172,7 @@ test("Studentin ohne Gruppe vor Ort: Gründung landet ohne Gruppenantrag im Pool
   await page.getByRole("button", { name: new RegExp(`Ein BDAS in ${city} gründen`) }).click();
   await expect(page.getByRole("heading", { name: /mit uns an deiner Seite/ })).toBeVisible();
 
-  await page.getByRole("button", { name: "Passt — Konto anlegen" }).click();
+  await page.getByRole("button", { name: "Passt so, Konto anlegen" }).click();
   await page.getByLabel("E-Mail", { exact: true }).fill(email);
   await page.getByLabel("Passwort", { exact: true }).fill(PASSWORD);
   await page.locator("#consent").check();
@@ -216,7 +216,7 @@ test("Studentin ohne Gruppe vor Ort: Beitritt bewirbt sich bei der gewählten Gr
   await page.getByRole("button", { name: /BDAS Fernkoeln/ }).click();
   await expect(page.getByRole("heading", { name: /Du wärst als Student\*in/ })).toBeVisible();
 
-  await page.getByRole("button", { name: "Passt — Konto anlegen" }).click();
+  await page.getByRole("button", { name: "Passt so, Konto anlegen" }).click();
   await page.getByLabel("E-Mail", { exact: true }).fill(email);
   await page.getByLabel("Passwort", { exact: true }).fill(PASSWORD);
   await page.locator("#consent").check();
