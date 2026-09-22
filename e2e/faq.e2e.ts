@@ -19,23 +19,7 @@ import {
   seedGroup,
   uniqueSlug,
 } from "./helpers/db";
-import { registerVerifyLogin } from "./helpers/flows";
-
-/**
- * Ends the session so the next `registerVerifyLogin` starts clean.
- *
- * Deliberately not `logout()` from `./helpers/flows`: that helper opens the
- * `md:hidden` hamburger disclosure (`summary[aria-label="Menü öffnen"]`) to
- * reach the header's "Abmelden", so it only works at the suite's default
- * mobile viewport. The specs below run at 1280×900, where the hamburger is
- * not rendered and the account menu is a separate desktop `<details>`
- * dropdown that nothing opens — the click would wait out the timeout.
- * Dropping the session cookie is viewport-independent and is all these specs
- * need; the logout UI itself is covered by auth.e2e.ts.
- */
-async function endSession(page: Page): Promise<void> {
-  await page.context().clearCookies();
-}
+import { endSession, seedSession } from "./helpers/session";
 
 /**
  * Reads the "Offene FAQ-Fragen" badge count from /federal/overview.
@@ -49,9 +33,13 @@ async function readFaqOpenCount(page: Page): Promise<number> {
   return Number(badge.trim());
 }
 
-// Must match BDAS_FEDERAL_BOARD_EMAILS in the CI e2e job (see e2e/board.e2e.ts:
-// federal access comes from the JWT, granted at login when the email matches
-// this env var — there is no per-test DB grant helper for it).
+// Federal access comes from the JWT: `login()` puts the role in the token when
+// the address is in BDAS_FEDERAL_BOARD_EMAILS, and there is no DB grant to seed
+// instead. The seeded sessions below put it there directly (`roles`), so the
+// address itself no longer has to match that env var — it stays fixed because
+// the specs delete and recreate one well-known board account. That the env →
+// token derivation still works is covered by onboarding-einstieg.e2e.ts, which
+// signs the board in for real.
 const FEDERAL_EMAIL = "federal@e2e.bdas.test";
 
 test("a guest visiting /faq is redirected to login", async ({ page }) => {
@@ -63,7 +51,7 @@ test("a guest visiting /faq is redirected to login", async ({ page }) => {
 test("a signed-in member opens the FAQ, role section visible and collapsed", async ({ page }) => {
   const email = "faq-member@e2e.bdas.test";
   await deleteUserByEmail(email);
-  await registerVerifyLogin(page, { email, firstName: "Faq", lastName: "Mitglied" });
+  await seedSession(page, { email, firstName: "Faq", lastName: "Mitglied" });
 
   await page.goto("/faq");
 
@@ -89,7 +77,7 @@ test.describe("docs layout (desktop)", () => {
   test("a signed-in member sees the docs layout and searches", async ({ page }) => {
     const email = "faq-suche@e2e.bdas.test";
     await deleteUserByEmail(email);
-    await registerVerifyLogin(page, { email, firstName: "Faq", lastName: "Sucher" });
+    await seedSession(page, { email, firstName: "Faq", lastName: "Sucher" });
 
     await page.goto("/faq");
     await expect(page.getByRole("heading", { level: 1, name: /FAQ & Hilfe/ })).toBeVisible();
@@ -108,7 +96,7 @@ test.describe("Board-Verwaltung /federal/faq", () => {
   test("a plain member cannot reach /federal/faq", async ({ page }) => {
     const email = "faq-plain@e2e.bdas.test";
     await deleteUserByEmail(email);
-    await registerVerifyLogin(page, { email, firstName: "Faq", lastName: "Plain" });
+    await seedSession(page, { email, firstName: "Faq", lastName: "Plain" });
 
     await page.goto("/federal/faq");
     await page.waitForURL("**/account**");
@@ -130,7 +118,7 @@ test.describe("Board-Verwaltung /federal/faq", () => {
 
     const email = "faq-local-board@e2e.bdas.test";
     await deleteUserByEmail(email);
-    await registerVerifyLogin(page, { email, firstName: "Faq", lastName: "Lokal" });
+    await seedSession(page, { email, firstName: "Faq", lastName: "Lokal" });
     await grantLocalBoardLead(email, groupId); // takes effect on next request (DB-read grants)
 
     await page.goto("/federal/faq");
@@ -139,13 +127,13 @@ test.describe("Board-Verwaltung /federal/faq", () => {
 
   test("a federal board member creates, publishes and reorders an entry", async ({ page }) => {
     // Idempotent across retries (fixed email in a shared DB) — same pattern as
-    // e2e/board.e2e.ts: federal access comes from the JWT at login, not a
-    // per-test grant helper.
+    // e2e/board.e2e.ts.
     await deleteUserByEmail(FEDERAL_EMAIL);
-    await registerVerifyLogin(page, {
+    await seedSession(page, {
       email: FEDERAL_EMAIL,
       firstName: "Bundes",
       lastName: "Vorstand",
+      roles: ["federal_board"],
     });
 
     await page.goto("/federal/faq");
@@ -179,7 +167,7 @@ test.describe("Board-Verwaltung /federal/faq", () => {
 
     const memberEmail = "faq-board-einreicher@e2e.bdas.test";
     await deleteUserByEmail(memberEmail);
-    await registerVerifyLogin(page, {
+    await seedSession(page, {
       email: memberEmail,
       firstName: "Faq",
       lastName: "Boardfrage",
@@ -193,10 +181,11 @@ test.describe("Board-Verwaltung /federal/faq", () => {
     await endSession(page);
 
     await deleteUserByEmail(FEDERAL_EMAIL);
-    await registerVerifyLogin(page, {
+    await seedSession(page, {
       email: FEDERAL_EMAIL,
       firstName: "Bundes",
       lastName: "Vorstand",
+      roles: ["federal_board"],
     });
     await page.goto("/federal/faq");
     await page.getByRole("tab", { name: /Offene Fragen/ }).click();
@@ -209,7 +198,7 @@ test.describe("Board-Verwaltung /federal/faq", () => {
 
     const memberEmail = "faq-antwort-einreicher@e2e.bdas.test";
     await deleteUserByEmail(memberEmail);
-    await registerVerifyLogin(page, { email: memberEmail, firstName: "Faq", lastName: "Antwort" });
+    await seedSession(page, { email: memberEmail, firstName: "Faq", lastName: "Antwort" });
     await page.goto("/faq");
     await page.getByRole("button", { name: "Frage einreichen" }).first().click();
     await page.getByRole("dialog").getByLabel("Deine Frage").fill(question);
@@ -219,10 +208,11 @@ test.describe("Board-Verwaltung /federal/faq", () => {
     await endSession(page);
 
     await deleteUserByEmail(FEDERAL_EMAIL);
-    await registerVerifyLogin(page, {
+    await seedSession(page, {
       email: FEDERAL_EMAIL,
       firstName: "Bundes",
       lastName: "Vorstand",
+      roles: ["federal_board"],
     });
     await page.goto("/federal/faq");
     await page.getByRole("tab", { name: /Offene Fragen/ }).click();
@@ -256,7 +246,7 @@ test.describe("Board-Verwaltung /federal/faq", () => {
 
     const memberEmail = "faq-fortsetzen-einreicher@e2e.bdas.test";
     await deleteUserByEmail(memberEmail);
-    await registerVerifyLogin(page, { email: memberEmail, firstName: "Faq", lastName: "Fortsetz" });
+    await seedSession(page, { email: memberEmail, firstName: "Faq", lastName: "Fortsetz" });
     await page.goto("/faq");
     await page.getByRole("button", { name: "Frage einreichen" }).first().click();
     await page.getByRole("dialog").getByLabel("Deine Frage").fill(question);
@@ -266,10 +256,11 @@ test.describe("Board-Verwaltung /federal/faq", () => {
     await endSession(page);
 
     await deleteUserByEmail(FEDERAL_EMAIL);
-    await registerVerifyLogin(page, {
+    await seedSession(page, {
       email: FEDERAL_EMAIL,
       firstName: "Bundes",
       lastName: "Vorstand",
+      roles: ["federal_board"],
     });
     await page.goto("/federal/faq");
     await page.getByRole("tab", { name: /Offene Fragen/ }).click();
@@ -313,7 +304,7 @@ test.describe("Board-Verwaltung /federal/faq", () => {
 
     const memberEmail = "faq-verwerf-einreicher@e2e.bdas.test";
     await deleteUserByEmail(memberEmail);
-    await registerVerifyLogin(page, { email: memberEmail, firstName: "Faq", lastName: "Verwerf" });
+    await seedSession(page, { email: memberEmail, firstName: "Faq", lastName: "Verwerf" });
     await page.goto("/faq");
     await page.getByRole("button", { name: "Frage einreichen" }).first().click();
     await page.getByRole("dialog").getByLabel("Deine Frage").fill(question);
@@ -328,10 +319,11 @@ test.describe("Board-Verwaltung /federal/faq", () => {
     await endSession(page);
 
     await deleteUserByEmail(FEDERAL_EMAIL);
-    await registerVerifyLogin(page, {
+    await seedSession(page, {
       email: FEDERAL_EMAIL,
       firstName: "Bundes",
       lastName: "Vorstand",
+      roles: ["federal_board"],
     });
     await page.goto("/federal/faq");
     await page.getByRole("tab", { name: /Offene Fragen/ }).click();
@@ -354,10 +346,11 @@ test.describe("Board-Verwaltung /federal/faq", () => {
     const question = `E2E-Zaehler ${uniqueSlug("z")}?`;
 
     await deleteUserByEmail(FEDERAL_EMAIL);
-    await registerVerifyLogin(page, {
+    await seedSession(page, {
       email: FEDERAL_EMAIL,
       firstName: "Bundes",
       lastName: "Vorstand",
+      roles: ["federal_board"],
     });
     await page.goto("/federal/overview");
     const before = await readFaqOpenCount(page);
@@ -365,7 +358,7 @@ test.describe("Board-Verwaltung /federal/faq", () => {
 
     const memberEmail = "faq-zaehler-einreicher@e2e.bdas.test";
     await deleteUserByEmail(memberEmail);
-    await registerVerifyLogin(page, { email: memberEmail, firstName: "Faq", lastName: "Zaehler" });
+    await seedSession(page, { email: memberEmail, firstName: "Faq", lastName: "Zaehler" });
     await page.goto("/faq");
     await page.getByRole("button", { name: "Frage einreichen" }).first().click();
     await page.getByRole("dialog").getByLabel("Deine Frage").fill(question);
@@ -377,10 +370,11 @@ test.describe("Board-Verwaltung /federal/faq", () => {
     await endSession(page);
 
     await deleteUserByEmail(FEDERAL_EMAIL);
-    await registerVerifyLogin(page, {
+    await seedSession(page, {
       email: FEDERAL_EMAIL,
       firstName: "Bundes",
       lastName: "Vorstand",
+      roles: ["federal_board"],
     });
     await page.goto("/federal/overview");
     await expect(page.getByRole("link", { name: /Offene FAQ-Fragen/ })).toBeVisible();
@@ -395,7 +389,7 @@ test.describe("Einreichungen", () => {
   test("a member submits a question and sees the confirmation", async ({ page }) => {
     const email = "faq-einreicher@e2e.bdas.test";
     await deleteUserByEmail(email);
-    await registerVerifyLogin(page, { email, firstName: "Faq", lastName: "Einreicher" });
+    await seedSession(page, { email, firstName: "Faq", lastName: "Einreicher" });
 
     await page.goto("/faq");
     await page.getByRole("button", { name: "Frage einreichen" }).first().click();
@@ -410,7 +404,7 @@ test.describe("Einreichungen", () => {
   test("no search hit offers the query as a prefilled submission", async ({ page }) => {
     const email = "faq-nohit@e2e.bdas.test";
     await deleteUserByEmail(email);
-    await registerVerifyLogin(page, { email, firstName: "Faq", lastName: "Nohit" });
+    await seedSession(page, { email, firstName: "Faq", lastName: "Nohit" });
 
     await page.goto("/faq");
     await page.getByPlaceholder("Suche").fill("zzzz-gibt-es-nicht-zzzz");
@@ -427,7 +421,7 @@ test.describe("Einreichungen", () => {
   }) => {
     const memberEmail = "faq-voter@e2e.bdas.test";
     await deleteUserByEmail(memberEmail);
-    await registerVerifyLogin(page, { email: memberEmail, firstName: "Faq", lastName: "Wähler" });
+    await seedSession(page, { email: memberEmail, firstName: "Faq", lastName: "Wähler" });
 
     await page.goto("/faq");
     // Entries start collapsed, so open the first one before reaching for its
@@ -471,7 +465,7 @@ test.describe("Kontextuelle Hilfe", () => {
   test("the help route returns only entries the viewer may see", async ({ page }) => {
     const email = "faq-hilfe-api@e2e.bdas.test";
     await deleteUserByEmail(email);
-    await registerVerifyLogin(page, { email, firstName: "Faq", lastName: "Hilfe" });
+    await seedSession(page, { email, firstName: "Faq", lastName: "Hilfe" });
 
     const res = await page.request.get("/api/faq/help?context=dateien");
     expect(res.status()).toBe(200);
@@ -508,7 +502,7 @@ test.describe("Kontextuelle Hilfe", () => {
   test("omitting context returns everything visible with nothing pinned", async ({ page }) => {
     const email = "faq-hilfe-api-nocontext@e2e.bdas.test";
     await deleteUserByEmail(email);
-    await registerVerifyLogin(page, { email, firstName: "Faq", lastName: "Ohnekontext" });
+    await seedSession(page, { email, firstName: "Faq", lastName: "Ohnekontext" });
 
     const res = await page.request.get("/api/faq/help");
     expect(res.status()).toBe(200);
@@ -526,10 +520,11 @@ test.describe("Kontextuelle Hilfe", () => {
     const question = `E2E-Kontexthilfe ${uniqueSlug("k")}?`;
 
     await deleteUserByEmail(FEDERAL_EMAIL);
-    await registerVerifyLogin(page, {
+    await seedSession(page, {
       email: FEDERAL_EMAIL,
       firstName: "Bundes",
       lastName: "Vorstand",
+      roles: ["federal_board"],
     });
 
     await page.goto("/federal/faq");
@@ -565,10 +560,11 @@ test.describe("Kontextuelle Hilfe", () => {
     await deleteFaqEntriesByContext("dateien");
 
     await deleteUserByEmail(FEDERAL_EMAIL);
-    await registerVerifyLogin(page, {
+    await seedSession(page, {
       email: FEDERAL_EMAIL,
       firstName: "Bundes",
       lastName: "Vorstand",
+      roles: ["federal_board"],
     });
 
     await page.goto("/federal/faq");
@@ -601,7 +597,7 @@ test.describe("Kontextuelle Hilfe", () => {
   test("the launcher stays off public pages", async ({ page }) => {
     const email = "faq-hilfe-public@e2e.bdas.test";
     await deleteUserByEmail(email);
-    await registerVerifyLogin(page, { email, firstName: "Faq", lastName: "Public" });
+    await seedSession(page, { email, firstName: "Faq", lastName: "Public" });
 
     await page.goto("/gruppen");
     await expect(page.getByRole("button", { name: "Hilfe öffnen" })).toHaveCount(0);
@@ -625,10 +621,11 @@ test.describe("Kontextuelle Hilfe", () => {
       const question = `E2E-Hinweis ${uniqueSlug("h")}?`;
 
       await deleteUserByEmail(FEDERAL_EMAIL);
-      await registerVerifyLogin(page, {
+      await seedSession(page, {
         email: FEDERAL_EMAIL,
         firstName: "Bundes",
         lastName: "Vorstand",
+        roles: ["federal_board"],
       });
 
       await page.goto("/federal/faq");
@@ -653,10 +650,11 @@ test.describe("Kontextuelle Hilfe", () => {
       await deleteFaqEntriesByContext("dateien");
 
       await deleteUserByEmail(FEDERAL_EMAIL);
-      await registerVerifyLogin(page, {
+      await seedSession(page, {
         email: FEDERAL_EMAIL,
         firstName: "Bundes",
         lastName: "Vorstand",
+        roles: ["federal_board"],
       });
 
       // Created in this order, so position (append-only) makes the first three

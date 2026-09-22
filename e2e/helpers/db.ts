@@ -30,9 +30,23 @@ export function uniqueSlug(prefix: string): string {
   return `${prefix}-${rand()}`;
 }
 
-/** Clear the fixed-window rate-limit counters so register/login flows aren't throttled. */
-export async function resetRateLimits(): Promise<void> {
-  await sql`DELETE FROM auth_rate_limits`;
+/**
+ * Clear the fixed-window rate-limit counters so register/login flows aren't
+ * throttled.
+ *
+ * `keyPrefix` narrows it to one family of counters (`register:`, `login:`,
+ * `reset-request:` — see `modules/auth/src/rate-limit.ts`), mirroring the
+ * module's own test helper. Callers should pass the family they are about to
+ * spend: a whole-table wipe from inside `register()` used to clear everyone
+ * else's counters as a side effect, which is exactly the kind of implicit
+ * coupling that makes a spec pass only because an unrelated one ran first.
+ */
+export async function resetRateLimits(keyPrefix?: string): Promise<void> {
+  if (keyPrefix === undefined) {
+    await sql`DELETE FROM auth_rate_limits`;
+    return;
+  }
+  await sql`DELETE FROM auth_rate_limits WHERE key LIKE ${keyPrefix + "%"}`;
 }
 
 /**
@@ -208,6 +222,66 @@ export async function seedGroupTransferRequest(
     UPDATE member_group_change_requests
     SET from_group_id = ${fromGroupId}, to_group_id = ${toGroupId}
     WHERE member_id = ${memberId} AND status = 'pending'`;
+}
+
+/**
+ * Write a ready-to-use account straight into the database: the `auth_users`
+ * row an e-mail confirmation would have left behind, its credentials, and the
+ * `members` row registration creates alongside them.
+ *
+ * `applicationGroupId` reproduces what picking a group in the profile form
+ * does (ADR 0022): an open request NULL → group, while `primary_group_id`
+ * stays empty until a board decides. `primaryGroupId` is the other half — the
+ * state *after* that decision. Passing both at once is not a state the app can
+ * produce for a pending member, so pass one.
+ *
+ * Used by `helpers/session.ts`; see there for why the specs seed instead of
+ * driving the registration forms.
+ */
+export async function seedAccount(input: {
+  email: string;
+  firstName: string;
+  lastName: string;
+  hashedPassword: string;
+  memberStatus: "pending" | "active";
+  primaryGroupId: string | null;
+  applicationGroupId: string | null;
+}): Promise<{ userId: string; memberId: string }> {
+  const userId = `usr_e2e_${rand()}${rand()}`;
+  const memberId = `mem_e2e_${rand()}${rand()}`;
+  const emailNormalized = input.email.trim().toLowerCase();
+
+  await sql.begin(async (tx) => {
+    await tx`
+      INSERT INTO auth_users (id, email_normalized, email_display, status,
+                              consent_at, consent_version)
+      VALUES (${userId}, ${emailNormalized}, ${input.email.trim()}, 'active',
+              now(), 'e2e-seed')`;
+    await tx`
+      INSERT INTO auth_credentials (user_id, hashed_password, algorithm)
+      VALUES (${userId}, ${input.hashedPassword}, 'argon2id')`;
+    await tx`
+      INSERT INTO members (id, user_id, first_name, last_name, primary_group_id, status)
+      VALUES (${memberId}, ${userId}, ${input.firstName}, ${input.lastName},
+              ${input.primaryGroupId}, ${input.memberStatus})`;
+    if (input.applicationGroupId !== null) {
+      await tx`
+        INSERT INTO member_group_change_requests (id, member_id, from_group_id, to_group_id)
+        VALUES (${"mgc_e2e_" + rand()}, ${memberId}, NULL, ${input.applicationGroupId})`;
+    }
+  });
+
+  return { userId, memberId };
+}
+
+/** A fresh session row for a seeded account. Its id becomes the JWT's `jti`,
+ *  which is what `getCurrentUser` looks up on every request. */
+export async function insertSessionRow(userId: string, maxAgeSeconds: number): Promise<string> {
+  const id = `ses_e2e_${rand()}${rand()}`;
+  await sql`
+    INSERT INTO auth_sessions (id, user_id, expires_at)
+    VALUES (${id}, ${userId}, now() + make_interval(secs => ${maxAgeSeconds}))`;
+  return id;
 }
 
 /** Insert an active role grant for a member directly (bypasses the UI). */

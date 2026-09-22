@@ -6,9 +6,10 @@
 import { expect, test } from "@playwright/test";
 
 import { activateMemberByEmail, deleteUserByEmail, uniqueEmail } from "./helpers/db";
-import { createProfile, logout, registerVerifyLogin } from "./helpers/flows";
+import { endSession, seedSession } from "./helpers/session";
 
-// Must match BDAS_FEDERAL_BOARD_EMAILS in the CI e2e job.
+// Fixed so the account can be deleted and recreated across retries; the
+// `federal_board` role goes straight into the seeded token (see helpers/session.ts).
 const FEDERAL_EMAIL = "federal@e2e.bdas.test";
 
 /** A datetime-local value (YYYY-MM-DDTHH:mm) a week out. */
@@ -21,10 +22,11 @@ test("federal publishes an event; a member registers then deregisters", async ({
 
   // Federal board creates a public event, then publishes it.
   await deleteUserByEmail(FEDERAL_EMAIL);
-  await registerVerifyLogin(page, {
+  await seedSession(page, {
     email: FEDERAL_EMAIL,
     firstName: "Bundes",
     lastName: "Vorstand",
+    roles: ["federal_board"],
   });
 
   await page.goto("/admin/events/neu");
@@ -42,11 +44,9 @@ test("federal publishes an event; a member registers then deregisters", async ({
   await expect(page.getByText("Veröffentlicht")).toBeVisible();
 
   // A member registers for it, then cancels.
-  await page.goto("/account"); // the logout button lives here
-  await logout(page);
+  await endSession(page);
   const memberEmail = uniqueEmail("evt-member");
-  await registerVerifyLogin(page, { email: memberEmail });
-  await createProfile(page, { firstName: "Mit", lastName: "Glied" });
+  await seedSession(page, { email: memberEmail, firstName: "Mit", lastName: "Glied" });
   // Anmelden darf sich erst ein aufgenommener Account (Spec 2026-09-16 §5.4).
   await activateMemberByEmail(memberEmail);
 

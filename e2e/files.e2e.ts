@@ -10,9 +10,10 @@
 import { expect, test } from "@playwright/test";
 
 import { deleteUserByEmail } from "./helpers/db";
-import { createProfile, registerVerifyLogin } from "./helpers/flows";
+import { seedSession } from "./helpers/session";
 
-// Must match BDAS_FEDERAL_BOARD_EMAILS in the e2e environment.
+// Fixed so the account can be deleted and recreated across retries; the
+// `federal_board` role goes straight into the seeded token (see helpers/session.ts).
 const FEDERAL_EMAIL = "federal@e2e.bdas.test";
 
 test.skip(
@@ -24,13 +25,13 @@ test("a federal board member uploads a file into a folder", async ({ page }) => 
   const filename = `e2e-upload-${Date.now().toString().slice(-6)}.txt`;
 
   await deleteUserByEmail(FEDERAL_EMAIL);
-  await registerVerifyLogin(page, {
+  // The member row the files service needs comes with the seeded account.
+  await seedSession(page, {
     email: FEDERAL_EMAIL,
     firstName: "Bundes",
     lastName: "Vorstand",
+    roles: ["federal_board"],
   });
-  // A member profile is required to act in the files service.
-  await createProfile(page, { firstName: "Bundes", lastName: "Vorstand" });
 
   // Open the first folder the federal board can reach.
   await page.goto("/federal/files");

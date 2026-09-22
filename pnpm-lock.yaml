@@ -42,6 +42,12 @@ importers:
 
   .:
     devDependencies:
+      '@bdas/auth':
+        specifier: workspace:*
+        version: link:modules/auth
+      '@node-rs/argon2':
+        specifier: ^2.0.2
+        version: 2.0.2
       '@playwright/test':
         specifier: ^1.49.1
         version: 1.60.0
@@ -69,6 +75,9 @@ importers:
       globals:
         specifier: ^15.11.0
         version: 15.15.0
+      jose:
+        specifier: ^5.9.6
+        version: 5.10.0
       postgres:
         specifier: ^3.4.5
         version: 3.4.9

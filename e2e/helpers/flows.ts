@@ -6,11 +6,9 @@
  */
 import { expect, type Locator, type Page } from "@playwright/test";
 
-import { resetRateLimits } from "./db";
+import { COOKIE_NAME as SESSION_COOKIE } from "@bdas/auth";
 
-/** Muss `COOKIE_NAME` aus `@bdas/auth` entsprechen; hier als Literal, damit die
- *  Playwright-Seite nicht das halbe Auth-Modul (argon2, jose) laden muss. */
-const SESSION_COOKIE = "bdas_session";
+import { resetRateLimits } from "./db";
 
 /** Muss `VERIFY_COOKIE_NAME` aus `apps/web/lib/auth-cookie.ts` entsprechen. */
 const VERIFY_COOKIE = "bdas_verify";
@@ -48,7 +46,12 @@ export async function register(
     newsletter?: boolean;
   },
 ): Promise<void> {
-  await resetRateLimits();
+  // Nur die Registrierungs-Zähler: seit die meisten Specs ihre Sitzung seeden
+  // (helpers/session.ts) räumt dieser Aufruf nicht mehr nebenbei die Tabelle
+  // für alle anderen mit auf, also soll er auch nur sein eigenes Fenster
+  // zurücksetzen. Limit ist 5/Stunde je IP, und lokal wie in CI kommen alle
+  // Tests von derselben.
+  await resetRateLimits("register:");
   await page.goto("/registrieren");
   await page.getByLabel("Vorname").fill(opts.firstName ?? "Test");
   await page.getByLabel("Nachname").fill(opts.lastName ?? "Nutzer");
@@ -112,7 +115,10 @@ export async function login(
     return;
   }
 
-  await resetRateLimits();
+  // `login:ip:` (10/15 min) und `login:email:` (5/15 min) — beide fangen den
+  // Prefix ab. Siehe `register()` oben, warum das nicht mehr die ganze Tabelle
+  // leert.
+  await resetRateLimits("login:");
   await page.goto("/anmelden");
   await page.getByLabel("E-Mail", { exact: true }).fill(email);
   await page.getByLabel("Passwort", { exact: true }).fill(password);
