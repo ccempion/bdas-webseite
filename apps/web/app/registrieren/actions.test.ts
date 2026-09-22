@@ -1,6 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("next/headers", () => ({ headers: () => ({ get: () => undefined }) }));
+const cookieSetMock = vi.fn();
+vi.mock("next/headers", () => ({
+  headers: () => ({ get: () => undefined }),
+  cookies: () => ({ set: (...a: unknown[]) => cookieSetMock(...a) }),
+}));
 const redirectMock = vi.fn((..._args: unknown[]) => {
   throw new Error("REDIRECT");
 });
@@ -12,6 +16,9 @@ vi.mock("@bdas/auth", () => ({
   register: (...a: unknown[]) => registerMock(...a),
   buildVerifyUrl: () => "http://x/verify",
   getNotifier: () => ({ send: vi.fn() }),
+  VERIFICATION_TTL_MS: 24 * 60 * 60 * 1000,
+  COOKIE_NAME: "bdas_session",
+  COOKIE_MAX_AGE_SECONDS: 60 * 60 * 24 * 30,
 }));
 vi.mock("@bdas/members", () => ({
   createProfile: (...a: unknown[]) => createProfileMock(...a),
@@ -49,6 +56,25 @@ describe("registerAction", () => {
   afterEach(() => {
     delete process.env["BDAS_FLAG_AUTH"];
     delete process.env["BDAS_FLAG_NEWSLETTER"];
+  });
+
+  it("merkt sich den Bestätigungstoken im Browser, der sich registriert", async () => {
+    await expect(
+      registerAction(
+        {},
+        form({
+          firstName: "Ada",
+          lastName: "Lovelace",
+          email: "ada@x.de",
+          password: "correcthorse1",
+          consent: "true",
+        }),
+      ),
+    ).rejects.toThrow("REDIRECT");
+    // Nur dieser Browser darf sich vom Bestätigungslink anmelden lassen (ADR 0051).
+    expect(cookieSetMock).toHaveBeenCalledWith(
+      expect.objectContaining({ name: "bdas_verify", value: "tok", httpOnly: true }),
+    );
   });
 
   it("persists first/last name via createProfile after register", async () => {

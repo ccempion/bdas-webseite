@@ -2,7 +2,11 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type * as OnboardingModule from "@bdas/onboarding";
 
-vi.mock("next/headers", () => ({ headers: () => ({ get: () => undefined }) }));
+const cookieSetMock = vi.fn();
+vi.mock("next/headers", () => ({
+  headers: () => ({ get: () => undefined }),
+  cookies: () => ({ set: (...a: unknown[]) => cookieSetMock(...a) }),
+}));
 vi.mock("@bdas/db", () => ({ getDb: () => ({}) }));
 vi.mock("../../lib/auth-bootstrap", () => ({ bootAuth: () => {} }));
 vi.mock("../../lib/newsletter-bootstrap", () => ({ bootNewsletter: () => {} }));
@@ -13,6 +17,9 @@ vi.mock("@bdas/auth", () => ({
   register: (...a: unknown[]) => registerMock(...a),
   buildVerifyUrl: () => "http://x/verify",
   getNotifier: () => ({ send: sendMock }),
+  VERIFICATION_TTL_MS: 24 * 60 * 60 * 1000,
+  COOKIE_NAME: "bdas_session",
+  COOKIE_MAX_AGE_SECONDS: 60 * 60 * 24 * 30,
 }));
 const createProfileMock = vi.fn();
 vi.mock("@bdas/members", () => ({ createProfile: (...a: unknown[]) => createProfileMock(...a) }));
