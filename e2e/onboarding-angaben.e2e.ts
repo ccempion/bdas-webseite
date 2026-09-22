@@ -29,7 +29,6 @@ test("student: confirm, sign in, details, application to the group", async ({ pa
 
   await wizardSignup(page, { email, typ: /Ich studiere gerade/, firstName: "Lea", place: city });
   await verify(page, email);
-  await expect(page).toHaveURL(/\/anmelden/);
   await login(page, email, undefined, { expect: "mitmachen" });
 
   await expect(page).toHaveURL(/\/mitmachen\/angaben$/);
@@ -127,4 +126,16 @@ test("an account from the old registration continues after the name", async ({ p
   await expect(page.getByLabel("Vorname")).toHaveCount(0);
   await page.getByRole("button", { name: "Passt — weiter" }).click();
   await expect(page).toHaveURL(/\/mitmachen\/angaben$/);
+});
+
+test("der Bestätigungslink meldet direkt an", async ({ page }) => {
+  const city = `Direktstadt${Math.random().toString(36).slice(2, 7)}`;
+  await seedGroup({ slug: uniqueSlug("e2e-dir"), name: `BDAS ${city}`, city });
+  const email = uniqueEmail("ang-direkt");
+
+  await wizardSignup(page, { email, typ: /Ich studiere gerade/, firstName: "Deniz", place: city });
+  await verify(page, email);
+
+  await expect(page).toHaveURL(/\/mitmachen\/angaben$/);
+  await expect(page.getByText("Willkommen zurück, Deniz — fast geschafft.")).toBeVisible();
 });

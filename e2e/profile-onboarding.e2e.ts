@@ -49,10 +49,9 @@ test("register → verify → wizard → the local board sees the application", 
 
   await register(page, { email, firstName: "Neue", lastName });
   await verify(page, email);
-  // Verifying happens without a session: the wizard redirect lands on sign-in.
-  await expect(page).toHaveURL(/\/anmelden/);
 
-  // Pending member, profile unfinished → sign-in routes into the wizard.
+  // Die Bestätigung meldet an (ADR 0051); der unfertige Pending-Profilstand
+  // führt direkt in den Wizard.
   await login(page, email, PASSWORD, { expect: "profil" });
   await expect(page.getByRole("heading", { name: "Profil vervollständigen" })).toBeVisible();
 

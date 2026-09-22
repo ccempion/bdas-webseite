@@ -8,6 +8,10 @@ import { expect, type Locator, type Page } from "@playwright/test";
 
 import { latestVerifyToken, resetRateLimits } from "./db";
 
+/** Muss `COOKIE_NAME` aus `@bdas/auth` entsprechen; hier als Literal, damit die
+ *  Playwright-Seite nicht das halbe Auth-Modul (argon2, jose) laden muss. */
+const SESSION_COOKIE = "bdas_session";
+
 /** A password that satisfies the registration policy comfortably. */
 export const PASSWORD = "Korrekt-Pferd-Batterie-9!";
 
@@ -78,6 +82,18 @@ export async function login(
   password: string = PASSWORD,
   opts: { expect?: "home" | "profil" | "mitmachen" | "either" } = {},
 ): Promise<void> {
+  // Seit ADR 0051 meldet der Bestätigungslink schon an. Die Anmeldemaske würde
+  // eine bestehende Sitzung nur auf die Startseite zurückwerfen, also ist hier
+  // nichts mehr zu tun; das Ziel hat die Bestätigung bereits angesteuert.
+  const cookies = await page.context().cookies();
+  if (cookies.some((c) => c.name === SESSION_COOKIE && c.value !== "")) {
+    const want = opts.expect ?? "either";
+    if (want === "profil") await page.waitForURL("**/profil**");
+    if (want === "mitmachen") await page.waitForURL("**/mitmachen**");
+    if (want === "home") await page.waitForURL((url) => url.pathname === "/");
+    return;
+  }
+
   await resetRateLimits();
   await page.goto("/anmelden");
   await page.getByLabel("E-Mail", { exact: true }).fill(email);
