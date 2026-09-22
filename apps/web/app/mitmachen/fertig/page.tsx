@@ -19,6 +19,7 @@ import { buildAnmeldenUrl } from "../../_auth/return-to";
 import { loadCurrentMember } from "../../_dashboard/session";
 import { requireOnboardingFlag } from "../../_onboarding/flag";
 import { Progress } from "../../_onboarding/ui/Progress";
+import { waitingSentence } from "./sentence";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Bewerbung abgeschickt" };
@@ -68,10 +69,7 @@ export default async function FertigPage() {
             <h1 className="text-2xl font-semibold text-bdas-ink">
               Deine Bewerbung liegt jetzt {fillText(outcome.submittedTo, ctx)}.
             </h1>
-            <p className="text-bdas-ink-body">
-              Wir melden uns per Mail, sobald {fillText(outcome.decider, ctx)} entschieden hat —{" "}
-              {outcome.duration}.
-            </p>
+            <p className="text-bdas-ink-body">{waitingSentence(outcome)}</p>
             <ol aria-label="Nächste Schritte" className="flex flex-col gap-2">
               <li className={`${STEP} before:bg-bdas-ink`}>Beworben</li>
               <li className={`${STEP} before:border before:border-bdas-strong`}>
