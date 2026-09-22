@@ -26,14 +26,14 @@ describe("nextStep — every path", () => {
       { kind: "outcome", outcome: "student" },
     ],
     [
-      "student in a city without a group",
+      "student in a city without a group asks for intent",
       { typ: "studiere", name: NAME, studienort: { kind: "city", city: "Passau" } },
-      { kind: "outcome", outcome: "student_ohne_gruppe" },
+      { kind: "question", question: "absicht" },
     ],
     [
-      "student whose group is gone",
+      "student whose group is gone asks for intent",
       { typ: "studiere", name: NAME, studienort: { kind: "group", groupId: "grp_weg" } },
-      { kind: "outcome", outcome: "student_ohne_gruppe" },
+      { kind: "question", question: "absicht" },
     ],
     [
       "alumnus without place",
@@ -92,15 +92,64 @@ describe("walk", () => {
   it("records the visited questions in order", () => {
     const { path, step } = walk(
       FLOW,
-      { typ: "studiere", name: NAME, studienort: { kind: "city", city: "Passau" } },
+      {
+        typ: "studiere",
+        name: NAME,
+        studienort: { kind: "city", city: "Passau" },
+        absicht: "dabei",
+      },
       ENV,
     );
-    expect(path).toEqual(["typ", "name", "studienort"]);
+    expect(path).toEqual(["typ", "name", "studienort", "absicht"]);
     expect(step).toEqual({ kind: "outcome", outcome: "student_ohne_gruppe" });
   });
 
   it("ends the path at the open question", () => {
     expect(walk(FLOW, { typ: "studiert" }, ENV).path).toEqual(["typ", "name"]);
+  });
+});
+
+describe("Abzweigung ohne Gruppe vor Ort", () => {
+  const env = {
+    groups: [{ id: "grp_koeln", name: "BDAS Köln", city: "Köln" }],
+    bdajGroupId: null,
+    netzwerkGroupId: "grp_netz",
+  };
+  const basis = {
+    typ: "studiere",
+    name: { firstName: "Lea", lastName: "Muster" },
+    studienort: { kind: "city" as const, city: "Passau" },
+  };
+
+  it("fragt nach der Absicht, wenn die Stadt keine Gruppe hat", () => {
+    expect(nextStep(FLOW, basis, env)).toEqual({ kind: "question", question: "absicht" });
+  });
+
+  it("führt Gründung zum eigenen Ausgang", () => {
+    expect(nextStep(FLOW, { ...basis, absicht: "gruendung" }, env)).toEqual({
+      kind: "outcome",
+      outcome: "student_gruendung",
+    });
+  });
+
+  it("führt Dabeisein zum Ausgang ohne Gruppe", () => {
+    expect(nextStep(FLOW, { ...basis, absicht: "dabei" }, env)).toEqual({
+      kind: "outcome",
+      outcome: "student_ohne_gruppe",
+    });
+  });
+
+  it("fragt bei Beitritt nach der Gruppe und endet dann als Studentin mit Gruppe", () => {
+    const wahl = { ...basis, absicht: "beitreten" };
+    expect(nextStep(FLOW, wahl, env)).toEqual({ kind: "question", question: "gruppenwahl" });
+    expect(
+      nextStep(FLOW, { ...wahl, gruppenwahl: { kind: "group", groupId: "grp_koeln" } }, env),
+    ).toEqual({ kind: "outcome", outcome: "student" });
+  });
+
+  it("überspringt die Absicht, wenn es die Gruppe vor Ort gibt", () => {
+    const mitGruppe = { ...basis, studienort: { kind: "group" as const, groupId: "grp_koeln" } };
+    expect(nextStep(FLOW, mitGruppe, env)).toEqual({ kind: "outcome", outcome: "student" });
   });
 });
 

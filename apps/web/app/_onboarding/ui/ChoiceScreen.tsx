@@ -37,7 +37,11 @@ export function ChoiceScreen({
         {visibleOptions(question, env).map((o) => (
           <AnswerCard
             key={o.value}
-            option={o}
+            option={{
+              ...o,
+              label: fillText(o.label, ctx),
+              ...(o.hint === undefined ? {} : { hint: fillText(o.hint, ctx) }),
+            }}
             selected={value === o.value}
             onSelect={() => onAnswer(o.value)}
           />

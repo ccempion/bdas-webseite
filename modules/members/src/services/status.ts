@@ -125,17 +125,25 @@ export function scopedGroupIds(actor: Actor): string[] {
 }
 
 /**
- * Aufnahme einer Person ohne Gruppe — der Weg für Ehemalige, die sich direkt
- * auf der Plattform melden (Spec 2026-09-16 §5.2). Nur der Bundesvorstand:
- * ohne Gruppe gibt es keinen lokalen Vorstand, der entscheiden könnte
- * (ADR 0021).
+ * Aufnahme einer Person ohne Gruppe (Spec 2026-09-16 §5.2, korrigiert im
+ * Einstiegs-Design vom 2026-09-22). Nur der Bundesvorstand: ohne Gruppe gibt es
+ * keinen lokalen Vorstand, der entscheiden könnte (ADR 0021).
  *
- * Zwei Schritte, bewusst ohne gemeinsame Transaktion — beide Services öffnen
+ * Welche Rolle die Aufnahme mitbringt, entscheidet der Aufrufer: Ehemalige
+ * bekommen `alumnus`, Studierende ohne Gruppe vor Ort keine. Das Mitglieder-
+ * Modul liest dafür keine Profiltabelle (CLAUDE.md §1 Regel 1).
+ *
+ * Zwei Schritte, bewusst ohne gemeinsame Transaktion, beide Services öffnen
  * ihre eigene. Bricht es dazwischen ab, ist die Person aufgenommen, aber nicht
  * markiert; ein zweiter Aufruf vervollständigt das. Die Reihenfolge ist
  * Pflicht: `grantRole` markiert nur aufgenommene Personen.
  */
-export async function acceptAsAlumnus(db: Db, memberId: string, actor: Actor): Promise<Member> {
+export async function acceptWithoutGroup(
+  db: Db,
+  memberId: string,
+  actor: Actor,
+  role: string | null,
+): Promise<Member> {
   if (!isFederalBoard(actor.grants)) {
     throw new ForbiddenError("Nur der Bundesvorstand nimmt Personen ohne Gruppe auf.");
   }
@@ -143,11 +151,11 @@ export async function acceptAsAlumnus(db: Db, memberId: string, actor: Actor): P
   if (!existing) throw new NotFoundError("Mitglied nicht gefunden.");
   if (existing.primaryGroupId !== null) {
     throw new ValidationError(
-      "Diese Person gehört einer Gruppe an — über die Aufnahme entscheidet deren Vorstand.",
+      "Diese Person gehört einer Gruppe an, über die Aufnahme entscheidet deren Vorstand.",
     );
   }
 
   const member = await transitionStatus(db, memberId, "active", actor);
-  await grantRole(db, memberId, "alumnus", actor, null);
+  if (role !== null) await grantRole(db, memberId, role, actor, null);
   return member;
 }

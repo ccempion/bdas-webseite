@@ -126,8 +126,8 @@ export function validateFlow(flow: Flow): string[] {
             `Regel ab „${r.from}": „${value}" ist keine Antwort auf „${r.when.question}".`,
           );
         }
-      } else if (q.kind !== "place") {
-        errors.push(`Regel ab „${r.from}": has_group braucht eine Orts-Frage.`);
+      } else if (q.kind !== "place" && q.kind !== "group_choice") {
+        errors.push(`Regel ab „${r.from}": has_group braucht eine Orts- oder Gruppenfrage.`);
       }
     }
   }

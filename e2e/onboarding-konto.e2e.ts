@@ -91,10 +91,18 @@ test("student without a group lands with the federal board", async ({ page }) =>
   await page.getByRole("button", { name: /Ich studiere gerade/ }).click();
   await answerName(page, "Mo", "Test");
   await page.getByLabel("Stadt oder Hochschule").fill(city);
-  await expect(page.getByText(`In ${city} gibt es noch keine Gruppe`)).toBeVisible();
+  await expect(page.getByText(`In ${city} finden wir keine Gruppe`)).toBeVisible();
   await page.getByRole("button", { name: "Weiter" }).click();
 
-  await expect(page.getByText(`Du willst in ${city} eine Gruppe gründen?`)).toBeVisible();
+  // Ohne Gruppe vor Ort fragt der Ablauf nach der Absicht (ADR 0050).
+  await expect(
+    page.getByRole("heading", { name: new RegExp(`In ${city} gibt es noch kein BDAS`) }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Erst mal einfach dabei sein" }).click();
+
+  await expect(
+    page.getByRole("heading", { name: new RegExp(`auch ohne Gruppe vor Ort`) }),
+  ).toBeVisible();
   await page.getByRole("button", { name: "Passt — Konto anlegen" }).click();
   await createAccount(page, email);
 

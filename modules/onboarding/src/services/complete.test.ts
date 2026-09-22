@@ -53,16 +53,14 @@ describeIfDb("completeJourney", () => {
       WHERE member_id = 'mem_1' AND status = 'pending'`;
   }
 
+  // student_ohne_gruppe is deliberately not in this table: ADR 0050 gives it
+  // target "keine", so it never opens a group-change request (see the
+  // dedicated test below, mirroring the alumnus case).
   it.each([
     [
       "student",
       { typ: "studiere", name: NAME, studienort: { kind: "group", groupId: "grp_ber" } },
       "grp_ber",
-    ],
-    [
-      "student_ohne_gruppe",
-      { typ: "studiere", name: NAME, studienort: { kind: "city", city: "Passau" } },
-      "grp_netz",
     ],
     ["foerderer", { typ: "unterstuetzen", name: NAME }, "grp_netz"],
     ["bdaj", { typ: "bdaj", name: NAME }, "grp_bdaj"],
@@ -106,6 +104,33 @@ describeIfDb("completeJourney", () => {
     expect(m).toEqual({ status: "pending", primary_group_id: null });
   });
 
+  it("files no request for a student without a group nearby and leaves the member pending without a group", async () => {
+    await start({
+      typ: "studiere",
+      name: NAME,
+      studienort: { kind: "city", city: "Passau" },
+      absicht: "dabei",
+    });
+    const result = await complete();
+
+    expect(await openRequests()).toHaveLength(0);
+    expect(result.journey).toMatchObject({
+      outcome: "student_ohne_gruppe",
+      status: "abgeschickt",
+      applicationRef: null,
+    });
+    expect(seen).toEqual([
+      expect.objectContaining({
+        type: "onboarding.completed",
+        memberId: "mem_1",
+        outcome: "student_ohne_gruppe",
+        entrySource: "newsletter",
+      }),
+    ]);
+    const [m] = await t.client`SELECT status, primary_group_id FROM members WHERE id = 'mem_1'`;
+    expect(m).toEqual({ status: "pending", primary_group_id: null });
+  });
+
   it("is idempotent: a second submit opens no second request and emits nothing", async () => {
     await start({ typ: "studiere", name: NAME, studienort: { kind: "group", groupId: "grp_ber" } });
     const first = await complete();
@@ -127,13 +152,22 @@ describeIfDb("completeJourney", () => {
     expect(result.journey.applicationRef).toBe("mgc_frueher");
   });
 
-  it("falls back to netzwerk when the chosen group was archived meanwhile", async () => {
+  // Previously (flow v1) a group archived between start and complete fell straight
+  // through to student_ohne_gruppe / netzwerk, because has_group failing on
+  // studienort WAS the terminal rule. Since A3, that arm now leads to the
+  // absicht question instead of an outcome, and this journey never answered
+  // it (has_group succeeded when the user actually walked the flow). There is
+  // no UI path back to ask it at this point (completeJourney runs from the
+  // Angaben step, not the wizard) — see task-A3-report.md, "Concern: version
+  // mismatch resume path" for the live-data version of this same gap.
+  it("gets stuck asking for an intent it never asked when the chosen group is archived meanwhile", async () => {
     await start({ typ: "studiere", name: NAME, studienort: { kind: "group", groupId: "grp_ber" } });
     await t.client`UPDATE groups SET status = 'archived' WHERE id = 'grp_ber'`;
 
-    const result = await complete();
-    expect(result.journey.outcome).toBe("student_ohne_gruppe");
-    expect((await openRequests())[0]?.["to_group_id"]).toBe("grp_netz");
+    await expect(complete()).rejects.toThrow(/Fragen/);
+    expect(await openRequests()).toHaveLength(0);
+    const [j] = await t.client`SELECT status FROM onboarding_journeys`;
+    expect(j?.["status"]).toBe("details_offen");
   });
 
   it("waits instead of applying when the bdaj row does not exist", async () => {
@@ -148,14 +182,17 @@ describeIfDb("completeJourney", () => {
   });
 
   it("never files to a group id the server does not list", async () => {
-    // A forged answer naming the affiliate row as the student's own group.
+    // A forged answer naming the affiliate row as the student's own group;
+    // has_group fails (grp_bdaj is not a hochschulgruppe), so the flow asks
+    // for an intent same as any other city without a group.
     await start({
       typ: "studiere",
       name: NAME,
       studienort: { kind: "group", groupId: "grp_bdaj" },
+      absicht: "dabei",
     });
     await complete();
-    expect((await openRequests())[0]?.["to_group_id"]).toBe("grp_netz");
+    expect(await openRequests()).toHaveLength(0);
   });
 
   it("refuses a member that belongs to someone else", async () => {

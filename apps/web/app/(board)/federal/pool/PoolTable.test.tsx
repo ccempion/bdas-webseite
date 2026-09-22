@@ -60,7 +60,7 @@ function render(rows: PoolRow[] = ROWS) {
   act(() =>
     root.render(
       <StrictMode>
-        <PoolTable rows={rows} onDelete={onDelete} onAcceptAlumnus={onAccept} />
+        <PoolTable rows={rows} onDelete={onDelete} onAccept={onAccept} />
       </StrictMode>,
     ),
   );
@@ -117,24 +117,24 @@ describe("PoolTable", () => {
 
   it("bietet die Alumnus-Aufnahme nur auf den dafür markierten Zeilen an", () => {
     render();
-    expect(() => button("Als Alumnus aufnehmen", rowOf("A. Profil"))).not.toThrow();
-    expect(() => button("Als Alumnus aufnehmen", rowOf("B. Bot"))).toThrow();
-    expect(() => button("Als Alumnus aufnehmen", rowOf("C. Mitglied"))).toThrow();
+    expect(() => button("Ohne Gruppe aufnehmen", rowOf("A. Profil"))).not.toThrow();
+    expect(() => button("Ohne Gruppe aufnehmen", rowOf("B. Bot"))).toThrow();
+    expect(() => button("Ohne Gruppe aufnehmen", rowOf("C. Mitglied"))).toThrow();
   });
 
   it("nimmt nach Bestätigung per Account-ID auf und meldet es", async () => {
     const confirm = vi.spyOn(window, "confirm").mockReturnValue(true);
     render();
-    await click(button("Als Alumnus aufnehmen", rowOf("A. Profil")));
+    await click(button("Ohne Gruppe aufnehmen", rowOf("A. Profil")));
     expect(confirm).toHaveBeenCalledTimes(1);
     expect(onAccept).toHaveBeenCalledWith("usr_m1");
-    expect(status()).toBe("A. Profil ist als Alumnus aufgenommen.");
+    expect(status()).toBe("A. Profil ist aufgenommen.");
   });
 
   it("nimmt ohne Bestätigung niemanden auf", async () => {
     vi.spyOn(window, "confirm").mockReturnValue(false);
     render();
-    await click(button("Als Alumnus aufnehmen", rowOf("A. Profil")));
+    await click(button("Ohne Gruppe aufnehmen", rowOf("A. Profil")));
     expect(onAccept).not.toHaveBeenCalled();
   });
 
@@ -142,7 +142,7 @@ describe("PoolTable", () => {
     vi.spyOn(window, "confirm").mockReturnValue(true);
     onAccept.mockResolvedValueOnce({ ok: false, error: "Keine Berechtigung." });
     render();
-    await click(button("Als Alumnus aufnehmen", rowOf("A. Profil")));
+    await click(button("Ohne Gruppe aufnehmen", rowOf("A. Profil")));
     expect(status()).toBe("Keine Berechtigung.");
   });
 

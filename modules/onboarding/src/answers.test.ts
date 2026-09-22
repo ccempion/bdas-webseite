@@ -16,7 +16,7 @@ const skippablePlace: Question = { ...place, skippable: true };
 const FLOW: Flow = {
   version: 1,
   start: "c",
-  questions: { c: choice, n: name, p: place },
+  questions: { c: choice, n: name, p: place, studienort: place, gruppenwahl: place },
   rules: [],
   outcomes: {} as Flow["outcomes"],
 };
@@ -103,5 +103,71 @@ describe("placeOf", () => {
 
   it("is empty without a place answer", () => {
     expect(placeOf(FLOW, { c: "a" }, ENV)).toEqual({ groupId: null, groupName: null, city: null });
+  });
+});
+
+describe("sanitizeAnswers für group_choice", () => {
+  const flow = {
+    version: 1,
+    start: "wahl",
+    questions: {
+      wahl: { kind: "group_choice" as const, title: "Welche Gruppe?", help: "Such dir eine aus." },
+    },
+    rules: [{ from: "wahl", to: { outcome: "student" as const } }],
+    outcomes: FLOW.outcomes,
+  };
+
+  it("nimmt eine Gruppen-Antwort an", () => {
+    expect(sanitizeAnswers(flow, { wahl: { kind: "group", groupId: "grp_1" } })).toEqual({
+      wahl: { kind: "group", groupId: "grp_1" },
+    });
+  });
+
+  it("verwirft Stadt und Überspringen", () => {
+    expect(Object.keys(sanitizeAnswers(flow, { wahl: { kind: "city", city: "Köln" } }))).toEqual(
+      [],
+    );
+    expect(Object.keys(sanitizeAnswers(flow, { wahl: { kind: "skipped" } }))).toEqual([]);
+  });
+});
+
+describe("placeOf mit mehreren Orts-Antworten", () => {
+  const env = {
+    groups: [{ id: "grp_koeln", name: "BDAS Köln", city: "Köln" }],
+    bdajGroupId: null,
+    netzwerkGroupId: null,
+  };
+
+  it("nimmt die gewählte Gruppe, nicht die vorher getippte Stadt", () => {
+    const answers = {
+      studienort: { kind: "city" as const, city: "Passau" },
+      gruppenwahl: { kind: "group" as const, groupId: "grp_koeln" },
+    };
+    expect(placeOf(FLOW, answers, env)).toEqual({
+      groupId: "grp_koeln",
+      groupName: "BDAS Köln",
+      city: "Köln",
+    });
+  });
+
+  it("bleibt bei der Stadt, wenn keine Gruppe gewählt wurde", () => {
+    const answers = { studienort: { kind: "city" as const, city: "Passau" } };
+    expect(placeOf(FLOW, answers, env)).toEqual({
+      groupId: null,
+      groupName: null,
+      city: "Passau",
+    });
+  });
+
+  it("ignoriert eine Gruppen-ID, die der Server nicht kennt", () => {
+    const answers = {
+      studienort: { kind: "city" as const, city: "Passau" },
+      gruppenwahl: { kind: "group" as const, groupId: "grp_erfunden" },
+    };
+    expect(placeOf(FLOW, answers, env)).toEqual({
+      groupId: null,
+      groupName: null,
+      city: "Passau",
+    });
   });
 });

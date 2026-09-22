@@ -11,7 +11,7 @@ import { getProfile } from "@bdas/profile";
 
 import { requireFederalScope } from "../../../_dashboard/session";
 import { onboardingEnabled } from "../../../_onboarding/flag";
-import { acceptAsAlumnusAction, deleteApplicantAction } from "./actions";
+import { acceptWithoutGroupAction, deleteApplicantAction } from "./actions";
 import { isDeletableApplicant } from "./deletable";
 import { poolKindLabel } from "./kind-label";
 import { PoolTable, type PoolRow } from "./PoolTable";
@@ -81,7 +81,7 @@ export default async function PoolPage() {
         <PoolTable
           rows={rows}
           onDelete={deleteApplicantAction}
-          onAcceptAlumnus={acceptAsAlumnusAction}
+          onAccept={acceptWithoutGroupAction}
         />
       </section>
 
