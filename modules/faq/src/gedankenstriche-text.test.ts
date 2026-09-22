@@ -102,9 +102,7 @@ describe.skipIf(!reachable)("content migration 0004 (Gedankenstriche, PR E)", ()
 
     const body = await bodyText(t, "overview");
     expect(body).not.toContain("—");
-    expect(body).toContain(
-      "Veranstaltungen, dazu einen Verlaufs-Chart der Anmeldungen.",
-    );
+    expect(body).toContain("Veranstaltungen, dazu einen Verlaufs-Chart der Anmeldungen.");
   });
 
   it("ersetzt den geklammerten Nebensatz (doppelter Gedankenstrich -> Klammern)", async () => {

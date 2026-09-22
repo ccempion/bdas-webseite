@@ -596,7 +596,9 @@ export const puckConfig: Config<Blocks> = {
           className={`rounded-bdas border-l-4 border-bdas-red bg-bdas-overlay-hover px-4 py-3 ${ausrichtungText(ausrichtung)}`}
         >
           <p className="whitespace-pre-line text-bdas-ink-body">{text}</p>
-          {quelle ? <footer className="mt-2 text-sm text-bdas-ink-muted">Quelle: {quelle}</footer> : null}
+          {quelle ? (
+            <footer className="mt-2 text-sm text-bdas-ink-muted">Quelle: {quelle}</footer>
+          ) : null}
         </blockquote>
       ),
     },
