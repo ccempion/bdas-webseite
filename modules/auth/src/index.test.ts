@@ -323,4 +323,33 @@ describeIfDb("auth integration", () => {
     const me = await getCurrentUser(t.db, lr.token);
     expect(me?.roles).toContain("federal_board");
   });
+
+  it("legt bei der ersten Bestätigung eine Sitzung an, beim zweiten Klick nicht", async () => {
+    const reg = await register(
+      t.db,
+      { email: "direkt@example.de", password: "Verysecret!23", consent: true },
+      { ip: "1.1.1.1", publicSiteUrl: "https://bdas.de" },
+    );
+
+    const first = await verifyEmail(t.db, reg.verifyToken, { ip: "1.1.1.1" });
+    expect(first.alreadyVerified).toBe(false);
+    expect(first.sessionToken).toBeTruthy();
+
+    const again = await verifyEmail(t.db, reg.verifyToken, { ip: "1.1.1.1" });
+    expect(again.alreadyVerified).toBe(true);
+    expect(again.sessionToken).toBeNull();
+  });
+
+  it("bleibt ohne Kontext benutzbar", async () => {
+    const reg = await register(
+      t.db,
+      { email: "ohne-kontext@example.de", password: "Verysecret!23", consent: true },
+      { ip: "1.1.1.1", publicSiteUrl: "https://bdas.de" },
+    );
+
+    const result = await verifyEmail(t.db, reg.verifyToken);
+
+    expect(result.alreadyVerified).toBe(false);
+    expect(result.sessionToken).toBeTruthy();
+  });
 });
