@@ -262,7 +262,7 @@ export function registerNotificationSubscribers(db: Db, opts: { siteUrl?: string
     getEventBus().subscribe<RoleGranted>(
       "members.role.granted",
       safe<RoleGranted>(async (e) => {
-        // Die Alumni-Aufnahme läuft über keinen Antrag (acceptAsAlumnus);
+        // Die Alumni-Aufnahme läuft über keinen Antrag (acceptWithoutGroup);
         // die vergebene Rolle ist ihr einziges Ereignis.
         if (e.role === "alumnus") {
           await sendTransactional(db, "member_alumnus_approved", e.memberId, {

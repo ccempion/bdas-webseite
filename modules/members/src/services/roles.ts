@@ -33,7 +33,7 @@ export type Db = PostgresJsDatabase<Record<string, never>>;
  *  - `event_organizer`, `page_editor`, `file_manager`, `blogger` → federal_board OR the group's Lead
  *  - `alumnus`                                                   → federal_board OR the group's Lead
  *    (eine Kennzeichnung, keine Befugnis: der Lead kennt seine Ehemaligen,
- *     der Bundesvorstand vergibt sie ungescoped über `acceptAsAlumnus`)
+ *     der Bundesvorstand vergibt sie ungescoped über `acceptWithoutGroup`)
  *  - everything else                                            → federal_board only
  *    (appointing leads and federal_board stays central).
  * `role` must already be validated to a known Role and `groupId` to its scope.

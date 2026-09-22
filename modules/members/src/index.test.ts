@@ -15,7 +15,7 @@ import { getEventBus, resetEventBus } from "@bdas/events";
 
 import { createProfile, updateProfile } from "./services/profile";
 import { MEMBERS_TEST_MIGRATIONS } from "./test-db";
-import { acceptAsAlumnus, approveMember, transitionStatus } from "./services/status";
+import { acceptWithoutGroup, approveMember, transitionStatus } from "./services/status";
 import { grantRole, revokeRole } from "./services/roles";
 import { getGrants } from "./services/get";
 import { resolveMembership } from "./services/me";
@@ -492,7 +492,7 @@ describeIfDb("members integration", () => {
 
     for (const m of [hs, f, fAl]) await approveMember(t.db, m.id, BOARD);
     await grantRole(t.db, fAl.id, "alumnus", BOARD, null);
-    await acceptAsAlumnus(t.db, al.id, BOARD);
+    await acceptWithoutGroup(t.db, al.id, BOARD, "alumnus");
 
     const counts = await countMembersByStatus(t.db);
     expect(counts.active).toBe(3); // hs, fAl, al — nicht f
@@ -942,25 +942,27 @@ describeIfDb("members integration", () => {
       lastName: "Ehemalig",
     });
 
-    await expect(acceptAsAlumnus(t.db, m.id, PEASANT)).rejects.toMatchObject({
+    await expect(acceptWithoutGroup(t.db, m.id, PEASANT, "alumnus")).rejects.toMatchObject({
       code: "FORBIDDEN",
     });
-    await expect(acceptAsAlumnus(t.db, m.id, leadOf("usr_l", "grp_x"))).rejects.toMatchObject({
+    await expect(
+      acceptWithoutGroup(t.db, m.id, leadOf("usr_l", "grp_x"), "alumnus"),
+    ).rejects.toMatchObject({
       code: "FORBIDDEN",
     });
 
-    const accepted = await acceptAsAlumnus(t.db, m.id, BOARD);
+    const accepted = await acceptWithoutGroup(t.db, m.id, BOARD, "alumnus");
     expect(accepted.status).toBe("active");
     const grants = await getGrants(t.db, m.id);
     expect(grants).toContainEqual(expect.objectContaining({ role: "alumnus", groupId: null }));
     expect((await resolveMembership(t.db, accepted)).isBdasMember).toBe(true);
 
     // Wiederholbar: vervollständigt einen abgebrochenen Lauf, ohne zu doppeln.
-    await acceptAsAlumnus(t.db, m.id, BOARD);
+    await acceptWithoutGroup(t.db, m.id, BOARD, "alumnus");
     expect((await getGrants(t.db, m.id)).filter((g) => g.role === "alumnus")).toHaveLength(1);
   });
 
-  it("acceptAsAlumnus verweigert eine Person mit Gruppe — dort entscheidet deren Vorstand", async () => {
+  it("acceptWithoutGroup verweigert eine Person mit Gruppe, dort entscheidet deren Vorstand", async () => {
     await createGroup("grp_a", "aachen");
     await createUser("usr_bew", "bewerber@example.de");
     const m = await createProfile(t.db, {
@@ -969,12 +971,39 @@ describeIfDb("members integration", () => {
       lastName: "Bewerber",
       primaryGroupId: "grp_a",
     });
-    await expect(acceptAsAlumnus(t.db, m.id, BOARD)).rejects.toMatchObject({
+    await expect(acceptWithoutGroup(t.db, m.id, BOARD, "alumnus")).rejects.toMatchObject({
       code: "VALIDATION",
     });
     const [row] = await t.client<{ status: string }[]>`
       SELECT status FROM members WHERE id = ${m.id}`;
     expect(row?.status).toBe("pending");
+  });
+
+  it("nimmt ohne Rolle auf, wenn keine verlangt wird", async () => {
+    await createUser("usr_ohne_rolle", "ohne-rolle@example.test");
+    const m = await createProfile(t.db, {
+      userId: "usr_ohne_rolle",
+      firstName: "Studentin",
+      lastName: "OhneGruppe",
+    });
+
+    const accepted = await acceptWithoutGroup(t.db, m.id, BOARD, null);
+
+    expect(accepted.status).toBe("active");
+    expect(await getGrants(t.db, m.id)).toEqual([]);
+  });
+
+  it("vergibt die Rolle, wenn eine verlangt wird", async () => {
+    await createUser("usr_mit_rolle", "mit-rolle@example.test");
+    const m = await createProfile(t.db, {
+      userId: "usr_mit_rolle",
+      firstName: "Ehemalige",
+      lastName: "OhneGruppe",
+    });
+
+    await acceptWithoutGroup(t.db, m.id, BOARD, "alumnus");
+
+    expect(await getGrants(t.db, m.id)).toEqual([{ role: "alumnus", groupId: null }]);
   });
 
   it("markiert niemanden als Alumnus, der nicht aufgenommen ist (Spec 2026-09-16 §5.2)", async () => {
