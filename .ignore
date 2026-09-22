@@ -1,0 +1,7 @@
+# ripgrep-only ignore (git tracks these files normally; .gitignore is untouched).
+#
+# docs/archive/ holds abgeschlossene Planungshistorie (z.B. docs/archive/superpowers/) —
+# alte Wegwerf-Pläne und -Specs, die nur zum Nachschlagen dienen und nie ein
+# Suchtreffer-Ziel sein sollen. Neue Unterordner unter docs/archive/ gelten
+# automatisch mit.
+docs/archive/
