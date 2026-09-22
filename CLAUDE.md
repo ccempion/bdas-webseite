@@ -56,6 +56,7 @@ Substitute only with explicit approval and an ADR in `docs/decisions/`.
 - **Tests are not a follow-up.** They ship in the same PR as the code.
 - **`/review` on every PR. `/security-review` on every auth, payments, or files PR.** Phase boundaries get `/ultrareview`.
 - **Decisions go in `docs/decisions/`** as ADRs, not in chat or commit messages.
+- **Executed plans and specs move to `docs/archive/superpowers/`** in the last commit of the PR they describe. Grep the ADRs and module READMEs for the filename first and rewrite any reference to the new path in the same commit — the archive is excluded from search via `.ignore`, so a stale link is the failure mode that matters. `docs/superpowers/` then holds only what is still in flight; anything worth finding again belongs in an ADR.
 - **No cross-module deep imports.** `import { foo } from "@bdas/members/src/internal"` is a CI failure, not a code-review nit.
 - **No mocks of the database** in tests that exercise multi-module flows. Use Docker Postgres with per-test schema reset.
 
