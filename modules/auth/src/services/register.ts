@@ -23,7 +23,7 @@ import type { UserRegistered } from "../events";
 import { hashPassword, passwordSchema, PASSWORD_ALGORITHM } from "../password";
 import { rateLimit } from "../rate-limit";
 import { authCredentials, authEmailVerifications, authUsers } from "../schema";
-import { randomToken } from "../tokens";
+import { hashToken, randomToken } from "../tokens";
 
 export type Db = PostgresJsDatabase<Record<string, never>>;
 
@@ -94,7 +94,7 @@ export async function register(
       algorithm: PASSWORD_ALGORITHM,
     });
     await tx.insert(authEmailVerifications).values({
-      token: verifyToken,
+      tokenHash: hashToken(verifyToken),
       userId,
       expiresAt,
     });

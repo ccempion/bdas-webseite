@@ -31,6 +31,7 @@ import { getUserExport } from "./services/export";
 import { passwordSchema, PASSWORD_MIN_LENGTH } from "./password";
 import { CONSENT_VERSION } from "./consent";
 import { authEmailVerifications } from "./schema";
+import { hashToken } from "./tokens";
 
 describe("password policy", () => {
   it("enforces min length + upper + lower + special, no digit required", () => {
@@ -74,7 +75,7 @@ describeIfDb("auth integration", () => {
 
   beforeEach(async () => {
     t = await createTestDb();
-    for (const file of ["0001_init.sql", "0002_consent.sql"]) {
+    for (const file of ["0001_init.sql", "0002_consent.sql", "0005_verification_token_hash.sql"]) {
       const sql = await fs.readFile(path.join(__dirname, "..", "migrations", file), "utf8");
       await t.client.unsafe(sql);
     }
@@ -299,7 +300,7 @@ describeIfDb("auth integration", () => {
     const remaining = await t.db
       .select()
       .from(authEmailVerifications)
-      .where(eq(authEmailVerifications.token, oldToken));
+      .where(eq(authEmailVerifications.tokenHash, hashToken(oldToken)));
     expect(remaining).toHaveLength(0);
 
     // New token exists and is valid for verification.
@@ -331,25 +332,78 @@ describeIfDb("auth integration", () => {
       { ip: "1.1.1.1", publicSiteUrl: "https://bdas.de" },
     );
 
-    const first = await verifyEmail(t.db, reg.verifyToken, { ip: "1.1.1.1" });
+    const first = await verifyEmail(t.db, reg.verifyToken, {
+      ip: "1.1.1.1",
+      browserToken: reg.verifyToken,
+    });
     expect(first.alreadyVerified).toBe(false);
     expect(first.sessionToken).toBeTruthy();
 
-    const again = await verifyEmail(t.db, reg.verifyToken, { ip: "1.1.1.1" });
+    const again = await verifyEmail(t.db, reg.verifyToken, {
+      ip: "1.1.1.1",
+      browserToken: reg.verifyToken,
+    });
     expect(again.alreadyVerified).toBe(true);
     expect(again.sessionToken).toBeNull();
   });
 
-  it("bleibt ohne Kontext benutzbar", async () => {
+  it("bestätigt ohne Sitzung, wenn der Browser den Token nicht kennt", async () => {
     const reg = await register(
       t.db,
-      { email: "ohne-kontext@example.de", password: "Verysecret!23", consent: true },
+      { email: "fremder-browser@example.de", password: "Verysecret!23", consent: true },
       { ip: "1.1.1.1", publicSiteUrl: "https://bdas.de" },
     );
 
-    const result = await verifyEmail(t.db, reg.verifyToken);
+    // Kein Kontext: die Bestätigung eines weitergegebenen Links.
+    const ohne = await verifyEmail(t.db, reg.verifyToken);
+    expect(ohne.alreadyVerified).toBe(false);
+    expect(ohne.sessionToken).toBeNull();
+
+    // Das Konto ist trotzdem aktiv und kann sich normal anmelden.
+    const lr = await login(
+      t.db,
+      { email: "fremder-browser@example.de", password: "Verysecret!23" },
+      { ip: "1.1.1.1" },
+    );
+    expect(lr.token).toBeTruthy();
+  });
+
+  it("bestätigt ohne Sitzung, wenn der Browser einen anderen Token trägt", async () => {
+    const reg = await register(
+      t.db,
+      { email: "anderer-token@example.de", password: "Verysecret!23", consent: true },
+      { ip: "1.1.1.1", publicSiteUrl: "https://bdas.de" },
+    );
+
+    const result = await verifyEmail(t.db, reg.verifyToken, {
+      ip: "1.1.1.1",
+      browserToken: "ein-anderer-token",
+    });
 
     expect(result.alreadyVerified).toBe(false);
-    expect(result.sessionToken).toBeTruthy();
+    expect(result.sessionToken).toBeNull();
+  });
+
+  it("legt den Bestätigungstoken nur als Hash ab", async () => {
+    const reg = await register(
+      t.db,
+      { email: "nur-hash@example.de", password: "Verysecret!23", consent: true },
+      { ip: "1.1.1.1", publicSiteUrl: "https://bdas.de" },
+    );
+
+    const rows = await t.db
+      .select({ tokenHash: authEmailVerifications.tokenHash })
+      .from(authEmailVerifications)
+      .where(eq(authEmailVerifications.tokenHash, hashToken(reg.verifyToken)));
+
+    expect(rows).toHaveLength(1);
+    expect(rows[0]?.tokenHash).not.toBe(reg.verifyToken);
+
+    // Der Klartext selbst steht nirgends in der Tabelle.
+    const raw = await t.client<{ n: number }[]>`
+      SELECT count(*)::int AS n
+      FROM auth_email_verifications
+      WHERE token_hash = ${reg.verifyToken}`;
+    expect(raw[0]?.n).toBe(0);
   });
 });

@@ -28,3 +28,23 @@ export function clearSessionCookie(): void {
 export function readSessionCookie(): string | undefined {
   return cookies().get(COOKIE_NAME)?.value;
 }
+
+/**
+ * Der Bestätigungstoken im Browser, der die Registrierung begonnen hat. Nur
+ * wenn der Link in genau diesem Browser eingelöst wird, meldet die Bestätigung
+ * an (ADR 0051): ein weitergegebener Link darf keine fremde Person in das Konto
+ * seines Absenders setzen.
+ */
+export const VERIFY_COOKIE_NAME = "bdas_verify";
+
+export function setVerifyCookie(token: string, ttlSeconds: number): void {
+  cookies().set({
+    name: VERIFY_COOKIE_NAME,
+    value: token,
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env["NODE_ENV"] === "production",
+    path: "/",
+    maxAge: ttlSeconds,
+  });
+}

@@ -48,7 +48,7 @@ test("register → verify → wizard → the local board sees the application", 
   const vorstellung = marker("Ich will mich engagieren, weil ");
 
   await register(page, { email, firstName: "Neue", lastName });
-  await verify(page, email);
+  await verify(page);
 
   // Die Bestätigung meldet an (ADR 0051); der unfertige Pending-Profilstand
   // führt direkt in den Wizard.

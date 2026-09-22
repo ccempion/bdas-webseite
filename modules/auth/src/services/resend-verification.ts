@@ -2,7 +2,7 @@ import { and, eq, isNull } from "drizzle-orm";
 import type { PostgresJsDatabase } from "drizzle-orm/postgres-js";
 
 import { authEmailVerifications, authUsers } from "../schema";
-import { randomToken } from "../tokens";
+import { hashToken, randomToken } from "../tokens";
 import { VERIFICATION_TTL_MS } from "./register";
 
 export type Db = PostgresJsDatabase<Record<string, never>>;
@@ -30,7 +30,7 @@ export async function resendVerification(db: Db, email: string): Promise<ResendR
 
   const verifyToken = randomToken();
   await db.insert(authEmailVerifications).values({
-    token: verifyToken,
+    tokenHash: hashToken(verifyToken),
     userId: user.id,
     expiresAt: new Date(Date.now() + VERIFICATION_TTL_MS),
   });
