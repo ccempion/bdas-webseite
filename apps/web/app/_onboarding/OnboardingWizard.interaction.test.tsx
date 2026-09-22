@@ -149,7 +149,7 @@ describe("OnboardingWizard", () => {
     type("onb-nachname", "Y");
     submit();
     click("Passt so, Konto anlegen");
-    expect(heading()).toBe("Fast geschafft — dein Konto");
+    expect(heading()).toBe("Fast geschafft, dein Konto");
     expect(container.querySelector<HTMLInputElement>('input[name="answers"]')?.value).toContain(
       '"typ":"unterstuetzen"',
     );

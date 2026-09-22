@@ -16,7 +16,7 @@ describe("resolveEntryContext", () => {
   it("greets event guests with the event title", async () => {
     expect(await resolveEntryContext("event:evt_sommer", deps())).toEqual({
       source: "event:evt_sommer",
-      greeting: "Du warst bei „Sommerfest Köln“ — willkommen!",
+      greeting: "Du warst bei „Sommerfest Köln“. Willkommen!",
     });
   });
 

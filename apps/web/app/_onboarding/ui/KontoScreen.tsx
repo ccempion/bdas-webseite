@@ -37,7 +37,7 @@ export function KontoScreen({
   return (
     <Form action={action}>
       <h2 tabIndex={-1} className="text-xl font-semibold text-bdas-ink outline-none">
-        Fast geschafft — dein Konto
+        Fast geschafft, dein Konto
       </h2>
       <p className="-mt-2 text-sm text-bdas-ink-body">
         Mit E-Mail und Passwort meldest du dich später an.

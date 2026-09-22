@@ -40,7 +40,7 @@ test("student: confirm, sign in, details, application to the group", async ({ pa
   await login(page, email, undefined, { expect: "mitmachen" });
 
   await expect(page).toHaveURL(/\/mitmachen\/angaben$/);
-  await expect(page.getByText("Willkommen zurück, Lea — fast geschafft.")).toBeVisible();
+  await expect(page.getByText("Willkommen zurück, Lea, fast geschafft.")).toBeVisible();
 
   await pickCombo(page, "studienfachKategorie", "Ingenieurwissenschaften");
   await pickCombo(page, "studiengang", "Maschinenbau/-wesen");
