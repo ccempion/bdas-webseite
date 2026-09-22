@@ -41,13 +41,15 @@ import { insertSessionRow, seedAccount } from "./db";
 import { PASSWORD } from "./flows";
 
 /**
- * Cookie-Name, Laufzeit und Token-Version kommen aus dem Auth-Modul selbst.
+ * Cookie-Name, Laufzeit und Token-Version kommen aus dem Auth-Modul selbst,
+ * nicht als abgeschriebene Literale.
  *
- * `flows.ts` schreibt den Namen als Literal hin, damit die Playwright-Seite
- * nicht argon2 und jose mitladen muss — dieses Modul braucht beide ohnehin,
- * also kostet der Import hier nichts mehr, und dafür kann keiner der drei
- * Werte unbemerkt auseinanderlaufen. Alle drei stehen in `index.ts`, sind also
- * öffentliche Fläche (CLAUDE.md §1 Regel 8), kein Tiefenimport.
+ * Die Helfer hielten das Auth-Modul bisher bewusst draußen, damit die
+ * Playwright-Seite nicht argon2 und jose mitladen muss. Dieses Modul braucht
+ * beide ohnehin, um Passwort und Token herzustellen — der Import kostet hier
+ * also nichts mehr, und dafür kann keiner der drei Werte unbemerkt vom echten
+ * Anmeldeweg abdriften. Alle drei stehen in `index.ts`, sind also öffentliche
+ * Fläche (CLAUDE.md §1 Regel 8) und kein Tiefenimport.
  */
 
 /** Dieselben Argon2id-Parameter wie `modules/auth/src/password.ts`. argon2
