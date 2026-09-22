@@ -25,7 +25,7 @@ export function GuestRegisterForm({
     return (
       <Alert variant="success" title="Anmeldung bestätigt">
         {state.waitlisted
-          ? "Die Veranstaltung ist ausgebucht — du stehst auf der Warteliste und rückst automatisch nach."
+          ? "Die Veranstaltung ist ausgebucht. Du stehst auf der Warteliste und rückst automatisch nach."
           : "Deine Anmeldung ist eingegangen."}{" "}
         Wir haben dir eine Bestätigung per E-Mail geschickt. Über den Link darin kannst du dich
         jederzeit wieder abmelden. Schau auch in deinen Spam-Ordner.

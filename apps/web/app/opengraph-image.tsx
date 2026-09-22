@@ -2,7 +2,7 @@ import { ImageResponse } from "next/og";
 
 import { OG_LOGO_DATA_URI } from "./_public/og-logo";
 
-export const alt = "BDAS — Bund der Alevitischen Studierenden in Deutschland";
+export const alt = "BDAS: Bund der Alevitischen Studierenden in Deutschland";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 

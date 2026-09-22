@@ -73,7 +73,7 @@ export function LocationPicker({
                 onClick={() => pick(r)}
               >
                 <span className="text-bdas-ink">{r.name}</span>
-                {r.address ? <span className="text-bdas-ink-muted"> — {r.address}</span> : null}
+                {r.address ? <span className="text-bdas-ink-muted">, {r.address}</span> : null}
               </button>
             </li>
           ))}

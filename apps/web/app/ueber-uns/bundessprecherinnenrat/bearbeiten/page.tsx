@@ -17,7 +17,7 @@ export const dynamic = "force-dynamic";
 const SLUG = "ueber-uns/bundessprecherinnenrat";
 
 export const metadata: Metadata = {
-  title: "Seite bearbeiten — Bundessprecher*innenrat",
+  title: "Seite bearbeiten: Bundessprecher*innenrat",
   robots: { index: false },
 };
 

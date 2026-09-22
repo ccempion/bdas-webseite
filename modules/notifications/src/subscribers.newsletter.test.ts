@@ -102,7 +102,7 @@ describeIfDb("notifications: the newsletter mails", () => {
 
     expect(sent).toHaveLength(1);
     expect(sent[0]!.to).toBe("neu@example.org");
-    expect(sent[0]!.subject).toBe("BDAS — Bitte bestätige deine Anmeldung");
+    expect(sent[0]!.subject).toBe("BDAS: Bitte bestätige deine Anmeldung");
     expect(sent[0]!.text).toContain("https://bdas.de/newsletter/bestaetigen?token=plain-token");
     // Both keys travel together: this is the only mail this address will get.
     expect(sent[0]!.text).toContain("https://bdas.de/newsletter/abmelden?token=unsub-token");
@@ -116,7 +116,7 @@ describeIfDb("notifications: the newsletter mails", () => {
     });
 
     expect(sent).toHaveLength(1);
-    expect(sent[0]!.subject).toBe("BDAS — Du bist schon dabei");
+    expect(sent[0]!.subject).toBe("BDAS: Du bist schon dabei");
     expect(sent[0]!.text).toContain("/newsletter/abmelden");
     // The event carries no token, and inventing one here would hand an
     // unsubscribe key to whoever typed the address.

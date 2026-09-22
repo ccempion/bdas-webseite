@@ -10,7 +10,7 @@ export const vorstand: FaqSection = {
   key: "vorstand",
   title: "Vorstand",
   intro:
-    "Funktionen für den lokalen Vorstand, jeweils auf die eigene Gruppe begrenzt — getrennt nach den vier Vorstandsrollen.",
+    "Funktionen für den lokalen Vorstand, jeweils auf die eigene Gruppe begrenzt: getrennt nach den vier Vorstandsrollen.",
   visibleTo: ["local_board_lead", "event_organizer", "page_editor"],
   entries: [],
   subgroups: [
@@ -51,18 +51,18 @@ export const vorstand: FaqSection = {
               items: [
                 "Im Gruppenbereich „Events“ öffnen.",
                 "Neue Veranstaltung erstellen: Titel, Datum, Ort und Plätze festlegen.",
-                "Speichern — Mitglieder können sich anschließend an- und abmelden; volle Events führen eine Warteliste.",
+                "Speichern, Mitglieder können sich anschließend an- und abmelden; volle Events führen eine Warteliste.",
               ],
             },
           ],
         },
         {
           id: "lb-profil-vs-seite",
-          question: "Wo bearbeite ich das Gruppenprofil — und wo die Gruppenseite?",
+          question: "Wo bearbeite ich das Gruppenprofil und wo die Gruppenseite?",
           body: [
             {
               kind: "p",
-              text: "Das sind zwei verschiedene Dinge. Das Gruppenprofil — Name, Stadt, Standort auf der Karte — bearbeitest du als jeder Vorstand unter „Profil“. Die öffentliche Gruppenseite (Inhalte, Text, Bilder) darf nur die LEAD-Person oder ein Seiten Editor bearbeiten.",
+              text: "Das sind zwei verschiedene Dinge. Das Gruppenprofil (Name, Stadt, Standort auf der Karte) bearbeitest du als jeder Vorstand unter „Profil“. Die öffentliche Gruppenseite (Inhalte, Text, Bilder) darf nur die LEAD-Person oder ein Seiten Editor bearbeiten.",
             },
           ],
         },
@@ -82,7 +82,7 @@ export const vorstand: FaqSection = {
           body: [
             {
               kind: "p",
-              text: "Ein einfacher Vorstand kann weder die öffentliche Gruppenseite bearbeiten noch Rollen vergeben. Beides ist der LEAD-Rolle vorbehalten — die es wiederum an Seiten Editor bzw. Event Organisator delegieren kann.",
+              text: "Ein einfacher Vorstand kann weder die öffentliche Gruppenseite bearbeiten noch Rollen vergeben. Beides ist der LEAD-Rolle vorbehalten, die es wiederum an Seiten Editor bzw. Event Organisator delegieren kann.",
             },
           ],
         },
@@ -116,7 +116,7 @@ export const vorstand: FaqSection = {
           body: [
             {
               kind: "p",
-              text: "Archivierte Gruppen kann auch ein LEAD nicht mehr verwalten — das übernimmt der Bundesvorstand. Eine weitere LEAD-Person oder die Bundesvorstands-Rolle vergibt ebenfalls nur der Bundesvorstand.",
+              text: "Archivierte Gruppen kann auch ein LEAD nicht mehr verwalten. Das übernimmt der Bundesvorstand. Eine weitere LEAD-Person oder die Bundesvorstands-Rolle vergibt ebenfalls nur der Bundesvorstand.",
             },
           ],
         },
@@ -133,7 +133,7 @@ export const vorstand: FaqSection = {
           body: [
             {
               kind: "p",
-              text: "Du bist Delegierter für die Veranstaltungen deiner Gruppe: Events anlegen, bearbeiten und absagen — ohne den vollen Vorstandszugriff. Mitgliederverwaltung und Rollenvergabe gehören nicht dazu.",
+              text: "Du bist Delegierter für die Veranstaltungen deiner Gruppe: Events anlegen, bearbeiten und absagen, ohne den vollen Vorstandszugriff. Mitgliederverwaltung und Rollenvergabe gehören nicht dazu.",
             },
           ],
         },
@@ -150,7 +150,7 @@ export const vorstand: FaqSection = {
           body: [
             {
               kind: "p",
-              text: "Du darfst ausschließlich die öffentliche Seite deiner Gruppe bearbeiten — Inhalte, Text und Darstellung. Das Gruppenprofil (Name/Stadt/Standort) und weitere Vorstandsfunktionen sind mit dieser Rolle nicht verbunden.",
+              text: "Du darfst ausschließlich die öffentliche Seite deiner Gruppe bearbeiten: Inhalte, Text und Darstellung. Das Gruppenprofil (Name/Stadt/Standort) und weitere Vorstandsfunktionen sind mit dieser Rolle nicht verbunden.",
             },
           ],
         },

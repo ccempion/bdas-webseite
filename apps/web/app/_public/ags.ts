@@ -4,7 +4,7 @@ export const AGS = [
   {
     slug: "oeffentlichkeitsarbeit",
     name: "Öffentlichkeitsarbeit & Social Media",
-    teaser: "Wir gestalten die Außendarstellung des BDAS — von Instagram bis zur Pressemitteilung.",
+    teaser: "Wir gestalten die Außendarstellung des BDAS: von Instagram bis zur Pressemitteilung.",
   },
   {
     slug: "medizin",
@@ -14,11 +14,11 @@ export const AGS = [
   {
     slug: "ingenieurwesen-technik",
     name: "Ingenieurwesen & Technik",
-    teaser: "Von Maschinenbau bis Informatik — Projekte und Kontakte für Technikstudierende.",
+    teaser: "Von Maschinenbau bis Informatik: Projekte und Kontakte für Technikstudierende.",
   },
   {
     slug: "jura",
     name: "Jura",
-    teaser: "Austausch für Jurastudierende — vom Staatsexamen bis zum Berufseinstieg.",
+    teaser: "Austausch für Jurastudierende: vom Staatsexamen bis zum Berufseinstieg.",
   },
 ] as const;

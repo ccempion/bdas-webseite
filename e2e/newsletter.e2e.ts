@@ -127,7 +127,7 @@ test.describe("newsletter, signed-in surfaces", () => {
 
       // … and the switch sees the row instead of claiming "not subscribed".
       await page.goto("/account/einstellungen");
-      await expect(page.getByText("Fast geschafft — bestätige noch den Link")).toBeVisible();
+      await expect(page.getByText("Fast geschafft, bestätige noch den Link")).toBeVisible();
     } finally {
       await deleteNewsletterSubscriberByEmail(email);
       await deleteUserByEmail(email);

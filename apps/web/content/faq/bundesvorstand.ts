@@ -14,7 +14,7 @@ export const bundesvorstand: FaqSection = {
       body: [
         {
           kind: "p",
-          text: "Die Übersicht zeigt die föderationsweiten Kennzahlen: aktive Mitglieder, Neuanmeldungen der letzten 30 Tage, Anzahl aktiver Gruppen und anstehende Veranstaltungen — dazu einen Verlaufs-Chart der Anmeldungen.",
+          text: "Die Übersicht zeigt die föderationsweiten Kennzahlen: aktive Mitglieder, Neuanmeldungen der letzten 30 Tage, Anzahl aktiver Gruppen und anstehende Veranstaltungen, dazu einen Verlaufs-Chart der Anmeldungen.",
         },
         { kind: "link", href: "/federal/overview", label: "Zur Übersicht" },
       ],
@@ -40,7 +40,7 @@ export const bundesvorstand: FaqSection = {
           items: [
             "„Gruppen“ im Bundesverband-Bereich öffnen.",
             "Neue Gruppe anlegen oder eine bestehende bearbeiten bzw. archivieren.",
-            "Archivierte Gruppen verwaltet nur noch der Bundesvorstand — ein lokaler Vorstand kann sie nicht mehr bearbeiten.",
+            "Archivierte Gruppen verwaltet nur noch der Bundesvorstand. Ein lokaler Vorstand kann sie nicht mehr bearbeiten.",
           ],
         },
         { kind: "link", href: "/federal/groups", label: "Zur Gruppen-Registry" },
@@ -52,7 +52,7 @@ export const bundesvorstand: FaqSection = {
       body: [
         {
           kind: "p",
-          text: "Unter „Rollen“ im Bundesverband-Bereich vergibst und entziehst du direkt zwei Rollen: Bundesvorstand und LEAD einer Gruppe. Die übrigen lokalen Rollen — Vorstand, Event Organisator, Seiten Editor — vergibt die LEAD-Person auf der Vorstandsseite der jeweiligen Gruppe; als Bundesvorstand kannst du das dort ebenfalls erledigen.",
+          text: "Unter „Rollen“ im Bundesverband-Bereich vergibst und entziehst du direkt zwei Rollen: Bundesvorstand und LEAD einer Gruppe. Die übrigen lokalen Rollen (Vorstand, Event Organisator, Seiten Editor) vergibt die LEAD-Person auf der Vorstandsseite der jeweiligen Gruppe; als Bundesvorstand kannst du das dort ebenfalls erledigen.",
         },
         {
           kind: "p",
@@ -67,7 +67,7 @@ export const bundesvorstand: FaqSection = {
       body: [
         {
           kind: "p",
-          text: "Hier siehst du Mitglieder ohne Gruppenzuordnung sowie jede föderationsweit offene Bewerbung — auch für Gruppen ohne aktiven Vorstand, wo sonst niemand entscheiden könnte.",
+          text: "Hier siehst du Mitglieder ohne Gruppenzuordnung sowie jede föderationsweit offene Bewerbung, auch für Gruppen ohne aktiven Vorstand, wo sonst niemand entscheiden könnte.",
         },
         { kind: "link", href: "/federal/pool", label: "Zum Pool" },
       ],
@@ -89,7 +89,7 @@ export const bundesvorstand: FaqSection = {
       body: [
         {
           kind: "p",
-          text: "Gemeldete Beiträge landen in der Meldungs-Queue — nur für den Bundesvorstand sichtbar. Du kannst dort einen Beitrag bearbeiten oder löschen, oder die Meldung verwerfen. Beiträge mit Sichtbarkeit „Nur Vorstände“ sind ebenfalls nur für den Bundesvorstand lesbar.",
+          text: "Gemeldete Beiträge landen in der Meldungs-Queue, nur für den Bundesvorstand sichtbar. Du kannst dort einen Beitrag bearbeiten oder löschen, oder die Meldung verwerfen. Beiträge mit Sichtbarkeit „Nur Vorstände“ sind ebenfalls nur für den Bundesvorstand lesbar.",
         },
         { kind: "link", href: "/blog/meldungen", label: "Zur Meldungs-Queue" },
       ],

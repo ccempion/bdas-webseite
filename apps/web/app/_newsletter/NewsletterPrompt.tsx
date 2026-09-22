@@ -48,7 +48,7 @@ export function NewsletterPrompt({ eligible }: { eligible: boolean }) {
       </h2>
       <p className="mt-1 max-w-prose text-sm">
         Ein paar Mal im Jahr schreiben wir dir, was im Verband ansteht. Du bist angemeldet, wir
-        kennen deine Adresse — ein Klick genügt.
+        kennen deine Adresse: ein Klick genügt.
       </p>
 
       <div aria-live="polite" className="mt-2 text-sm">

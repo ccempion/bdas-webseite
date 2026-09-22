@@ -8,7 +8,7 @@ const FEATURES = [
     title: "Dateien & Vorlagen",
     text: "Gemeinsame Dokumente, Vorlagen und Materialien an einem Ort.",
   },
-  { title: "Dein Netzwerk", text: "Deine Gruppe, deine Leute — bundesweit verbunden." },
+  { title: "Dein Netzwerk", text: "Deine Gruppe, deine Leute: bundesweit verbunden." },
 ] as const;
 
 export function ConnectBlock({

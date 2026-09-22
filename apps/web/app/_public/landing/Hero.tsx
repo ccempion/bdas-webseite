@@ -29,7 +29,7 @@ export function Hero({
         </h1>
         {/* Platzhalter-Tagline — finaler Satz kommt vom Bundesvorstand (Spec §8). */}
         <p className="max-w-xl text-lg text-white/90">
-          Alevitische Studierende an deutschen Hochschulen — vernetzt, sichtbar, gemeinsam.
+          Alevitische Studierende an deutschen Hochschulen: vernetzt, sichtbar, gemeinsam.
         </p>
         <div className="flex flex-wrap gap-3">
           {showGroupFinder ? (

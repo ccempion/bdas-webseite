@@ -17,7 +17,7 @@ export default function NewsletterPage() {
     <main className="mx-auto flex max-w-2xl flex-col gap-6 px-4 py-12">
       <h1 className="text-2xl font-semibold text-bdas-ink">Newsletter</h1>
       <p className="text-bdas-ink-body">
-        Veranstaltungen, Förderfristen und Neues aus den Hochschulgruppen — ein paar Mal im Jahr,
+        Veranstaltungen, Förderfristen und Neues aus den Hochschulgruppen, ein paar Mal im Jahr,
         nicht öfter.
       </p>
       <NewsletterSignupForm source="landingpage" sourcePath="/newsletter" variant="brand" />

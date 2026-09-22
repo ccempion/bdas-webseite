@@ -66,7 +66,7 @@ export default async function AccountSettingsPage() {
       <Card flat className="p-6">
         <h2 className="mb-2 text-lg font-semibold text-bdas-ink">Deine Daten</h2>
         <p className="mb-4 text-sm text-bdas-ink-body">
-          Export aller zu dir gespeicherten Daten als JSON — Art. 20 DSGVO.
+          Export aller zu dir gespeicherten Daten als JSON: Art. 20 DSGVO.
         </p>
         <Link href="/account/datenexport">
           <Button variant="secondary">Meine Daten exportieren</Button>

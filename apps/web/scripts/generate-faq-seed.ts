@@ -85,7 +85,7 @@ function dedupeId(id: string, sectionKey: string): string {
   }
   const alt = `${sectionKey}-${id}`;
   console.warn(
-    `[generate-faq-seed] duplicate static entry id "${id}" — disambiguated to "${alt}" for section "${sectionKey}". Static content left unchanged; only the seed row got a new id.`,
+    `[generate-faq-seed] duplicate static entry id "${id}", disambiguated to "${alt}" for section "${sectionKey}". Static content left unchanged; only the seed row got a new id.`,
   );
   seenIds.add(alt);
   return alt;

@@ -121,7 +121,7 @@ export function FileUploader({
               Dateien hierher ziehen oder klicken
               <span className="text-bdas-ink-muted">
                 {" "}
-                — bis zu {formatFileSize(maxBytes)} pro Datei
+                , bis zu {formatFileSize(maxBytes)} pro Datei
               </span>
             </p>
             <input

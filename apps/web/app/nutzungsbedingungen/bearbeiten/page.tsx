@@ -17,7 +17,7 @@ export const dynamic = "force-dynamic";
 const SLUG = "nutzungsbedingungen";
 
 export const metadata: Metadata = {
-  title: "Seite bearbeiten — Nutzungsbedingungen",
+  title: "Seite bearbeiten: Nutzungsbedingungen",
   robots: { index: false },
 };
 

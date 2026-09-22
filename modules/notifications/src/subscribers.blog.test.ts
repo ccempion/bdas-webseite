@@ -113,7 +113,7 @@ describeIfDb("notifications: blog.post.reported → federal board notification",
     await new Promise((r) => setTimeout(r, 0));
 
     expect(sent).toHaveLength(1);
-    expect(sent[0]?.subject).toBe("BDAS — Beitrag gemeldet");
+    expect(sent[0]?.subject).toBe("BDAS: Beitrag gemeldet");
     expect(sent[0]?.text).toContain("Testbeitrag");
     expect(sent[0]?.text).toContain("Wirkt wie Spam");
     expect(sent[0]?.text).toContain("https://dashboard.bdas.de/blog/testbeitrag");

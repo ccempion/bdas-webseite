@@ -26,9 +26,9 @@ describe.skipIf(!reachable)("content migration 0003 (Alumni-Texte, ADR 0043)", (
     const roles = await bodyText(t, "rollenmodell");
     expect(roles).not.toContain("meldet sich nicht mehr für Veranstaltungen an");
     expect(roles).toContain(
-      "Alumni — ehemaliges Mitglied; eine Kennzeichnung, keine Einschränkung.",
+      "Alumni: ehemaliges Mitglied; eine Kennzeichnung, keine Einschränkung.",
     );
-    expect(roles).toContain("Bundesvorstand — föderationsweite Verwaltung über alle Gruppen.");
+    expect(roles).toContain("Bundesvorstand: föderationsweite Verwaltung über alle Gruppen.");
 
     const alumni = await bodyText(t, "alumni");
     expect(alumni).not.toContain("nicht mehr als aktives Mitglied");

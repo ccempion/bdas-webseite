@@ -17,7 +17,7 @@ export const dynamic = "force-dynamic";
 const SLUG = "datenschutz";
 
 export const metadata: Metadata = {
-  title: "Seite bearbeiten — Datenschutzerklärung",
+  title: "Seite bearbeiten: Datenschutzerklärung",
   robots: { index: false },
 };
 

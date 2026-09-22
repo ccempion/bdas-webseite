@@ -24,7 +24,7 @@ export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
   metadataBase: new URL(process.env["PUBLIC_SITE_URL"] ?? "http://localhost:3000"),
   title: {
-    default: "BDAS — Bund der Alevitischen Studierenden",
+    default: "BDAS: Bund der Alevitischen Studierenden",
     template: "%s · BDAS",
   },
   description:

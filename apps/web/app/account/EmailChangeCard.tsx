@@ -39,8 +39,8 @@ export function EmailChangeCard({ currentEmail }: { currentEmail: string }) {
       {requested ? (
         <div className="mb-4">
           <Alert variant="success">
-            Bestätigungslink an deine neue Adresse gesendet. Bitte prüfe dein Postfach — die
-            Änderung wird erst nach Bestätigung wirksam.
+            Bestätigungslink an deine neue Adresse gesendet. Bitte prüfe dein Postfach. Die Änderung
+            wird erst nach Bestätigung wirksam.
           </Alert>
         </div>
       ) : null}

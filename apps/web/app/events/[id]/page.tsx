@@ -87,7 +87,7 @@ export default async function EventDetailPage({ params }: { params: { id: string
             rel="noopener noreferrer"
             className="inline-flex w-fit items-center gap-1 rounded-bdas border border-bdas-soft px-3 py-1.5 text-sm text-bdas-ink-body hover:bg-bdas-overlay-hover"
           >
-            📍 {event.locationName} — Route öffnen
+            📍 {event.locationName}: Route öffnen
           </a>
         ) : null}
       </header>

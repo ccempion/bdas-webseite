@@ -21,64 +21,64 @@ export function render(template: TransactionalTemplate, data: TemplateData): Ren
   switch (template) {
     case "event_registration_confirmed":
       return body(
-        "BDAS — Anmeldung bestätigt",
+        "BDAS: Anmeldung bestätigt",
         firstName,
         `deine Anmeldung für „${eventTitle}“ ist bestätigt. Wir freuen uns auf dich!`,
         manage,
       );
     case "event_waitlisted":
       return body(
-        "BDAS — Auf der Warteliste",
+        "BDAS: Auf der Warteliste",
         firstName,
         `„${eventTitle}“ ist aktuell ausgebucht. Du stehst auf der Warteliste und rückst automatisch nach, sobald ein Platz frei wird.`,
         manage,
       );
     case "event_deregistration_confirmed":
       return body(
-        "BDAS — Abmeldung bestätigt",
+        "BDAS: Abmeldung bestätigt",
         firstName,
-        `deine Abmeldung von „${eventTitle}“ ist eingegangen. Schade, dass es nicht klappt — vielleicht beim nächsten Mal.`,
+        `deine Abmeldung von „${eventTitle}“ ist eingegangen. Schade, dass es nicht klappt, vielleicht beim nächsten Mal.`,
       );
     case "event_waitlist_promoted":
       return body(
-        "BDAS — Platz frei geworden",
+        "BDAS: Platz frei geworden",
         firstName,
         `gute Nachrichten: Bei „${eventTitle}“ ist ein Platz frei geworden und du bist nachgerückt. Deine Teilnahme ist jetzt bestätigt.`,
         manage,
       );
     case "event_changed":
       return body(
-        "BDAS — Änderung bei einer Veranstaltung",
+        "BDAS: Änderung bei einer Veranstaltung",
         firstName,
         `bei „${eventTitle}“ hat sich etwas geändert: ${changeSummary(data.changes)}. Bitte prüfe die aktualisierten Angaben.`,
         details,
       );
     case "event_cancelled":
       return body(
-        "BDAS — Veranstaltung abgesagt",
+        "BDAS: Veranstaltung abgesagt",
         firstName,
-        `leider müssen wir dir mitteilen, dass „${eventTitle}“ abgesagt wurde. Deine Anmeldung ist damit hinfällig — wir bitten um dein Verständnis.`,
+        `leider müssen wir dir mitteilen, dass „${eventTitle}“ abgesagt wurde. Deine Anmeldung ist damit hinfällig. Wir bitten um dein Verständnis.`,
       );
     case "event_organizer_message": {
-      const subject = data.subject?.trim() || `BDAS — Nachricht zu „${eventTitle}“`;
+      const subject = data.subject?.trim() || `BDAS: Nachricht zu „${eventTitle}“`;
       return body(subject, firstName, data.messageBody ?? "", details);
     }
     case "event_organizer_granted":
       return body(
-        "BDAS — Du bist jetzt Veranstaltungs-Organisator:in",
+        "BDAS: Du bist jetzt Veranstaltungs-Organisator:in",
         firstName,
         `du wurdest als Organisator:in für die Gruppe „${data.groupName ?? "deine Gruppe"}“ eingetragen. Du kannst ab sofort die Veranstaltungen dieser Gruppe anlegen und verwalten.`,
         eventUrl ? { label: "Zur Veranstaltungsverwaltung:", url: eventUrl } : undefined,
       );
     case "event_organizer_revoked":
       return body(
-        "BDAS — Organisator:innen-Rolle entzogen",
+        "BDAS: Organisator:innen-Rolle entzogen",
         firstName,
         `deine Organisator:innen-Rolle für die Gruppe „${data.groupName ?? "deine Gruppe"}“ wurde entzogen. Du kannst die Veranstaltungen dieser Gruppe nicht mehr verwalten.`,
       );
     case "member_application_received":
       return body(
-        "BDAS — Neue Bewerbung zur Prüfung",
+        "BDAS: Neue Bewerbung zur Prüfung",
         firstName,
         `es liegt eine neue Mitgliedsbewerbung${data.applicantName ? ` von ${data.applicantName}` : ""}${
           data.groupName ? ` für ${data.groupName}` : ""
@@ -86,36 +86,36 @@ export function render(template: TransactionalTemplate, data: TemplateData): Ren
       );
     case "member_application_approved":
       return body(
-        "BDAS — Du bist aufgenommen",
+        "BDAS: Du bist aufgenommen",
         firstName,
-        "dein lokaler Vorstand hat deine Bewerbung angenommen — willkommen im BDAS! Deine Mitgliedschaft ist ab sofort aktiv.",
+        "dein lokaler Vorstand hat deine Bewerbung angenommen, willkommen im BDAS! Deine Mitgliedschaft ist ab sofort aktiv.",
       );
     // Aufnahme je Nutzertyp (Onboarding-Spec §5.6, ADR 0046). Der Studierenden-
     // Text oben nennt den lokalen Vorstand; hier entscheidet der Bundesvorstand.
     case "member_supporter_approved":
       return body(
-        "BDAS — Willkommen im Netzwerk",
+        "BDAS: Willkommen im Netzwerk",
         firstName,
         "der Bundesvorstand hat dich ins BDAS-Netzwerk aufgenommen. Ab jetzt bekommst du Einladungen zu offenen Veranstaltungen und Neuigkeiten aus dem Verband.",
         account,
       );
     case "member_partner_approved":
       return body(
-        "BDAS — Dein Zugang ist freigeschaltet",
+        "BDAS: Dein Zugang ist freigeschaltet",
         firstName,
         `der Bundesvorstand hat deinen Zugang für ${data.groupName ?? "deine Partnerorganisation"} freigeschaltet. Den gemeinsamen Bereich findest du ab sofort in deinem Konto.`,
         account,
       );
     case "member_alumnus_approved":
       return body(
-        "BDAS — Willkommen bei den Alumni",
+        "BDAS: Willkommen bei den Alumni",
         firstName,
         "du bist jetzt als Alumna oder Alumnus bei BDAS eingetragen. Wir laden dich zu Alumni-Treffen ein und halten dich auf dem Laufenden.",
         account,
       );
     case "member_application_declined":
       return body(
-        "BDAS — Entscheidung über deine Bewerbung",
+        "BDAS: Entscheidung über deine Bewerbung",
         firstName,
         [
           "dein lokaler Vorstand hat deine Bewerbung geprüft und sie nicht angenommen.",
@@ -128,19 +128,19 @@ export function render(template: TransactionalTemplate, data: TemplateData): Ren
       );
     case "member_application_group_dissolved":
       return body(
-        "BDAS — Deine Bewerbung konnte nicht entschieden werden",
+        "BDAS: Deine Bewerbung konnte nicht entschieden werden",
         firstName,
-        `die Gruppe${data.groupName ? ` ${data.groupName}` : ""} wurde aufgelöst, bevor über deine Bewerbung entschieden werden konnte. Das ist keine Absage — bitte bewirb dich gerne bei einer anderen BDAS-Gruppe.`,
+        `die Gruppe${data.groupName ? ` ${data.groupName}` : ""} wurde aufgelöst, bevor über deine Bewerbung entschieden werden konnte. Das ist keine Absage. Bitte bewirb dich gerne bei einer anderen BDAS-Gruppe.`,
       );
     case "member_group_change_approved":
       return body(
-        "BDAS — Dein Gruppenwechsel ist bestätigt",
+        "BDAS: Dein Gruppenwechsel ist bestätigt",
         firstName,
-        `der Vorstand${data.groupName ? ` von ${data.groupName}` : ""} hat deinen Gruppenwechsel angenommen — du bist ab sofort dort Mitglied.`,
+        `der Vorstand${data.groupName ? ` von ${data.groupName}` : ""} hat deinen Gruppenwechsel angenommen. Du bist ab sofort dort Mitglied.`,
       );
     case "member_group_change_declined":
       return body(
-        "BDAS — Entscheidung über deinen Gruppenwechsel",
+        "BDAS: Entscheidung über deinen Gruppenwechsel",
         firstName,
         [
           "der Vorstand der Zielgruppe hat deinen Antrag auf Gruppenwechsel geprüft und ihn nicht angenommen. Deine bisherige Mitgliedschaft bleibt davon unberührt.",
@@ -152,25 +152,25 @@ export function render(template: TransactionalTemplate, data: TemplateData): Ren
       );
     case "password_changed_notice":
       return body(
-        "BDAS — Dein Passwort wurde geändert",
+        "BDAS: Dein Passwort wurde geändert",
         firstName,
         "dein Passwort wurde soeben geändert. Warst du das nicht, melde dich bitte umgehend beim Bundesvorstand.",
       );
     case "password_reset_notice":
       return body(
-        "BDAS — Dein Passwort wurde zurückgesetzt",
+        "BDAS: Dein Passwort wurde zurückgesetzt",
         firstName,
         "über den Link „Passwort vergessen“ wurde gerade ein neues Passwort für deinen Account gesetzt. Warst du das nicht, melde dich bitte umgehend beim Bundesvorstand.",
       );
     case "email_changed_notice":
       return body(
-        "BDAS — Deine Login-E-Mail wurde geändert",
+        "BDAS: Deine Login-E-Mail wurde geändert",
         firstName,
         `die E-Mail-Adresse für deinen Account wurde soeben auf ${data.newEmail ?? "eine andere Adresse"} geändert. Warst du das nicht, melde dich bitte umgehend beim Bundesvorstand.`,
       );
     case "blog_post_reported":
       return body(
-        "BDAS — Beitrag gemeldet",
+        "BDAS: Beitrag gemeldet",
         firstName,
         `der Beitrag „${postTitle ?? "ein Beitrag"}“ wurde gemeldet${
           reportReason ? ` (Grund: ${reportReason})` : ""
@@ -179,11 +179,11 @@ export function render(template: TransactionalTemplate, data: TemplateData): Ren
       );
     case "newsletter_confirm":
       return plainBody(
-        "BDAS — Bitte bestätige deine Anmeldung",
-        "schön, dass du dabei sein willst. Bestätige einmal kurz, dass diese Adresse dir gehört — dann bekommst du ein paar Mal im Jahr Neues aus dem Verband und den Hochschulgruppen.",
+        "BDAS: Bitte bestätige deine Anmeldung",
+        "schön, dass du dabei sein willst. Bestätige einmal kurz, dass diese Adresse dir gehört, dann bekommst du ein paar Mal im Jahr Neues aus dem Verband und den Hochschulgruppen.",
         confirmUrl ? { label: "Anmeldung bestätigen:", url: confirmUrl } : undefined,
         [
-          "Der Link gilt sieben Tage. Wenn du dich nicht angemeldet hast, ignoriere diese E-Mail einfach — ohne Bestätigung passiert nichts.",
+          "Der Link gilt sieben Tage. Wenn du dich nicht angemeldet hast, ignoriere diese E-Mail einfach. Ohne Bestätigung passiert nichts.",
           // The only unsubscribe key an anonymous address ever receives. It
           // also lets somebody who never signed up end the entry outright
           // instead of merely ignoring it.
@@ -194,7 +194,7 @@ export function render(template: TransactionalTemplate, data: TemplateData): Ren
       );
     case "newsletter_already_subscribed":
       return plainBody(
-        "BDAS — Du bist schon dabei",
+        "BDAS: Du bist schon dabei",
         "jemand hat diese Adresse gerade für unseren Newsletter eingetragen. Du stehst schon auf der Liste, deshalb ändert sich nichts und du bekommst nichts doppelt.",
         unsubscribeUrl
           ? { label: "Wenn du nicht mehr dabei sein willst:", url: unsubscribeUrl }

@@ -44,7 +44,7 @@ export const mitglieder: FaqSection = {
       body: [
         {
           kind: "p",
-          text: "Über den Blog: Beiträge mit Sichtbarkeit „Nur Mitglieder“ sind ausschließlich für angemeldete, aktive Mitglieder lesbar. Ein separates Mitgliederverzeichnis gibt es nicht — die eigene Gruppe erreichst du über deren öffentliche Gruppenseite.",
+          text: "Über den Blog: Beiträge mit Sichtbarkeit „Nur Mitglieder“ sind ausschließlich für angemeldete, aktive Mitglieder lesbar. Ein separates Mitgliederverzeichnis gibt es nicht. Die eigene Gruppe erreichst du über deren öffentliche Gruppenseite.",
         },
         { kind: "link", href: "/blog", label: "Zum Blog" },
       ],
@@ -85,7 +85,7 @@ export const mitglieder: FaqSection = {
       body: [
         {
           kind: "p",
-          text: "Wenig. Du bleibst aktives Mitglied im BDAS-Netzwerk und kannst dich weiterhin zu Veranstaltungen anmelden. In der Mitgliederliste deiner Hochschulgruppe bist du als Alumnus gekennzeichnet — das ist eine Einordnung, keine Einschränkung. Ob du Blog-Beiträge verfassen kannst, hängt wie bei allen anderen an deiner Rolle, nicht an dieser Kennzeichnung.",
+          text: "Wenig. Du bleibst aktives Mitglied im BDAS-Netzwerk und kannst dich weiterhin zu Veranstaltungen anmelden. In der Mitgliederliste deiner Hochschulgruppe bist du als Alumnus gekennzeichnet. Das ist eine Einordnung, keine Einschränkung. Ob du Blog-Beiträge verfassen kannst, hängt wie bei allen anderen an deiner Rolle, nicht an dieser Kennzeichnung.",
         },
       ],
     },

@@ -306,12 +306,12 @@ describeIfDb("notifications: the application mails", () => {
   it("welcomes a first-time joiner of the netzwerk group as a supporter", async () => {
     await publish(decided("grp_netz"));
     expect(sent).toHaveLength(1);
-    expect(sent[0]?.subject).toBe("BDAS — Willkommen im Netzwerk");
+    expect(sent[0]?.subject).toBe("BDAS: Willkommen im Netzwerk");
   });
 
   it("tells a partner which organisation was unlocked", async () => {
     await publish(decided("grp_bdaj"));
-    expect(sent[0]?.subject).toBe("BDAS — Dein Zugang ist freigeschaltet");
+    expect(sent[0]?.subject).toBe("BDAS: Dein Zugang ist freigeschaltet");
     expect(sent[0]?.text).toContain("BDAJ");
   });
 
@@ -330,7 +330,7 @@ describeIfDb("notifications: the application mails", () => {
       at: new Date(),
     });
     expect(sent).toHaveLength(1);
-    expect(sent[0]?.subject).toBe("BDAS — Willkommen bei den Alumni");
+    expect(sent[0]?.subject).toBe("BDAS: Willkommen bei den Alumni");
   });
 
   it("sends nothing for other granted roles", async () => {

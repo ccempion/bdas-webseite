@@ -41,7 +41,7 @@ export const allgemein: FaqSection = {
           kind: "steps",
           items: [
             "Mit E-Mail-Adresse und Passwort registrieren.",
-            "Die Bestätigungs-E-Mail öffnen und den Verifizierungslink anklicken — die Verifizierung ist Pflicht, bevor Rollen vergeben werden können.",
+            "Die Bestätigungs-E-Mail öffnen und den Verifizierungslink anklicken. Die Verifizierung ist Pflicht, bevor Rollen vergeben werden können.",
             "Danach jederzeit über „Anmelden“ einloggen. Passwort vergessen? Über den Zurücksetzen-Link neu setzen.",
           ],
         },
@@ -59,24 +59,24 @@ export const allgemein: FaqSection = {
         {
           kind: "steps",
           items: [
-            "Mitglied — registriertes, aktives Mitglied einer Hochschulgruppe.",
-            "Vorstand (Lokaler Vorstand) — verwaltet die eigene Gruppe.",
-            "LEAD — höchste Vertrauensrolle einer Gruppe; darf Rollen in der Gruppe vergeben.",
-            "Event Organisator — darf Veranstaltungen der Gruppe verwalten.",
-            "Seiten Editor — darf die öffentliche Gruppenseite bearbeiten.",
-            "Bundesvorstand — föderationsweite Verwaltung über alle Gruppen.",
-            "Alumni — ehemaliges Mitglied; eine Kennzeichnung, keine Einschränkung. Du meldest dich weiter zu Veranstaltungen an wie jedes Mitglied.",
+            "Mitglied: registriertes, aktives Mitglied einer Hochschulgruppe.",
+            "Vorstand (Lokaler Vorstand): verwaltet die eigene Gruppe.",
+            "LEAD: höchste Vertrauensrolle einer Gruppe; darf Rollen in der Gruppe vergeben.",
+            "Event Organisator: darf Veranstaltungen der Gruppe verwalten.",
+            "Seiten Editor: darf die öffentliche Gruppenseite bearbeiten.",
+            "Bundesvorstand: föderationsweite Verwaltung über alle Gruppen.",
+            "Alumni: ehemaliges Mitglied; eine Kennzeichnung, keine Einschränkung. Du meldest dich weiter zu Veranstaltungen an wie jedes Mitglied.",
           ],
         },
       ],
     },
     {
       id: "scope-switcher",
-      question: "Ich habe mehrere Rollen — wie wechsle ich zwischen ihnen?",
+      question: "Wie wechsle ich zwischen mehreren Rollen?",
       body: [
         {
           kind: "p",
-          text: "Wer mehrere Zuständigkeiten hat (z. B. LEAD einer Gruppe und Bundesvorstand), wechselt oben in der Seitenleiste des Dashboards über den Bereichs-Umschalter zwischen den Ansichten — die URL musst du dafür nicht wechseln.",
+          text: "Wer mehrere Zuständigkeiten hat (z. B. LEAD einer Gruppe und Bundesvorstand), wechselt oben in der Seitenleiste des Dashboards über den Bereichs-Umschalter zwischen den Ansichten. Die URL musst du dafür nicht wechseln.",
         },
       ],
     },
@@ -96,7 +96,7 @@ export const allgemein: FaqSection = {
       body: [
         {
           kind: "p",
-          text: "Unter „Mein Konto“ verwaltest du deine Zugangsdaten und deine E-Mail-Präferenzen — also welche Benachrichtigungskategorien du erhalten möchtest. Transaktionale E-Mails (z. B. Verifizierung, Anmeldebestätigungen) sind verpflichtend und nicht abwählbar.",
+          text: "Unter „Mein Konto“ verwaltest du deine Zugangsdaten und deine E-Mail-Präferenzen, also welche Benachrichtigungskategorien du erhalten möchtest. Transaktionale E-Mails (z. B. Verifizierung, Anmeldebestätigungen) sind verpflichtend und nicht abwählbar.",
         },
         { kind: "link", href: "/account", label: "Zu meinem Konto" },
       ],
