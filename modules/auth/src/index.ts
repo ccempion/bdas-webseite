@@ -35,6 +35,16 @@ export {
 export { getCurrentUser, requireRole, type CurrentUser } from "./services/me";
 export { resendVerification, type ResendResult } from "./services/resend-verification";
 export { deleteAccount } from "./services/delete-account";
+export {
+  requestAccountDeletion,
+  cancelAccountDeletion,
+  getDeletionRequestForUser,
+  buildReactivationUrl,
+  ACCOUNT_DELETION_GRACE_DAYS,
+  type RequestAccountDeletionInput,
+  type RequestAccountDeletionResult,
+} from "./services/account-deletion-request";
+export { type AccountDeletionRequest } from "./schema";
 
 // Password policy (UI shows the hint; schema is the single source of truth).
 export { passwordSchema, PASSWORD_RULE_HINT, PASSWORD_MIN_LENGTH } from "./password";
@@ -73,4 +83,6 @@ export type {
   PasswordChanged,
   EmailChanged,
   UserDeleted,
+  AccountDeletionRequested,
+  AccountDeletionCancelled,
 } from "./events";
