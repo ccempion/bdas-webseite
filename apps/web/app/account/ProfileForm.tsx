@@ -114,7 +114,7 @@ export function ProfileForm({
             <p>
               Achtung: Der Austritt aus deiner aktuellen Gruppe erfolgt sofort, ohne Freigabe durch
               den Vorstand. Du verlierst umgehend deine Mitgliedschaft und deine Rechte in dieser
-              Gruppe (z. B. ein Vorstandsamt). Das lässt sich nicht rückgängig machen, ein späterer
+              Gruppe (z. B. ein Vorstandsamt). Das lässt sich nicht rückgängig machen. Ein späterer
               erneuter Beitritt braucht wieder eine Freigabe.
             </p>
             <label className="mt-2 flex items-start gap-2 text-sm text-bdas-ink-body">

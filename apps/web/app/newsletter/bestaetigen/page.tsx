@@ -46,7 +46,7 @@ export default async function NewsletterBestaetigenPage({
 
       {result.status === "already_confirmed" ? (
         <Alert variant="info" title="Alles schon erledigt">
-          Diese Adresse ist bereits bestätigt, du bist dabei. Solche Links werden gern zweimal
+          Diese Adresse ist bereits bestätigt. Du bist dabei. Solche Links werden gern zweimal
           geklickt, das macht nichts.
         </Alert>
       ) : null}

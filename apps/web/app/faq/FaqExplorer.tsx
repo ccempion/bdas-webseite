@@ -195,7 +195,7 @@ export function FaqExplorer({
             <div className="rounded-bdas border border-bdas-soft bg-bdas-surface p-8 text-center">
               <p className="text-lg font-semibold text-bdas-ink">Keine Antwort gefunden.</p>
               <p className="mt-2 text-bdas-ink-muted">
-                Stell deine Frage über „Frage einreichen“, wir beantworten sie dann hier.
+                Stell deine Frage über „Frage einreichen“. Wir beantworten sie dann hier.
               </p>
               <button
                 type="button"

@@ -33,7 +33,7 @@ export default async function EmailBestaetigenTokenPage({ params }: { params: { 
       {result && !result.alreadyConfirmed ? (
         <Alert variant="success" title="E-Mail-Adresse geändert">
           Deine Login-E-Mail-Adresse ist jetzt {result.newEmail}. Du wurdest auf allen Geräten
-          abgemeldet, bitte melde dich mit der neuen Adresse erneut an.
+          abgemeldet. Bitte melde dich mit der neuen Adresse erneut an.
         </Alert>
       ) : null}
 

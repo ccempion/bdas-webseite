@@ -21,7 +21,7 @@ UPDATE faq_entries
    AND body::text LIKE '%Alumni: ausgeschiedenes Mitglied; meldet sich nicht mehr für Veranstaltungen an%';
 
 UPDATE faq_entries
-   SET body = '{"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"Wenig. Du bleibst aktives Mitglied im BDAS-Netzwerk und kannst dich weiterhin zu Veranstaltungen anmelden. In der Mitgliederliste deiner Hochschulgruppe bist du als Alumnus gekennzeichnet, das ist eine Einordnung, keine Einschränkung. Ob du Blog-Beiträge verfassen kannst, hängt wie bei allen anderen an deiner Rolle, nicht an dieser Kennzeichnung."}]}]}'::jsonb,
+   SET body = '{"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"Wenig. Du bleibst aktives Mitglied im BDAS-Netzwerk und kannst dich weiterhin zu Veranstaltungen anmelden. In der Mitgliederliste deiner Hochschulgruppe bist du als Alumnus gekennzeichnet. Das ist eine Einordnung, keine Einschränkung. Ob du Blog-Beiträge verfassen kannst, hängt wie bei allen anderen an deiner Rolle, nicht an dieser Kennzeichnung."}]}]}'::jsonb,
        updated_at = now()
  WHERE id = 'alumni'
    AND updated_by IS NULL

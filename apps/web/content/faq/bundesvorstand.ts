@@ -40,7 +40,7 @@ export const bundesvorstand: FaqSection = {
           items: [
             "„Gruppen“ im Bundesverband-Bereich öffnen.",
             "Neue Gruppe anlegen oder eine bestehende bearbeiten bzw. archivieren.",
-            "Archivierte Gruppen verwaltet nur noch der Bundesvorstand, ein lokaler Vorstand kann sie nicht mehr bearbeiten.",
+            "Archivierte Gruppen verwaltet nur noch der Bundesvorstand. Ein lokaler Vorstand kann sie nicht mehr bearbeiten.",
           ],
         },
         { kind: "link", href: "/federal/groups", label: "Zur Gruppen-Registry" },

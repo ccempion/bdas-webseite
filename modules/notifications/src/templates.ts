@@ -57,7 +57,7 @@ export function render(template: TransactionalTemplate, data: TemplateData): Ren
       return body(
         "BDAS: Veranstaltung abgesagt",
         firstName,
-        `leider müssen wir dir mitteilen, dass „${eventTitle}“ abgesagt wurde. Deine Anmeldung ist damit hinfällig, wir bitten um dein Verständnis.`,
+        `leider müssen wir dir mitteilen, dass „${eventTitle}“ abgesagt wurde. Deine Anmeldung ist damit hinfällig. Wir bitten um dein Verständnis.`,
       );
     case "event_organizer_message": {
       const subject = data.subject?.trim() || `BDAS: Nachricht zu „${eventTitle}“`;
@@ -130,13 +130,13 @@ export function render(template: TransactionalTemplate, data: TemplateData): Ren
       return body(
         "BDAS: Deine Bewerbung konnte nicht entschieden werden",
         firstName,
-        `die Gruppe${data.groupName ? ` ${data.groupName}` : ""} wurde aufgelöst, bevor über deine Bewerbung entschieden werden konnte. Das ist keine Absage, bitte bewirb dich gerne bei einer anderen BDAS-Gruppe.`,
+        `die Gruppe${data.groupName ? ` ${data.groupName}` : ""} wurde aufgelöst, bevor über deine Bewerbung entschieden werden konnte. Das ist keine Absage. Bitte bewirb dich gerne bei einer anderen BDAS-Gruppe.`,
       );
     case "member_group_change_approved":
       return body(
         "BDAS: Dein Gruppenwechsel ist bestätigt",
         firstName,
-        `der Vorstand${data.groupName ? ` von ${data.groupName}` : ""} hat deinen Gruppenwechsel angenommen, du bist ab sofort dort Mitglied.`,
+        `der Vorstand${data.groupName ? ` von ${data.groupName}` : ""} hat deinen Gruppenwechsel angenommen. Du bist ab sofort dort Mitglied.`,
       );
     case "member_group_change_declined":
       return body(
@@ -183,7 +183,7 @@ export function render(template: TransactionalTemplate, data: TemplateData): Ren
         "schön, dass du dabei sein willst. Bestätige einmal kurz, dass diese Adresse dir gehört, dann bekommst du ein paar Mal im Jahr Neues aus dem Verband und den Hochschulgruppen.",
         confirmUrl ? { label: "Anmeldung bestätigen:", url: confirmUrl } : undefined,
         [
-          "Der Link gilt sieben Tage. Wenn du dich nicht angemeldet hast, ignoriere diese E-Mail einfach, ohne Bestätigung passiert nichts.",
+          "Der Link gilt sieben Tage. Wenn du dich nicht angemeldet hast, ignoriere diese E-Mail einfach. Ohne Bestätigung passiert nichts.",
           // The only unsubscribe key an anonymous address ever receives. It
           // also lets somebody who never signed up end the entry outright
           // instead of merely ignoring it.

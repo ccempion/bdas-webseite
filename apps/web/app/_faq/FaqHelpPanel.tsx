@@ -67,7 +67,7 @@ export function FaqHelpPanel({
           <p className="text-sm text-bdas-ink-muted">Wird geladen …</p>
         ) : shown.length === 0 ? (
           <p className="text-sm text-bdas-ink-muted">
-            Dazu gibt es noch keine Antwort, reich die Frage gern ein.
+            Dazu gibt es noch keine Antwort. Reich die Frage gern ein.
           </p>
         ) : (
           <div className="flex flex-col gap-2">

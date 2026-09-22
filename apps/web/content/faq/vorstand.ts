@@ -116,7 +116,7 @@ export const vorstand: FaqSection = {
           body: [
             {
               kind: "p",
-              text: "Archivierte Gruppen kann auch ein LEAD nicht mehr verwalten, das übernimmt der Bundesvorstand. Eine weitere LEAD-Person oder die Bundesvorstands-Rolle vergibt ebenfalls nur der Bundesvorstand.",
+              text: "Archivierte Gruppen kann auch ein LEAD nicht mehr verwalten. Das übernimmt der Bundesvorstand. Eine weitere LEAD-Person oder die Bundesvorstands-Rolle vergibt ebenfalls nur der Bundesvorstand.",
             },
           ],
         },
