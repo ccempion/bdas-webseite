@@ -14,7 +14,14 @@ import {
   uniqueEmail,
   uniqueSlug,
 } from "./helpers/db";
-import { PASSWORD, login, pickCombo, registerVerifyLogin, verify } from "./helpers/flows";
+import {
+  PASSWORD,
+  login,
+  pickCombo,
+  registerVerifyLogin,
+  verify,
+  verifyTokenFromBrowser,
+} from "./helpers/flows";
 import { wizardSignup } from "./helpers/onboarding";
 
 // Must match BDAS_FEDERAL_BOARD_EMAILS in the CI e2e job.
@@ -174,7 +181,7 @@ test("Studentin ohne Gruppe vor Ort: Gründung landet ohne Gruppenantrag im Pool
     page.getByRole("heading", { name: "Wir haben dir eine Mail geschickt" }),
   ).toBeVisible();
 
-  await verify(page, email);
+  await verify(page);
   await login(page, email, undefined, { expect: "mitmachen" });
   await angabenAbschicken(page);
 
@@ -216,7 +223,7 @@ test("Studentin ohne Gruppe vor Ort: Beitritt bewirbt sich bei der gewählten Gr
   await page.getByLabel("Passwort", { exact: true }).fill(PASSWORD);
   await page.locator("#consent").check();
   await page.getByRole("button", { name: "Konto erstellen" }).click();
-  await verify(page, email);
+  await verify(page);
   await login(page, email, undefined, { expect: "mitmachen" });
   await angabenAbschicken(page);
 
