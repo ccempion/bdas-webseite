@@ -96,7 +96,7 @@ test("alumnus: confirm in a fresh browser, no request, the federal board sees th
   });
   await page.goto("/federal/pool");
   await expect(page.getByRole("row", { name: /K\. E2E/ }).first()).toContainText(
-    "Bewirbt sich als Alumna/Alumnus",
+    "Bewirbt sich als Alumna oder Alumnus",
   );
 });
 
