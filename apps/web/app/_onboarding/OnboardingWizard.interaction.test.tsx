@@ -94,7 +94,7 @@ describe("OnboardingWizard", () => {
     type("onb-vorname", "Lea");
     type("onb-nachname", "Yıldız");
     submit();
-    expect(heading()).toBe("Du passt zu uns als Förderer*in.");
+    expect(heading()).toBe("Du wärst als Förderer*in angemeldet.");
     expect(container.textContent).toContain("Der Bundesvorstand");
 
     click("Zurück");
@@ -112,7 +112,7 @@ describe("OnboardingWizard", () => {
 
     type("onb-ort", "TU Ber");
     click("TU Berlin");
-    expect(heading()).toBe("Du passt zu uns als Student*in in Berlin.");
+    expect(heading()).toBe("Du wärst als Student*in bei BDAS Berlin angemeldet.");
     expect(container.textContent).toContain("Der Vorstand von BDAS Berlin");
   });
 
@@ -129,14 +129,27 @@ describe("OnboardingWizard", () => {
     expect(heading()).toBe("Wie dürfen wir dich nennen?");
   });
 
+  it("fragt auf dem Ergebnis nach und bietet beide Wege an", () => {
+    render();
+    click("Ich möchte unterstützen");
+    type("onb-vorname", "Ada");
+    type("onb-nachname", "Muster");
+    submit();
+
+    expect(container.textContent).toContain("Passt das so?");
+    const labels = [...container.querySelectorAll("button")].map((b) => b.textContent);
+    expect(labels).toContain("Passt so, Konto anlegen");
+    expect(labels).toContain("Etwas ändern");
+  });
+
   it("opens the account form from the result", () => {
     render();
     click("Ich möchte unterstützen");
     type("onb-vorname", "Lea");
     type("onb-nachname", "Y");
     submit();
-    click("Passt — Konto anlegen");
-    expect(heading()).toBe("Fast geschafft — dein Konto");
+    click("Passt so, Konto anlegen");
+    expect(heading()).toBe("Fast geschafft, dein Konto");
     expect(container.querySelector<HTMLInputElement>('input[name="answers"]')?.value).toContain(
       '"typ":"unterstuetzen"',
     );
@@ -155,9 +168,9 @@ describe("OnboardingWizard", () => {
     expect(container.textContent).not.toContain("Du hast schon ein Konto?");
     click("Ich möchte unterstützen");
     expect(container.querySelector("#onb-vorname")).toBeNull();
-    expect(heading()).toBe("Du passt zu uns als Förderer*in.");
-    expect(container.textContent).not.toContain("Passt — Konto anlegen");
-    expect(container.textContent).toContain("Passt — weiter");
+    expect(heading()).toBe("Du wärst als Förderer*in angemeldet.");
+    expect(container.textContent).not.toContain("Passt so, Konto anlegen");
+    expect(container.textContent).toContain("Passt so, weiter");
   });
 
   it("führt von der Absicht zur Gruppenwahl und wählt eine Gruppe", () => {
@@ -175,7 +188,7 @@ describe("OnboardingWizard", () => {
     expect(heading()).toBe("Welchem BDAS möchtest du beitreten?");
 
     click("BDAS Berlin");
-    expect(heading()).toBe("Du passt zu uns als Student*in in Berlin.");
+    expect(heading()).toBe("Du wärst als Student*in bei BDAS Berlin angemeldet.");
   });
 
   it("führt die Gründung zum eigenen Ergebnis", () => {

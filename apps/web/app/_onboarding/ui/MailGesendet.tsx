@@ -19,7 +19,7 @@ export function MailGesendet({ email, onClose }: { email: string; onClose: () =>
       </h2>
       <p className="text-bdas-ink-body">
         Klick auf den Link in der Mail an <strong className="text-bdas-ink">{email}</strong>. Danach
-        geht es mit ein paar Angaben weiter — auf jedem Gerät. Dieses Fenster kannst du jetzt
+        geht es mit ein paar Angaben weiter, auf jedem Gerät. Dieses Fenster kannst du jetzt
         schließen.
       </p>
       <form action={action}>

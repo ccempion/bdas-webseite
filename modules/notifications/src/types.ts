@@ -27,7 +27,10 @@ export type TransactionalTemplate =
   | "email_changed_notice"
   | "blog_post_reported"
   | "newsletter_confirm"
-  | "newsletter_already_subscribed";
+  | "newsletter_already_subscribed"
+  | "account_deletion_requested"
+  | "data_export_ready"
+  | "account_deletion_completed";
 
 /** Which aspects of an event changed, for the `event_changed` email. */
 export type EventChangeKind = "time" | "location";
@@ -69,6 +72,15 @@ export type TemplateData = {
   readonly newEmail?: string | undefined;
   /** Aufnahme-Mails: absoluter Link zum Konto, wenn eine Site-URL konfiguriert ist. */
   readonly accountUrl?: string | undefined;
+  /** `account_deletion_requested`: the single-use link that cancels a pending
+   *  deletion. Omitted renders the mail without an action line — never the
+   *  case in production, but keeps `render()` total for tests that don't set it. */
+  readonly reactivationUrl?: string | undefined;
+  /** `account_deletion_requested`: the pre-formatted German purge date
+   *  (e.g. "22. Oktober 2026"), so the mail names a concrete day instead of
+   *  a relative "in 30 Tagen" that reads differently depending on when the
+   *  recipient opens it. */
+  readonly scheduledPurgeDate?: string | undefined;
 };
 
 /** Outcome of a send attempt, returned by sendTransactional. */

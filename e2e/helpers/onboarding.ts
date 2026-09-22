@@ -32,7 +32,7 @@ export async function wizardSignup(
       .click();
   }
 
-  await page.getByRole("button", { name: "Passt — Konto anlegen" }).click();
+  await page.getByRole("button", { name: "Passt so, Konto anlegen" }).click();
   await page.getByLabel("E-Mail", { exact: true }).fill(opts.email);
   await page.getByLabel("Passwort", { exact: true }).fill(PASSWORD);
   await page.locator("#consent").check();

@@ -39,3 +39,34 @@ export function getRecipientResolver(): RecipientResolver {
 export function setRecipientResolver(r: RecipientResolver): void {
   resolverStore()[RESOLVER_KEY] = r;
 }
+
+/**
+ * Resolves a userId (the identity the account-deletion orchestrator holds)
+ * to this member's id (the identity `notification_log.member_id` actually
+ * uses). Same cross-module-boundary shape as RecipientResolver, just the
+ * other direction — composed here instead of reading `members` directly.
+ */
+export interface MemberIdResolver {
+  resolveMemberId(db: Db, userId: string): Promise<string | null>;
+}
+
+const unconfiguredMemberIdResolver: MemberIdResolver = {
+  async resolveMemberId(): Promise<string | null> {
+    return null;
+  },
+};
+
+const MEMBER_ID_RESOLVER_KEY = Symbol.for("@bdas/notifications:member-id-resolver");
+type MemberIdResolverStore = { [MEMBER_ID_RESOLVER_KEY]?: MemberIdResolver };
+function memberIdResolverStore(): MemberIdResolverStore {
+  return globalThis as unknown as MemberIdResolverStore;
+}
+
+export function getMemberIdResolver(): MemberIdResolver {
+  return memberIdResolverStore()[MEMBER_ID_RESOLVER_KEY] ?? unconfiguredMemberIdResolver;
+}
+
+/** Composition-time wiring. apps/web calls this at boot. */
+export function setMemberIdResolver(r: MemberIdResolver): void {
+  memberIdResolverStore()[MEMBER_ID_RESOLVER_KEY] = r;
+}

@@ -129,6 +129,19 @@ describeIfDb("notifications integration", () => {
     expect(rows[0]?.error).toBeNull();
   });
 
+  it("passes attachments through to the Notifier", async () => {
+    const memberId = await seedMember();
+    const attachments = [{ filename: "export.zip", content: Buffer.from("zip-bytes") }];
+
+    await sendTransactional(t.db, "event_registration_confirmed", memberId, {
+      eventTitle: "Sommerfest",
+      attachments,
+    });
+
+    expect(sent).toHaveLength(1);
+    expect(sent[0]?.attachments).toEqual(attachments);
+  });
+
   it("records a 'failed' row when the Notifier throws, without rethrowing", async () => {
     const memberId = await seedMember();
     setNotifier({

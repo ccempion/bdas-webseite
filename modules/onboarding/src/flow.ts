@@ -25,7 +25,7 @@ export const FLOW: Flow = {
     [QUESTION_TYP]: {
       kind: "choice",
       title: "Was beschreibt dich am besten?",
-      help: "Damit wir dich an die richtige Stelle bringen — dauert keine Minute.",
+      help: "Damit wir dich an die richtige Stelle bringen, dauert keine Minute.",
       options: [
         {
           value: "studiere",
@@ -42,7 +42,7 @@ export const FLOW: Flow = {
         {
           value: "bdaj",
           label: "Ich bin in der BDAJ aktiv",
-          hint: "Für Funktionär*innen des BDAJ",
+          hint: "Für alle Mitglieder der BDAJ",
           icon: "bdaj",
           requires: "bdaj",
         },
@@ -99,7 +99,7 @@ export const FLOW: Flow = {
     [QUESTION_AKTIV_WO]: {
       kind: "place",
       title: "Wo warst du aktiv, {vorname}?",
-      help: "Gruppe oder Stadt — so finden dich Leute von damals. Du kannst das überspringen.",
+      help: "Gruppe oder Stadt, so finden dich Leute von damals. Du kannst das überspringen.",
       skippable: true,
       noGroupHint: "In {eingabe} gab es keine Gruppe? Kein Problem, wir merken uns die Stadt.",
     },
@@ -146,7 +146,7 @@ export const FLOW: Flow = {
     student: {
       userType: "student",
       target: "gewaehlte_gruppe",
-      title: "Du passt zu uns als Student*in in {stadt}.",
+      title: "Du wärst als Student*in bei {gruppe} angemeldet.",
       benefits: [
         "Events und Treffen deiner Hochschulgruppe",
         "Bundesweites Netzwerk alevitischer Studierender",
@@ -186,40 +186,40 @@ export const FLOW: Flow = {
     alumnus: {
       userType: "alumnus",
       target: "keine",
-      title: "Du passt zu uns als Alumna oder Alumnus.",
+      title: "Du wärst als Alumna oder Alumnus angemeldet.",
       benefits: [
         "Kontakt zu ehemaligen und aktiven Studierenden",
         "Einladungen zu Alumni-Treffen",
         "Neuigkeiten aus dem Verband",
       ],
       decider: "Der Bundesvorstand",
-      duration: "meist innerhalb von zwei Wochen",
+      duration: "meist innerhalb von zwei Tagen",
       submittedTo: "beim Bundesvorstand",
     },
     foerderer: {
       userType: "foerderer",
       target: "netzwerk",
-      title: "Du passt zu uns als Förderer*in.",
+      title: "Du wärst als Förderer*in angemeldet.",
       benefits: [
         "Einblick in unsere Arbeit",
         "Einladungen zu offenen Events",
         "Neuigkeiten aus dem Verband",
       ],
       decider: "Der Bundesvorstand",
-      duration: "meist innerhalb von zwei Wochen",
+      duration: "meist innerhalb von zwei Tagen",
       submittedTo: "beim Bundesvorstand",
     },
     bdaj: {
       userType: "bdaj",
       target: "bdaj",
-      title: "Du passt zu uns als BDAJ-Funktionär*in.",
+      title: "Du wärst als BDAJ-Mitglied angemeldet.",
       benefits: [
         "Gemeinsamer Bereich für BDAJ und BDAS",
         "Zugriff auf geteilte Dateien",
         "Einladungen zu gemeinsamen Events",
       ],
       decider: "Der Bundesvorstand",
-      duration: "meist innerhalb von zwei Wochen",
+      duration: "meist innerhalb von zwei Tagen",
       submittedTo: "beim Bundesvorstand",
     },
   },

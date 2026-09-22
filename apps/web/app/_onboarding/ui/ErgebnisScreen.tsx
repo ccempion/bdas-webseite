@@ -37,17 +37,18 @@ export function ErgebnisScreen({
       <div className="rounded-bdas border border-bdas-soft bg-bdas-overlay-faint p-4">
         <p className="font-semibold text-bdas-ink">Wer entscheidet?</p>
         <p className="text-bdas-ink-body">
-          {fillText(outcome.decider, ctx)} — {outcome.duration}.
+          {fillText(outcome.decider, ctx)}, {outcome.duration}.
         </p>
       </div>
+      <p className="font-medium text-bdas-ink">Passt das so?</p>
       <div className="flex flex-wrap gap-3">
         {confirm ?? (
           <Button type="button" onClick={onConfirm}>
-            Passt — Konto anlegen
+            Passt so, Konto anlegen
           </Button>
         )}
         <Button type="button" variant="secondary" onClick={onChange}>
-          Doch etwas anderes
+          Etwas ändern
         </Button>
       </div>
     </section>

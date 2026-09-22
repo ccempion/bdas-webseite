@@ -30,8 +30,11 @@ registrant event carries a `memberId` or guest fields.
 ```ts
 import {
   sendTransactional,
+  sendTransactionalToGuest,
   sendOrganizerMessage,
   listBroadcastsForEvent,
+  exportForUser,
+  deleteLogForMember,
   registerNotificationSubscribers,
   // composition seams (wired in apps/web at boot)
   setNotifier,
@@ -40,10 +43,14 @@ import {
   getNotifier,
   type Notifier,
   type OutboundEmail,
+  type EmailAttachment,
   type ResendNotifierOptions,
   setRecipientResolver,
   getRecipientResolver,
   type RecipientResolver,
+  setMemberIdResolver,
+  getMemberIdResolver,
+  type MemberIdResolver,
   // types
   type TransactionalTemplate,
   type TemplateData,
@@ -52,6 +59,7 @@ import {
   type OrganizerMessage,
   type BroadcastResult,
   type BroadcastLogEntry,
+  type NotificationLogExportRow,
 } from "@bdas/notifications";
 ```
 
@@ -90,6 +98,28 @@ table — it depends on the `RecipientResolver` interface, wired in `apps/web`
 from `members.getMember` + `auth.getUserExport`. Event titles come only through
 `events`' public `getEvent` service, never a direct `events` table read.
 Transactional mail is non-optional (§16), so there is no preference check.
+
+## GDPR self-service (Art. 15/17)
+
+`exportForUser(db, userId)` and `deleteLogForMember(db, userId)` are this
+module's contribution to the account-deletion feature
+(`docs/superpowers/specs/2026-09-22-account-deletion-design.md`). Both take
+a `userId`, not a `memberId` — the account-deletion orchestrator (a later
+PR) only ever holds the `auth_users.id`. `MemberIdResolver`, wired in
+`apps/web` from `members.getMemberByUserId`, bridges that to this module's
+own `member_id` column, the same pattern `RecipientResolver` already uses
+for sending. `deleteLogForMember` is idempotent and safe to call even after
+the member row is already gone (resolves to nothing, deletes nothing).
+
+`account_deletion_requested`, `data_export_ready`, and
+`account_deletion_completed` are the three templates for that feature's
+emails A/B/C. Unlike the event templates above, none of them are triggered
+by a bus event — the orchestrator calls `sendTransactional`/
+`sendTransactionalToGuest` directly, the same way `member_application_*`
+already does. `data_export_ready` and `account_deletion_completed` carry no
+in-body link; `account_deletion_requested`'s reactivation link and
+`data_export_ready`'s CSV-ZIP (via the `Notifier`'s `attachments` field) are
+supplied by the caller.
 
 ## Testing
 

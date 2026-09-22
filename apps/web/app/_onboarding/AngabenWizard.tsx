@@ -58,7 +58,7 @@ export function AngabenWizard({
     <div ref={frame} className="flex flex-col gap-4">
       <Progress part={3} />
       {index === 0 ? (
-        <p className="text-bdas-ink-body">Willkommen zurück, {firstName} — fast geschafft.</p>
+        <p className="text-bdas-ink-body">Willkommen zurück, {firstName}, fast geschafft.</p>
       ) : null}
       {notice ? <Alert variant="info">{notice}</Alert> : null}
       {index > 0 ? (
