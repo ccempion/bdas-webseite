@@ -160,6 +160,18 @@ describeIfDb("requestAccountDeletion / cancelAccountDeletion", () => {
       ).rejects.toThrow(/Konto nicht gefunden/);
     });
 
+    it("rejects a non-active account (e.g. still unverified)", async () => {
+      const reg = await register(
+        t.db,
+        { email: "ines@example.de", password: "Verysecret!23", consent: true },
+        { ip: "10.10.10.10", publicSiteUrl: "https://bdas.de" },
+      );
+
+      await expect(
+        requestAccountDeletion(t.db, { userId: reg.userId, displayName: "Ines Test" }),
+      ).rejects.toThrow(/nicht aktiv/);
+    });
+
     it("allows only one pending deletion per user when two requests race", async () => {
       const reg = await signUpAndLogin("helga@example.de", "9.9.9.9");
 
@@ -250,6 +262,27 @@ describeIfDb("requestAccountDeletion / cancelAccountDeletion", () => {
         .where(eq(accountDeletionRequests.userId, reg.userId));
 
       await expect(cancelAccountDeletion(t.db, reactivationToken)).rejects.toThrow(/abgelaufen/);
+    });
+
+    it("allows only one cancel to succeed when two cancels race", async () => {
+      const reg = await signUpAndLogin("iris@example.de", "11.11.11.11");
+      const { reactivationToken } = await requestAccountDeletion(t.db, {
+        userId: reg.userId,
+        displayName: "Iris Test",
+      });
+
+      const results = await Promise.allSettled([
+        cancelAccountDeletion(t.db, reactivationToken),
+        cancelAccountDeletion(t.db, reactivationToken),
+      ]);
+
+      const fulfilled = results.filter((r) => r.status === "fulfilled");
+      const rejected = results.filter((r) => r.status === "rejected");
+      expect(fulfilled).toHaveLength(1);
+      expect(rejected).toHaveLength(1);
+      expect((rejected[0] as PromiseRejectedResult).reason.message).toMatch(
+        /ungültig oder bereits verwendet/,
+      );
     });
   });
 });

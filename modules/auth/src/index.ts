@@ -43,6 +43,7 @@ export {
   ACCOUNT_DELETION_GRACE_DAYS,
   type RequestAccountDeletionInput,
   type RequestAccountDeletionResult,
+  type AccountDeletionStatus,
 } from "./services/account-deletion-request";
 export { type AccountDeletionRequest } from "./schema";
 

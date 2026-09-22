@@ -67,11 +67,3 @@ export async function revokeSession(db: Db, sessionId: string): Promise<void> {
     .set({ revokedAt: new Date() })
     .where(and(eq(authSessions.id, sessionId), isNull(authSessions.revokedAt)));
 }
-
-/** Revokes every active session for a user — used when locking an account. */
-export async function revokeAllSessionsForUser(db: Db, userId: string): Promise<void> {
-  await db
-    .update(authSessions)
-    .set({ revokedAt: new Date() })
-    .where(and(eq(authSessions.userId, userId), isNull(authSessions.revokedAt)));
-}

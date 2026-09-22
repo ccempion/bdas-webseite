@@ -41,6 +41,12 @@ export type RequestAccountDeletionResult = {
   readonly reactivationToken: string;
 };
 
+/** Read-only deletion status; the plaintext reactivation token never leaves the server through this path. */
+export type AccountDeletionStatus = Omit<
+  AccountDeletionRequest,
+  "reactivationToken" | "reactivationExpiresAt"
+>;
+
 /**
  * Did this error come from the one-pending-request-per-user index?
  *
@@ -59,7 +65,7 @@ export async function requestAccountDeletion(
   input: RequestAccountDeletionInput,
 ): Promise<RequestAccountDeletionResult> {
   const [user] = await db
-    .select({ id: authUsers.id, email: authUsers.emailNormalized })
+    .select({ id: authUsers.id, email: authUsers.emailNormalized, status: authUsers.status })
     .from(authUsers)
     .where(eq(authUsers.id, input.userId))
     .limit(1);
@@ -77,6 +83,9 @@ export async function requestAccountDeletion(
     .limit(1);
   if (existing) {
     throw new ConflictError("Für dieses Konto ist bereits eine Löschung angefragt.");
+  }
+  if (user.status !== "active") {
+    throw new ConflictError("Konto ist nicht aktiv.");
   }
 
   const now = new Date();
@@ -151,10 +160,16 @@ export async function cancelAccountDeletion(
   const now = new Date();
   const userId = row.userId;
   await db.transaction(async (tx) => {
-    await tx
+    const updated = await tx
       .update(accountDeletionRequests)
       .set({ status: "cancelled", cancelledAt: now, reactivationToken: null })
-      .where(eq(accountDeletionRequests.id, row.id));
+      .where(
+        and(eq(accountDeletionRequests.id, row.id), eq(accountDeletionRequests.status, "pending")),
+      )
+      .returning({ id: accountDeletionRequests.id });
+    if (updated.length === 0) {
+      throw new NotFoundError("Reaktivierungslink ungültig oder bereits verwendet.");
+    }
     await tx
       .update(authUsers)
       .set({ status: "active", updatedAt: now })
@@ -175,9 +190,19 @@ export async function cancelAccountDeletion(
 export async function getDeletionRequestForUser(
   db: Db,
   userId: string,
-): Promise<AccountDeletionRequest | null> {
+): Promise<AccountDeletionStatus | null> {
   const [row] = await db
-    .select()
+    .select({
+      id: accountDeletionRequests.id,
+      userId: accountDeletionRequests.userId,
+      emailSnapshot: accountDeletionRequests.emailSnapshot,
+      nameSnapshot: accountDeletionRequests.nameSnapshot,
+      requestedAt: accountDeletionRequests.requestedAt,
+      scheduledPurgeAt: accountDeletionRequests.scheduledPurgeAt,
+      status: accountDeletionRequests.status,
+      cancelledAt: accountDeletionRequests.cancelledAt,
+      completedAt: accountDeletionRequests.completedAt,
+    })
     .from(accountDeletionRequests)
     .where(
       and(
