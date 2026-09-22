@@ -24,8 +24,9 @@ Federation-side member profiles. Identity lives in `@bdas/auth`; membership
    federal_board only) or marked as alumnus later — a grant, not a status
    (ADR 0043).
 
-A side door (ADR 0045): the federal board accepts a groupless former member
-with `acceptAsAlumnus()` — status `active`, then the unscoped `alumnus` mark.
+A side door (ADR 0045): the federal board accepts a groupless applicant with
+`acceptWithoutGroup()` — status `active`, then the role the caller asks for
+(`alumnus` for former members, none for students with no group nearby).
 
 ## Public surface
 
@@ -42,7 +43,7 @@ import {
   updateProfile,
   transitionStatus,
   approveMember,
-  acceptAsAlumnus,
+  acceptWithoutGroup,
   grantRole,
   revokeRole,
   // Authorization helpers

@@ -9,17 +9,12 @@ import {
   ensureNetzwerkGroup,
   journeyByEmail,
   openRequestTargetByEmail,
+  resetRateLimits,
   seedGroup,
   uniqueEmail,
   uniqueSlug,
 } from "./helpers/db";
-import {
-  login,
-  pickCombo,
-  registerVerifyLogin,
-  verify,
-  verifyTokenFromBrowser,
-} from "./helpers/flows";
+import { PASSWORD, login, pickCombo, registerVerifyLogin, verify } from "./helpers/flows";
 import { wizardSignup } from "./helpers/onboarding";
 
 // Must match BDAS_FEDERAL_BOARD_EMAILS in the CI e2e job.
@@ -103,7 +98,7 @@ test("alumnus: confirm in a fresh browser, no request, the federal board sees th
   });
   await page.goto("/federal/pool");
   await expect(page.getByRole("row", { name: /K\. E2E/ }).first()).toContainText(
-    "Bewirbt sich als Alumna/Alumnus",
+    "Bewirbt sich als Alumna oder Alumnus",
   );
 });
 
@@ -137,14 +132,94 @@ test("an account from the old registration continues after the name", async ({ p
   await expect(page).toHaveURL(/\/mitmachen\/angaben$/);
 });
 
-test("der Bestätigungslink meldet direkt an", async ({ page }) => {
-  const city = `Direktstadt${Math.random().toString(36).slice(2, 7)}`;
-  await seedGroup({ slug: uniqueSlug("e2e-dir"), name: `BDAS ${city}`, city });
-  const email = uniqueEmail("ang-direkt");
+/** Teil 3 nach dem Einstieg, für beide Wege ohne Gruppe vor Ort gleich. */
+async function angabenAbschicken(page: Page): Promise<void> {
+  await pickCombo(page, "studienfachKategorie", "Ingenieurwissenschaften");
+  await pickCombo(page, "studiengang", "Maschinenbau/-wesen");
+  await page.locator("#abschlussart").selectOption("bachelor");
+  await weiter(page);
+  await pickCombo(page, "uni", UNI);
+  await weiter(page);
+  await page.getByLabel("Geburtsdatum").fill("2003-05-06");
+  await weiter(page);
+  await page.locator("#gefundenDurch").selectOption("webseite");
+  await weiter(page);
+  await weiter(page);
+  await page.getByRole("button", { name: "Bewerbung abschicken" }).click();
+}
 
-  await wizardSignup(page, { email, typ: /Ich studiere gerade/, firstName: "Deniz", place: city });
-  await verify(page);
+test("Studentin ohne Gruppe vor Ort: Gründung landet ohne Gruppenantrag im Pool", async ({
+  page,
+}) => {
+  const city = `Gruendstadt${Math.random().toString(36).slice(2, 7)}`;
+  const email = uniqueEmail("ang-gruendung");
 
-  await expect(page).toHaveURL(/\/mitmachen\/angaben$/);
-  await expect(page.getByText("Willkommen zurück, Deniz — fast geschafft.")).toBeVisible();
+  await resetRateLimits();
+  await page.goto("/mitmachen");
+  await page.getByRole("button", { name: /Ich studiere gerade/ }).click();
+  await page.getByLabel("Vorname").fill("Mira");
+  await page.getByLabel("Nachname").fill("E2E");
+  await weiter(page);
+  await page.getByLabel("Stadt oder Hochschule").fill(city);
+  await weiter(page);
+  await page.getByRole("button", { name: new RegExp(`Ein BDAS in ${city} gründen`) }).click();
+  await expect(page.getByRole("heading", { name: /mit uns an deiner Seite/ })).toBeVisible();
+
+  await page.getByRole("button", { name: "Passt — Konto anlegen" }).click();
+  await page.getByLabel("E-Mail", { exact: true }).fill(email);
+  await page.getByLabel("Passwort", { exact: true }).fill(PASSWORD);
+  await page.locator("#consent").check();
+  await page.getByRole("button", { name: "Konto erstellen" }).click();
+  await expect(
+    page.getByRole("heading", { name: "Wir haben dir eine Mail geschickt" }),
+  ).toBeVisible();
+
+  await verify(page, email);
+  await login(page, email, undefined, { expect: "mitmachen" });
+  await angabenAbschicken(page);
+
+  await expect(page).toHaveURL(/\/mitmachen\/fertig$/);
+  expect(await openRequestTargetByEmail(email)).toBeNull();
+  expect(await journeyByEmail(email)).toMatchObject({
+    status: "abgeschickt",
+    outcome: "student_gruendung",
+  });
+});
+
+test("Studentin ohne Gruppe vor Ort: Beitritt bewirbt sich bei der gewählten Gruppe", async ({
+  page,
+}) => {
+  const city = `Fernstadt${Math.random().toString(36).slice(2, 7)}`;
+  const groupId = await seedGroup({
+    slug: uniqueSlug("e2e-fern"),
+    name: `BDAS Fernkoeln${Math.random().toString(36).slice(2, 5)}`,
+    city: `Fernkoeln${Math.random().toString(36).slice(2, 5)}`,
+  });
+  const email = uniqueEmail("ang-beitritt");
+
+  await resetRateLimits();
+  await page.goto("/mitmachen");
+  await page.getByRole("button", { name: /Ich studiere gerade/ }).click();
+  await page.getByLabel("Vorname").fill("Nil");
+  await page.getByLabel("Nachname").fill("E2E");
+  await weiter(page);
+  await page.getByLabel("Stadt oder Hochschule").fill(city);
+  await weiter(page);
+  await page.getByRole("button", { name: /Dem nächstgelegenen BDAS beitreten/ }).click();
+  await page.getByRole("button", { name: /BDAS Fernkoeln/ }).click();
+  await expect(
+    page.getByRole("heading", { name: /Du passt zu uns als Student\*in/ }),
+  ).toBeVisible();
+
+  await page.getByRole("button", { name: "Passt — Konto anlegen" }).click();
+  await page.getByLabel("E-Mail", { exact: true }).fill(email);
+  await page.getByLabel("Passwort", { exact: true }).fill(PASSWORD);
+  await page.locator("#consent").check();
+  await page.getByRole("button", { name: "Konto erstellen" }).click();
+  await verify(page, email);
+  await login(page, email, undefined, { expect: "mitmachen" });
+  await angabenAbschicken(page);
+
+  await expect(page).toHaveURL(/\/mitmachen\/fertig$/);
+  expect(await openRequestTargetByEmail(email)).toBe(groupId);
 });

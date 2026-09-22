@@ -8,10 +8,22 @@ describe("poolKindLabel", () => {
     expect(poolKindLabel({ status: "pending", intent: null })).toBe("Bewerber:in");
   });
 
-  it("names a submitted alumni application", () => {
+  it("benennt die Ausgänge ohne Gruppe", () => {
+    expect(
+      poolKindLabel({
+        status: "pending",
+        intent: { outcome: "student_gruendung", status: "abgeschickt" },
+      }),
+    ).toBe("Möchte eine Gruppe gründen");
+    expect(
+      poolKindLabel({
+        status: "pending",
+        intent: { outcome: "student_ohne_gruppe", status: "abgeschickt" },
+      }),
+    ).toBe("Bewirbt sich ohne Gruppe");
     expect(
       poolKindLabel({ status: "pending", intent: { outcome: "alumnus", status: "abgeschickt" } }),
-    ).toBe("Bewirbt sich als Alumna/Alumnus");
+    ).toBe("Bewirbt sich als Alumna oder Alumnus");
   });
 
   it("marks a journey whose details are still open", () => {
