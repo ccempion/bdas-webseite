@@ -12,16 +12,15 @@ import { expect, test } from "@playwright/test";
 
 import { grantLocalBoardLead, seedGroup, uniqueEmail, uniqueSlug } from "./helpers/db";
 import {
-  createProfile,
   login,
   logout,
   PASSWORD,
   pickCombo,
   register,
-  registerVerifyLogin,
   submitAndSettle,
   verify,
 } from "./helpers/flows";
+import { seedSession } from "./helpers/session";
 
 // Must be an entry of UNIVERSITIES (@bdas/profile) — the combobox offers no
 // other values, and its label doubles as the value it stores.
@@ -97,8 +96,7 @@ test("register → verify → wizard → the local board sees the application", 
 
   // A local board member of the same group reviews the application.
   const boardEmail = uniqueEmail("profil-vorstand");
-  await registerVerifyLogin(page, { email: boardEmail });
-  await createProfile(page, { firstName: "Lokal", lastName: "Vorstand" });
+  await seedSession(page, { email: boardEmail, firstName: "Lokal", lastName: "Vorstand" });
   await grantLocalBoardLead(boardEmail, groupId); // DB-read grants: live next request
 
   await page.goto(`/gruppe/${groupSlug}/bewerbungen`);
@@ -138,7 +136,7 @@ test("submitting repeatedly still lands on /account", async ({ page }) => {
   });
 
   const email = uniqueEmail("profil-doppelklick");
-  await registerVerifyLogin(page, { email, firstName: "Ungeduldige", lastName: marker("Person-") });
+  await seedSession(page, { email, firstName: "Ungeduldige", lastName: marker("Person-") });
 
   await page.goto("/profil");
   const weiter = page.getByRole("button", { name: "Weiter" });
@@ -190,8 +188,12 @@ test("a member edits their extended profile on Mein Konto", async ({ page }) => 
   });
 
   const email = uniqueEmail("profil-edit");
-  await registerVerifyLogin(page, { email, firstName: "Ändernde", lastName: "Person" });
-  await createProfile(page, { firstName: "Ändernde", lastName: "Person", groupId });
+  await seedSession(page, {
+    email,
+    firstName: "Ändernde",
+    lastName: "Person",
+    application: groupId,
+  });
 
   const studiengang = marker("Maschinenbau-");
   await page.goto("/account");
