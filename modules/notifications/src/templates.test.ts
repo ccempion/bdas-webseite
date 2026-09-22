@@ -40,6 +40,38 @@ describe("render", () => {
     expect(out.text).not.toContain('„Sommerfest"'); // not „Sommerfest"
   });
 
+  it("account deletion requested names the purge date and includes the reactivation link", () => {
+    const out = render("account_deletion_requested", {
+      ...data,
+      scheduledPurgeDate: "22. Oktober 2026",
+      reactivationUrl: "https://bdas.de/konto-reaktivieren/abc123",
+    });
+    expect(out.subject).toContain("Löschung");
+    expect(out.text).toContain("Mara");
+    expect(out.text).toContain("22. Oktober 2026");
+    expect(out.text).toContain("https://bdas.de/konto-reaktivieren/abc123");
+  });
+
+  it("account deletion requested omits the link section when none is given", () => {
+    const out = render("account_deletion_requested", {
+      ...data,
+      scheduledPurgeDate: "22. Oktober 2026",
+    });
+    expect(out.text).not.toContain("http");
+  });
+
+  it("data export ready points to the attachment, not a link", () => {
+    const out = render("data_export_ready", data);
+    expect(out.subject).toContain("Datenauskunft");
+    expect(out.text).toContain("Anhang");
+  });
+
+  it("account deletion completed has no action link", () => {
+    const out = render("account_deletion_completed", data);
+    expect(out.subject).toContain("gelöscht");
+    expect(out.text).not.toContain("http");
+  });
+
   it("escapes HTML in firstName and eventTitle in the html part", () => {
     const out = render("event_registration_confirmed", {
       firstName: "<img src=x onerror=alert(1)>",

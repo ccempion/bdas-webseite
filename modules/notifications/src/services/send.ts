@@ -26,6 +26,8 @@ type Extra = {
   readonly unsubscribeUrl?: string | undefined;
   readonly newEmail?: string | undefined;
   readonly accountUrl?: string | undefined;
+  readonly reactivationUrl?: string | undefined;
+  readonly scheduledPurgeDate?: string | undefined;
   readonly attachments?: ReadonlyArray<EmailAttachment> | undefined;
 };
 
@@ -66,6 +68,8 @@ async function sendToRecipient(
     unsubscribeUrl: extra.unsubscribeUrl,
     newEmail: extra.newEmail,
     accountUrl: extra.accountUrl,
+    reactivationUrl: extra.reactivationUrl,
+    scheduledPurgeDate: extra.scheduledPurgeDate,
   };
   const email = render(template, data);
   const id = createId("ntfy");
