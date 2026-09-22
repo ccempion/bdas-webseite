@@ -178,11 +178,11 @@ keine generische "Kategorie sperren"-Konfiguration — nur die Struktur, die sie
 
 ## 8. E-Mails
 
-| # | Zweck | Zeitpunkt | Versandweg | Anhang |
-|---|---|---|---|---|
-| A | Eingangsbestätigung + Reaktivierungslink | sofort bei Auslösen | `sendTransactional` (Member existiert noch) | — |
-| B | Auskunft (Art. 15) | auf Abruf über `/account/datenexport` | `sendTransactional` oder Download | CSV-ZIP |
-| C | Löschbestätigung | nach dem Sweep | `sendTransactionalToGuest` (Snapshot, Member existiert nicht mehr) | — |
+| #   | Zweck                                    | Zeitpunkt                             | Versandweg                                                         | Anhang  |
+| --- | ---------------------------------------- | ------------------------------------- | ------------------------------------------------------------------ | ------- |
+| A   | Eingangsbestätigung + Reaktivierungslink | sofort bei Auslösen                   | `sendTransactional` (Member existiert noch)                        | —       |
+| B   | Auskunft (Art. 15)                       | auf Abruf über `/account/datenexport` | `sendTransactional` oder Download                                  | CSV-ZIP |
+| C   | Löschbestätigung                         | nach dem Sweep                        | `sendTransactionalToGuest` (Snapshot, Member existiert nicht mehr) | —       |
 
 ## 9. Feature-Flag
 
