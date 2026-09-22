@@ -80,7 +80,7 @@ test("register → verify → wizard → the local board sees the application", 
   await weiter.click();
 
   // Step 5 — Profilbild is optional; skip it.
-  await expect(page.getByRole("button", { name: /Foto hochladen/ })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Foto auswählen" })).toBeVisible();
   await weiter.click();
 
   // Step 6 — review, then submit. The action redirects to /account on success.
