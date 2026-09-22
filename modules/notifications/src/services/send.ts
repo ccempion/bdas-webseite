@@ -2,6 +2,7 @@ import type { Db } from "@bdas/db";
 import { createId } from "@bdas/id";
 
 import { getNotifier } from "../notifier";
+import type { EmailAttachment } from "../notifier";
 import { getRecipientResolver } from "../resolver";
 import { notificationLog } from "../schema";
 import { render } from "../templates";
@@ -25,6 +26,7 @@ type Extra = {
   readonly unsubscribeUrl?: string | undefined;
   readonly newEmail?: string | undefined;
   readonly accountUrl?: string | undefined;
+  readonly attachments?: ReadonlyArray<EmailAttachment> | undefined;
 };
 
 /** The resolved recipient: a member (memberId set) or a guest (memberId null). */
@@ -71,7 +73,7 @@ async function sendToRecipient(
   let status: "sent" | "failed" = "sent";
   let error: string | null = null;
   try {
-    await getNotifier().send({ to: to.email, ...email });
+    await getNotifier().send({ to: to.email, ...email, attachments: extra.attachments });
   } catch (e) {
     status = "failed";
     error = e instanceof Error ? e.message : String(e);
