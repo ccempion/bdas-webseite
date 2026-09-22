@@ -199,7 +199,7 @@ describe("newsletter templates", () => {
       unsubscribeUrl: "https://bdas.de/newsletter/abmelden?token=xyz",
     });
 
-    expect(mail.subject).toBe("BDAS — Bitte bestätige deine Anmeldung");
+    expect(mail.subject).toBe("BDAS: Bitte bestätige deine Anmeldung");
     // An anonymous signup has no name, so the salutation stays nameless —
     // "Hallo Gast" (what sendTransactionalToGuest would default to) reads worse
     // than no name at all.
@@ -222,7 +222,7 @@ describe("newsletter templates", () => {
       unsubscribeUrl: "https://bdas.de/newsletter/abmelden",
     });
 
-    expect(mail.subject).toBe("BDAS — Du bist schon dabei");
+    expect(mail.subject).toBe("BDAS: Du bist schon dabei");
     expect(mail.text).not.toContain("Hallo Gast");
     expect(mail.text).toContain("https://bdas.de/newsletter/abmelden");
   });
@@ -242,21 +242,21 @@ describe("acceptance per user type", () => {
 
   it("welcomes a supporter into the network, not into a local group", () => {
     const out = render("member_supporter_approved", who);
-    expect(out.subject).toBe("BDAS — Willkommen im Netzwerk");
+    expect(out.subject).toBe("BDAS: Willkommen im Netzwerk");
     expect(out.text).toContain("Bundesvorstand");
     expect(out.text).not.toContain("lokaler Vorstand");
   });
 
   it("names the partner organisation", () => {
     const out = render("member_partner_approved", { ...who, groupName: "BDAJ" });
-    expect(out.subject).toBe("BDAS — Dein Zugang ist freigeschaltet");
+    expect(out.subject).toBe("BDAS: Dein Zugang ist freigeschaltet");
     expect(out.text).toContain("BDAJ");
     expect(render("member_partner_approved", who).text).toContain("deine Partnerorganisation");
   });
 
   it("welcomes an alumnus", () => {
     const out = render("member_alumnus_approved", who);
-    expect(out.subject).toBe("BDAS — Willkommen bei den Alumni");
+    expect(out.subject).toBe("BDAS: Willkommen bei den Alumni");
     expect(out.text).toContain("Alumna oder Alumnus");
   });
 

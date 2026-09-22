@@ -36,7 +36,7 @@ describe("auth createResendNotifier", () => {
     await notifier.send({ kind: "changed", to: "x@example.org" });
 
     const arg = sendMock.mock.calls[0]?.[0];
-    expect(arg.subject).toBe("BDAS — Passwort geändert");
+    expect(arg.subject).toBe("BDAS: Passwort geändert");
     expect(arg.text).toContain("geändert");
     // A tripwire mail also reaches an attacker who already holds the account;
     // it must not hand them a link that does anything.
@@ -54,7 +54,7 @@ describe("auth createResendNotifier", () => {
     });
 
     const arg = sendMock.mock.calls[0]?.[0];
-    expect(arg.subject).toBe("BDAS — Neue E-Mail-Adresse bestätigen");
+    expect(arg.subject).toBe("BDAS: Neue E-Mail-Adresse bestätigen");
     expect(arg.html).toContain("https://e/c");
   });
 
@@ -69,7 +69,7 @@ describe("auth createResendNotifier", () => {
     });
 
     const arg = sendMock.mock.calls[0]?.[0];
-    expect(arg.subject).toBe("BDAS — Änderung der Login-E-Mail angefordert");
+    expect(arg.subject).toBe("BDAS: Änderung der Login-E-Mail angefordert");
     expect(arg.text).toContain("neu@example.org");
     // Same tripwire reasoning as the password-changed mail.
     expect(arg.html).not.toContain("<a ");
