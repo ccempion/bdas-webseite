@@ -53,7 +53,12 @@ describeIfDb("deleteAccount", () => {
 
   beforeEach(async () => {
     t = await createTestDb();
-    for (const file of ["0001_init.sql", "0002_consent.sql", "0003_email_change.sql"]) {
+    for (const file of [
+      "0001_init.sql",
+      "0002_consent.sql",
+      "0003_email_change.sql",
+      "0005_verification_token_hash.sql",
+    ]) {
       const sql = await fs.readFile(path.join(__dirname, "..", "..", "migrations", file), "utf8");
       await t.client.unsafe(sql);
     }

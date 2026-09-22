@@ -56,7 +56,7 @@ describeIfDb("changePassword", () => {
 
   beforeEach(async () => {
     t = await createTestDb();
-    for (const file of ["0001_init.sql", "0002_consent.sql"]) {
+    for (const file of ["0001_init.sql", "0002_consent.sql", "0005_verification_token_hash.sql"]) {
       const sql = await fs.readFile(path.join(__dirname, "..", "..", "migrations", file), "utf8");
       await t.client.unsafe(sql);
     }
@@ -164,7 +164,9 @@ describeIfDb("changePassword", () => {
       .from(authSessions)
       .where(eq(authSessions.userId, u.userId));
     expect(rows.filter((r) => r.revokedAt === null).map((r) => r.id)).toEqual([res.sessionId]);
-    expect(rows.filter((r) => r.revokedAt !== null)).toHaveLength(3);
+    // Jede andere Sitzung ist widerrufen, egal wie viele der Aufbau anlegt: die
+    // Bestätigung bringt seit ADR 0051 selbst eine mit.
+    expect(rows.filter((r) => r.revokedAt !== null)).toHaveLength(rows.length - 1);
   });
 
   it("rate limits after 5 attempts in the window", async () => {

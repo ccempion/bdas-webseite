@@ -10,7 +10,7 @@ tables and other modules talk to it only through this README's listed surface.
 | `auth_users`                | Identity row: id, normalized email, status (`unverified` / `active` / `pending_deletion`) |
 | `auth_credentials`          | Argon2id password hash + algorithm tag (split from users)                                 |
 | `auth_sessions`             | Server-side sessions; `id` is the JWT `jti` (ADR 0002)                                    |
-| `auth_email_verifications`  | Single-use verification tokens (24 h)                                                     |
+| `auth_email_verifications`  | Single-use verification tokens (24 h), nur als SHA-256-Hash (ADR 0051)                    |
 | `auth_password_resets`      | Single-use reset tokens (1 h)                                                             |
 | `auth_email_changes`        | Single-use login-email-change tokens (1 h)                                                |
 | `auth_rate_limits`          | Fixed-window counters per key                                                             |
@@ -18,7 +18,7 @@ tables and other modules talk to it only through this README's listed surface.
 | `account_deletion_steps`    | Per-module completion markers for a deletion request's cross-module purge fan-out         |
 
 Migrations: `migrations/0001_init.sql`, `0002_consent.sql`, `0003_email_change.sql`,
-`0004_account_deletion.sql`. Discovered by `infra/migrations` per the manifest order
+`0004_account_deletion.sql`, `0005_verification_token_hash.sql`. Discovered by `infra/migrations` per the manifest order
 (auth runs first; everything FKs into `auth_users`).
 
 ## Public surface

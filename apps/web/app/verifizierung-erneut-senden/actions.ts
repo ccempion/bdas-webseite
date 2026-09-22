@@ -1,10 +1,11 @@
 "use server";
 
-import { buildVerifyUrl, getNotifier, resendVerification } from "@bdas/auth";
+import { buildVerifyUrl, getNotifier, resendVerification, VERIFICATION_TTL_MS } from "@bdas/auth";
 import { getDb } from "@bdas/db";
 import { requireFlag } from "@bdas/feature-flags";
 
 import { bootAuth } from "../../lib/auth-bootstrap";
+import { setVerifyCookie } from "../../lib/auth-cookie";
 
 export type ResendFormState = {
   readonly sent?: boolean;
@@ -26,6 +27,8 @@ export async function resendAction(
         process.env["PUBLIC_SITE_URL"] ?? "http://localhost:3000",
         result.verifyToken,
       );
+      // Der neue Link gehört zu diesem Browser (ADR 0051).
+      setVerifyCookie(result.verifyToken, Math.floor(VERIFICATION_TTL_MS / 1000));
       try {
         await getNotifier().send({ kind: "verify", to: email, verifyUrl });
       } catch (err) {

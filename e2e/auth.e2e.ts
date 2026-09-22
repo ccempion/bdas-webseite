@@ -31,7 +31,7 @@ test("register → verify → login → logout → reset → re-login", async ({
   await register(page, { email });
   await expect(page.getByText(/Spam-Ordner/)).toBeVisible();
 
-  await verify(page, email);
+  await verify(page);
 
   // With the `profile` flag on, sign-in routes a pending member with an
   // unfinished profile to the wizard (anmelden/actions.ts) — this spec is about

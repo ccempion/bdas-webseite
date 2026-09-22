@@ -64,6 +64,7 @@ describeIfDb("requestAccountDeletion / cancelAccountDeletion", () => {
       "0002_consent.sql",
       "0003_email_change.sql",
       "0004_account_deletion.sql",
+      "0005_verification_token_hash.sql",
     ]) {
       const sql = await fs.readFile(path.join(__dirname, "..", "..", "migrations", file), "utf8");
       await t.client.unsafe(sql);

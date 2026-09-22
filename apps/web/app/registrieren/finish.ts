@@ -1,9 +1,10 @@
 import { headers } from "next/headers";
 
-import { buildVerifyUrl, getNotifier } from "@bdas/auth";
+import { buildVerifyUrl, getNotifier, VERIFICATION_TTL_MS } from "@bdas/auth";
 import { getDb } from "@bdas/db";
 import { subscribeAtRegistration } from "@bdas/newsletter";
 
+import { setVerifyCookie } from "../../lib/auth-cookie";
 import { bootNewsletter } from "../../lib/newsletter-bootstrap";
 import { newsletterEnabled } from "../_newsletter/flag";
 
@@ -29,6 +30,9 @@ export async function finishRegistration(input: {
     process.env["PUBLIC_SITE_URL"] ?? "http://localhost:3000",
     input.verifyToken,
   );
+  // Merkt sich, dass dieser Browser die Registrierung begonnen hat; nur hier
+  // meldet der Bestätigungslink gleich an (ADR 0051).
+  setVerifyCookie(input.verifyToken, Math.floor(VERIFICATION_TTL_MS / 1000));
   try {
     await getNotifier().send({ kind: "verify", to: input.email, verifyUrl });
   } catch (err) {

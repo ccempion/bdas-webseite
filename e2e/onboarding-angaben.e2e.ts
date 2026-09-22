@@ -29,8 +29,7 @@ test("student: confirm, sign in, details, application to the group", async ({ pa
   const email = uniqueEmail("ang-student");
 
   await wizardSignup(page, { email, typ: /Ich studiere gerade/, firstName: "Lea", place: city });
-  await verify(page, email);
-  await expect(page).toHaveURL(/\/anmelden/);
+  await verify(page);
   await login(page, email, undefined, { expect: "mitmachen" });
 
   await expect(page).toHaveURL(/\/mitmachen\/angaben$/);
@@ -67,9 +66,12 @@ test("alumnus: confirm in a fresh browser, no request, the federal board sees th
   const email = uniqueEmail("ang-alumnus");
   await wizardSignup(page, { email, typ: /Ich habe studiert/, firstName: "Kim", skipPlace: true });
 
+  // Der Token gehört zum ersten Browser; ein anderes Gerät bekommt ihn per Mail,
+  // bestätigt damit und meldet sich dort normal an (ADR 0051).
+  const token = await verifyTokenFromBrowser(page);
   const other = await browser.newContext({ baseURL: "http://localhost:3001" });
   const phone = await other.newPage();
-  await verify(phone, email);
+  await verify(phone, { token });
   await login(phone, email, undefined, { expect: "mitmachen" });
   await expect(phone.getByRole("heading", { name: "Was hast du studiert?" })).toBeVisible();
 
@@ -105,7 +107,7 @@ test("supporter: interest, application to the netzwerk group", async ({ page }) 
   const email = uniqueEmail("ang-foerderer");
 
   await wizardSignup(page, { email, typ: /Ich möchte unterstützen/, firstName: "Ada" });
-  await verify(page, email);
+  await verify(page);
   await login(page, email, undefined, { expect: "mitmachen" });
 
   await page.locator("#interesse").fill("Kulturarbeit und Seminare");

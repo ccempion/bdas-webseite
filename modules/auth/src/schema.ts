@@ -43,7 +43,9 @@ export const authSessions = pgTable(
 export const authEmailVerifications = pgTable(
   "auth_email_verifications",
   {
-    token: text("token").primaryKey(),
+    /** SHA-256-Hex des Tokens, nie der Token selbst: der Link meldet an
+     *  (ADR 0051), ein gelesener Datensatz wäre sonst ein fremder Zugang. */
+    tokenHash: text("token_hash").primaryKey(),
     userId: text("user_id")
       .notNull()
       .references(() => authUsers.id, { onDelete: "cascade" }),

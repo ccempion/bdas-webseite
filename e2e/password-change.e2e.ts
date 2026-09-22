@@ -14,7 +14,7 @@ test("change the password from account settings, then sign in with the new one",
   const email = `pw-${Date.now()}@example.de`;
 
   await register(page, { email });
-  await verify(page, email);
+  await verify(page);
   await login(page, email);
 
   // ADR 0034 moved the credential cards off /account onto this sub-page.

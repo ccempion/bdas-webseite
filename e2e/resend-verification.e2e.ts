@@ -6,18 +6,19 @@
  */
 import { expect, test } from "@playwright/test";
 
-import { latestVerifyToken, resetRateLimits, uniqueEmail } from "./helpers/db";
+import { latestVerifyTokenHash, resetRateLimits, uniqueEmail } from "./helpers/db";
 import { PASSWORD, register } from "./helpers/flows";
 
 test("unverified login surfaces the resend link, which issues a fresh token", async ({ page }) => {
   const email = uniqueEmail("resend");
   await register(page, { email }); // registered but NOT verified
 
-  // The token minted at registration.
-  let firstToken: string | null = null;
+  // Der bei der Registrierung ausgestellte Token, als Hash: den Klartext
+  // speichert die Tabelle nicht mehr (ADR 0051).
+  let firstHash: string | null = null;
   await expect(async () => {
-    firstToken = await latestVerifyToken(email);
-    expect(firstToken).toBeTruthy();
+    firstHash = await latestVerifyTokenHash(email);
+    expect(firstHash).toBeTruthy();
   }).toPass({ timeout: 10_000 });
 
   // Logging in unverified must not reach /account; it surfaces the resend link.
@@ -40,8 +41,8 @@ test("unverified login surfaces the resend link, which issues a fresh token", as
 
   // A fresh verification token must have been issued.
   await expect(async () => {
-    const latest = await latestVerifyToken(email);
+    const latest = await latestVerifyTokenHash(email);
     expect(latest).toBeTruthy();
-    expect(latest).not.toBe(firstToken);
+    expect(latest).not.toBe(firstHash);
   }).toPass({ timeout: 10_000 });
 });

@@ -35,16 +35,21 @@ export async function resetRateLimits(): Promise<void> {
   await sql`DELETE FROM auth_rate_limits`;
 }
 
-/** The latest unused email-verification token for an email, or null. */
-export async function latestVerifyToken(email: string): Promise<string | null> {
-  const rows = await sql<{ token: string }[]>`
-    SELECT v.token
+/**
+ * Der Hash des jüngsten offenen Bestätigungstokens, oder null. Den Klartext gibt
+ * die Tabelle nicht mehr her (ADR 0051), der Hash reicht aber, um zu prüfen,
+ * dass ein neuer Token ausgestellt wurde. Den Token selbst kennt der Browser,
+ * siehe `verifyTokenFromBrowser` in `helpers/flows.ts`.
+ */
+export async function latestVerifyTokenHash(email: string): Promise<string | null> {
+  const rows = await sql<{ tokenHash: string }[]>`
+    SELECT v.token_hash AS "tokenHash"
     FROM auth_email_verifications v
     JOIN auth_users u ON u.id = v.user_id
     WHERE u.email_normalized = lower(${email}) AND v.used_at IS NULL
     ORDER BY v.created_at DESC
     LIMIT 1`;
-  return rows[0]?.token ?? null;
+  return rows[0]?.tokenHash ?? null;
 }
 
 /** The latest unused password-reset token for an email, or null. */

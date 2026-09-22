@@ -6,7 +6,14 @@
  */
 import { expect, type Locator, type Page } from "@playwright/test";
 
-import { latestVerifyToken, resetRateLimits } from "./db";
+import { resetRateLimits } from "./db";
+
+/** Muss `COOKIE_NAME` aus `@bdas/auth` entsprechen; hier als Literal, damit die
+ *  Playwright-Seite nicht das halbe Auth-Modul (argon2, jose) laden muss. */
+const SESSION_COOKIE = "bdas_session";
+
+/** Muss `VERIFY_COOKIE_NAME` aus `apps/web/lib/auth-cookie.ts` entsprechen. */
+const VERIFY_COOKIE = "bdas_verify";
 
 /** A password that satisfies the registration policy comfortably. */
 export const PASSWORD = "Korrekt-Pferd-Batterie-9!";
@@ -54,14 +61,29 @@ export async function register(
   await page.waitForURL("**/registrieren/erfolg");
 }
 
-/** Read the emailed verification token from the DB and visit the verify URL. */
-export async function verify(page: Page, email: string): Promise<void> {
-  let token: string | null = null;
-  // The token is written by the register Server Action; poll to avoid a race.
+/**
+ * Der Bestätigungstoken, den die Registrierung in diesem Browser hinterlegt hat.
+ * Die Datenbank speichert nur den Hash (ADR 0051), also ist das Cookie die
+ * einzige Stelle, die den Token im Klartext kennt, genau wie die Mail.
+ */
+export async function verifyTokenFromBrowser(page: Page): Promise<string> {
+  let token = "";
+  // Das Cookie setzt die Server Action; kurz pollen gegen das Rennen.
   await expect(async () => {
-    token = await latestVerifyToken(email);
-    expect(token, `verify token for ${email}`).toBeTruthy();
+    const cookies = await page.context().cookies();
+    token = cookies.find((c) => c.name === VERIFY_COOKIE)?.value ?? "";
+    expect(token, "verify cookie").toBeTruthy();
   }).toPass({ timeout: 10_000 });
+  return token;
+}
+
+/**
+ * Den Bestätigungslink aufrufen. Ohne `opts.token` nimmt der Helfer den Token
+ * aus dem Browser, der sich registriert hat; ein anderer Browser bekommt ihn
+ * übergeben und landet dann ohne Sitzung auf `/verifizieren` (ADR 0051).
+ */
+export async function verify(page: Page, opts: { token?: string } = {}): Promise<void> {
+  const token = opts.token ?? (await verifyTokenFromBrowser(page));
   await page.goto(`/verifizieren/${token}`);
 }
 
@@ -78,6 +100,18 @@ export async function login(
   password: string = PASSWORD,
   opts: { expect?: "home" | "profil" | "mitmachen" | "either" } = {},
 ): Promise<void> {
+  // Seit ADR 0051 meldet der Bestätigungslink schon an. Die Anmeldemaske würde
+  // eine bestehende Sitzung nur auf die Startseite zurückwerfen, also ist hier
+  // nichts mehr zu tun; das Ziel hat die Bestätigung bereits angesteuert.
+  const cookies = await page.context().cookies();
+  if (cookies.some((c) => c.name === SESSION_COOKIE && c.value !== "")) {
+    const want = opts.expect ?? "either";
+    if (want === "profil") await page.waitForURL("**/profil**");
+    if (want === "mitmachen") await page.waitForURL("**/mitmachen**");
+    if (want === "home") await page.waitForURL((url) => url.pathname === "/");
+    return;
+  }
+
   await resetRateLimits();
   await page.goto("/anmelden");
   await page.getByLabel("E-Mail", { exact: true }).fill(email);
@@ -128,7 +162,7 @@ export async function registerVerifyLogin(
   },
 ): Promise<void> {
   await register(page, opts);
-  await verify(page, opts.email);
+  await verify(page);
   await login(page, opts.email, opts.password ?? PASSWORD);
 }
 
