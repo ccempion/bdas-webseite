@@ -6,7 +6,8 @@ import { deleteAccount, getUserEmails } from "@bdas/auth";
 import { canSeeFederalScope } from "@bdas/dashboard-shell";
 import { getDb } from "@bdas/db";
 import { isAppError } from "@bdas/errors";
-import { acceptAsAlumnus, getCurrentMember, getMemberByUserId } from "@bdas/members";
+import { acceptWithoutGroup, getCurrentMember, getMemberByUserId } from "@bdas/members";
+import { getProfile } from "@bdas/profile";
 
 import { readSessionCookie } from "../../../../lib/auth-cookie";
 import { bootNewsletter } from "../../../../lib/newsletter-bootstrap";
@@ -46,10 +47,12 @@ export async function deleteApplicantAction(userId: string): Promise<DeleteAppli
 export type AcceptResult = { ok: true } | { ok: false; error: string };
 
 /**
- * Accepts a groupless person as alumnus (Spec 2026-09-16 §5.2). The service
- * checks every rule again; the button is a convenience, not the gate.
+ * Nimmt eine Person ohne Gruppe auf. Die Rolle hängt am Nutzertyp: Ehemalige
+ * werden als `alumnus` markiert, Studierende ohne Gruppe vor Ort bekommen keine
+ * Rolle. Der Dienst prüft jede Regel noch einmal, der Knopf ist Bequemlichkeit,
+ * kein Tor.
  */
-export async function acceptAsAlumnusAction(userId: string): Promise<AcceptResult> {
+export async function acceptWithoutGroupAction(userId: string): Promise<AcceptResult> {
   const db = getDb();
   const me = await getCurrentMember(db, readSessionCookie());
   if (!me || !canSeeFederalScope(me.grants)) return { ok: false, error: "Keine Berechtigung." };
@@ -59,8 +62,11 @@ export async function acceptAsAlumnusAction(userId: string): Promise<AcceptResul
   if (member.status !== "pending")
     return { ok: false, error: "Diese Person ist bereits aufgenommen." };
 
+  const profile = await getProfile(db, userId);
+  const role = profile?.nutzertyp === "alumnus" ? "alumnus" : null;
+
   try {
-    await acceptAsAlumnus(db, member.id, { userId: me.user.id, grants: me.grants });
+    await acceptWithoutGroup(db, member.id, { userId: me.user.id, grants: me.grants }, role);
   } catch (err) {
     if (isAppError(err)) return { ok: false, error: err.message };
     throw err;

@@ -36,12 +36,12 @@ const FILTERS: ReadonlyArray<{ key: Filter; label: string }> = [
 export function PoolTable({
   rows,
   onDelete,
-  onAcceptAlumnus,
+  onAccept,
 }: {
   rows: ReadonlyArray<PoolRow>;
   /** Server actions, handed in by the page so the table stays testable. */
   onDelete: (userId: string) => Promise<DeleteApplicantResult>;
-  onAcceptAlumnus: (userId: string) => Promise<AcceptResult>;
+  onAccept: (userId: string) => Promise<AcceptResult>;
 }) {
   const [filter, setFilter] = useState<Filter>("all");
   const [busy, start] = useTransition();
@@ -66,18 +66,18 @@ export function PoolTable({
     });
   }
 
-  function acceptAlumnus(row: PoolRow) {
+  function accept(row: PoolRow) {
     // Acceptance is final: the marker can be removed later, the status cannot.
     if (
       !window.confirm(
-        `${row.name} als Alumnus aufnehmen? Die Aufnahme lässt sich nicht rückgängig machen.`,
+        `${row.name} ohne Gruppe aufnehmen? Die Aufnahme lässt sich nicht rückgängig machen.`,
       )
     ) {
       return;
     }
     start(async () => {
-      const res = await onAcceptAlumnus(row.userId);
-      setNotice(res.ok ? `${row.name} ist als Alumnus aufgenommen.` : res.error);
+      const res = await onAccept(row.userId);
+      setNotice(res.ok ? `${row.name} ist aufgenommen.` : res.error);
     });
   }
 
@@ -125,13 +125,8 @@ export function PoolTable({
                 <td className="p-3 text-bdas-ink-muted">{r.kind}</td>
                 <td className="p-3 text-right">
                   {r.acceptable && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      disabled={busy}
-                      onClick={() => acceptAlumnus(r)}
-                    >
-                      Als Alumnus aufnehmen
+                    <Button variant="ghost" size="sm" disabled={busy} onClick={() => accept(r)}>
+                      Ohne Gruppe aufnehmen
                     </Button>
                   )}
                   {r.deletable && (

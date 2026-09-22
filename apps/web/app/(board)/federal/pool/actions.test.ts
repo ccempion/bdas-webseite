@@ -3,7 +3,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ForbiddenError, ValidationError } from "@bdas/errors";
 import type { CurrentMember, Grant, Member } from "@bdas/members";
 
-const acceptAsAlumnus = vi.fn();
+const acceptWithoutGroup = vi.fn();
+let profileType: "student" | "alumnus" | null = null;
 let currentMember: CurrentMember | null = null;
 let target: Member | null = null;
 
@@ -17,13 +18,16 @@ vi.mock("@bdas/dashboard-shell", () => ({
 vi.mock("@bdas/members", () => ({
   getCurrentMember: async () => currentMember,
   getMemberByUserId: async () => target,
-  acceptAsAlumnus: (...a: unknown[]) => acceptAsAlumnus(...a),
+  acceptWithoutGroup: (...a: unknown[]) => acceptWithoutGroup(...a),
+}));
+vi.mock("@bdas/profile", () => ({
+  getProfile: async () => (profileType === null ? null : { nutzertyp: profileType }),
 }));
 vi.mock("../../../../lib/auth-cookie", () => ({ readSessionCookie: () => undefined }));
 vi.mock("../../../../lib/newsletter-bootstrap", () => ({ bootNewsletter: () => {} }));
 vi.mock("./deletable", () => ({ isDeletableApplicant: vi.fn() }));
 
-import { acceptAsAlumnusAction } from "./actions";
+import { acceptWithoutGroupAction } from "./actions";
 
 const FED: Grant[] = [{ role: "federal_board", groupId: null }];
 
@@ -53,59 +57,79 @@ function person(status: Member["status"]): Member {
 }
 
 beforeEach(() => {
-  acceptAsAlumnus.mockReset();
+  acceptWithoutGroup.mockReset();
   currentMember = viewer(FED);
   target = person("pending");
+  profileType = "alumnus";
 });
 
-describe("acceptAsAlumnusAction", () => {
+describe("acceptWithoutGroupAction", () => {
   it("nimmt die Person zum Account als Bundesvorstand auf", async () => {
-    await expect(acceptAsAlumnusAction("usr_1")).resolves.toEqual({ ok: true });
-    expect(acceptAsAlumnus).toHaveBeenCalledWith({}, "mem_1", {
-      userId: "usr_board",
-      grants: FED,
-    });
+    await expect(acceptWithoutGroupAction("usr_1")).resolves.toEqual({ ok: true });
+    expect(acceptWithoutGroup).toHaveBeenCalledWith(
+      {},
+      "mem_1",
+      { userId: "usr_board", grants: FED },
+      "alumnus",
+    );
+  });
+
+  it("nimmt Studierende ohne Gruppe ohne Rolle auf", async () => {
+    profileType = "student";
+    await expect(acceptWithoutGroupAction("usr_1")).resolves.toEqual({ ok: true });
+    expect(acceptWithoutGroup).toHaveBeenCalledWith(
+      {},
+      "mem_1",
+      { userId: "usr_board", grants: FED },
+      null,
+    );
+  });
+
+  it("nimmt ohne Profil ohne Rolle auf", async () => {
+    profileType = null;
+    await expect(acceptWithoutGroupAction("usr_1")).resolves.toEqual({ ok: true });
+    expect(acceptWithoutGroup.mock.calls[0]?.[3]).toBe(null);
   });
 
   it("verweigert allen außer dem Bundesvorstand", async () => {
     currentMember = viewer([{ role: "local_board_lead", groupId: "grp_a" }]);
-    await expect(acceptAsAlumnusAction("usr_1")).resolves.toEqual({
+    await expect(acceptWithoutGroupAction("usr_1")).resolves.toEqual({
       ok: false,
       error: "Keine Berechtigung.",
     });
     currentMember = null;
-    await expect(acceptAsAlumnusAction("usr_1")).resolves.toMatchObject({ ok: false });
-    expect(acceptAsAlumnus).not.toHaveBeenCalled();
+    await expect(acceptWithoutGroupAction("usr_1")).resolves.toMatchObject({ ok: false });
+    expect(acceptWithoutGroup).not.toHaveBeenCalled();
   });
 
   it("meldet eine unbekannte oder bereits aufgenommene Person, ohne aufzunehmen", async () => {
     target = null;
-    await expect(acceptAsAlumnusAction("usr_x")).resolves.toEqual({
+    await expect(acceptWithoutGroupAction("usr_x")).resolves.toEqual({
       ok: false,
       error: "Person nicht gefunden.",
     });
     target = person("active");
-    await expect(acceptAsAlumnusAction("usr_1")).resolves.toEqual({
+    await expect(acceptWithoutGroupAction("usr_1")).resolves.toEqual({
       ok: false,
       error: "Diese Person ist bereits aufgenommen.",
     });
-    expect(acceptAsAlumnus).not.toHaveBeenCalled();
+    expect(acceptWithoutGroup).not.toHaveBeenCalled();
   });
 
   it("gibt die Ablehnung des Service als Meldung zurück", async () => {
-    acceptAsAlumnus.mockRejectedValueOnce(
+    acceptWithoutGroup.mockRejectedValueOnce(
       new ValidationError("Diese Person gehört einer Gruppe an."),
     );
-    await expect(acceptAsAlumnusAction("usr_1")).resolves.toEqual({
+    await expect(acceptWithoutGroupAction("usr_1")).resolves.toEqual({
       ok: false,
       error: "Diese Person gehört einer Gruppe an.",
     });
-    acceptAsAlumnus.mockRejectedValueOnce(new ForbiddenError("Nein."));
-    await expect(acceptAsAlumnusAction("usr_1")).resolves.toEqual({ ok: false, error: "Nein." });
+    acceptWithoutGroup.mockRejectedValueOnce(new ForbiddenError("Nein."));
+    await expect(acceptWithoutGroupAction("usr_1")).resolves.toEqual({ ok: false, error: "Nein." });
   });
 
   it("lässt unerwartete Fehler durch", async () => {
-    acceptAsAlumnus.mockRejectedValueOnce(new Error("db down"));
-    await expect(acceptAsAlumnusAction("usr_1")).rejects.toThrow("db down");
+    acceptWithoutGroup.mockRejectedValueOnce(new Error("db down"));
+    await expect(acceptWithoutGroupAction("usr_1")).rejects.toThrow("db down");
   });
 });
