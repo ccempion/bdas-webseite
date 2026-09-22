@@ -104,7 +104,7 @@ export const accountDeletionRequests = pgTable(
     requestedAt: timestamp("requested_at", { withTimezone: true }).notNull().defaultNow(),
     scheduledPurgeAt: timestamp("scheduled_purge_at", { withTimezone: true }).notNull(),
     status: text("status").notNull().default("pending"),
-    reactivationToken: text("reactivation_token"),
+    reactivationTokenHash: text("reactivation_token_hash"),
     reactivationExpiresAt: timestamp("reactivation_expires_at", { withTimezone: true }),
     cancelledAt: timestamp("cancelled_at", { withTimezone: true }),
     completedAt: timestamp("completed_at", { withTimezone: true }),
@@ -115,6 +115,9 @@ export const accountDeletionRequests = pgTable(
     userPendingUq: uniqueIndex("account_deletion_requests_user_pending_idx")
       .on(t.userId)
       .where(sql`${t.status} = 'pending'`),
+    reactivationTokenHashUq: uniqueIndex("account_deletion_requests_reactivation_token_hash_idx")
+      .on(t.reactivationTokenHash)
+      .where(sql`${t.reactivationTokenHash} is not null`),
   }),
 );
 

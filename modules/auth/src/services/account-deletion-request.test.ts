@@ -15,6 +15,7 @@ import { getEventBus, resetEventBus } from "@bdas/events";
 
 import type { AccountDeletionCancelled, AccountDeletionRequested } from "../events";
 import { accountDeletionRequests, authSessions, authUsers } from "../schema";
+import { hashToken } from "../tokens";
 import {
   ACCOUNT_DELETION_GRACE_DAYS,
   buildReactivationUrl,
@@ -115,6 +116,13 @@ describeIfDb("requestAccountDeletion / cancelAccountDeletion", () => {
       expect(stored?.emailSnapshot).toBe("anna@example.de");
       expect(stored?.nameSnapshot).toBe("Anna Test");
       expect(stored?.status).toBe("pending");
+
+      const [row] = await t.db
+        .select()
+        .from(accountDeletionRequests)
+        .where(eq(accountDeletionRequests.userId, reg.userId));
+      expect(row?.reactivationTokenHash).not.toBe(result.reactivationToken);
+      expect(row?.reactivationTokenHash).toBe(hashToken(result.reactivationToken));
     });
 
     it("publishes auth.account_deletion.requested", async () => {

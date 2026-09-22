@@ -14,7 +14,7 @@ CREATE TABLE account_deletion_requests (
   requested_at timestamptz NOT NULL DEFAULT now(),
   scheduled_purge_at timestamptz NOT NULL,
   status text NOT NULL DEFAULT 'pending',
-  reactivation_token text,
+  reactivation_token_hash text,
   reactivation_expires_at timestamptz,
   cancelled_at timestamptz,
   completed_at timestamptz
@@ -22,8 +22,8 @@ CREATE TABLE account_deletion_requests (
 
 CREATE INDEX account_deletion_requests_user_idx ON account_deletion_requests(user_id);
 CREATE INDEX account_deletion_requests_status_idx ON account_deletion_requests(status, scheduled_purge_at);
-CREATE UNIQUE INDEX account_deletion_requests_reactivation_token_idx
-  ON account_deletion_requests(reactivation_token) WHERE reactivation_token IS NOT NULL;
+CREATE UNIQUE INDEX account_deletion_requests_reactivation_token_hash_idx
+  ON account_deletion_requests(reactivation_token_hash) WHERE reactivation_token_hash IS NOT NULL;
 CREATE UNIQUE INDEX account_deletion_requests_user_pending_idx
   ON account_deletion_requests(user_id) WHERE status = 'pending';
 

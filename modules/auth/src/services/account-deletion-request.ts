@@ -23,7 +23,7 @@ import {
   authUsers,
   type AccountDeletionRequest,
 } from "../schema";
-import { randomToken } from "../tokens";
+import { hashToken, randomToken } from "../tokens";
 
 export type Db = PostgresJsDatabase<Record<string, never>>;
 
@@ -44,7 +44,7 @@ export type RequestAccountDeletionResult = {
 /** Read-only deletion status; the plaintext reactivation token never leaves the server through this path. */
 export type AccountDeletionStatus = Omit<
   AccountDeletionRequest,
-  "reactivationToken" | "reactivationExpiresAt"
+  "reactivationTokenHash" | "reactivationExpiresAt"
 >;
 
 /**
@@ -103,7 +103,7 @@ export async function requestAccountDeletion(
         requestedAt: now,
         scheduledPurgeAt,
         status: "pending",
-        reactivationToken,
+        reactivationTokenHash: hashToken(reactivationToken),
         reactivationExpiresAt: scheduledPurgeAt,
       });
     } catch (err) {
@@ -140,12 +140,13 @@ export async function cancelAccountDeletion(
   db: Db,
   token: string,
 ): Promise<{ readonly userId: string }> {
+  const tokenHash = hashToken(token);
   const [row] = await db
     .select()
     .from(accountDeletionRequests)
     .where(
       and(
-        eq(accountDeletionRequests.reactivationToken, token),
+        eq(accountDeletionRequests.reactivationTokenHash, tokenHash),
         eq(accountDeletionRequests.status, "pending"),
       ),
     )
@@ -162,7 +163,7 @@ export async function cancelAccountDeletion(
   await db.transaction(async (tx) => {
     const updated = await tx
       .update(accountDeletionRequests)
-      .set({ status: "cancelled", cancelledAt: now, reactivationToken: null })
+      .set({ status: "cancelled", cancelledAt: now, reactivationTokenHash: null })
       .where(
         and(eq(accountDeletionRequests.id, row.id), eq(accountDeletionRequests.status, "pending")),
       )
