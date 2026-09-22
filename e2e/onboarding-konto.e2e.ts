@@ -68,7 +68,7 @@ test("student with a group: questions, result, account, mail", async ({ page }) 
     .click();
 
   await expect(
-    page.getByRole("heading", { name: `Du passt zu uns als Student*in in ${city}.` }),
+    page.getByRole("heading", { name: `Du wärst als Student*in bei BDAS ${city} angemeldet.` }),
   ).toBeVisible();
   await expect(page.getByText(`Der Vorstand von BDAS ${city}`)).toBeVisible();
   await page.getByRole("button", { name: "Passt — Konto anlegen" }).click();
@@ -119,7 +119,7 @@ test("supporter changes their mind and back, keeping the name", async ({ page })
   await page.getByRole("button", { name: /Ich möchte unterstützen/ }).click();
   await answerName(page, "Ada", "Test");
   await expect(
-    page.getByRole("heading", { name: "Du passt zu uns als Förderer*in." }),
+    page.getByRole("heading", { name: "Du wärst als Förderer*in angemeldet." }),
   ).toBeVisible();
 
   await page.getByRole("button", { name: "Doch etwas anderes" }).click();

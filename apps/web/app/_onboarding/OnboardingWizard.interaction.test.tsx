@@ -94,7 +94,7 @@ describe("OnboardingWizard", () => {
     type("onb-vorname", "Lea");
     type("onb-nachname", "Yıldız");
     submit();
-    expect(heading()).toBe("Du passt zu uns als Förderer*in.");
+    expect(heading()).toBe("Du wärst als Förderer*in angemeldet.");
     expect(container.textContent).toContain("Der Bundesvorstand");
 
     click("Zurück");
@@ -112,7 +112,7 @@ describe("OnboardingWizard", () => {
 
     type("onb-ort", "TU Ber");
     click("TU Berlin");
-    expect(heading()).toBe("Du passt zu uns als Student*in in Berlin.");
+    expect(heading()).toBe("Du wärst als Student*in bei BDAS Berlin angemeldet.");
     expect(container.textContent).toContain("Der Vorstand von BDAS Berlin");
   });
 
@@ -155,7 +155,7 @@ describe("OnboardingWizard", () => {
     expect(container.textContent).not.toContain("Du hast schon ein Konto?");
     click("Ich möchte unterstützen");
     expect(container.querySelector("#onb-vorname")).toBeNull();
-    expect(heading()).toBe("Du passt zu uns als Förderer*in.");
+    expect(heading()).toBe("Du wärst als Förderer*in angemeldet.");
     expect(container.textContent).not.toContain("Passt — Konto anlegen");
     expect(container.textContent).toContain("Passt — weiter");
   });
@@ -175,7 +175,7 @@ describe("OnboardingWizard", () => {
     expect(heading()).toBe("Welchem BDAS möchtest du beitreten?");
 
     click("BDAS Berlin");
-    expect(heading()).toBe("Du passt zu uns als Student*in in Berlin.");
+    expect(heading()).toBe("Du wärst als Student*in bei BDAS Berlin angemeldet.");
   });
 
   it("führt die Gründung zum eigenen Ergebnis", () => {

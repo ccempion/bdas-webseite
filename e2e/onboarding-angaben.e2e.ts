@@ -214,9 +214,7 @@ test("Studentin ohne Gruppe vor Ort: Beitritt bewirbt sich bei der gewählten Gr
   await weiter(page);
   await page.getByRole("button", { name: /Dem nächstgelegenen BDAS beitreten/ }).click();
   await page.getByRole("button", { name: /BDAS Fernkoeln/ }).click();
-  await expect(
-    page.getByRole("heading", { name: /Du passt zu uns als Student\*in/ }),
-  ).toBeVisible();
+  await expect(page.getByRole("heading", { name: /Du wärst als Student\*in/ })).toBeVisible();
 
   await page.getByRole("button", { name: "Passt — Konto anlegen" }).click();
   await page.getByLabel("E-Mail", { exact: true }).fill(email);
