@@ -5,7 +5,7 @@
  * workspaces. Internal files (schema, templates, services) are private.
  */
 
-export { sendTransactional } from "./services/send";
+export { sendTransactional, sendTransactionalToGuest } from "./services/send";
 export {
   sendOrganizerMessage,
   listBroadcastsForEvent,
@@ -13,6 +13,7 @@ export {
   type BroadcastResult,
   type BroadcastLogEntry,
 } from "./services/broadcast";
+export { exportForUser, deleteLogForMember, type NotificationLogExportRow } from "./services/gdpr";
 export { registerNotificationSubscribers } from "./subscribers";
 
 export {
@@ -21,8 +22,16 @@ export {
   setNotifier,
   type Notifier,
   type OutboundEmail,
+  type EmailAttachment,
 } from "./notifier";
 export { createResendNotifier, type ResendNotifierOptions } from "./notifier-resend";
-export { getRecipientResolver, setRecipientResolver, type RecipientResolver } from "./resolver";
+export {
+  getRecipientResolver,
+  setRecipientResolver,
+  type RecipientResolver,
+  getMemberIdResolver,
+  setMemberIdResolver,
+  type MemberIdResolver,
+} from "./resolver";
 
 export type { TransactionalTemplate, TemplateData, SendResult, RecipientContact } from "./types";
