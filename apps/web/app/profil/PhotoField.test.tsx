@@ -58,8 +58,9 @@ describe("PhotoField", () => {
   });
 
   it("deaktiviert den Kreis, Ändern und Entfernen während eines laufenden Uploads", async () => {
-    let resolveUpload: (value: { ok: { uploadUrl: string; storageKey: string } }) => void =
-      () => {};
+    let resolveUpload: (value: {
+      ok: { uploadUrl: string; storageKey: string };
+    }) => void = () => {};
     vi.mocked(uploadImage).mockImplementation(
       () =>
         new Promise((resolve) => {
