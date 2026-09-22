@@ -192,7 +192,7 @@ export function GefundenFields({
   return (
     <>
       <Field
-        label="Wie hast du BDAS gefunden?"
+        label="Wie bist du zu uns gekommen?"
         htmlFor={`${idPrefix}gefundenDurch`}
         {...(errors["gefundenDurch"] ? { error: errors["gefundenDurch"] } : {})}
       >
@@ -212,7 +212,7 @@ export function GefundenFields({
       </Field>
       {values.gefundenDurch === "empfehlung" ? (
         <Field
-          label="Wer hat es dir empfohlen?"
+          label="Wer hat dich empfohlen?"
           htmlFor={`${idPrefix}empfehlerName`}
           {...(errors["empfehlerName"] ? { error: errors["empfehlerName"] } : {})}
         >

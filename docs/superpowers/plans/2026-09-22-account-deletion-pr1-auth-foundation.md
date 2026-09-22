@@ -25,10 +25,12 @@
 ### Task 1: `account_deletion` feature flag
 
 **Files:**
+
 - Modify: `core/feature-flags/src/index.ts`
 - Test: `core/feature-flags/src/index.test.ts`
 
 **Interfaces:**
+
 - Produces: `"account_deletion"` as a valid `FlagName`.
 
 - [ ] **Step 1: Write the failing test**
@@ -36,12 +38,12 @@
 Add to `core/feature-flags/src/index.test.ts`, inside the `describe("isFlagOn", ...)` block, after the `onboarding` case:
 
 ```ts
-  it("account_deletion maps to BDAS_FLAG_ACCOUNT_DELETION", () => {
-    delete process.env["BDAS_FLAG_ACCOUNT_DELETION"];
-    expect(isFlagOn("account_deletion")).toBe(false);
-    process.env["BDAS_FLAG_ACCOUNT_DELETION"] = "true";
-    expect(isFlagOn("account_deletion")).toBe(true);
-  });
+it("account_deletion maps to BDAS_FLAG_ACCOUNT_DELETION", () => {
+  delete process.env["BDAS_FLAG_ACCOUNT_DELETION"];
+  expect(isFlagOn("account_deletion")).toBe(false);
+  process.env["BDAS_FLAG_ACCOUNT_DELETION"] = "true";
+  expect(isFlagOn("account_deletion")).toBe(true);
+});
 ```
 
 - [ ] **Step 2: Run test to verify it fails**
@@ -100,10 +102,12 @@ Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
 ### Task 2: Migration + Drizzle schema mirror
 
 **Files:**
+
 - Create: `modules/auth/migrations/0004_account_deletion.sql`
 - Modify: `modules/auth/src/schema.ts`
 
 **Interfaces:**
+
 - Produces: Drizzle tables `accountDeletionRequests`, `accountDeletionSteps`; types `AccountDeletionRequest = typeof accountDeletionRequests.$inferSelect`.
 - Consumes: `authUsers` from the same file.
 
@@ -195,7 +199,10 @@ export const accountDeletionSteps = pgTable(
     completedAt: timestamp("completed_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => ({
-    requestModuleUq: unique("account_deletion_steps_request_module_uq").on(t.requestId, t.moduleName),
+    requestModuleUq: unique("account_deletion_steps_request_module_uq").on(
+      t.requestId,
+      t.moduleName,
+    ),
   }),
 );
 
@@ -222,13 +229,15 @@ Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
 ### Task 3: Auth events
 
 **Files:**
+
 - Modify: `modules/auth/src/events.ts`
 
 **Interfaces:**
+
 - Produces: `AccountDeletionRequested`, `AccountDeletionCancelled`, both added to the `AuthEvent` union.
 - Consumes: nothing new.
 
-No isolated test — event *types* have no runtime behavior; Task 4's integration test asserts the events are actually published.
+No isolated test — event _types_ have no runtime behavior; Task 4's integration test asserts the events are actually published.
 
 - [ ] **Step 1: Add the event types**
 
@@ -294,12 +303,14 @@ Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
 ### Task 4: `requestAccountDeletion` / `cancelAccountDeletion` service
 
 **Files:**
+
 - Create: `modules/auth/src/services/account-deletion-request.ts`
 - Modify: `modules/auth/src/sessions.ts` (add `revokeAllSessionsForUser`)
 - Modify: `modules/auth/src/services/login.ts` (distinct message for `pending_deletion`)
 - Test: `modules/auth/src/services/account-deletion-request.test.ts`
 
 **Interfaces:**
+
 - Consumes: `authUsers`, `accountDeletionRequests` from `../schema`; `randomToken` from `../tokens`; `createId` from `@bdas/id`; `getEventBus` from `@bdas/events`; `NotFoundError`/`ConflictError` from `@bdas/errors`.
 - Produces:
   - `requestAccountDeletion(db, { userId, displayName }): Promise<{ requestId, scheduledPurgeAt, reactivationToken }>`
@@ -422,7 +433,10 @@ describeIfDb("requestAccountDeletion / cancelAccountDeletion", () => {
       const [user] = await t.db.select().from(authUsers).where(eq(authUsers.id, reg.userId));
       expect(user?.status).toBe("pending_deletion");
 
-      const sessions = await t.db.select().from(authSessions).where(eq(authSessions.userId, reg.userId));
+      const sessions = await t.db
+        .select()
+        .from(authSessions)
+        .where(eq(authSessions.userId, reg.userId));
       expect(sessions.length).toBeGreaterThan(0);
       expect(sessions.every((s) => s.revokedAt !== null)).toBe(true);
 
@@ -434,9 +448,12 @@ describeIfDb("requestAccountDeletion / cancelAccountDeletion", () => {
 
     it("publishes auth.account_deletion.requested", async () => {
       const published: AccountDeletionRequested[] = [];
-      getEventBus().subscribe<AccountDeletionRequested>("auth.account_deletion.requested", async (e) => {
-        published.push(e);
-      });
+      getEventBus().subscribe<AccountDeletionRequested>(
+        "auth.account_deletion.requested",
+        async (e) => {
+          published.push(e);
+        },
+      );
       const reg = await signUpAndLogin("bob@example.de", "2.2.2.2");
 
       await requestAccountDeletion(t.db, { userId: reg.userId, displayName: "Bob Test" });
@@ -499,9 +516,12 @@ describeIfDb("requestAccountDeletion / cancelAccountDeletion", () => {
 
     it("publishes auth.account_deletion.cancelled", async () => {
       const published: AccountDeletionCancelled[] = [];
-      getEventBus().subscribe<AccountDeletionCancelled>("auth.account_deletion.cancelled", async (e) => {
-        published.push(e);
-      });
+      getEventBus().subscribe<AccountDeletionCancelled>(
+        "auth.account_deletion.cancelled",
+        async (e) => {
+          published.push(e);
+        },
+      );
       const reg = await signUpAndLogin("eva@example.de", "6.6.6.6");
       const { reactivationToken } = await requestAccountDeletion(t.db, {
         userId: reg.userId,
@@ -579,26 +599,26 @@ export async function revokeAllSessionsForUser(db: Db, userId: string): Promise<
 In `modules/auth/src/services/login.ts`, replace:
 
 ```ts
-  if (row.user.status !== "active") {
-    throw new UnauthorizedError(
-      "Bitte bestätige zuerst deine E-Mail-Adresse über den Link, den wir dir gesendet haben.",
-    );
-  }
+if (row.user.status !== "active") {
+  throw new UnauthorizedError(
+    "Bitte bestätige zuerst deine E-Mail-Adresse über den Link, den wir dir gesendet haben.",
+  );
+}
 ```
 
 with:
 
 ```ts
-  if (row.user.status === "pending_deletion") {
-    throw new UnauthorizedError(
-      "Dieses Konto wurde zur Löschung vorgemerkt. Nutze den Reaktivierungslink aus der Bestätigungs-E-Mail, falls das nicht du warst.",
-    );
-  }
-  if (row.user.status !== "active") {
-    throw new UnauthorizedError(
-      "Bitte bestätige zuerst deine E-Mail-Adresse über den Link, den wir dir gesendet haben.",
-    );
-  }
+if (row.user.status === "pending_deletion") {
+  throw new UnauthorizedError(
+    "Dieses Konto wurde zur Löschung vorgemerkt. Nutze den Reaktivierungslink aus der Bestätigungs-E-Mail, falls das nicht du warst.",
+  );
+}
+if (row.user.status !== "active") {
+  throw new UnauthorizedError(
+    "Bitte bestätige zuerst deine E-Mail-Adresse über den Link, den wir dir gesendet haben.",
+  );
+}
 ```
 
 - [ ] **Step 5: Write `account-deletion-request.ts`**
@@ -707,7 +727,10 @@ export async function requestAccountDeletion(
   return { requestId, scheduledPurgeAt, reactivationToken };
 }
 
-export async function cancelAccountDeletion(db: Db, token: string): Promise<{ readonly userId: string }> {
+export async function cancelAccountDeletion(
+  db: Db,
+  token: string,
+): Promise<{ readonly userId: string }> {
   const [row] = await db
     .select()
     .from(accountDeletionRequests)
@@ -732,7 +755,10 @@ export async function cancelAccountDeletion(db: Db, token: string): Promise<{ re
       .update(accountDeletionRequests)
       .set({ status: "cancelled", cancelledAt: now, reactivationToken: null })
       .where(eq(accountDeletionRequests.id, row.id));
-    await tx.update(authUsers).set({ status: "active", updatedAt: now }).where(eq(authUsers.id, userId));
+    await tx
+      .update(authUsers)
+      .set({ status: "active", updatedAt: now })
+      .where(eq(authUsers.id, userId));
   });
 
   const event: AccountDeletionCancelled = {
@@ -753,7 +779,12 @@ export async function getDeletionRequestForUser(
   const [row] = await db
     .select()
     .from(accountDeletionRequests)
-    .where(and(eq(accountDeletionRequests.userId, userId), eq(accountDeletionRequests.status, "pending")))
+    .where(
+      and(
+        eq(accountDeletionRequests.userId, userId),
+        eq(accountDeletionRequests.status, "pending"),
+      ),
+    )
     .limit(1);
   return row ?? null;
 }
@@ -792,9 +823,11 @@ Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
 ### Task 5: Public exports + full verification
 
 **Files:**
+
 - Modify: `modules/auth/src/index.ts`
 
 **Interfaces:**
+
 - Produces: `requestAccountDeletion`, `cancelAccountDeletion`, `getDeletionRequestForUser`, `buildReactivationUrl`, `ACCOUNT_DELETION_GRACE_DAYS`, `type RequestAccountDeletionInput`, `type RequestAccountDeletionResult`, `type AccountDeletionRequest`, `AccountDeletionRequested`, `AccountDeletionCancelled` — all now part of `@bdas/auth`'s public surface (Rule 8).
 
 - [ ] **Step 1: Add the service exports**

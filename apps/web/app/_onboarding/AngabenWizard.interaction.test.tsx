@@ -70,7 +70,7 @@ describe("AngabenWizard", () => {
         />,
       ),
     );
-    expect(container.textContent).toContain("Willkommen zurück, Lea — fast geschafft.");
+    expect(container.textContent).toContain("Willkommen zurück, Lea, fast geschafft.");
     expect(heading()).toBe("Was interessiert dich an BDAS?");
     expect(container.textContent).toContain("Der Bundesvorstand liest mit.");
 
@@ -96,7 +96,7 @@ describe("AngabenWizard", () => {
       expect.objectContaining({ interesse: "Kulturarbeit" }),
     );
 
-    expect(heading()).toBe("Wie hast du uns gefunden?");
+    expect(heading()).toBe("Wer hat dich zu uns gebracht?");
     typeInto("#gefundenDurch", "webseite");
     click("Weiter");
 

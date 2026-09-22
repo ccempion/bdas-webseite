@@ -152,4 +152,37 @@ describe("validateFlow", () => {
     expect(FLOW.outcomes.student_ohne_gruppe.userType).toBe("student");
     expect(FLOW.outcomes.student_ohne_gruppe.target).toBe("keine");
   });
+
+  it("kommt ohne lange Gedankenstriche aus", () => {
+    const texts = [
+      ...Object.values(FLOW.questions).flatMap((q) => {
+        const base = [q.title, q.help];
+        if (q.kind === "choice") return [...base, ...q.options.flatMap((o) => [o.label, o.hint])];
+        if (q.kind === "place") return [...base, q.noGroupHint];
+        return base;
+      }),
+      ...Object.values(FLOW.outcomes).flatMap((o) => [
+        o.title,
+        o.decider,
+        o.duration,
+        o.submittedTo,
+        o.hint ?? "",
+        ...o.benefits,
+      ]),
+    ];
+    expect(texts.filter((t) => t.includes("\u2014"))).toEqual([]);
+  });
+
+  it("verspricht dem Bundesvorstand zwei Tage", () => {
+    for (const id of [
+      "student_gruendung",
+      "student_ohne_gruppe",
+      "alumnus",
+      "foerderer",
+      "bdaj",
+    ] as const) {
+      expect(FLOW.outcomes[id].duration).toBe("meist innerhalb von zwei Tagen");
+    }
+    expect(FLOW.outcomes.student.duration).toBe("meist innerhalb weniger Tage");
+  });
 });

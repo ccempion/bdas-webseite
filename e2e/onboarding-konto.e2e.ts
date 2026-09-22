@@ -68,10 +68,10 @@ test("student with a group: questions, result, account, mail", async ({ page }) 
     .click();
 
   await expect(
-    page.getByRole("heading", { name: `Du passt zu uns als Student*in in ${city}.` }),
+    page.getByRole("heading", { name: `Du wärst als Student*in bei BDAS ${city} angemeldet.` }),
   ).toBeVisible();
   await expect(page.getByText(`Der Vorstand von BDAS ${city}`)).toBeVisible();
-  await page.getByRole("button", { name: "Passt — Konto anlegen" }).click();
+  await page.getByRole("button", { name: "Passt so, Konto anlegen" }).click();
   await createAccount(page, email);
 
   expect(await journeyByEmail(email)).toMatchObject({
@@ -103,7 +103,7 @@ test("student without a group lands with the federal board", async ({ page }) =>
   await expect(
     page.getByRole("heading", { name: new RegExp(`auch ohne Gruppe vor Ort`) }),
   ).toBeVisible();
-  await page.getByRole("button", { name: "Passt — Konto anlegen" }).click();
+  await page.getByRole("button", { name: "Passt so, Konto anlegen" }).click();
   await createAccount(page, email);
 
   expect(await journeyByEmail(email)).toMatchObject({
@@ -119,15 +119,15 @@ test("supporter changes their mind and back, keeping the name", async ({ page })
   await page.getByRole("button", { name: /Ich möchte unterstützen/ }).click();
   await answerName(page, "Ada", "Test");
   await expect(
-    page.getByRole("heading", { name: "Du passt zu uns als Förderer*in." }),
+    page.getByRole("heading", { name: "Du wärst als Förderer*in angemeldet." }),
   ).toBeVisible();
 
-  await page.getByRole("button", { name: "Doch etwas anderes" }).click();
+  await page.getByRole("button", { name: "Etwas ändern" }).click();
   await page.getByRole("button", { name: /Ich möchte unterstützen/ }).click();
   await expect(page.getByLabel("Vorname")).toHaveValue("Ada");
   await page.getByRole("button", { name: "Weiter" }).click();
 
-  await page.getByRole("button", { name: "Passt — Konto anlegen" }).click();
+  await page.getByRole("button", { name: "Passt so, Konto anlegen" }).click();
   await createAccount(page, email);
   expect(await journeyByEmail(email)).toMatchObject({
     outcome: "foerderer",

@@ -32,7 +32,7 @@ export async function resolveEntryContext(from: unknown, deps: EntryDeps): Promi
   switch (kind) {
     case "event": {
       const title = await safely(() => deps.eventTitle(ref), null);
-      return title ? { ...base, greeting: `Du warst bei „${title}“ — willkommen!` } : base;
+      return title ? { ...base, greeting: `Du warst bei „${title}“. Willkommen!` } : base;
     }
     case "kampagne": {
       const campaign = Object.hasOwn(deps.campaigns, ref) ? deps.campaigns[ref] : undefined;
