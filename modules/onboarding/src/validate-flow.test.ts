@@ -145,4 +145,11 @@ describe("validateFlow", () => {
     expect(errors).toContainEqual(expect.stringContaining("{eingabe}"));
     expect(errors).toContainEqual(expect.stringContaining("{quatsch}"));
   });
+
+  it("beschreibt die Ausgänge ohne Gruppe als Studierende", () => {
+    expect(FLOW.outcomes.student_gruendung.userType).toBe("student");
+    expect(FLOW.outcomes.student_gruendung.target).toBe("keine");
+    expect(FLOW.outcomes.student_ohne_gruppe.userType).toBe("student");
+    expect(FLOW.outcomes.student_ohne_gruppe.target).toBe("keine");
+  });
 });

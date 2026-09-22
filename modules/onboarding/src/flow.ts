@@ -15,9 +15,11 @@ export const QUESTION_TYP = "typ";
 export const QUESTION_NAME = "name";
 export const QUESTION_STUDIENORT = "studienort";
 export const QUESTION_AKTIV_WO = "aktiv_wo";
+export const QUESTION_ABSICHT = "absicht";
+export const QUESTION_GRUPPENWAHL = "gruppenwahl";
 
 export const FLOW: Flow = {
-  version: 1,
+  version: 2,
   start: QUESTION_TYP,
   questions: {
     [QUESTION_TYP]: {
@@ -62,8 +64,37 @@ export const FLOW: Flow = {
       title: "Wo studierst du, {vorname}?",
       help: "Damit wir dich mit der richtigen Gruppe verbinden.",
       skippable: false,
-      noGroupHint:
-        "In {eingabe} gibt es noch keine Gruppe — vielleicht gründest du sie? Wir helfen dir dabei.",
+      noGroupHint: "In {eingabe} finden wir keine Gruppe. Kein Problem, es geht gleich weiter.",
+    },
+    [QUESTION_ABSICHT]: {
+      kind: "choice",
+      title: "In {stadt} gibt es noch kein BDAS. Was möchtest du?",
+      help: "Beides geht: mit uns etwas aufbauen oder erst mal nur dabei sein.",
+      options: [
+        {
+          value: "gruendung",
+          label: "Ein BDAS in {stadt} gründen",
+          hint: "Wir helfen dir beim Aufbau",
+          icon: "studium",
+        },
+        {
+          value: "dabei",
+          label: "Erst mal einfach dabei sein",
+          hint: "Ohne Gruppe vor Ort",
+          icon: "herz",
+        },
+        {
+          value: "beitreten",
+          label: "Dem nächstgelegenen BDAS beitreten",
+          hint: "Auch wenn es etwas weiter weg ist",
+          icon: "bdaj",
+        },
+      ],
+    },
+    [QUESTION_GRUPPENWAHL]: {
+      kind: "group_choice",
+      title: "Welchem BDAS möchtest du beitreten?",
+      help: "Such dir eine Gruppe aus. Über deine Bewerbung entscheidet dann der Vorstand dieser Gruppe.",
     },
     [QUESTION_AKTIV_WO]: {
       kind: "place",
@@ -96,7 +127,19 @@ export const FLOW: Flow = {
       when: { kind: "has_group", question: QUESTION_STUDIENORT },
       to: { outcome: "student" },
     },
-    { from: QUESTION_STUDIENORT, to: { outcome: "student_ohne_gruppe" } },
+    { from: QUESTION_STUDIENORT, to: { question: QUESTION_ABSICHT } },
+    {
+      from: QUESTION_ABSICHT,
+      when: { kind: "equals", question: QUESTION_ABSICHT, value: "beitreten" },
+      to: { question: QUESTION_GRUPPENWAHL },
+    },
+    {
+      from: QUESTION_ABSICHT,
+      when: { kind: "equals", question: QUESTION_ABSICHT, value: "gruendung" },
+      to: { outcome: "student_gruendung" },
+    },
+    { from: QUESTION_ABSICHT, to: { outcome: "student_ohne_gruppe" } },
+    { from: QUESTION_GRUPPENWAHL, to: { outcome: "student" } },
     { from: QUESTION_AKTIV_WO, to: { outcome: "alumnus" } },
   ],
   outcomes: {
@@ -113,18 +156,30 @@ export const FLOW: Flow = {
       duration: "meist innerhalb weniger Tage",
       submittedTo: "bei {gruppe}",
     },
+    student_gruendung: {
+      userType: "student",
+      target: "keine",
+      title: "Du wärst als Student*in in {stadt} angemeldet, mit uns an deiner Seite für die Gründung.",
+      benefits: [
+        "Unterstützung, wenn du in {stadt} eine Gruppe gründen willst",
+        "Bundesweites Netzwerk alevitischer Studierender",
+        "Einladungen zu überregionalen Events",
+      ],
+      decider: "Der Bundesvorstand",
+      duration: "meist innerhalb von zwei Tagen",
+      submittedTo: "beim Bundesvorstand",
+    },
     student_ohne_gruppe: {
-      userType: "foerderer",
-      target: "netzwerk",
-      title: "Du passt zu uns als Student*in in {stadt}.",
+      userType: "student",
+      target: "keine",
+      title: "Du wärst als Student*in in {stadt} angemeldet, auch ohne Gruppe vor Ort.",
       benefits: [
         "Bundesweites Netzwerk alevitischer Studierender",
         "Einladungen zu überregionalen Events",
-        "Unterstützung, wenn du in {stadt} eine Gruppe gründen willst",
+        "Zugang zur Plattform, auch ohne Gruppe in deiner Stadt",
       ],
       decider: "Der Bundesvorstand",
-      duration: "meist innerhalb von zwei Wochen",
-      hint: "Du willst in {stadt} eine Gruppe gründen? Wir helfen dir.",
+      duration: "meist innerhalb von zwei Tagen",
       submittedTo: "beim Bundesvorstand",
     },
     alumnus: {

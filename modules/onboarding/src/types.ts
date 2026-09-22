@@ -8,6 +8,7 @@
 
 export const OUTCOME_IDS = [
   "student",
+  "student_gruendung",
   "student_ohne_gruppe",
   "alumnus",
   "foerderer",
