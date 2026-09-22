@@ -159,6 +159,23 @@ describeIfDb("requestAccountDeletion / cancelAccountDeletion", () => {
         requestAccountDeletion(t.db, { userId: "usr_does_not_exist", displayName: "x" }),
       ).rejects.toThrow(/Konto nicht gefunden/);
     });
+
+    it("allows only one pending deletion per user when two requests race", async () => {
+      const reg = await signUpAndLogin("helga@example.de", "9.9.9.9");
+
+      const results = await Promise.allSettled([
+        requestAccountDeletion(t.db, { userId: reg.userId, displayName: "Helga Eins" }),
+        requestAccountDeletion(t.db, { userId: reg.userId, displayName: "Helga Zwei" }),
+      ]);
+
+      const fulfilled = results.filter((r) => r.status === "fulfilled");
+      const rejected = results.filter((r) => r.status === "rejected");
+      expect(fulfilled).toHaveLength(1);
+      expect(rejected).toHaveLength(1);
+      expect((rejected[0] as PromiseRejectedResult).reason.message).toMatch(
+        /bereits eine Löschung/,
+      );
+    });
   });
 
   describe("cancelAccountDeletion", () => {

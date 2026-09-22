@@ -9,7 +9,7 @@
  * post-purge confirmation email needs a name snapshot that survives the
  * eventual hard delete of auth_users.
  */
-import { and, eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import type { PostgresJsDatabase } from "drizzle-orm/postgres-js";
 
 import { ConflictError, NotFoundError } from "@bdas/errors";
@@ -17,8 +17,12 @@ import { getEventBus } from "@bdas/events";
 import { createId } from "@bdas/id";
 
 import type { AccountDeletionCancelled, AccountDeletionRequested } from "../events";
-import { accountDeletionRequests, authUsers, type AccountDeletionRequest } from "../schema";
-import { revokeAllSessionsForUser } from "../sessions";
+import {
+  accountDeletionRequests,
+  authSessions,
+  authUsers,
+  type AccountDeletionRequest,
+} from "../schema";
 import { randomToken } from "../tokens";
 
 export type Db = PostgresJsDatabase<Record<string, never>>;
@@ -36,6 +40,19 @@ export type RequestAccountDeletionResult = {
   readonly scheduledPurgeAt: Date;
   readonly reactivationToken: string;
 };
+
+/**
+ * Did this error come from the one-pending-request-per-user index?
+ *
+ * postgres-js puts the SQLSTATE in `code`; `23505` is unique_violation. The
+ * constraint name is checked too so an id collision — the only other unique
+ * constraint this insert could hit — is not mistaken for a duplicate request.
+ */
+function isPendingDeletionConflict(err: unknown): boolean {
+  if (typeof err !== "object" || err === null) return false;
+  const e = err as { code?: string; constraint_name?: string };
+  return e.code === "23505" && e.constraint_name === "account_deletion_requests_user_pending_idx";
+}
 
 export async function requestAccountDeletion(
   db: Db,
@@ -68,24 +85,35 @@ export async function requestAccountDeletion(
   const reactivationToken = randomToken();
 
   await db.transaction(async (tx) => {
-    await tx.insert(accountDeletionRequests).values({
-      id: requestId,
-      userId: input.userId,
-      emailSnapshot: user.email,
-      nameSnapshot: input.displayName,
-      requestedAt: now,
-      scheduledPurgeAt,
-      status: "pending",
-      reactivationToken,
-      reactivationExpiresAt: scheduledPurgeAt,
-    });
+    try {
+      await tx.insert(accountDeletionRequests).values({
+        id: requestId,
+        userId: input.userId,
+        emailSnapshot: user.email,
+        nameSnapshot: input.displayName,
+        requestedAt: now,
+        scheduledPurgeAt,
+        status: "pending",
+        reactivationToken,
+        reactivationExpiresAt: scheduledPurgeAt,
+      });
+    } catch (err) {
+      // The SELECT above is the fast, friendly-error path; this constraint is
+      // the authoritative backstop when two requests race past it.
+      if (isPendingDeletionConflict(err)) {
+        throw new ConflictError("Für dieses Konto ist bereits eine Löschung angefragt.");
+      }
+      throw err;
+    }
     await tx
       .update(authUsers)
       .set({ status: "pending_deletion", updatedAt: now })
       .where(eq(authUsers.id, input.userId));
+    await tx
+      .update(authSessions)
+      .set({ revokedAt: now })
+      .where(and(eq(authSessions.userId, input.userId), isNull(authSessions.revokedAt)));
   });
-
-  await revokeAllSessionsForUser(db, input.userId);
 
   const event: AccountDeletionRequested = {
     type: "auth.account_deletion.requested",

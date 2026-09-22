@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { index, integer, pgTable, text, timestamp, unique } from "drizzle-orm/pg-core";
+import { index, integer, pgTable, text, timestamp, unique, uniqueIndex } from "drizzle-orm/pg-core";
 
 export const authUsers = pgTable("auth_users", {
   id: text("id").primaryKey(),
@@ -112,6 +112,9 @@ export const accountDeletionRequests = pgTable(
   (t) => ({
     userIdx: index("account_deletion_requests_user_idx").on(t.userId),
     statusIdx: index("account_deletion_requests_status_idx").on(t.status, t.scheduledPurgeAt),
+    userPendingUq: uniqueIndex("account_deletion_requests_user_pending_idx")
+      .on(t.userId)
+      .where(sql`${t.status} = 'pending'`),
   }),
 );
 

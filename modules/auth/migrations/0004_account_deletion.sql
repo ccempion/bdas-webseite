@@ -24,6 +24,8 @@ CREATE INDEX account_deletion_requests_user_idx ON account_deletion_requests(use
 CREATE INDEX account_deletion_requests_status_idx ON account_deletion_requests(status, scheduled_purge_at);
 CREATE UNIQUE INDEX account_deletion_requests_reactivation_token_idx
   ON account_deletion_requests(reactivation_token) WHERE reactivation_token IS NOT NULL;
+CREATE UNIQUE INDEX account_deletion_requests_user_pending_idx
+  ON account_deletion_requests(user_id) WHERE status = 'pending';
 
 -- Per-module purge progress, so a retried cron sweep can skip modules it
 -- already finished instead of re-running a destructive step (PR8).
