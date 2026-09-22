@@ -51,6 +51,22 @@ describe("detailScreens", () => {
     }
     expect(detailScreens("alumnus")[0]?.title).toBe("Was hast du studiert?");
   });
+
+  it("fragt bei der Herkunft nach der Person, nicht nach dem Kanal", () => {
+    const screen = detailScreens("student").find((s) => s.id === "gefundenDurch");
+    expect(screen?.title).toBe("Wer hat dich zu uns gebracht?");
+    expect(screen?.why).toBe(
+      "Die meisten kommen über jemanden, den sie kennen. Nenn uns diese Person, dann weiß der Vorstand gleich, wo du herkommst.",
+    );
+  });
+
+  it("kommt in allen Angaben-Texten ohne lange Gedankenstriche aus", () => {
+    for (const typ of ["student", "alumnus", "foerderer", "bdaj"] as const) {
+      for (const s of detailScreens(typ)) {
+        expect(`${s.title} ${s.why}`).not.toContain("—");
+      }
+    }
+  });
 });
 
 describe("toProfileFields", () => {

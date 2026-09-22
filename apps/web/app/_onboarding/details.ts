@@ -51,7 +51,7 @@ function copy(t: Nutzertyp, field: ProfileField): { title: string; why: string }
     case "studienfach":
       return {
         title: past ? "Was hast du studiert?" : "Was studierst du?",
-        why: "Erst der Bereich, dann das Fach — so finden dich Leute aus deiner Richtung.",
+        why: "Erst der Bereich, dann das Fach, so finden dich Leute aus deiner Richtung.",
       };
     case "abschlussart":
       return { title: "Welcher Abschluss?", why: "Hilft deinem Vorstand, dich einzuordnen." };
@@ -69,13 +69,13 @@ function copy(t: Nutzertyp, field: ProfileField): { title: string; why: string }
       };
     case "gefundenDurch":
       return {
-        title: "Wie hast du uns gefunden?",
-        why: "Hilft uns zu verstehen, wie Leute zu BDAS finden.",
+        title: "Wer hat dich zu uns gebracht?",
+        why: "Die meisten kommen über jemanden, den sie kennen. Nenn uns diese Person, dann weiß der Vorstand gleich, wo du herkommst.",
       };
     case "photo":
       return {
         title: "Magst du ein Foto hochladen?",
-        why: "Freiwillig — so erkennt dich dein Vorstand beim ersten Treffen.",
+        why: "Freiwillig. So erkennt dich dein Vorstand beim ersten Treffen.",
       };
     case "interesse":
       return {

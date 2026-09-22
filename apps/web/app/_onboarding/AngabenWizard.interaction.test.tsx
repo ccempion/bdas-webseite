@@ -96,7 +96,7 @@ describe("AngabenWizard", () => {
       expect.objectContaining({ interesse: "Kulturarbeit" }),
     );
 
-    expect(heading()).toBe("Wie hast du uns gefunden?");
+    expect(heading()).toBe("Wer hat dich zu uns gebracht?");
     typeInto("#gefundenDurch", "webseite");
     click("Weiter");
 
