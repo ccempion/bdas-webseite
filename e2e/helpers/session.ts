@@ -186,3 +186,21 @@ export async function seedSession(page: Page, opts: SeedSessionOptions): Promise
   await signIn(page, user);
   return user;
 }
+
+/**
+ * Die Sitzung im Browser beenden, ohne die Abmelde-Fläche zu bedienen.
+ *
+ * Um auf das nächste Konto zu wechseln ist `logout()` aus `flows.ts` das
+ * falsche Werkzeug: es klickt den Knopf im Seitenkopf, braucht also eine
+ * geladene Seite — und nach `seedSession` steht der Browser oft noch auf
+ * about:blank, weil der Helfer bewusst nicht navigiert. Es braucht außerdem
+ * den mobilen Viewport, auf dem die Hamburger-Klappe überhaupt existiert. Das
+ * Cookie fallen zu lassen ist von beidem unabhängig; die Abmelde-Fläche selbst
+ * prüft auth.e2e.ts.
+ *
+ * Die Sitzungszeile bleibt serverseitig offen. Das ist unerheblich: `signIn`
+ * stellt für jede Rückkehr ohnehin eine neue aus.
+ */
+export async function endSession(page: Page): Promise<void> {
+  await page.context().clearCookies();
+}

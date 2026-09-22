@@ -8,7 +8,8 @@
 import { expect, test, type Page } from "@playwright/test";
 
 import { seedGroup, uniqueEmail, uniqueSlug } from "./helpers/db";
-import { createProfile, pickCombo, registerVerifyLogin, submitAndSettle } from "./helpers/flows";
+import { pickCombo, submitAndSettle } from "./helpers/flows";
+import { seedSession } from "./helpers/session";
 
 // Must be an entry of UNIVERSITIES (@bdas/profile) — the combobox offers no
 // other values, and its label doubles as the value it stores.
@@ -20,17 +21,14 @@ async function completeProfile(
   page: Page,
   opts: { email: string; groupId: string; studiengang: string },
 ): Promise<void> {
-  await registerVerifyLogin(page, {
+  await seedSession(page, {
     email: opts.email,
     firstName: "Fertige",
     lastName: "Person",
-  });
-  await createProfile(page, {
-    firstName: "Fertige",
-    lastName: "Person",
-    groupId: opts.groupId,
+    application: opts.groupId,
   });
 
+  await page.goto("/account");
   const form = page.locator("form:has(#konto-studiengang)");
   await form.locator("#konto-studiengang").fill(opts.studiengang);
   await form.locator("#konto-abschlussart").selectOption("bachelor");
@@ -113,12 +111,13 @@ test("an unfinished profile still shows the forms directly", async ({ page }) =>
     status: "active",
   });
 
-  await registerVerifyLogin(page, {
+  await seedSession(page, {
     email: uniqueEmail("konto-offen"),
     firstName: "Halbe",
     lastName: "Person",
+    application: groupId,
   });
-  await createProfile(page, { firstName: "Halbe", lastName: "Person", groupId });
+  await page.goto("/account");
 
   // Name and group are set but the extended fields are not, so nothing is
   // gated: no "Daten ändern", both forms open.

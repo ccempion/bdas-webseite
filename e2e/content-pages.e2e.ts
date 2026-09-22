@@ -8,8 +8,10 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
 
 import { deleteUserByEmail } from "./helpers/db";
-import { registerVerifyLogin } from "./helpers/flows";
+import { seedSession } from "./helpers/session";
 
+// Fixed so the account can be deleted and recreated across retries; the
+// `federal_board` role goes straight into the seeded token (see helpers/session.ts).
 const FEDERAL_EMAIL = "federal@e2e.bdas.test";
 
 /** Every board-editable content page: public path + its document title.
@@ -61,10 +63,11 @@ test.describe("content pages", () => {
 
   test("federal board reaches the Puck editor from every editable page", async ({ page }) => {
     await deleteUserByEmail(FEDERAL_EMAIL);
-    await registerVerifyLogin(page, {
+    await seedSession(page, {
       email: FEDERAL_EMAIL,
       firstName: "Fed",
       lastName: "Eral",
+      roles: ["federal_board"],
     });
 
     for (const p of EDITABLE_PAGES) {
@@ -88,7 +91,12 @@ test.describe("content pages", () => {
 
     test("federal board adds a Button block and the visitor sees the link", async ({ page }) => {
       await deleteUserByEmail(FEDERAL_EMAIL);
-      await registerVerifyLogin(page, { email: FEDERAL_EMAIL, firstName: "Fed", lastName: "Eral" });
+      await seedSession(page, {
+        email: FEDERAL_EMAIL,
+        firstName: "Fed",
+        lastName: "Eral",
+        roles: ["federal_board"],
+      });
 
       await page.goto("/ueber-uns/bdaj/bearbeiten");
       await dragBlockIntoCanvas(page, "Button");
@@ -121,7 +129,12 @@ test.describe("content pages", () => {
       page,
     }) => {
       await deleteUserByEmail(FEDERAL_EMAIL);
-      await registerVerifyLogin(page, { email: FEDERAL_EMAIL, firstName: "Fed", lastName: "Eral" });
+      await seedSession(page, {
+        email: FEDERAL_EMAIL,
+        firstName: "Fed",
+        lastName: "Eral",
+        roles: ["federal_board"],
+      });
 
       await page.goto("/ueber-uns/bdaj/bearbeiten");
       const canvas = page.frameLocator("iframe");

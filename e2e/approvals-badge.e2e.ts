@@ -13,7 +13,7 @@ import {
   uniqueEmail,
   uniqueSlug,
 } from "./helpers/db";
-import { createProfile, login, logout, registerVerifyLogin } from "./helpers/flows";
+import { endSession, seedSession, signIn } from "./helpers/session";
 
 test("ein Vorstand mit offener Freigabe sieht Zahl und Hinweis", async ({ page }) => {
   const slug = uniqueSlug("badge");
@@ -24,31 +24,39 @@ test("ein Vorstand mit offener Freigabe sieht Zahl und Hinweis", async ({ page }
     city: "Bonn",
   });
 
-  // registerVerifyLogin alone never completes the extended profile, so this
-  // board account stays pending/groupless/profileless for the whole test —
+  // Nothing here completes the extended profile, so this board account stays
+  // pending/groupless/profileless for the whole test —
   // "Bea Vorstand" truncates to the same "B. Vorstand" other specs use for
   // their federal fixture, and without cleanup it leaks into every later
   // spec's groupless-applicant views (pool-delete.e2e.ts's "Ohne Profil").
   const boardEmail = uniqueEmail("board");
   const moverEmail = uniqueEmail("wechsel");
   try {
-    await registerVerifyLogin(page, { email: boardEmail, firstName: "Bea", lastName: "Vorstand" });
-    await createProfile(page, { firstName: "Bea", lastName: "Vorstand", groupId });
+    const board = await seedSession(page, {
+      email: boardEmail,
+      firstName: "Bea",
+      lastName: "Vorstand",
+      application: groupId,
+    });
     await grantLocalBoardLead(boardEmail, groupId);
-    await logout(page);
+    await endSession(page);
 
     // The account page's alert only lists group transfers and open reports
     // (fix(account) f66b2bd: applications stay in the header badge and the
     // group's own queue). So the "board sees the alert" case needs an active
     // member of one group requesting to move into the board's group, not a
     // first-time application.
-    await registerVerifyLogin(page, { email: moverEmail, firstName: "Toni", lastName: "Wechsel" });
-    await createProfile(page, { firstName: "Toni", lastName: "Wechsel", groupId: otherGroupId });
+    await seedSession(page, {
+      email: moverEmail,
+      firstName: "Toni",
+      lastName: "Wechsel",
+      application: otherGroupId,
+    });
     await activateMemberByEmail(moverEmail);
     await seedGroupTransferRequest(moverEmail, otherGroupId, groupId);
-    await logout(page);
+    await endSession(page);
 
-    await login(page, boardEmail);
+    await signIn(page, board);
     await page.goto("/account");
 
     await expect(page.getByRole("status", { name: /offene Freigaben/ }).first()).toBeVisible();
@@ -70,8 +78,12 @@ test("ein einfaches Mitglied sieht weder Zahl noch Hinweis", async ({ page }) =>
   const groupId = await seedGroup({ slug, name: "Ruhige Gruppe", city: "Köln" });
 
   const email = uniqueEmail("mitglied");
-  await registerVerifyLogin(page, { email, firstName: "Mia", lastName: "Mitglied" });
-  await createProfile(page, { firstName: "Mia", lastName: "Mitglied", groupId });
+  await seedSession(page, {
+    email,
+    firstName: "Mia",
+    lastName: "Mitglied",
+    application: groupId,
+  });
 
   await page.goto("/account");
 

@@ -16,9 +16,10 @@ import {
   resetNewsletterRateLimits,
   uniqueEmail,
 } from "./helpers/db";
-import { logout, registerVerifyLogin } from "./helpers/flows";
+import { endSession, seedSession } from "./helpers/session";
 
-// Must match BDAS_FEDERAL_BOARD_EMAILS in the CI e2e job.
+// Fixed so the account can be deleted and recreated across retries; the
+// `federal_board` role goes straight into the seeded token (see helpers/session.ts).
 const FEDERAL_EMAIL = "federal@e2e.bdas.test";
 
 const panel = (page: Page) => page.locator("[data-newsletter-panel]");
@@ -134,10 +135,11 @@ test.describe("newsletter, the offensive surfaces", () => {
     const withoutTick = uniqueEmail("nl-gast-nein");
 
     await deleteUserByEmail(FEDERAL_EMAIL);
-    await registerVerifyLogin(page, {
+    await seedSession(page, {
       email: FEDERAL_EMAIL,
       firstName: "Bundes",
       lastName: "Vorstand",
+      roles: ["federal_board"],
     });
 
     await page.goto("/admin/events/neu");
@@ -158,8 +160,7 @@ test.describe("newsletter, the offensive surfaces", () => {
     await page.getByRole("button", { name: "Veröffentlichen" }).click();
     await expect(page.getByText("Veröffentlicht")).toBeVisible();
 
-    await page.goto("/account");
-    await logout(page);
+    await endSession(page);
 
     try {
       // Without the tick: a registration and no newsletter row at all.

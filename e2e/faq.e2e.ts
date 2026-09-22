@@ -19,23 +19,7 @@ import {
   seedGroup,
   uniqueSlug,
 } from "./helpers/db";
-import { seedSession } from "./helpers/session";
-
-/**
- * Ends the session so the next `seedSession` starts clean.
- *
- * Deliberately not `logout()` from `./helpers/flows`: that helper opens the
- * `md:hidden` hamburger disclosure (`summary[aria-label="Menü öffnen"]`) to
- * reach the header's "Abmelden", so it only works at the suite's default
- * mobile viewport. The specs below run at 1280×900, where the hamburger is
- * not rendered and the account menu is a separate desktop `<details>`
- * dropdown that nothing opens — the click would wait out the timeout.
- * Dropping the session cookie is viewport-independent and is all these specs
- * need; the logout UI itself is covered by auth.e2e.ts.
- */
-async function endSession(page: Page): Promise<void> {
-  await page.context().clearCookies();
-}
+import { endSession, seedSession } from "./helpers/session";
 
 /**
  * Reads the "Offene FAQ-Fragen" badge count from /federal/overview.
@@ -143,8 +127,7 @@ test.describe("Board-Verwaltung /federal/faq", () => {
 
   test("a federal board member creates, publishes and reorders an entry", async ({ page }) => {
     // Idempotent across retries (fixed email in a shared DB) — same pattern as
-    // e2e/board.e2e.ts: federal access comes from the JWT at login, not a
-    // per-test grant helper.
+    // e2e/board.e2e.ts.
     await deleteUserByEmail(FEDERAL_EMAIL);
     await seedSession(page, {
       email: FEDERAL_EMAIL,
