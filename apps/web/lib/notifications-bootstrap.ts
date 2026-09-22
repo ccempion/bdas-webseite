@@ -1,11 +1,12 @@
 import { getUserExport } from "@bdas/auth";
 import { getDb, type Db } from "@bdas/db";
 import { isFlagOn } from "@bdas/feature-flags";
-import { getMember } from "@bdas/members";
+import { getMember, getMemberByUserId } from "@bdas/members";
 import {
   consoleNotifier,
   createResendNotifier,
   registerNotificationSubscribers,
+  setMemberIdResolver,
   setNotifier,
   setRecipientResolver,
   type RecipientContact,
@@ -47,6 +48,13 @@ export function bootNotifications(): void {
       const user = await getUserExport(db, member.userId);
       if (!user) return null;
       return { email: user.email, firstName: member.firstName };
+    },
+  });
+
+  setMemberIdResolver({
+    async resolveMemberId(db: Db, userId: string): Promise<string | null> {
+      const member = await getMemberByUserId(db, userId);
+      return member?.id ?? null;
     },
   });
 
