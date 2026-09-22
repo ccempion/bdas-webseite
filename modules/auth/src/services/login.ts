@@ -81,6 +81,11 @@ export async function login(db: Db, input: unknown, ctx: LoginContext): Promise<
     throw new UnauthorizedError("E-Mail oder Passwort ungültig.");
   }
 
+  if (row.user.status === "pending_deletion") {
+    throw new UnauthorizedError(
+      "Dieses Konto wurde zur Löschung vorgemerkt. Nutze den Reaktivierungslink aus der Bestätigungs-E-Mail, falls das nicht du warst.",
+    );
+  }
   if (row.user.status !== "active") {
     throw new UnauthorizedError(
       "Bitte bestätige zuerst deine E-Mail-Adresse über den Link, den wir dir gesendet haben.",
