@@ -35,7 +35,7 @@ describeIfDb("journeys", () => {
     });
     expect(j).toMatchObject({
       userId: "usr_1",
-      flowVersion: 1,
+      flowVersion: 2,
       outcome: "student",
       stadt: "Berlin",
       status: "details_offen",
@@ -48,7 +48,12 @@ describeIfDb("journeys", () => {
   it("ignores an outcome the browser sent along", async () => {
     const j = await startJourney(t.db, {
       userId: "usr_1",
-      answers: { ...STUDENT, outcome: "bdaj", studienort: { kind: "city", city: "Passau" } },
+      answers: {
+        ...STUDENT,
+        outcome: "bdaj",
+        studienort: { kind: "city", city: "Passau" },
+        absicht: "dabei",
+      },
       entrySource: "direkt",
       env: ENV,
     });
