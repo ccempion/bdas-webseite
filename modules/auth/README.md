@@ -5,19 +5,21 @@ tables and other modules talk to it only through this README's listed surface.
 
 ## Owned tables
 
-| Table                      | Purpose                                                              |
-| -------------------------- | -------------------------------------------------------------------- |
-| `auth_users`               | Identity row: id, normalized email, status (`unverified` / `active`) |
-| `auth_credentials`         | Argon2id password hash + algorithm tag (split from users)            |
-| `auth_sessions`            | Server-side sessions; `id` is the JWT `jti` (ADR 0002)               |
-| `auth_email_verifications` | Single-use verification tokens (24 h)                                |
-| `auth_password_resets`     | Single-use reset tokens (1 h)                                        |
-| `auth_email_changes`       | Single-use login-email-change tokens (1 h)                           |
-| `auth_rate_limits`         | Fixed-window counters per key                                        |
+| Table                       | Purpose                                                                                   |
+| --------------------------- | ----------------------------------------------------------------------------------------- |
+| `auth_users`                | Identity row: id, normalized email, status (`unverified` / `active` / `pending_deletion`) |
+| `auth_credentials`          | Argon2id password hash + algorithm tag (split from users)                                 |
+| `auth_sessions`             | Server-side sessions; `id` is the JWT `jti` (ADR 0002)                                    |
+| `auth_email_verifications`  | Single-use verification tokens (24 h)                                                     |
+| `auth_password_resets`      | Single-use reset tokens (1 h)                                                             |
+| `auth_email_changes`        | Single-use login-email-change tokens (1 h)                                                |
+| `auth_rate_limits`          | Fixed-window counters per key                                                             |
+| `account_deletion_requests` | Self-service deletion window: snapshot, 30-day scheduled purge, reactivation token        |
+| `account_deletion_steps`    | Per-module completion markers for a deletion request's cross-module purge fan-out         |
 
-Migrations: `migrations/0001_init.sql`, `0002_consent.sql`, `0003_email_change.sql`.
-Discovered by `infra/migrations` per the manifest order (auth runs first;
-everything FKs into `auth_users`).
+Migrations: `migrations/0001_init.sql`, `0002_consent.sql`, `0003_email_change.sql`,
+`0004_account_deletion.sql`. Discovered by `infra/migrations` per the manifest order
+(auth runs first; everything FKs into `auth_users`).
 
 ## Public surface
 
@@ -40,6 +42,15 @@ import {
   RequestEmailChangeInput,
   // Erasing an identity (ADR 0044; the caller decides who may be deleted)
   deleteAccount,
+  // Self-service account deletion (DSGVO Art. 17)
+  requestAccountDeletion,
+  cancelAccountDeletion,
+  getDeletionRequestForUser,
+  buildReactivationUrl,
+  ACCOUNT_DELETION_GRACE_DAYS,
+  RequestAccountDeletionInput,
+  type RequestAccountDeletionResult,
+  type AccountDeletionStatus,
   // SSO cookie
   COOKIE_NAME,
   COOKIE_MAX_AGE_SECONDS,
@@ -73,6 +84,8 @@ The module publishes typed events through `core/events`:
 - `auth.email.changed`
 - `auth.user.deleted` — after the row is gone; FK cascades have already run,
   so it is for modules that keep account data without an FK
+- `auth.account_deletion.requested` — self-service deletion scheduled (30-day grace)
+- `auth.account_deletion.cancelled` — self-service deletion reactivated within the grace window
 
 Subscribers should depend on `AuthEvent` (or its arms) and not on any auth
 service directly.

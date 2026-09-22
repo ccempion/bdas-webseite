@@ -71,6 +71,28 @@ export type UserDeleted = {
   readonly at: Date;
 };
 
+/**
+ * A signed-in user asked to delete their account (DSGVO Art. 17). The
+ * account is already locked and its sessions revoked when this fires; the
+ * hard purge itself follows `scheduledPurgeAt`, handled by a later PR's
+ * cron sweep, not by a subscriber to this event (spec §2 decision 1).
+ */
+export type AccountDeletionRequested = {
+  readonly type: "auth.account_deletion.requested";
+  readonly userId: string;
+  readonly requestId: string;
+  readonly scheduledPurgeAt: Date;
+  readonly at: Date;
+};
+
+/** The user (or a reactivation link) cancelled a pending deletion in time. */
+export type AccountDeletionCancelled = {
+  readonly type: "auth.account_deletion.cancelled";
+  readonly userId: string;
+  readonly requestId: string;
+  readonly at: Date;
+};
+
 export type AuthEvent =
   | UserRegistered
   | UserVerified
@@ -79,4 +101,6 @@ export type AuthEvent =
   | PasswordReset
   | PasswordChanged
   | EmailChanged
-  | UserDeleted;
+  | UserDeleted
+  | AccountDeletionRequested
+  | AccountDeletionCancelled;

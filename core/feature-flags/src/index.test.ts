@@ -41,6 +41,13 @@ describe("isFlagOn", () => {
     process.env["BDAS_FLAG_ONBOARDING"] = "true";
     expect(isFlagOn("onboarding")).toBe(true);
   });
+
+  it("account_deletion maps to BDAS_FLAG_ACCOUNT_DELETION", () => {
+    delete process.env["BDAS_FLAG_ACCOUNT_DELETION"];
+    expect(isFlagOn("account_deletion")).toBe(false);
+    process.env["BDAS_FLAG_ACCOUNT_DELETION"] = "true";
+    expect(isFlagOn("account_deletion")).toBe(true);
+  });
 });
 
 describe("requireFlag", () => {
