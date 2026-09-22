@@ -21,6 +21,14 @@ export function createResendNotifier(opts: ResendNotifierOptions): Notifier {
         subject: email.subject,
         html: email.html,
         text: email.text,
+        ...(email.attachments?.length
+          ? {
+              attachments: email.attachments.map((a) => ({
+                filename: a.filename,
+                content: a.content,
+              })),
+            }
+          : {}),
       });
       if (error) throw new Error(error.message ?? JSON.stringify(error));
     },

@@ -7,11 +7,17 @@
  * already-rendered email — templates.ts produces subject/text/html.
  */
 
+export type EmailAttachment = {
+  readonly filename: string;
+  readonly content: Buffer;
+};
+
 export type OutboundEmail = {
   readonly to: string;
   readonly subject: string;
   readonly text: string;
   readonly html: string;
+  readonly attachments?: ReadonlyArray<EmailAttachment> | undefined;
 };
 
 export interface Notifier {
@@ -20,7 +26,10 @@ export interface Notifier {
 
 export const consoleNotifier: Notifier = {
   async send(email: OutboundEmail): Promise<void> {
-    console.log(`[notifications] → ${email.to}: ${email.subject}`);
+    const suffix = email.attachments?.length
+      ? ` (+${email.attachments.length} Anhang/Anhänge)`
+      : "";
+    console.log(`[notifications] → ${email.to}: ${email.subject}${suffix}`);
   },
 };
 

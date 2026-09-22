@@ -9,7 +9,7 @@ export type RenderedEmail = {
 /** German transactional copy. One entry per TransactionalTemplate. */
 export function render(template: TransactionalTemplate, data: TemplateData): RenderedEmail {
   const { firstName, eventTitle, eventUrl, postTitle, postUrl, reportReason } = data;
-  const { confirmUrl, unsubscribeUrl } = data;
+  const { confirmUrl, unsubscribeUrl, reactivationUrl, scheduledPurgeDate } = data;
   // While the recipient is on the event, offer a link to manage/cancel it.
   const manage = eventUrl
     ? { label: "Du kannst dich jederzeit über die Veranstaltungsseite abmelden:", url: eventUrl }
@@ -199,6 +199,31 @@ export function render(template: TransactionalTemplate, data: TemplateData): Ren
         unsubscribeUrl
           ? { label: "Wenn du nicht mehr dabei sein willst:", url: unsubscribeUrl }
           : undefined,
+      );
+    case "account_deletion_requested": {
+      const purgeLine = scheduledPurgeDate
+        ? `Dein Konto wird am ${scheduledPurgeDate} endgültig gelöscht`
+        : "Dein Konto wird in 30 Tagen endgültig gelöscht";
+      return body(
+        "BDAS: Löschung deines Kontos angefragt",
+        firstName,
+        `deine Anfrage zur Löschung deines BDAS-Kontos ist eingegangen. ${purgeLine}, und du wirst in der Zwischenzeit automatisch abgemeldet.`,
+        reactivationUrl
+          ? { label: "War das nicht du? Löschung jetzt abbrechen:", url: reactivationUrl }
+          : undefined,
+      );
+    }
+    case "data_export_ready":
+      return body(
+        "BDAS: Deine Datenauskunft",
+        firstName,
+        "im Anhang findest du alle Daten, die wir zu deinem Konto gespeichert haben (Art. 15 DSGVO).",
+      );
+    case "account_deletion_completed":
+      return body(
+        "BDAS: Dein Konto wurde gelöscht",
+        firstName,
+        "dein BDAS-Konto und alle zugehörigen Daten wurden wie angekündigt endgültig gelöscht. Eine Wiederherstellung ist ab jetzt nicht mehr möglich.",
       );
   }
 }
