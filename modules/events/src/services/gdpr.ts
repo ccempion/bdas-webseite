@@ -11,15 +11,13 @@
  * `event_registrations`/`event_attendance` are NOT touched here: both are
  * keyed by `members.id` with `ON DELETE CASCADE`, so they're already removed
  * for free by the final `auth.deleteAccount()` cascade once the member row
- * goes. Their export (the member's own registrations/attendance history) is
- * NOT covered by `exportForUser` below either — that needs a resolver
- * (`members.id`, not the plain `userId` this module otherwise uses) and is a
- * confirmed requirement for PR7 (export completion), not this PR.
+ * goes. Registrations/attendance are exported by `exportParticipationForMember`
+ * (keyed by `members.id`, passed in by the caller from the session).
  */
-import { eq } from "drizzle-orm";
+import { asc, eq } from "drizzle-orm";
 import type { PostgresJsDatabase } from "drizzle-orm/postgres-js";
 
-import { events } from "../schema";
+import { eventAttendance, eventRegistrations, events } from "../schema";
 import type { EventItem } from "../types";
 import { rowToEvent } from "./manage";
 
@@ -28,7 +26,7 @@ export type Db = PostgresJsDatabase<Record<string, never>>;
 /**
  * Art. 15 — this module's slice of a user's full data export: every event
  * they organized. Does not include registrations/attendance as a
- * participant (see module docstring above — that's PR7's job).
+ * participant (see `exportParticipationForMember`).
  */
 export async function exportForUser(db: Db, userId: string): Promise<readonly EventItem[]> {
   const rows = await db.select().from(events).where(eq(events.createdBy, userId));
@@ -43,4 +41,62 @@ export async function exportForUser(db: Db, userId: string): Promise<readonly Ev
  */
 export async function clearOrganizerForUser(db: Db, userId: string): Promise<void> {
   await db.update(events).set({ createdBy: null }).where(eq(events.createdBy, userId));
+}
+
+export type ParticipationRegistration = {
+  readonly registrationId: string;
+  readonly eventId: string;
+  readonly eventTitle: string;
+  readonly eventStartsAt: Date;
+  readonly registeredAt: Date;
+  readonly cancelledAt: Date | null;
+  readonly waitlistPosition: number | null;
+};
+
+export type ParticipationAttendance = {
+  readonly eventId: string;
+  readonly eventTitle: string;
+  readonly eventStartsAt: Date;
+  readonly attended: boolean;
+  readonly checkedInAt: Date | null;
+};
+
+export type ParticipationExport = {
+  readonly registrations: readonly ParticipationRegistration[];
+  readonly attendance: readonly ParticipationAttendance[];
+};
+
+export async function exportParticipationForMember(
+  db: Db,
+  memberId: string,
+): Promise<ParticipationExport> {
+  const registrations = await db
+    .select({
+      registrationId: eventRegistrations.id,
+      eventId: events.id,
+      eventTitle: events.title,
+      eventStartsAt: events.startsAt,
+      registeredAt: eventRegistrations.registeredAt,
+      cancelledAt: eventRegistrations.cancelledAt,
+      waitlistPosition: eventRegistrations.waitlistPosition,
+    })
+    .from(eventRegistrations)
+    .innerJoin(events, eq(eventRegistrations.eventId, events.id))
+    .where(eq(eventRegistrations.memberId, memberId))
+    .orderBy(asc(eventRegistrations.registeredAt));
+
+  const attendance = await db
+    .select({
+      eventId: events.id,
+      eventTitle: events.title,
+      eventStartsAt: events.startsAt,
+      attended: eventAttendance.attended,
+      checkedInAt: eventAttendance.checkedInAt,
+    })
+    .from(eventAttendance)
+    .innerJoin(events, eq(eventAttendance.eventId, events.id))
+    .where(eq(eventAttendance.memberId, memberId))
+    .orderBy(asc(events.startsAt));
+
+  return { registrations, attendance };
 }
