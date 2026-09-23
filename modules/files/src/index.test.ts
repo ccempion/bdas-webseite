@@ -17,6 +17,8 @@ import type { GroupCreated } from "@bdas/groups";
 import type { CurrentMember, Grant } from "@bdas/members";
 import { setStorage, type SignedUrl, type StorageClient } from "@bdas/storage";
 
+import { eq } from "drizzle-orm";
+
 import { fileAccessLog, files, folders } from "./schema";
 import {
   confirmUpload,
@@ -68,6 +70,7 @@ async function applyMigrations(t: TestDb): Promise<void> {
     ["..", "migrations", "0003_folder_nesting.sql"],
     ["..", "migrations", "0004_board_broadcast_scope.sql"],
     ["..", "migrations", "0005_folder_member_grants.sql"],
+    ["..", "migrations", "0006_access_log_retention.sql"],
   ]) {
     const sql = await fs.readFile(path.join(__dirname, ...file), "utf8");
     await t.client.unsafe(sql);
@@ -141,6 +144,29 @@ describeIfDb("files schema", () => {
     await expect(
       t.client`INSERT INTO folders (id, slug, name, scope, group_id) VALUES ('fld_b', 'b', 'B', 'local_board', 'grp_muc')`,
     ).rejects.toThrow();
+  });
+
+  it("anonymizes file_access_log.member_id instead of deleting the row when the member is purged", async () => {
+    const { groupId, memberId } = await seedGroupAndMember(t, {
+      userId: "usr_del",
+      memberId: "mbr_del",
+    });
+    await t.client`INSERT INTO folders (id, slug, name, scope, group_id) VALUES ('fld_x', 'x', 'X', 'local_board', ${groupId})`;
+    await t.client`
+      INSERT INTO files (id, folder_id, filename, storage_key, mime_type, size_bytes, status, uploaded_by)
+      VALUES ('fil_x', 'fld_x', 'a.pdf', 'k/a.pdf', 'application/pdf', 10, 'ready', ${memberId})`;
+    await t.db.insert(fileAccessLog).values({
+      id: "fal_x",
+      fileId: "fil_x",
+      memberId,
+      action: "download",
+    });
+
+    await t.client`DELETE FROM auth_users WHERE id = 'usr_del'`;
+
+    const [log] = await t.db.select().from(fileAccessLog).where(eq(fileAccessLog.id, "fal_x"));
+    expect(log).toBeDefined();
+    expect(log?.memberId).toBeNull();
   });
 });
 

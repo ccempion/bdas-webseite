@@ -28,6 +28,8 @@ export {
 } from "./services/folder-access";
 export { registerFilesSubscribers, unregisterFilesSubscribers } from "./subscribers";
 export { canRead as canReadFolder, mayDeleteFile, type FolderRights } from "./permissions";
+export { getMemberIdResolver, setMemberIdResolver, type MemberIdResolver } from "./resolver";
+export { deleteFilesByMember, exportForUser, type FileExportRow } from "./services/gdpr";
 export {
   ALLOWED_MIME,
   MAX_FILE_BYTES,

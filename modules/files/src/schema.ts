@@ -58,7 +58,7 @@ export const fileAccessLog = pgTable(
   {
     id: text("id").primaryKey(),
     fileId: text("file_id"),
-    memberId: text("member_id").notNull(),
+    memberId: text("member_id"),
     action: text("action").notNull(),
     at: timestamp("at", { withTimezone: true }).notNull().defaultNow(),
   },
@@ -78,3 +78,5 @@ export const folderMemberGrants = pgTable("folder_member_grants", {
   revokedAt: timestamp("revoked_at", { withTimezone: true }),
   revokedBy: text("revoked_by"),
 });
+
+export type { FileStatus } from "./types";
