@@ -44,7 +44,7 @@ export type EventItem = {
   readonly allowGuestRegistration: boolean;
   readonly visibility: EventVisibility;
   readonly status: EventStatus;
-  readonly createdBy: string;
+  readonly createdBy: string | null;
 };
 
 export type EventRegistration = {
