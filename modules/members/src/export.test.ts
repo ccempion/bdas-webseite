@@ -53,6 +53,37 @@ describeIfDb("members exportForUser", () => {
     );
   });
 
+  it("exposes exactly the documented keys on each row shape", async () => {
+    const result = await exportForUser(t.db, "usr_me");
+
+    expect(Object.keys(result.member ?? {}).sort()).toEqual([
+      "createdAt",
+      "firstName",
+      "id",
+      "joinedAt",
+      "lastName",
+      "primaryGroupId",
+      "status",
+      "updatedAt",
+    ]);
+    expect(Object.keys(result.roleGrants[0] ?? {}).sort()).toEqual([
+      "grantedAt",
+      "groupId",
+      "revokedAt",
+      "role",
+    ]);
+    expect(Object.keys(result.groupChangeRequests[0] ?? {}).sort()).toEqual([
+      "decidedAt",
+      "fromGroupId",
+      "id",
+      "reasonCategory",
+      "reasonMessage",
+      "requestedAt",
+      "status",
+      "toGroupId",
+    ]);
+  });
+
   it("never leaks another member's rows or the deciding/granting person's id", async () => {
     const json = JSON.stringify(await exportForUser(t.db, "usr_me"));
 
