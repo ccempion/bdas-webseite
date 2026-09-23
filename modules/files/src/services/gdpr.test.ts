@@ -14,8 +14,8 @@ import { createTestDb, type TestDb } from "@bdas/db/test";
 import { setStorage, type SignedUrl, type StorageClient } from "@bdas/storage";
 
 import { setMemberIdResolver } from "../resolver";
-import { files } from "../schema";
-import { exportForUser } from "./gdpr";
+import { files, folders } from "../schema";
+import { deleteFilesByMember, exportForUser } from "./gdpr";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DEFAULT_URL = "postgres://bdas:bdas@localhost:5432/bdas";
@@ -146,6 +146,160 @@ describeIfDb("files GDPR functions", () => {
       });
 
       expect(await exportForUser(t.db, "usr_unknown")).toEqual([]);
+    });
+  });
+
+  describe("deleteFilesByMember", () => {
+    it("deletes the storage object and the row for every file the member uploaded", async () => {
+      const { memberId, groupId } = await seedMember(t);
+      await t.client`INSERT INTO folders (id, slug, name, scope, group_id) VALUES ('fld_1', 'a', 'A', 'local_board', ${groupId})`;
+      await t.db.insert(files).values({
+        id: "fil_1",
+        folderId: "fld_1",
+        filename: "a.pdf",
+        storageKey: "k/a.pdf",
+        mimeType: "application/pdf",
+        sizeBytes: 10,
+        status: "ready",
+        uploadedBy: memberId,
+      });
+      const deletedKeys: string[] = [];
+      setStorage(
+        fakeStorage({
+          deleteObject: async (key: string) => {
+            deletedKeys.push(key);
+          },
+        }),
+      );
+
+      await deleteFilesByMember(t.db, "usr_test_1");
+
+      expect(deletedKeys).toEqual(["k/a.pdf"]);
+      expect(await t.db.select().from(files).where(eq(files.id, "fil_1"))).toEqual([]);
+    });
+
+    it("tolerates a storage object that is already gone", async () => {
+      const { memberId, groupId } = await seedMember(t);
+      await t.client`INSERT INTO folders (id, slug, name, scope, group_id) VALUES ('fld_1', 'a', 'A', 'local_board', ${groupId})`;
+      await t.db.insert(files).values({
+        id: "fil_1",
+        folderId: "fld_1",
+        filename: "a.pdf",
+        storageKey: "k/a.pdf",
+        mimeType: "application/pdf",
+        sizeBytes: 10,
+        status: "ready",
+        uploadedBy: memberId,
+      });
+      setStorage(
+        fakeStorage({
+          deleteObject: async () => {
+            throw new Error("object not found");
+          },
+        }),
+      );
+
+      await expect(deleteFilesByMember(t.db, "usr_test_1")).resolves.toBeUndefined();
+      expect(await t.db.select().from(files).where(eq(files.id, "fil_1"))).toEqual([]);
+    });
+
+    it("deletes a folder the member created once removing their files leaves it empty", async () => {
+      const { memberId, groupId } = await seedMember(t);
+      await t.client`INSERT INTO folders (id, slug, name, scope, group_id, created_by) VALUES ('fld_1', 'a', 'A', 'local_board', ${groupId}, ${memberId})`;
+      await t.db.insert(files).values({
+        id: "fil_1",
+        folderId: "fld_1",
+        filename: "a.pdf",
+        storageKey: "k/a.pdf",
+        mimeType: "application/pdf",
+        sizeBytes: 10,
+        status: "ready",
+        uploadedBy: memberId,
+      });
+
+      await deleteFilesByMember(t.db, "usr_test_1");
+
+      expect(await t.db.select().from(folders).where(eq(folders.id, "fld_1"))).toEqual([]);
+    });
+
+    it("keeps a folder the member created if another member's file is still inside it", async () => {
+      const { memberId, groupId } = await seedMember(t);
+      const other = await seedMember(t, { userId: "usr_other", memberId: "mbr_other" });
+      await t.client`INSERT INTO folders (id, slug, name, scope, group_id, created_by) VALUES ('fld_1', 'a', 'A', 'local_board', ${groupId}, ${memberId})`;
+      await t.db.insert(files).values({
+        id: "fil_other",
+        folderId: "fld_1",
+        filename: "other.pdf",
+        storageKey: "k/other.pdf",
+        mimeType: "application/pdf",
+        sizeBytes: 10,
+        status: "ready",
+        uploadedBy: other.memberId,
+      });
+      // re-wire the resolver back to the member under deletion, since
+      // seedMember(t, other) above overwrote it
+      setMemberIdResolver({
+        async resolveMemberId(_db, uid): Promise<string | null> {
+          return uid === "usr_test_1" ? memberId : null;
+        },
+      });
+
+      await deleteFilesByMember(t.db, "usr_test_1");
+
+      const [folder] = await t.db.select().from(folders).where(eq(folders.id, "fld_1"));
+      expect(folder).toBeDefined();
+      expect(folder?.createdBy).toBe(memberId);
+      const [otherFile] = await t.db.select().from(files).where(eq(files.id, "fil_other"));
+      expect(otherFile).toBeDefined();
+    });
+
+    it("deletes a chain of now-empty folders the member created, deepest first", async () => {
+      const { memberId, groupId } = await seedMember(t);
+      await t.client`INSERT INTO folders (id, slug, name, scope, group_id, created_by, depth) VALUES ('fld_parent', 'p', 'P', 'local_board', ${groupId}, ${memberId}, 0)`;
+      await t.client`INSERT INTO folders (id, slug, name, scope, group_id, created_by, parent_id, depth) VALUES ('fld_child', 'c', 'C', 'local_board', ${groupId}, ${memberId}, 'fld_parent', 1)`;
+      await t.db.insert(files).values({
+        id: "fil_1",
+        folderId: "fld_child",
+        filename: "a.pdf",
+        storageKey: "k/a.pdf",
+        mimeType: "application/pdf",
+        sizeBytes: 10,
+        status: "ready",
+        uploadedBy: memberId,
+      });
+
+      await deleteFilesByMember(t.db, "usr_test_1");
+
+      expect(await t.db.select().from(folders).where(eq(folders.id, "fld_child"))).toEqual([]);
+      expect(await t.db.select().from(folders).where(eq(folders.id, "fld_parent"))).toEqual([]);
+    });
+
+    it("is a no-op when the user has no resolvable member", async () => {
+      setMemberIdResolver({
+        async resolveMemberId(): Promise<string | null> {
+          return null;
+        },
+      });
+
+      await expect(deleteFilesByMember(t.db, "usr_unknown")).resolves.toBeUndefined();
+    });
+
+    it("is idempotent: a second call after everything is gone is a clean no-op", async () => {
+      const { memberId, groupId } = await seedMember(t);
+      await t.client`INSERT INTO folders (id, slug, name, scope, group_id, created_by) VALUES ('fld_1', 'a', 'A', 'local_board', ${groupId}, ${memberId})`;
+      await t.db.insert(files).values({
+        id: "fil_1",
+        folderId: "fld_1",
+        filename: "a.pdf",
+        storageKey: "k/a.pdf",
+        mimeType: "application/pdf",
+        sizeBytes: 10,
+        status: "ready",
+        uploadedBy: memberId,
+      });
+
+      await deleteFilesByMember(t.db, "usr_test_1");
+      await expect(deleteFilesByMember(t.db, "usr_test_1")).resolves.toBeUndefined();
     });
   });
 });
