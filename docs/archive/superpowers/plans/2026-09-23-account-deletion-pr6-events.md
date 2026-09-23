@@ -225,7 +225,11 @@ describeIfDb("events GDPR functions", () => {
   describe("exportForUser", () => {
     it("returns every event the user organized", async () => {
       const a = await createEvent(t.db, { title: "Erstes", startsAt: future() }, "usr_departing");
-      const b = await createEvent(t.db, { title: "Zweites", startsAt: future(14) }, "usr_departing");
+      const b = await createEvent(
+        t.db,
+        { title: "Zweites", startsAt: future(14) },
+        "usr_departing",
+      );
       await createEvent(t.db, { title: "Fremd", startsAt: future() }, "usr_other");
 
       const result = await exportForUser(t.db, "usr_departing");
@@ -267,7 +271,11 @@ describeIfDb("events GDPR functions", () => {
     });
 
     it("is idempotent: a second call after clearing is a clean no-op", async () => {
-      const ev = await createEvent(t.db, { title: "Einmal reicht", startsAt: future() }, "usr_departing");
+      const ev = await createEvent(
+        t.db,
+        { title: "Einmal reicht", startsAt: future() },
+        "usr_departing",
+      );
 
       await clearOrganizerForUser(t.db, "usr_departing");
       await expect(clearOrganizerForUser(t.db, "usr_departing")).resolves.toBeUndefined();
