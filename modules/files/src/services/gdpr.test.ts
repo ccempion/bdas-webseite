@@ -178,7 +178,13 @@ describeIfDb("files GDPR functions", () => {
       expect(await t.db.select().from(files).where(eq(files.id, "fil_1"))).toEqual([]);
     });
 
-    it("tolerates a storage object that is already gone", async () => {
+    it("fails loud and keeps the row when a storage delete genuinely fails", async () => {
+      // SupabaseStorageClient.deleteObject only throws when Supabase's
+      // `error` field is actually set (a missing object does NOT throw —
+      // see core/storage/src/supabase.ts), so every throw here is a real
+      // failure (auth, timeout, 5xx) and must not be swallowed: the row has
+      // to survive so a retry can re-attempt it, and the caller must see a
+      // rejected promise.
       const { memberId, groupId } = await seedMember(t);
       await t.client`INSERT INTO folders (id, slug, name, scope, group_id) VALUES ('fld_1', 'a', 'A', 'local_board', ${groupId})`;
       await t.db.insert(files).values({
@@ -194,13 +200,15 @@ describeIfDb("files GDPR functions", () => {
       setStorage(
         fakeStorage({
           deleteObject: async () => {
-            throw new Error("object not found");
+            throw new Error("network error");
           },
         }),
       );
 
-      await expect(deleteFilesByMember(t.db, "usr_test_1")).resolves.toBeUndefined();
-      expect(await t.db.select().from(files).where(eq(files.id, "fil_1"))).toEqual([]);
+      await expect(deleteFilesByMember(t.db, "usr_test_1")).rejects.toThrow();
+
+      const [file] = await t.db.select().from(files).where(eq(files.id, "fil_1"));
+      expect(file).toBeDefined();
     });
 
     it("deletes a folder the member created once removing their files leaves it empty", async () => {

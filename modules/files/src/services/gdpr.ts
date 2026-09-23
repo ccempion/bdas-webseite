@@ -67,10 +67,22 @@ export async function exportForUser(db: Db, userId: string): Promise<readonly Fi
  * inside keeps today's behavior: created_by goes NULL (existing
  * ON DELETE SET NULL), the folder and its contents stay untouched.
  *
+ * Fails loud on a real Storage error: SupabaseStorageClient.deleteObject only
+ * throws when Supabase's `error` field is actually set (auth, timeout, 5xx —
+ * a missing object does NOT throw), so every catch here is a genuine
+ * failure, not a "already gone" false positive. On failure the row is kept
+ * (so a retry re-attempts it) and the loop continues to make as much forward
+ * progress as possible; once every file has been attempted and folder
+ * cleanup has run for whatever became empty, the function throws a single
+ * aggregate Error naming every file whose storage object could not be
+ * deleted, so the caller (the orchestrator) sees a rejected promise.
+ *
  * Idempotent: a second call after everything is already gone finds nothing
  * to resolve, delete, or clean up and returns cleanly — the orchestrator's
  * retry-safe per-step design (spec §5) depends on every step behaving this
- * way, same contract as notifications.deleteLogForMember.
+ * way, same contract as notifications.deleteLogForMember. A retry after a
+ * partial failure re-selects only the still-present file rows (the
+ * successfully-deleted ones are already gone) and re-attempts just those.
  *
  * Root folders are never a cleanup candidate (parent_id IS NOT NULL below),
  * matching deleteFolder's D5 invariant (folder-writes.ts) — they're
@@ -90,19 +102,17 @@ export async function deleteFilesByMember(db: Db, userId: string): Promise<void>
   if (!memberId) return;
 
   const owned = await db.select().from(files).where(eq(files.uploadedBy, memberId));
+  const failures: string[] = [];
   for (const file of owned) {
     try {
       await getStorage().deleteObject(file.storageKey);
     } catch (err) {
-      // deleteObject throws the same way for "already gone" as for a real
-      // failure (auth, timeout, 5xx) — the StorageClient interface gives us
-      // no way to tell them apart, so log every failure rather than
-      // swallowing it, and still remove the row: leaving it behind would
-      // just retry a delete that already failed once, forever.
       console.error(
         `[files] deleteFilesByMember: failed to delete storage object "${file.storageKey}" for file ${file.id}:`,
         err,
       );
+      failures.push(file.id);
+      continue;
     }
     await db.delete(files).where(eq(files.id, file.id));
   }
@@ -133,6 +143,12 @@ export async function deleteFilesByMember(db: Db, userId: string): Promise<void>
             .where(eq(child.parentId, folder.id)),
         ),
       ),
+    );
+  }
+
+  if (failures.length > 0) {
+    throw new Error(
+      `deleteFilesByMember: failed to delete ${failures.length} storage object(s) for member ${memberId}: ${failures.join(", ")}`,
     );
   }
 }
