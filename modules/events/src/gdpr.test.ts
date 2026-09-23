@@ -48,6 +48,10 @@ describeIfDb("events GDPR functions", () => {
   beforeEach(async () => {
     t = await createTestDb();
     for (const file of [
+      ["..", "..", "auth", "migrations", "0001_init.sql"],
+      ["..", "..", "groups", "migrations", "0001_init.sql"],
+      ["..", "..", "members", "migrations", "0001_init.sql"],
+      ["..", "..", "members", "migrations", "0002_role_grants.sql"],
       ["..", "migrations", "0001_init.sql"],
       ["..", "migrations", "0002_event_pages.sql"],
       ["..", "migrations", "0003_guest_registration.sql"],
