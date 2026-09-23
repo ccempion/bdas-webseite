@@ -16,7 +16,7 @@ JWT-Schlüssel geteilt war, galt eine in einer Preview ausgestellte Anmeldung au
 ## Entscheidung
 
 1. **Jede Vercel-Preview ist Staging.** Sie läuft gegen ein eigenes Supabase-Projekt
-   (`bdas-staging`, Free Tier, Frankfurt) mit eigener Datenbank und eigenem Bucket. Alle
+   (`bdas-staging`, Free Tier, eu-west-1 Irland) mit eigener Datenbank und eigenen Buckets (`files` und `profile-media` privat, `event-media`, `blog-media`, `content-media` öffentlich; Limits wie in Produktion). Alle
    Preview-Variablen, die auf Produktion zeigten, zeigen dorthin; `SSO_JWT_SECRET` und
    `CRON_SECRET` sind eigene Werte.
 2. **Feste Adresse `dashboard.bdas.de`** zeigt den Branch `staging`. Der Workflow
