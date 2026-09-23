@@ -116,3 +116,20 @@ export async function dismissReport(db: Db, reportId: string): Promise<void> {
     .returning({ id: postReports.id });
   if (!result[0]) throw new NotFoundError("Meldung nicht gefunden.");
 }
+
+/**
+ * Erasure seam for account deletion (spec §5, blog scope extended to
+ * reports 2026-09-23). A HARD delete, including already-dismissed reports:
+ * a report's `reason` is personal data the reporter wrote, so retaining it
+ * would defeat the point. Only removes reports THIS user filed — reports
+ * against their own posts already cascade away when `deleteContentByAuthor`
+ * removes the post itself (`post_reports.post_id` is `ON DELETE CASCADE`).
+ * Returns the number of rows removed.
+ */
+export async function deleteReportsByReporter(db: Db, reporterId: string): Promise<number> {
+  const removed = await db
+    .delete(postReports)
+    .where(eq(postReports.reporterId, reporterId))
+    .returning({ id: postReports.id });
+  return removed.length;
+}
