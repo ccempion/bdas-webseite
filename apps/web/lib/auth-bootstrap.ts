@@ -1,5 +1,7 @@
 import { consoleNotifier, createResendNotifier, setNotifier } from "@bdas/auth";
 
+import { stagingSafeNotifier } from "./staging";
+
 let booted = false;
 
 /**
@@ -13,5 +15,6 @@ export function bootAuth(): void {
   const apiKey = process.env["RESEND_API_KEY"];
   const from = process.env["RESEND_FROM_EMAIL"];
 
-  setNotifier(apiKey && from ? createResendNotifier({ apiKey, from }) : consoleNotifier);
+  const notifier = apiKey && from ? createResendNotifier({ apiKey, from }) : consoleNotifier;
+  setNotifier(stagingSafeNotifier(notifier, consoleNotifier));
 }

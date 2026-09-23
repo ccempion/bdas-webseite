@@ -13,6 +13,7 @@ import {
 } from "@bdas/notifications";
 
 import { withE2ECapture } from "./e2e-email-capture";
+import { stagingSafeNotifier } from "./staging";
 
 let booted = false;
 
@@ -40,7 +41,7 @@ export function bootNotifications(): void {
   } else {
     notifier = consoleNotifier;
   }
-  setNotifier(withE2ECapture(notifier));
+  setNotifier(withE2ECapture(stagingSafeNotifier(notifier, consoleNotifier)));
 
   setRecipientResolver({
     async resolve(db: Db, memberId: string): Promise<RecipientContact | null> {
