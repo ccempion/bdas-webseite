@@ -164,13 +164,17 @@ describeIfDb("events GDPR functions", () => {
       return ev.id;
     }
 
-    it("returns own registrations incl. cancelled and waitlisted, never another member's", async () => {
+    it("returns own registrations incl. cancelled, never another member's", async () => {
       const a = await published("Stammtisch");
       const b = await published("Sommerfest");
+      const c = await published("Nur-Fremd");
       await registerMember(t.db, a, "mbr_me");
       await registerMember(t.db, b, "mbr_me");
       await cancelRegistration(t.db, b, "mbr_me");
       await registerMember(t.db, a, "mbr_other");
+      await registerMember(t.db, c, "mbr_other");
+      const [foreign] = await t.client`
+        SELECT id FROM event_registrations WHERE member_id = 'mbr_other' AND event_id = ${c}`;
 
       const result = await exportParticipationForMember(t.db, "mbr_me");
 
@@ -181,16 +185,29 @@ describeIfDb("events GDPR functions", () => {
       const cancelled = result.registrations.find((r) => r.eventTitle === "Sommerfest");
       expect(cancelled?.cancelledAt).toBeInstanceOf(Date);
       const all = JSON.stringify(result);
-      expect(all).not.toContain("mbr_other");
+      expect(all).not.toContain("Nur-Fremd");
+      expect(all).not.toContain(String(foreign?.["id"]));
+      expect(Object.keys(result.registrations[0] ?? {}).sort()).toEqual([
+        "cancelledAt",
+        "eventId",
+        "eventStartsAt",
+        "eventTitle",
+        "registeredAt",
+        "registrationId",
+        "waitlistPosition",
+      ]);
     });
 
-    it("exposes waitlist position", async () => {
+    it("exposes waitlist position scoped to the member", async () => {
       const id = await published("Voll");
       await registerMember(t.db, id, "mbr_me");
-      await t.client`UPDATE event_registrations SET waitlist_position = 2 WHERE member_id = 'mbr_me'`;
+      await registerMember(t.db, id, "mbr_other");
+      await t.client`UPDATE event_registrations SET waitlist_position = 2 WHERE member_id = 'mbr_me' AND event_id = ${id}`;
+      await t.client`UPDATE event_registrations SET waitlist_position = 5 WHERE member_id = 'mbr_other' AND event_id = ${id}`;
 
       const result = await exportParticipationForMember(t.db, "mbr_me");
 
+      expect(result.registrations).toHaveLength(1);
       expect(result.registrations[0]?.waitlistPosition).toBe(2);
     });
 
@@ -214,11 +231,34 @@ describeIfDb("events GDPR functions", () => {
         attended: true,
       });
 
+      const noShow = await createEvent(
+        t.db,
+        { title: "Nicht erschienen", startsAt: future(-2), visibility: "public" },
+        "usr_creator",
+      );
+      await t.db.insert(eventAttendance).values({
+        id: "att_me_no",
+        eventId: noShow.id,
+        memberId: "mbr_me",
+        attended: false,
+        checkedInAt: null,
+      });
+
       const result = await exportParticipationForMember(t.db, "mbr_me");
 
-      expect(result.attendance).toHaveLength(1);
-      expect(result.attendance[0]?.attended).toBe(true);
-      expect(Object.keys(result.attendance[0] ?? {})).not.toContain("checkedInBy");
+      expect(result.attendance).toHaveLength(2);
+      const present = result.attendance.find((a) => a.eventTitle === "Vergangen");
+      expect(present?.attended).toBe(true);
+      const absent = result.attendance.find((a) => a.eventTitle === "Nicht erschienen");
+      expect(absent?.attended).toBe(false);
+      expect(absent?.checkedInAt).toBeNull();
+      expect(Object.keys(present ?? {}).sort()).toEqual([
+        "attended",
+        "checkedInAt",
+        "eventId",
+        "eventStartsAt",
+        "eventTitle",
+      ]);
       expect(JSON.stringify(result)).not.toContain("mbr_other");
     });
 
