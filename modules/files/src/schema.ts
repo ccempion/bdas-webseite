@@ -78,3 +78,5 @@ export const folderMemberGrants = pgTable("folder_member_grants", {
   revokedAt: timestamp("revoked_at", { withTimezone: true }),
   revokedBy: text("revoked_by"),
 });
+
+export type { FileStatus } from "./types";
