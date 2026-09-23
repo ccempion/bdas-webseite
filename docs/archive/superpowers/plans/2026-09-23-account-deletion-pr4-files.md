@@ -6,9 +6,9 @@
 
 **Architecture:** `files` owns `folders`/`files`/`file_access_log` (Rule 1), so both the migration and the new service live here, not in `auth`. The orchestrator (a later PR) only ever holds a `userId` (the identity `auth`/`account_deletion_requests` track); `files` keys everything by `members.id`. Same cross-module-boundary shape `notifications` already established in PR2: a composed `MemberIdResolver` interface (`modules/files/src/resolver.ts`, mirroring `modules/notifications/src/resolver.ts`), wired at boot in `apps/web/lib/files-bootstrap.ts` from `@bdas/members.getMemberByUserId`, instead of `files` reading `members` directly.
 
-**Folder cleanup — confirmed scope (see below):** `deleteFilesByMember` deletes every file the member uploaded (Storage object then row) and then deletes folders *this member created that the deletion leaves empty* — reusing the exact "empty" check `deleteFolder`'s D4 invariant already uses (`folder-writes.ts`). It never deletes a folder that still holds another member's files or subfolders. `folders.scope` has no private/personal variant — every scope (`members_all`/`group_members`/`local_board`/`federal_board`/`board_broadcast`) is a shared, organizational space, and `created_by` is metadata about who happened to click "create", not ownership of the contents. A literal "delete every folder this member created, recursively, regardless of contents" would break the exact guarantee `deleteFolder` was built to protect ("no click destroys a year of protocols") and could take other members' files down with it. Confirmed with the user 2026-09-23 before writing this plan — this is the resolved reading of design-spec §5 step 1's "Storage-Blobs + Zeilen + Ordner", not a literal one.
+**Folder cleanup — confirmed scope (see below):** `deleteFilesByMember` deletes every file the member uploaded (Storage object then row) and then deletes folders _this member created that the deletion leaves empty_ — reusing the exact "empty" check `deleteFolder`'s D4 invariant already uses (`folder-writes.ts`). It never deletes a folder that still holds another member's files or subfolders. `folders.scope` has no private/personal variant — every scope (`members_all`/`group_members`/`local_board`/`federal_board`/`board_broadcast`) is a shared, organizational space, and `created_by` is metadata about who happened to click "create", not ownership of the contents. A literal "delete every folder this member created, recursively, regardless of contents" would break the exact guarantee `deleteFolder` was built to protect ("no click destroys a year of protocols") and could take other members' files down with it. Confirmed with the user 2026-09-23 before writing this plan — this is the resolved reading of design-spec §5 step 1's "Storage-Blobs + Zeilen + Ordner", not a literal one.
 
-**Export scope:** `exportForUser` returns file *metadata* the member uploaded (filename, folder, size, MIME type, status, upload date) — matches spec §6 ("nur Metadaten, keine Blob-Inhalte") and the `notifications.exportForUser` precedent's shape (a flat readonly row array, no CSV/ZIP — that bundling is a later export-completion PR). It does **not** include `file_access_log` rows (download/upload/delete history): the spec calls out file metadata explicitly and treats the access log purely as a retention/audit construct (§2 decision 2), never as export content. Flagging this so it's a visible call, not a silent omission — easy to add later if the federation wants it.
+**Export scope:** `exportForUser` returns file _metadata_ the member uploaded (filename, folder, size, MIME type, status, upload date) — matches spec §6 ("nur Metadaten, keine Blob-Inhalte") and the `notifications.exportForUser` precedent's shape (a flat readonly row array, no CSV/ZIP — that bundling is a later export-completion PR). It does **not** include `file_access_log` rows (download/upload/delete history): the spec calls out file metadata explicitly and treats the access log purely as a retention/audit construct (§2 decision 2), never as export content. Flagging this so it's a visible call, not a silent omission — easy to add later if the federation wants it.
 
 **Tech Stack:** TypeScript, Drizzle ORM (raw SQL migrations are authoritative; `schema.ts` mirrors them), Vitest + real Postgres (Docker) for integration tests, `@bdas/db`, `@bdas/storage`, `@bdas/members` (only from `apps/web`'s bootstrap wiring, never from inside `modules/files`).
 
@@ -248,8 +248,8 @@ import { createTestDb, type TestDb } from "@bdas/db/test";
 import { setStorage, type SignedUrl, type StorageClient } from "@bdas/storage";
 
 import { setMemberIdResolver } from "../resolver";
-import { files, folders } from "../schema";
-import { deleteFilesByMember, exportForUser } from "./gdpr";
+import { files } from "../schema";
+import { exportForUser } from "./gdpr";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DEFAULT_URL = "postgres://bdas:bdas@localhost:5432/bdas";
@@ -496,162 +496,162 @@ This is a single TDD cycle covering four scenarios in one function, matching how
 Add to `modules/files/src/services/gdpr.test.ts`, inside `describeIfDb("files GDPR functions", ...)`, after the `exportForUser` describe block:
 
 ```ts
-  describe("deleteFilesByMember", () => {
-    it("deletes the storage object and the row for every file the member uploaded", async () => {
-      const { memberId, groupId } = await seedMember(t);
-      await t.client`INSERT INTO folders (id, slug, name, scope, group_id) VALUES ('fld_1', 'a', 'A', 'local_board', ${groupId})`;
-      await t.db.insert(files).values({
-        id: "fil_1",
-        folderId: "fld_1",
-        filename: "a.pdf",
-        storageKey: "k/a.pdf",
-        mimeType: "application/pdf",
-        sizeBytes: 10,
-        status: "ready",
-        uploadedBy: memberId,
-      });
-      const deletedKeys: string[] = [];
-      setStorage(
-        fakeStorage({
-          deleteObject: async (key: string) => {
-            deletedKeys.push(key);
-          },
-        }),
-      );
-
-      await deleteFilesByMember(t.db, "usr_test_1");
-
-      expect(deletedKeys).toEqual(["k/a.pdf"]);
-      expect(await t.db.select().from(files).where(eq(files.id, "fil_1"))).toEqual([]);
+describe("deleteFilesByMember", () => {
+  it("deletes the storage object and the row for every file the member uploaded", async () => {
+    const { memberId, groupId } = await seedMember(t);
+    await t.client`INSERT INTO folders (id, slug, name, scope, group_id) VALUES ('fld_1', 'a', 'A', 'local_board', ${groupId})`;
+    await t.db.insert(files).values({
+      id: "fil_1",
+      folderId: "fld_1",
+      filename: "a.pdf",
+      storageKey: "k/a.pdf",
+      mimeType: "application/pdf",
+      sizeBytes: 10,
+      status: "ready",
+      uploadedBy: memberId,
     });
-
-    it("tolerates a storage object that is already gone", async () => {
-      const { memberId, groupId } = await seedMember(t);
-      await t.client`INSERT INTO folders (id, slug, name, scope, group_id) VALUES ('fld_1', 'a', 'A', 'local_board', ${groupId})`;
-      await t.db.insert(files).values({
-        id: "fil_1",
-        folderId: "fld_1",
-        filename: "a.pdf",
-        storageKey: "k/a.pdf",
-        mimeType: "application/pdf",
-        sizeBytes: 10,
-        status: "ready",
-        uploadedBy: memberId,
-      });
-      setStorage(
-        fakeStorage({
-          deleteObject: async () => {
-            throw new Error("object not found");
-          },
-        }),
-      );
-
-      await expect(deleteFilesByMember(t.db, "usr_test_1")).resolves.toBeUndefined();
-      expect(await t.db.select().from(files).where(eq(files.id, "fil_1"))).toEqual([]);
-    });
-
-    it("deletes a folder the member created once removing their files leaves it empty", async () => {
-      const { memberId, groupId } = await seedMember(t);
-      await t.client`INSERT INTO folders (id, slug, name, scope, group_id, created_by) VALUES ('fld_1', 'a', 'A', 'local_board', ${groupId}, ${memberId})`;
-      await t.db.insert(files).values({
-        id: "fil_1",
-        folderId: "fld_1",
-        filename: "a.pdf",
-        storageKey: "k/a.pdf",
-        mimeType: "application/pdf",
-        sizeBytes: 10,
-        status: "ready",
-        uploadedBy: memberId,
-      });
-
-      await deleteFilesByMember(t.db, "usr_test_1");
-
-      expect(await t.db.select().from(folders).where(eq(folders.id, "fld_1"))).toEqual([]);
-    });
-
-    it("keeps a folder the member created if another member's file is still inside it", async () => {
-      const { memberId, groupId } = await seedMember(t);
-      const other = await seedMember(t, { userId: "usr_other", memberId: "mbr_other" });
-      await t.client`INSERT INTO folders (id, slug, name, scope, group_id, created_by) VALUES ('fld_1', 'a', 'A', 'local_board', ${groupId}, ${memberId})`;
-      await t.db.insert(files).values({
-        id: "fil_other",
-        folderId: "fld_1",
-        filename: "other.pdf",
-        storageKey: "k/other.pdf",
-        mimeType: "application/pdf",
-        sizeBytes: 10,
-        status: "ready",
-        uploadedBy: other.memberId,
-      });
-      // re-wire the resolver back to the member under deletion, since
-      // seedMember(t, other) above overwrote it
-      setMemberIdResolver({
-        async resolveMemberId(_db, uid): Promise<string | null> {
-          return uid === "usr_test_1" ? memberId : null;
+    const deletedKeys: string[] = [];
+    setStorage(
+      fakeStorage({
+        deleteObject: async (key: string) => {
+          deletedKeys.push(key);
         },
-      });
+      }),
+    );
 
-      await deleteFilesByMember(t.db, "usr_test_1");
+    await deleteFilesByMember(t.db, "usr_test_1");
 
-      const [folder] = await t.db.select().from(folders).where(eq(folders.id, "fld_1"));
-      expect(folder).toBeDefined();
-      expect(folder?.createdBy).toBe(memberId);
-      const [otherFile] = await t.db.select().from(files).where(eq(files.id, "fil_other"));
-      expect(otherFile).toBeDefined();
-    });
-
-    it("deletes a chain of now-empty folders the member created, deepest first", async () => {
-      const { memberId, groupId } = await seedMember(t);
-      await t.client`INSERT INTO folders (id, slug, name, scope, group_id, created_by, depth) VALUES ('fld_parent', 'p', 'P', 'local_board', ${groupId}, ${memberId}, 0)`;
-      await t.client`INSERT INTO folders (id, slug, name, scope, group_id, created_by, parent_id, depth) VALUES ('fld_child', 'c', 'C', 'local_board', ${groupId}, ${memberId}, 'fld_parent', 1)`;
-      await t.db.insert(files).values({
-        id: "fil_1",
-        folderId: "fld_child",
-        filename: "a.pdf",
-        storageKey: "k/a.pdf",
-        mimeType: "application/pdf",
-        sizeBytes: 10,
-        status: "ready",
-        uploadedBy: memberId,
-      });
-
-      await deleteFilesByMember(t.db, "usr_test_1");
-
-      expect(await t.db.select().from(folders).where(eq(folders.id, "fld_child"))).toEqual([]);
-      expect(await t.db.select().from(folders).where(eq(folders.id, "fld_parent"))).toEqual([]);
-    });
-
-    it("is a no-op when the user has no resolvable member", async () => {
-      setMemberIdResolver({
-        async resolveMemberId(): Promise<string | null> {
-          return null;
-        },
-      });
-
-      await expect(deleteFilesByMember(t.db, "usr_unknown")).resolves.toBeUndefined();
-    });
-
-    it("is idempotent: a second call after everything is gone is a clean no-op", async () => {
-      const { memberId, groupId } = await seedMember(t);
-      await t.client`INSERT INTO folders (id, slug, name, scope, group_id, created_by) VALUES ('fld_1', 'a', 'A', 'local_board', ${groupId}, ${memberId})`;
-      await t.db.insert(files).values({
-        id: "fil_1",
-        folderId: "fld_1",
-        filename: "a.pdf",
-        storageKey: "k/a.pdf",
-        mimeType: "application/pdf",
-        sizeBytes: 10,
-        status: "ready",
-        uploadedBy: memberId,
-      });
-
-      await deleteFilesByMember(t.db, "usr_test_1");
-      await expect(deleteFilesByMember(t.db, "usr_test_1")).resolves.toBeUndefined();
-    });
+    expect(deletedKeys).toEqual(["k/a.pdf"]);
+    expect(await t.db.select().from(files).where(eq(files.id, "fil_1"))).toEqual([]);
   });
+
+  it("tolerates a storage object that is already gone", async () => {
+    const { memberId, groupId } = await seedMember(t);
+    await t.client`INSERT INTO folders (id, slug, name, scope, group_id) VALUES ('fld_1', 'a', 'A', 'local_board', ${groupId})`;
+    await t.db.insert(files).values({
+      id: "fil_1",
+      folderId: "fld_1",
+      filename: "a.pdf",
+      storageKey: "k/a.pdf",
+      mimeType: "application/pdf",
+      sizeBytes: 10,
+      status: "ready",
+      uploadedBy: memberId,
+    });
+    setStorage(
+      fakeStorage({
+        deleteObject: async () => {
+          throw new Error("object not found");
+        },
+      }),
+    );
+
+    await expect(deleteFilesByMember(t.db, "usr_test_1")).resolves.toBeUndefined();
+    expect(await t.db.select().from(files).where(eq(files.id, "fil_1"))).toEqual([]);
+  });
+
+  it("deletes a folder the member created once removing their files leaves it empty", async () => {
+    const { memberId, groupId } = await seedMember(t);
+    await t.client`INSERT INTO folders (id, slug, name, scope, group_id, created_by) VALUES ('fld_1', 'a', 'A', 'local_board', ${groupId}, ${memberId})`;
+    await t.db.insert(files).values({
+      id: "fil_1",
+      folderId: "fld_1",
+      filename: "a.pdf",
+      storageKey: "k/a.pdf",
+      mimeType: "application/pdf",
+      sizeBytes: 10,
+      status: "ready",
+      uploadedBy: memberId,
+    });
+
+    await deleteFilesByMember(t.db, "usr_test_1");
+
+    expect(await t.db.select().from(folders).where(eq(folders.id, "fld_1"))).toEqual([]);
+  });
+
+  it("keeps a folder the member created if another member's file is still inside it", async () => {
+    const { memberId, groupId } = await seedMember(t);
+    const other = await seedMember(t, { userId: "usr_other", memberId: "mbr_other" });
+    await t.client`INSERT INTO folders (id, slug, name, scope, group_id, created_by) VALUES ('fld_1', 'a', 'A', 'local_board', ${groupId}, ${memberId})`;
+    await t.db.insert(files).values({
+      id: "fil_other",
+      folderId: "fld_1",
+      filename: "other.pdf",
+      storageKey: "k/other.pdf",
+      mimeType: "application/pdf",
+      sizeBytes: 10,
+      status: "ready",
+      uploadedBy: other.memberId,
+    });
+    // re-wire the resolver back to the member under deletion, since
+    // seedMember(t, other) above overwrote it
+    setMemberIdResolver({
+      async resolveMemberId(_db, uid): Promise<string | null> {
+        return uid === "usr_test_1" ? memberId : null;
+      },
+    });
+
+    await deleteFilesByMember(t.db, "usr_test_1");
+
+    const [folder] = await t.db.select().from(folders).where(eq(folders.id, "fld_1"));
+    expect(folder).toBeDefined();
+    expect(folder?.createdBy).toBe(memberId);
+    const [otherFile] = await t.db.select().from(files).where(eq(files.id, "fil_other"));
+    expect(otherFile).toBeDefined();
+  });
+
+  it("deletes a chain of now-empty folders the member created, deepest first", async () => {
+    const { memberId, groupId } = await seedMember(t);
+    await t.client`INSERT INTO folders (id, slug, name, scope, group_id, created_by, depth) VALUES ('fld_parent', 'p', 'P', 'local_board', ${groupId}, ${memberId}, 0)`;
+    await t.client`INSERT INTO folders (id, slug, name, scope, group_id, created_by, parent_id, depth) VALUES ('fld_child', 'c', 'C', 'local_board', ${groupId}, ${memberId}, 'fld_parent', 1)`;
+    await t.db.insert(files).values({
+      id: "fil_1",
+      folderId: "fld_child",
+      filename: "a.pdf",
+      storageKey: "k/a.pdf",
+      mimeType: "application/pdf",
+      sizeBytes: 10,
+      status: "ready",
+      uploadedBy: memberId,
+    });
+
+    await deleteFilesByMember(t.db, "usr_test_1");
+
+    expect(await t.db.select().from(folders).where(eq(folders.id, "fld_child"))).toEqual([]);
+    expect(await t.db.select().from(folders).where(eq(folders.id, "fld_parent"))).toEqual([]);
+  });
+
+  it("is a no-op when the user has no resolvable member", async () => {
+    setMemberIdResolver({
+      async resolveMemberId(): Promise<string | null> {
+        return null;
+      },
+    });
+
+    await expect(deleteFilesByMember(t.db, "usr_unknown")).resolves.toBeUndefined();
+  });
+
+  it("is idempotent: a second call after everything is gone is a clean no-op", async () => {
+    const { memberId, groupId } = await seedMember(t);
+    await t.client`INSERT INTO folders (id, slug, name, scope, group_id, created_by) VALUES ('fld_1', 'a', 'A', 'local_board', ${groupId}, ${memberId})`;
+    await t.db.insert(files).values({
+      id: "fil_1",
+      folderId: "fld_1",
+      filename: "a.pdf",
+      storageKey: "k/a.pdf",
+      mimeType: "application/pdf",
+      sizeBytes: 10,
+      status: "ready",
+      uploadedBy: memberId,
+    });
+
+    await deleteFilesByMember(t.db, "usr_test_1");
+    await expect(deleteFilesByMember(t.db, "usr_test_1")).resolves.toBeUndefined();
+  });
+});
 ```
 
-Add `folders` to the existing `import { files, folders } from "../schema";` line at the top of the test file if not already present (it is — `folders` was already imported for `exportForUser`'s test setup... actually check: Task 2's test only imported `files, folders` — confirm the import line reads `import { files, folders } from "../schema";`, adding `folders` now if Task 2 didn't already need it standalone). Also add `deleteFilesByMember` to the existing `import { deleteFilesByMember, exportForUser } from "./gdpr";` line (already present from Task 2's stub import — Task 2 only implemented `exportForUser`, but the import listed both since the test file is written once; if Task 2 was executed literally as written above, add `deleteFilesByMember` to that import now).
+Update the two import lines at the top of the test file: change `import { files } from "../schema";` to `import { files, folders } from "../schema";`, and change `import { exportForUser } from "./gdpr";` to `import { deleteFilesByMember, exportForUser } from "./gdpr";`. (Task 2 only needed `files`/`exportForUser` — this task's tests are the first to touch folders and the new delete function.)
 
 - [ ] **Step 2: Run tests to verify they fail**
 
@@ -724,19 +724,23 @@ export async function deleteFilesByMember(db: Db, userId: string): Promise<void>
 
   const child = alias(folders, "child");
   for (const folder of created) {
-    await db
-      .delete(folders)
-      .where(
-        and(
-          eq(folders.id, folder.id),
-          notExists(
-            db.select({ one: sql`1` }).from(files).where(eq(files.folderId, folder.id)),
-          ),
-          notExists(
-            db.select({ one: sql`1` }).from(child).where(eq(child.parentId, folder.id)),
-          ),
+    await db.delete(folders).where(
+      and(
+        eq(folders.id, folder.id),
+        notExists(
+          db
+            .select({ one: sql`1` })
+            .from(files)
+            .where(eq(files.folderId, folder.id)),
         ),
-      );
+        notExists(
+          db
+            .select({ one: sql`1` })
+            .from(child)
+            .where(eq(child.parentId, folder.id)),
+        ),
+      ),
+    );
   }
 }
 ```
@@ -807,13 +811,12 @@ import { getMemberByUserId } from "@bdas/members";
 In `bootFiles()`, after the storage-client `if/else if` block and before `registerFilesSubscribers(getDb());`, add:
 
 ```ts
-  setMemberIdResolver({
-    async resolveMemberId(db: Db, userId: string): Promise<string | null> {
-      const member = await getMemberByUserId(db, userId);
-      return member?.id ?? null;
-    },
-  });
-
+setMemberIdResolver({
+  async resolveMemberId(db: Db, userId: string): Promise<string | null> {
+    const member = await getMemberByUserId(db, userId);
+    return member?.id ?? null;
+  },
+});
 ```
 
 - [ ] **Step 3: Typecheck**
@@ -845,19 +848,12 @@ Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
 
 - [ ] **Step 1: Add the service exports**
 
-In `modules/files/src/index.ts`, after the existing `export { registerFilesSubscribers, unregisterFilesSubscribers } from "./subscribers";` line, add:
+**Note (2026-09-23 ruling, see ledger):** Task 4 already added the `export { getMemberIdResolver, setMemberIdResolver, type MemberIdResolver } from "./resolver";` line — `apps/web/lib/files-bootstrap.ts` needed to `import { setMemberIdResolver } from "@bdas/files"`, which cannot typecheck unless the module's public surface already exports it, so Task 4's implementer added it as a necessary prerequisite. Only the `gdpr.ts` line remains for this step.
+
+In `modules/files/src/index.ts`, after the existing `export { registerFilesSubscribers, unregisterFilesSubscribers } from "./subscribers";` line, the resolver export line is already present. Add just:
 
 ```ts
-export {
-  deleteFilesByMember,
-  exportForUser,
-  type FileExportRow,
-} from "./services/gdpr";
-export {
-  getMemberIdResolver,
-  setMemberIdResolver,
-  type MemberIdResolver,
-} from "./resolver";
+export { deleteFilesByMember, exportForUser, type FileExportRow } from "./services/gdpr";
 ```
 
 - [ ] **Step 2: Typecheck the whole repo**
