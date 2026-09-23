@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 
 import { e2eEmailCaptureEnabled, getCapturedEmail } from "../../../../lib/e2e-email-capture";
 
+export const dynamic = "force-dynamic";
+
 /**
  * Test-only. Returns the last captured email sent to `?to=`, or 404 if
  * capture is disabled (always the case outside the e2e suite's own env —
