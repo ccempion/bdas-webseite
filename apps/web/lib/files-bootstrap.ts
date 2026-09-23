@@ -1,6 +1,7 @@
 import { getDb, type Db } from "@bdas/db";
 import { isFlagOn } from "@bdas/feature-flags";
-import { ensureFolders, registerFilesSubscribers } from "@bdas/files";
+import { ensureFolders, registerFilesSubscribers, setMemberIdResolver } from "@bdas/files";
+import { getMemberByUserId } from "@bdas/members";
 import { setStorage, SupabaseStorageClient } from "@bdas/storage";
 
 let booted = false;
@@ -38,6 +39,13 @@ export async function bootFiles(): Promise<void> {
       "[files] flag is on but SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are not both set",
     );
   }
+
+  setMemberIdResolver({
+    async resolveMemberId(db: Db, userId: string): Promise<string | null> {
+      const member = await getMemberByUserId(db, userId);
+      return member?.id ?? null;
+    },
+  });
 
   registerFilesSubscribers(getDb());
   booted = true;
