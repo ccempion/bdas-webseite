@@ -39,6 +39,7 @@ export type Readers = {
   readonly participation: (
     memberId: string,
   ) => Promise<{ registrations: readonly Row[]; attendance: readonly Row[] }>;
+  readonly organizedEvents: (userId: string) => Promise<readonly Row[]>;
   readonly files: (userId: string) => Promise<readonly Row[]>;
   readonly blog: (userId: string) => Promise<{ posts: readonly Row[]; comments: readonly Row[] }>;
   readonly notifications: (userId: string) => Promise<readonly Row[]>;
@@ -142,6 +143,33 @@ const SPECS = {
       "waitlistPosition",
     ],
   },
+  organisiert: {
+    key: "veranstaltungen",
+    file: "veranstaltungen_organisiert.csv",
+    flag: "events",
+    columns: [
+      "id",
+      "groupId",
+      "title",
+      "descriptionMd",
+      "startsAt",
+      "endsAt",
+      "location",
+      "locationUrl",
+      "content",
+      "summary",
+      "registrationDeadline",
+      "locationName",
+      "locationAddress",
+      "locationLat",
+      "locationLng",
+      "capacity",
+      "allowGuestRegistration",
+      "visibility",
+      "status",
+      "createdBy",
+    ],
+  },
   anwesenheit: {
     key: "veranstaltungen",
     file: "veranstaltungen_anwesenheit.csv",
@@ -202,7 +230,7 @@ export async function buildDataExport(
   const cat = (s: Spec, rows: readonly Row[]): Category => ({
     file: s.file,
     columns: s.columns,
-    rows,
+    rows: rows.map((r): Row => Object.fromEntries(s.columns.map((k) => [k, r[k]]))),
   });
   const categories: Category[] = [];
 
@@ -222,6 +250,7 @@ export async function buildDataExport(
     categories.push(cat(SPECS.profil, profile ? [profile] : []));
   }
   if (on(SPECS.anmeldungen)) {
+    categories.push(cat(SPECS.organisiert, await r.organizedEvents(p.userId)));
     if (p.memberId === null) {
       skipped.push({ category: "veranstaltungen", reason: "Kein Mitgliedseintrag" });
     } else {

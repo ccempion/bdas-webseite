@@ -17,7 +17,12 @@ function stub(calls: string[], over: Partial<Readers> = {}): Readers {
     account: rec("account", { id: "usr_me", email: "me@example.de" }),
     sessions: rec("sessions", [{ ip: "10.0.0.1" }]),
     member: rec("member", { member: { id: "mem_me" }, roleGrants: [], groupChangeRequests: [] }),
-    profile: rec("profile", { studiengang: "Kath. Theologie" }),
+    profile: rec("profile", {
+      studiengang: "Kath. Theologie",
+      updatedBy: "usr_admin",
+      secret: "x",
+    }),
+    organizedEvents: rec("organizedEvents", [{ id: "evt_1", title: "Sommerfest" }]),
     participation: rec("participation", { registrations: [{ eventTitle: "X" }], attendance: [] }),
     files: rec("files", []),
     blog: rec("blog", { posts: [], comments: [] }),
@@ -37,6 +42,7 @@ describe("buildDataExport", () => {
         "member:usr_me",
         "profile:usr_me",
         "participation:mem_me",
+        "organizedEvents:usr_me",
         "files:usr_me",
         "blog:usr_me",
         "notifications:usr_me",
@@ -58,6 +64,37 @@ describe("buildDataExport", () => {
     );
     expect(out.categories.map((c) => c.file)).not.toContain("dateien.csv");
     expect(out.skipped).toContainEqual({ category: "dateien", reason: "Modul nicht aktiv" });
+  });
+
+  it("skips events entirely when the events flag is off, listing it once", async () => {
+    const calls: string[] = [];
+    const out = await buildDataExport(
+      stub(calls, { enabled: (f) => f !== "events" }),
+      session("usr_me", "mem_me"),
+    );
+    expect(calls.some((c) => c.startsWith("participation") || c.startsWith("organized"))).toBe(
+      false,
+    );
+    expect(out.skipped.filter((s) => s.category === "veranstaltungen")).toHaveLength(1);
+  });
+
+  it("exports organized events even without a member row", async () => {
+    const out = await buildDataExport(stub([]), session("usr_bare", null));
+    const zip = unzipSync(toZip(out));
+    expect(strFromU8(zip["veranstaltungen_organisiert.csv"]!)).toContain("Sommerfest");
+    expect(out.skipped.filter((s) => s.category === "veranstaltungen")).toHaveLength(1);
+  });
+
+  it("projects rows through the column allowlist in both JSON and CSV", async () => {
+    const out = await buildDataExport(stub([]), session("usr_me", "mem_me"));
+    const json = toJson(out);
+    const csv = strFromU8(unzipSync(toZip(out))["profil.csv"]!);
+    expect(json).toContain("Kath. Theologie");
+    expect(csv).toContain("Kath. Theologie");
+    for (const s of ["usr_admin", "secret"]) {
+      expect(json).not.toContain(s);
+      expect(csv).not.toContain(s);
+    }
   });
 
   it("emits a header-only CSV for an empty category (present, not forgotten)", async () => {
