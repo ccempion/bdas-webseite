@@ -66,6 +66,14 @@ export type ParticipationExport = {
   readonly attendance: readonly ParticipationAttendance[];
 };
 
+/**
+ * Art. 15 — the member's registrations and attendance as a participant. Takes
+ * `members.id` and TRUSTS its caller: derive it from the session principal,
+ * never from request input (plan D3). Omits `checked_in_by` (another
+ * person's id) and all `guest_*` fields incl. `guest_cancel_token` (secret);
+ * cancelled and waitlisted registrations are included on purpose — still
+ * the member's data.
+ */
 export async function exportParticipationForMember(
   db: Db,
   memberId: string,

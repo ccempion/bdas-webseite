@@ -5,7 +5,8 @@
  * member id is resolved here, inside the module that owns `members`.
  *
  * `granted_by`/`revoked_by`/`decided_by` are deliberately omitted: they are
- * other people's member ids and not data *about* the exporting user.
+ * other people's auth user ids (or system markers such as
+ * 'system:0010-local-role-redesign') and not data *about* the exporting user.
  */
 import { asc, eq } from "drizzle-orm";
 import type { PostgresJsDatabase } from "drizzle-orm/postgres-js";

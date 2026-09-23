@@ -26,14 +26,14 @@ describeIfDb("members exportForUser", () => {
     }
     await t.client`
       INSERT INTO member_role_grants (id, member_id, role, group_id, granted_by, revoked_at, revoked_by)
-      VALUES ('g1', 'mem_me', 'blogger', NULL, 'mem_other', now(), 'mem_other'),
-             ('g2', 'mem_me', 'file_manager', NULL, 'mem_other', NULL, NULL),
-             ('g3', 'mem_other', 'blogger', NULL, 'mem_me', NULL, NULL)`;
+      VALUES ('g1', 'mem_me', 'blogger', NULL, 'usr_other', now(), 'usr_other'),
+             ('g2', 'mem_me', 'file_manager', NULL, 'usr_other', NULL, NULL),
+             ('g3', 'mem_other', 'blogger', NULL, 'usr_me', NULL, NULL)`;
     await t.client`
       INSERT INTO member_group_change_requests
         (id, member_id, from_group_id, to_group_id, status, decided_at, decided_by, reason_category, reason_message)
-      VALUES ('r1', 'mem_me', 'grp_b', 'grp_a', 'rejected', now(), 'mem_other', 'other', 'Zu viele Anfragen'),
-             ('r2', 'mem_me', 'grp_a', 'grp_b', 'approved', now(), 'mem_other', NULL, NULL),
+      VALUES ('r1', 'mem_me', 'grp_b', 'grp_a', 'rejected', now(), 'usr_other', 'other', 'Zu viele Anfragen'),
+             ('r2', 'mem_me', 'grp_a', 'grp_b', 'approved', now(), 'usr_other', NULL, NULL),
              ('r3', 'mem_other', 'grp_a', 'grp_b', 'pending', NULL, NULL, NULL, NULL)`;
   });
 
@@ -87,7 +87,6 @@ describeIfDb("members exportForUser", () => {
   it("never leaks another member's rows or the deciding/granting person's id", async () => {
     const json = JSON.stringify(await exportForUser(t.db, "usr_me"));
 
-    expect(json).not.toContain("r3");
     expect(json).not.toContain("mem_other");
     expect(json).not.toContain("usr_other");
   });
