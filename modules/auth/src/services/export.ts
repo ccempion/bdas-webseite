@@ -4,10 +4,10 @@
  * authenticated principal only. The `auth` module owns `auth_users`, so the
  * read lives here and is exposed as a typed service (CLAUDE.md §1 r1).
  */
-import { eq, inArray } from "drizzle-orm";
+import { desc, eq, inArray } from "drizzle-orm";
 import type { PostgresJsDatabase } from "drizzle-orm/postgres-js";
 
-import { authUsers } from "../schema";
+import { authSessions, authUsers } from "../schema";
 
 export type Db = PostgresJsDatabase<Record<string, never>>;
 
@@ -65,4 +65,30 @@ export async function getUserEmails(db: Db, ids: readonly string[]): Promise<Map
     .where(inArray(authUsers.id, [...new Set(ids)]));
 
   return new Map(rows.map((r) => [r.id, r.email]));
+}
+
+export type SessionExport = {
+  readonly createdAt: Date;
+  readonly expiresAt: Date;
+  readonly revokedAt: Date | null;
+  readonly ip: string | null;
+  readonly userAgent: string | null;
+};
+
+/** The session `id` is omitted on purpose: it is the session's bearer identifier. */
+export async function exportSessionsForUser(
+  db: Db,
+  userId: string,
+): Promise<readonly SessionExport[]> {
+  return db
+    .select({
+      createdAt: authSessions.createdAt,
+      expiresAt: authSessions.expiresAt,
+      revokedAt: authSessions.revokedAt,
+      ip: authSessions.ip,
+      userAgent: authSessions.userAgent,
+    })
+    .from(authSessions)
+    .where(eq(authSessions.userId, userId))
+    .orderBy(desc(authSessions.createdAt));
 }
