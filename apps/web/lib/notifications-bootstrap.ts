@@ -12,6 +12,8 @@ import {
   type RecipientContact,
 } from "@bdas/notifications";
 
+import { withE2ECapture } from "./e2e-email-capture";
+
 let booted = false;
 
 /**
@@ -26,8 +28,9 @@ export function bootNotifications(): void {
 
   const apiKey = process.env["RESEND_API_KEY"];
   const from = process.env["RESEND_FROM_EMAIL"];
+  let notifier;
   if (apiKey && from) {
-    setNotifier(createResendNotifier({ apiKey, from }));
+    notifier = createResendNotifier({ apiKey, from });
   } else if (process.env["VERCEL_ENV"] === "production") {
     // Flag-on production with partial config would silently print to stdout
     // while notification_log records 'sent'. Fail loud instead.
@@ -35,8 +38,9 @@ export function bootNotifications(): void {
       "[notifications] flag is on but RESEND_API_KEY and RESEND_FROM_EMAIL are not both set",
     );
   } else {
-    setNotifier(consoleNotifier);
+    notifier = consoleNotifier;
   }
+  setNotifier(withE2ECapture(notifier));
 
   setRecipientResolver({
     async resolve(db: Db, memberId: string): Promise<RecipientContact | null> {

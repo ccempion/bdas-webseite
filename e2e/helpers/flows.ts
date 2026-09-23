@@ -10,6 +10,13 @@ import { COOKIE_NAME as SESSION_COOKIE } from "@bdas/auth";
 
 import { resetRateLimits } from "./db";
 
+type CapturedEmail = {
+  readonly to: string;
+  readonly subject: string;
+  readonly text: string;
+  readonly html: string;
+};
+
 /** Muss `VERIFY_COOKIE_NAME` aus `apps/web/lib/auth-cookie.ts` entsprechen. */
 const VERIFY_COOKIE = "bdas_verify";
 
@@ -208,4 +215,24 @@ export async function submitAndSettle(page: Page, submit: Locator): Promise<void
   );
   await submit.click();
   await settled;
+}
+
+/** Reads the last email the app sent to `to`, via the e2e-only capture
+ *  endpoint (apps/web/lib/e2e-email-capture.ts) — the real substitute for
+ *  reading a token straight out of the database, for tokens the DB only
+ *  stores hashed. */
+export async function lastEmailTo(page: Page, to: string): Promise<CapturedEmail> {
+  const res = await page.request.get(`/api/e2e/last-email?to=${encodeURIComponent(to)}`);
+  if (!res.ok()) {
+    throw new Error(`no captured email for ${to} (status ${res.status()}): ${await res.text()}`);
+  }
+  return res.json();
+}
+
+/** Pulls the reactivation token out of an account-deletion-requested email's
+ *  plain-text body (the link is the only URL that template ever emits). */
+export function extractReactivationToken(emailText: string): string {
+  const match = emailText.match(/\/konto-reaktivieren\/([A-Za-z0-9_-]+)/);
+  if (!match?.[1]) throw new Error(`no reactivation link found in email text: ${emailText}`);
+  return match[1];
 }

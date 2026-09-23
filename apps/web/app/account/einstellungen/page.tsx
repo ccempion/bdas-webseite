@@ -6,6 +6,7 @@ import { getDb } from "@bdas/db";
 import { Button, Card } from "@bdas/design-system";
 import { getCurrentMember } from "@bdas/members";
 
+import { accountDeletionEnabled } from "../../_account-deletion/flag";
 import { buildAnmeldenUrl } from "../../_auth/return-to";
 import { requireAuthFlag } from "../../_auth/flag";
 import { requireMembersFlag } from "../../_members/flag";
@@ -13,6 +14,7 @@ import { newsletterEnabled } from "../../_newsletter/flag";
 import { NewsletterToggle } from "../../_newsletter/NewsletterToggle";
 import { readSessionCookie } from "../../../lib/auth-cookie";
 import { ChangePasswordCard } from "../ChangePasswordCard";
+import { DeleteAccountCard } from "../DeleteAccountCard";
 import { EmailChangeCard } from "../EmailChangeCard";
 
 export const metadata = { title: "Kontoeinstellungen" };
@@ -72,6 +74,8 @@ export default async function AccountSettingsPage() {
           <Button variant="secondary">Meine Daten exportieren</Button>
         </Link>
       </Card>
+
+      {accountDeletionEnabled() ? <DeleteAccountCard /> : null}
     </main>
   );
 }
