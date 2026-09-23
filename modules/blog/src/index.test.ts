@@ -19,7 +19,13 @@ import { plainTextToDoc } from "./content";
 import { getPostById, getPostBySlug } from "./services/get";
 import { listPosts } from "./services/list";
 import { createPost, deletePost, updatePost } from "./services/manage";
-import { countOpenReports, dismissReport, listOpenReports, reportPost } from "./services/report";
+import {
+  countOpenReports,
+  deleteReportsByReporter,
+  dismissReport,
+  listOpenReports,
+  reportPost,
+} from "./services/report";
 import { ANON, type Viewer } from "./visibility";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -378,5 +384,36 @@ describeIfDb("blog integration", () => {
     await dismissReport(t.db, open!.id);
 
     expect(await countOpenReports(t.db)).toBe(1);
+  });
+
+  it("deleteReportsByReporter hard-deletes every report filed by that reporter", async () => {
+    const p1 = await createPost(t.db, { title: "Ziel 1", content: doc("x") }, "usr_author");
+    const p2 = await createPost(t.db, { title: "Ziel 2", content: doc("x") }, "usr_author");
+    await reportPost(t.db, p1.id, "usr_reporter", "Grund A");
+    await reportPost(t.db, p2.id, "usr_reporter", "Grund B");
+    await reportPost(t.db, p1.id, "usr_other", "Grund C");
+
+    const removed = await deleteReportsByReporter(t.db, "usr_reporter");
+    expect(removed).toBe(2);
+
+    const remaining = await listOpenReports(t.db);
+    expect(remaining.map((r) => r.reporterId)).toEqual(["usr_other"]);
+  });
+
+  it("deleteReportsByReporter also removes already-dismissed reports", async () => {
+    const p = await createPost(t.db, { title: "Ziel", content: doc("x") }, "usr_author");
+    await reportPost(t.db, p.id, "usr_reporter", "Grund");
+    const [report] = await listOpenReports(t.db);
+    await dismissReport(t.db, report!.id);
+
+    expect(await deleteReportsByReporter(t.db, "usr_reporter")).toBe(1);
+
+    const [row] =
+      await t.client`select count(*)::int as n from post_reports where reporter_id = 'usr_reporter'`;
+    expect(row?.["n"]).toBe(0);
+  });
+
+  it("deleteReportsByReporter is a no-op for a reporter with nothing filed", async () => {
+    expect(await deleteReportsByReporter(t.db, "usr_nobody")).toBe(0);
   });
 });

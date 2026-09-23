@@ -9,7 +9,13 @@
 export { createPost, updatePost, deletePost, PostInput, rowToPost } from "./services/manage";
 export { listPosts, type ListPostsFilters } from "./services/list";
 export { getPostBySlug, getPostById } from "./services/get";
-export { reportPost, listOpenReports, countOpenReports, dismissReport } from "./services/report";
+export {
+  reportPost,
+  listOpenReports,
+  countOpenReports,
+  dismissReport,
+  deleteReportsByReporter,
+} from "./services/report";
 export {
   addComment,
   listComments,
@@ -17,6 +23,7 @@ export {
   countCommentsByPost,
   deleteCommentsByAuthor,
 } from "./services/comments";
+export { deleteContentByAuthor, exportForUser, type BlogExport } from "./services/gdpr";
 
 // Rendering (server-side Tiptap → sanitized HTML)
 export { renderPostContentHtml, plainTextToDoc } from "./content";
