@@ -46,41 +46,48 @@
 Add to `modules/blog/src/index.test.ts`, inside `describeIfDb("blog integration", ...)`, after the `"countOpenReports zählt..."` test (the last one in the file):
 
 ```ts
-  it("deleteReportsByReporter hard-deletes every report filed by that reporter", async () => {
-    const p1 = await createPost(t.db, { title: "Ziel 1", content: doc("x") }, "usr_author");
-    const p2 = await createPost(t.db, { title: "Ziel 2", content: doc("x") }, "usr_author");
-    await reportPost(t.db, p1.id, "usr_reporter", "Grund A");
-    await reportPost(t.db, p2.id, "usr_reporter", "Grund B");
-    await reportPost(t.db, p1.id, "usr_other", "Grund C");
+it("deleteReportsByReporter hard-deletes every report filed by that reporter", async () => {
+  const p1 = await createPost(t.db, { title: "Ziel 1", content: doc("x") }, "usr_author");
+  const p2 = await createPost(t.db, { title: "Ziel 2", content: doc("x") }, "usr_author");
+  await reportPost(t.db, p1.id, "usr_reporter", "Grund A");
+  await reportPost(t.db, p2.id, "usr_reporter", "Grund B");
+  await reportPost(t.db, p1.id, "usr_other", "Grund C");
 
-    const removed = await deleteReportsByReporter(t.db, "usr_reporter");
-    expect(removed).toBe(2);
+  const removed = await deleteReportsByReporter(t.db, "usr_reporter");
+  expect(removed).toBe(2);
 
-    const remaining = await listOpenReports(t.db);
-    expect(remaining.map((r) => r.reporterId)).toEqual(["usr_other"]);
-  });
+  const remaining = await listOpenReports(t.db);
+  expect(remaining.map((r) => r.reporterId)).toEqual(["usr_other"]);
+});
 
-  it("deleteReportsByReporter also removes already-dismissed reports", async () => {
-    const p = await createPost(t.db, { title: "Ziel", content: doc("x") }, "usr_author");
-    await reportPost(t.db, p.id, "usr_reporter", "Grund");
-    const [report] = await listOpenReports(t.db);
-    await dismissReport(t.db, report!.id);
+it("deleteReportsByReporter also removes already-dismissed reports", async () => {
+  const p = await createPost(t.db, { title: "Ziel", content: doc("x") }, "usr_author");
+  await reportPost(t.db, p.id, "usr_reporter", "Grund");
+  const [report] = await listOpenReports(t.db);
+  await dismissReport(t.db, report!.id);
 
-    expect(await deleteReportsByReporter(t.db, "usr_reporter")).toBe(1);
+  expect(await deleteReportsByReporter(t.db, "usr_reporter")).toBe(1);
 
-    const [row] = await t.client`select count(*)::int as n from post_reports where reporter_id = 'usr_reporter'`;
-    expect(row?.["n"]).toBe(0);
-  });
+  const [row] =
+    await t.client`select count(*)::int as n from post_reports where reporter_id = 'usr_reporter'`;
+  expect(row?.["n"]).toBe(0);
+});
 
-  it("deleteReportsByReporter is a no-op for a reporter with nothing filed", async () => {
-    expect(await deleteReportsByReporter(t.db, "usr_nobody")).toBe(0);
-  });
+it("deleteReportsByReporter is a no-op for a reporter with nothing filed", async () => {
+  expect(await deleteReportsByReporter(t.db, "usr_nobody")).toBe(0);
+});
 ```
 
 Add `deleteReportsByReporter` to the existing import line:
 
 ```ts
-import { countOpenReports, deleteReportsByReporter, dismissReport, listOpenReports, reportPost } from "./services/report";
+import {
+  countOpenReports,
+  deleteReportsByReporter,
+  dismissReport,
+  listOpenReports,
+  reportPost,
+} from "./services/report";
 ```
 
 - [ ] **Step 2: Run test to verify it fails**
@@ -234,7 +241,11 @@ describeIfDb("blog GDPR functions", () => {
 
   beforeEach(async () => {
     t = await createTestDb();
-    for (const file of ["0001_init.sql", "0002_categories_reports_softdelete.sql", "0003_comments.sql"]) {
+    for (const file of [
+      "0001_init.sql",
+      "0002_categories_reports_softdelete.sql",
+      "0003_comments.sql",
+    ]) {
       const sql = await fs.readFile(path.join(__dirname, "..", "migrations", file), "utf8");
       await t.client.unsafe(sql);
     }
@@ -276,15 +287,21 @@ describeIfDb("blog GDPR functions", () => {
     });
 
     it("cascades away comments and reports from ANY author on the user's own deleted post", async () => {
-      const p = await createPost(t.db, { title: "Wird gelöscht", content: doc("x") }, "usr_departing");
+      const p = await createPost(
+        t.db,
+        { title: "Wird gelöscht", content: doc("x") },
+        "usr_departing",
+      );
       await addComment(t.db, p.id, other, "fremder Kommentar auf meinem Post");
       await reportPost(t.db, p.id, "usr_flagger", "Meldung auf meinem Post");
 
       await deleteContentByAuthor(t.db, "usr_departing");
 
-      const [commentRow] = await t.client`select count(*)::int as n from post_comments where post_id = ${p.id}`;
+      const [commentRow] =
+        await t.client`select count(*)::int as n from post_comments where post_id = ${p.id}`;
       expect(commentRow?.["n"]).toBe(0);
-      const [reportRow] = await t.client`select count(*)::int as n from post_reports where post_id = ${p.id}`;
+      const [reportRow] =
+        await t.client`select count(*)::int as n from post_reports where post_id = ${p.id}`;
       expect(reportRow?.["n"]).toBe(0);
     });
 
@@ -295,12 +312,15 @@ describeIfDb("blog GDPR functions", () => {
 
       await deleteContentByAuthor(t.db, "usr_departing");
 
-      const [commentRow] = await t.client`select count(*)::int as n from post_comments where author_id = 'usr_departing'`;
+      const [commentRow] =
+        await t.client`select count(*)::int as n from post_comments where author_id = 'usr_departing'`;
       expect(commentRow?.["n"]).toBe(0);
-      const [reportRow] = await t.client`select count(*)::int as n from post_reports where reporter_id = 'usr_departing'`;
+      const [reportRow] =
+        await t.client`select count(*)::int as n from post_reports where reporter_id = 'usr_departing'`;
       expect(reportRow?.["n"]).toBe(0);
       // the post itself, authored by someone else, must survive
-      const [postRow] = await t.client`select count(*)::int as n from posts where id = ${otherPost.id}`;
+      const [postRow] =
+        await t.client`select count(*)::int as n from posts where id = ${otherPost.id}`;
       expect(postRow?.["n"]).toBe(1);
     });
 
@@ -311,11 +331,14 @@ describeIfDb("blog GDPR functions", () => {
 
       await deleteContentByAuthor(t.db, "usr_departing"); // usr_departing has nothing at all here
 
-      const [postRow] = await t.client`select count(*)::int as n from posts where id = ${otherPost.id}`;
+      const [postRow] =
+        await t.client`select count(*)::int as n from posts where id = ${otherPost.id}`;
       expect(postRow?.["n"]).toBe(1);
-      const [commentRow] = await t.client`select count(*)::int as n from post_comments where id = ${otherComment.id}`;
+      const [commentRow] =
+        await t.client`select count(*)::int as n from post_comments where id = ${otherComment.id}`;
       expect(commentRow?.["n"]).toBe(1);
-      const [reportRow] = await t.client`select count(*)::int as n from post_reports where reporter_id = 'usr_flagger'`;
+      const [reportRow] =
+        await t.client`select count(*)::int as n from post_reports where reporter_id = 'usr_flagger'`;
       expect(reportRow?.["n"]).toBe(1);
     });
 
@@ -331,7 +354,8 @@ describeIfDb("blog GDPR functions", () => {
 
       const [postRow] = await t.client`select count(*)::int as n from posts where id = ${p.id}`;
       expect(postRow?.["n"]).toBe(0);
-      const [reportRow] = await t.client`select count(*)::int as n from post_reports where reporter_id = 'usr_departing'`;
+      const [reportRow] =
+        await t.client`select count(*)::int as n from post_reports where reporter_id = 'usr_departing'`;
       expect(reportRow?.["n"]).toBe(0);
     });
 
@@ -401,10 +425,7 @@ export type BlogExport = {
  */
 export async function exportForUser(db: Db, userId: string): Promise<BlogExport> {
   const postRows = await db.select().from(posts).where(eq(posts.createdBy, userId));
-  const commentRows = await db
-    .select()
-    .from(postComments)
-    .where(eq(postComments.authorId, userId));
+  const commentRows = await db.select().from(postComments).where(eq(postComments.authorId, userId));
   return {
     posts: postRows.map(rowToPost),
     comments: commentRows.map(rowToComment),
