@@ -34,7 +34,7 @@ type Row = {
   createdAt: Date;
 };
 
-function rowToComment(r: Row): Comment {
+export function rowToComment(r: Row): Comment {
   return {
     id: r.id,
     postId: r.postId,
