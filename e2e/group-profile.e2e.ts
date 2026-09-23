@@ -15,7 +15,7 @@ import {
   uniqueEmail,
   uniqueSlug,
 } from "./helpers/db";
-import { createProfile, registerVerifyLogin } from "./helpers/flows";
+import { seedSession } from "./helpers/session";
 
 // Smallest valid PNG; the banner field uploads what it is given, uncropped.
 const PNG = Buffer.from(
@@ -33,8 +33,7 @@ test("the lead edits contact data and drops a banner", async ({ page }) => {
   });
 
   const leadEmail = uniqueEmail("profil-lead");
-  await registerVerifyLogin(page, { email: leadEmail });
-  await createProfile(page, {});
+  await seedSession(page, { email: leadEmail });
   await grantLocalBoardLead(leadEmail, groupId);
 
   await page.goto(`/gruppe/${slug}/profil`);

@@ -4,7 +4,7 @@
 import { expect, test } from "@playwright/test";
 
 import { seedGroup, uniqueEmail, uniqueSlug } from "./helpers/db";
-import { createProfile, registerVerifyLogin } from "./helpers/flows";
+import { seedSession } from "./helpers/session";
 
 // A 2x1 PNG, so the square crop has something to actually decide.
 const WIDE_PNG = Buffer.from(
@@ -17,8 +17,12 @@ test("Bildauswahl öffnet den Zuschnitt und lädt erst nach Übernehmen hoch", a
   const groupId = await seedGroup({ slug, name: "Crop-Gruppe", city: "Bonn" });
   const email = uniqueEmail("crop");
 
-  await registerVerifyLogin(page, { email, firstName: "Cara", lastName: "Crop" });
-  await createProfile(page, { firstName: "Cara", lastName: "Crop", groupId });
+  await seedSession(page, {
+    email,
+    firstName: "Cara",
+    lastName: "Crop",
+    application: groupId,
+  });
 
   await page.goto("/account");
   await page.locator('input[type="file"]').setInputFiles({

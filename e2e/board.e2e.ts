@@ -17,18 +17,22 @@ import {
   uniqueEmail,
   uniqueSlug,
 } from "./helpers/db";
-import { createProfile, logout, registerVerifyLogin } from "./helpers/flows";
+import { endSession, seedSession } from "./helpers/session";
 
-// Must match BDAS_FEDERAL_BOARD_EMAILS in the CI e2e job.
+// Fixed so the account can be deleted and recreated across retries. The
+// `federal_board` role is put straight into the seeded token — the same place
+// login.ts puts it for an address in BDAS_FEDERAL_BOARD_EMAILS; that derivation
+// itself is covered by onboarding-einstieg.e2e.ts, which signs in for real.
 const FEDERAL_EMAIL = "federal@e2e.bdas.test";
 
 test("federal board can create, edit, and archive a group", async ({ page }) => {
   // Idempotent across retries (fixed email in a shared DB).
   await deleteUserByEmail(FEDERAL_EMAIL);
-  await registerVerifyLogin(page, {
+  await seedSession(page, {
     email: FEDERAL_EMAIL,
     firstName: "Bundes",
     lastName: "Vorstand",
+    roles: ["federal_board"],
   });
 
   const slug = uniqueSlug("e2e-board");
@@ -82,14 +86,17 @@ test("a local board member can approve a pending member of their group", async (
   // rather than writing the column, so they stay groupless until the board acts.
   const pendingEmail = uniqueEmail("pending");
   const pendingLast = `P${Date.now().toString().slice(-6)}`;
-  await registerVerifyLogin(page, { email: pendingEmail });
-  await createProfile(page, { firstName: "Wartend", lastName: pendingLast, groupId });
-  await logout(page);
+  await seedSession(page, {
+    email: pendingEmail,
+    firstName: "Wartend",
+    lastName: pendingLast,
+    application: groupId,
+  });
+  await endSession(page);
 
   // A local_board member of the same group.
   const localEmail = uniqueEmail("local");
-  await registerVerifyLogin(page, { email: localEmail });
-  await createProfile(page, { firstName: "Lokal", lastName: "Vorstand" });
+  await seedSession(page, { email: localEmail, firstName: "Lokal", lastName: "Vorstand" });
   await grantLocalBoardLead(localEmail, groupId); // takes effect on next request (DB-read grants)
 
   // Accept the applicant from the group's queue.

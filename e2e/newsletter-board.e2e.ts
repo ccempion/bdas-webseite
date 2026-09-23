@@ -11,6 +11,7 @@ import { expect, test, type Page } from "@playwright/test";
 
 import { deleteUserByEmail, resetNewsletterRateLimits } from "./helpers/db";
 import { registerVerifyLogin } from "./helpers/flows";
+import { seedSession } from "./helpers/session";
 
 // Must match BDAS_FEDERAL_BOARD_EMAILS in the CI e2e job.
 const FEDERAL_EMAIL = "federal@e2e.bdas.test";
@@ -81,7 +82,7 @@ test.describe("newsletter, the board list", () => {
   test("a plain member reaches neither the page nor the file", async ({ page }) => {
     const email = unique();
     try {
-      await registerVerifyLogin(page, { email });
+      await seedSession(page, { email });
 
       // The board layout redirects a non-board account away from the cockpit;
       // the file answers with a bare 404, because a redirect to an HTML page

@@ -6,7 +6,7 @@
 import { expect, test } from "@playwright/test";
 
 import { activateMemberByEmail, seedEvent, seedGroup, uniqueEmail, uniqueSlug } from "./helpers/db";
-import { createProfile, registerVerifyLogin } from "./helpers/flows";
+import { seedSession } from "./helpers/session";
 
 const BERLIN_YEAR_MONTH = new Intl.DateTimeFormat("en-CA", {
   timeZone: "Europe/Berlin",
@@ -228,11 +228,9 @@ test("facets: member sees members-only event, visitor does not", async ({ page }
   await seedGroup({ slug, name: "E2E Shell Gruppe", city: "Teststadt", status: "active" });
 
   const email = uniqueEmail("shell-member");
-  await registerVerifyLogin(page, { email });
-  // A member row (status 'pending') only exists after the /account profile
-  // form is submitted; then force it to 'active' directly so the test
-  // doesn't have to run the full board-approval flow.
-  await createProfile(page, { firstName: "Schale", lastName: "Mitglied" });
+  // Seeding leaves the member 'pending', as registration does; force it to
+  // 'active' so the test doesn't have to run the full board-approval flow.
+  await seedSession(page, { email, firstName: "Schale", lastName: "Mitglied" });
   const memberId = await activateMemberByEmail(email);
 
   const title = `Interner Termin ${slug}`;

@@ -11,9 +11,11 @@ import {
   memberIdByEmail,
   uniqueEmail,
 } from "./helpers/db";
-import { register, registerVerifyLogin } from "./helpers/flows";
+import { register } from "./helpers/flows";
+import { seedSession } from "./helpers/session";
 
-// Must match BDAS_FEDERAL_BOARD_EMAILS in the CI e2e job.
+// Fixed so the account can be deleted and recreated across retries; the
+// `federal_board` role goes straight into the seeded token (see helpers/session.ts).
 const FEDERAL_EMAIL = "federal@e2e.bdas.test";
 
 test("the board filters 'Ohne Profil' and deletes the bot's account", async ({ page }) => {
@@ -22,10 +24,11 @@ test("the board filters 'Ohne Profil' and deletes the bot's account", async ({ p
   try {
     await deleteUserByEmail(FEDERAL_EMAIL);
     await register(page, { email: bot, firstName: "Spam", lastName });
-    await registerVerifyLogin(page, {
+    await seedSession(page, {
       email: FEDERAL_EMAIL,
       firstName: "Bundes",
       lastName: "Vorstand",
+      roles: ["federal_board"],
     });
     // Once the pool table has accumulated enough rows across the suite,
     // scrolling the delete button into view can cross NewsletterScrollPanel's

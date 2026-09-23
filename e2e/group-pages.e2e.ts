@@ -6,7 +6,6 @@
 import { expect, test } from "@playwright/test";
 
 import {
-  memberIdByEmail,
   seedContentPage,
   seedEvent,
   seedGroup,
@@ -14,7 +13,7 @@ import {
   uniqueEmail,
   uniqueSlug,
 } from "./helpers/db";
-import { createProfile, registerVerifyLogin } from "./helpers/flows";
+import { seedSession } from "./helpers/session";
 
 test("anonymous visitors see the group page without an edit entry; /bearbeiten is 404", async ({
   page,
@@ -35,7 +34,7 @@ test("a member without page_editor gets no edit entry and a 404 on /bearbeiten",
 }) => {
   const slug = uniqueSlug("e2e-noedit");
   await seedGroup({ slug, name: "E2E Ohne Rechte", city: "Teststadt" });
-  await registerVerifyLogin(page, {
+  await seedSession(page, {
     email: uniqueEmail("plainmember"),
     firstName: "Plain",
     lastName: "Member",
@@ -51,21 +50,14 @@ test("a page_editor reaches the Puck editor from the group page", async ({ page 
   const slug = uniqueSlug("e2e-editor");
   const groupId = await seedGroup({ slug, name: "E2E Editorgruppe", city: "Teststadt" });
   const email = uniqueEmail("pageeditor");
-  await registerVerifyLogin(page, { email, firstName: "Page", lastName: "Editor" });
-  // A member row only exists once /account's profile form is submitted
-  // (members module `createProfile`); registerVerifyLogin alone doesn't
-  // create one, and the role grant below needs a member id to attach to.
-  await createProfile(page, { firstName: "Page", lastName: "Editor" });
-
-  // memberIdByEmail races the profile-create Server Action's commit (same
-  // race grantLocalBoardLead/activateMemberByEmail in helpers/db.ts poll for);
-  // poll until the row lands.
-  let memberId: string | null = null;
-  await expect(async () => {
-    memberId = await memberIdByEmail(email);
-    expect(memberId, `member id for ${email}`).toBeTruthy();
-  }).toPass({ timeout: 10_000 });
-  await seedRoleGrant(memberId as string, "page_editor", groupId);
+  // The seeded account brings its member row along, so the grant has an id to
+  // attach to right away — no polling for a Server Action's commit.
+  const { memberId } = await seedSession(page, {
+    email,
+    firstName: "Page",
+    lastName: "Editor",
+  });
+  await seedRoleGrant(memberId, "page_editor", groupId);
 
   await page.goto(`/gruppen/${slug}`);
   await page.getByRole("link", { name: "Seite bearbeiten" }).click();
@@ -81,15 +73,12 @@ test("a page_editor publishes Puck content and the public group page renders it"
   const slug = uniqueSlug("e2e-puckcontent");
   const groupId = await seedGroup({ slug, name: "E2E Puckgruppe", city: "Teststadt" });
   const email = uniqueEmail("puckeditor");
-  await registerVerifyLogin(page, { email, firstName: "Puck", lastName: "Editor" });
-  await createProfile(page, { firstName: "Puck", lastName: "Editor" });
-
-  let memberId: string | null = null;
-  await expect(async () => {
-    memberId = await memberIdByEmail(email);
-    expect(memberId, `member id for ${email}`).toBeTruthy();
-  }).toPass({ timeout: 10_000 });
-  await seedRoleGrant(memberId as string, "page_editor", groupId);
+  const { memberId } = await seedSession(page, {
+    email,
+    firstName: "Puck",
+    lastName: "Editor",
+  });
+  await seedRoleGrant(memberId, "page_editor", groupId);
 
   // Save Puck content via the same PUT route the editor's Publish button
   // calls (PuckEditor -> PUT /api/content/pages/gruppen/<slug>). Driving this

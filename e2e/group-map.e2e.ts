@@ -13,7 +13,7 @@ import {
   uniqueEmail,
   uniqueSlug,
 } from "./helpers/db";
-import { createProfile, registerVerifyLogin } from "./helpers/flows";
+import { seedSession } from "./helpers/session";
 
 const PHOTON_FIXTURE = {
   features: [
@@ -45,8 +45,7 @@ test("the lead sets a location; the public map pin links to the group page", asy
   });
 
   const email = uniqueEmail("karte");
-  await registerVerifyLogin(page, { email });
-  await createProfile(page, {});
+  await seedSession(page, { email });
   await grantLocalBoardLead(email, groupId); // takes effect on next request (DB-read grants)
 
   // Set the location on the group's own profile page (Photon is stubbed above).

@@ -11,8 +11,9 @@
  * role required — see "a member comments on a post" below, which
  * deliberately does NOT grant its commenter any special role.
  *
- * `registerVerifyLogin` creates a member with `status: "pending"`, so any
- * user who goes on to author a post is explicitly activated via
+ * `seedSession` creates a member with `status: "pending"` (what registration
+ * leaves behind), so any user who goes on to author a post is explicitly
+ * activated via
  * `activateMemberByEmail` AND granted `blogger` via `activateBlogAuthor`
  * — otherwise `writePost`'s first action would find no form (redirected
  * back to /blog by `requirePostAuthor()`).
@@ -33,7 +34,8 @@ import {
   uniqueEmail,
   uniqueSlug,
 } from "./helpers/db";
-import { logout, registerVerifyLogin } from "./helpers/flows";
+import { logout } from "./helpers/flows";
+import { seedSession } from "./helpers/session";
 
 /**
  * Activate the member and grant `blogger` — the minimal role that can author
@@ -83,7 +85,7 @@ test.describe("blog", () => {
     page,
   }) => {
     const email = uniqueEmail("blog-author");
-    await registerVerifyLogin(page, { email });
+    await seedSession(page, { email });
     await activateBlogAuthor(email);
 
     const title = `Testbeitrag ${Date.now()}`;
@@ -103,7 +105,7 @@ test.describe("blog", () => {
     page,
   }) => {
     const email = uniqueEmail("blog-secret");
-    await registerVerifyLogin(page, { email });
+    await seedSession(page, { email });
     await activateBlogAuthor(email);
 
     const publicTitle = `Öffentlich ${Date.now()}`;
@@ -135,7 +137,7 @@ test.describe("blog", () => {
 
   test("the author sees moderation controls; a different member does not", async ({ page }) => {
     const authorEmail = uniqueEmail("blog-owner");
-    await registerVerifyLogin(page, { email: authorEmail });
+    await seedSession(page, { email: authorEmail });
     await activateBlogAuthor(authorEmail);
 
     const title = `Mein Beitrag ${Date.now()}`;
@@ -153,7 +155,7 @@ test.describe("blog", () => {
 
     // A different signed-in member viewing the public post sees no edit control.
     await logout(page);
-    await registerVerifyLogin(page, { email: uniqueEmail("blog-stranger") });
+    await seedSession(page, { email: uniqueEmail("blog-stranger") });
     await page.goto(`/blog/${slug}`);
     await expect(page.getByRole("heading", { level: 1, name: newTitle })).toBeVisible();
     await expect(page.getByRole("link", { name: "Bearbeiten" })).toHaveCount(0);
@@ -170,7 +172,7 @@ test.describe("blog", () => {
    */
   test("dropping an image into the post editor calls the signing route", async ({ page }) => {
     const email = uniqueEmail("blog-drop");
-    await registerVerifyLogin(page, { email });
+    await seedSession(page, { email });
     await activateBlogAuthor(email);
 
     await page.goto("/blog/neu");
@@ -214,7 +216,7 @@ test.describe("blog", () => {
    */
   test("dropping a PDF into the post editor never reaches the server", async ({ page }) => {
     const email = uniqueEmail("blog-drop-bad");
-    await registerVerifyLogin(page, { email });
+    await seedSession(page, { email });
     await activateBlogAuthor(email);
 
     await page.goto("/blog/neu");
@@ -255,7 +257,7 @@ test.describe("blog", () => {
 
   test("category filter narrows the feed", async ({ page }) => {
     const email = uniqueEmail("blog-category");
-    await registerVerifyLogin(page, { email });
+    await seedSession(page, { email });
     await activateBlogAuthor(email);
 
     const groupTitle = `Gruppenleben ${Date.now()}`;
@@ -281,13 +283,13 @@ test.describe("blog", () => {
     page,
   }) => {
     const authorEmail = uniqueEmail("blog-reported-author");
-    await registerVerifyLogin(page, { email: authorEmail });
+    await seedSession(page, { email: authorEmail });
     await activateBlogAuthor(authorEmail);
     const title = `Gemeldet ${Date.now()}`;
     await writePost(page, { title, body: "Fragwürdiger Inhalt." });
 
     await logout(page);
-    await registerVerifyLogin(page, { email: uniqueEmail("blog-reporter") });
+    await seedSession(page, { email: uniqueEmail("blog-reporter") });
     await page.goto("/blog");
     await page.getByRole("heading", { name: title }).click();
     await page.getByText("Beitrag melden").click();
@@ -302,7 +304,7 @@ test.describe("blog", () => {
 
   test("a member comments on a post, sees it, and deletes it", async ({ page }) => {
     const email = uniqueEmail("blog-comment");
-    await registerVerifyLogin(page, { email });
+    await seedSession(page, { email });
     // Kommentieren dürfen Mitglieder (ADR 0045): aktiv UND in einer Hochschulgruppe.
     const groupId = await seedGroup({
       slug: uniqueSlug("e2e-blog-comment"),
@@ -350,7 +352,7 @@ test.describe("blog", () => {
 
   test("a signed-out visitor never sees the comments region", async ({ page }) => {
     const email = uniqueEmail("blog-comment-guest");
-    await registerVerifyLogin(page, { email });
+    await seedSession(page, { email });
     await activateBlogAuthor(email);
 
     const slug = await writePost(page, {
