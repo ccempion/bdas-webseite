@@ -205,7 +205,8 @@ describeIfDb("files GDPR functions", () => {
 
     it("deletes a folder the member created once removing their files leaves it empty", async () => {
       const { memberId, groupId } = await seedMember(t);
-      await t.client`INSERT INTO folders (id, slug, name, scope, group_id, created_by) VALUES ('fld_1', 'a', 'A', 'local_board', ${groupId}, ${memberId})`;
+      await t.client`INSERT INTO folders (id, slug, name, scope, group_id, depth) VALUES ('fld_root', 'root', 'Root', 'local_board', ${groupId}, 0)`;
+      await t.client`INSERT INTO folders (id, slug, name, scope, group_id, created_by, parent_id, depth) VALUES ('fld_1', 'a', 'A', 'local_board', ${groupId}, ${memberId}, 'fld_root', 1)`;
       await t.db.insert(files).values({
         id: "fil_1",
         folderId: "fld_1",
@@ -225,7 +226,8 @@ describeIfDb("files GDPR functions", () => {
     it("keeps a folder the member created if another member's file is still inside it", async () => {
       const { memberId, groupId } = await seedMember(t);
       const other = await seedMember(t, { userId: "usr_other", memberId: "mbr_other" });
-      await t.client`INSERT INTO folders (id, slug, name, scope, group_id, created_by) VALUES ('fld_1', 'a', 'A', 'local_board', ${groupId}, ${memberId})`;
+      await t.client`INSERT INTO folders (id, slug, name, scope, group_id, depth) VALUES ('fld_root', 'root', 'Root', 'local_board', ${groupId}, 0)`;
+      await t.client`INSERT INTO folders (id, slug, name, scope, group_id, created_by, parent_id, depth) VALUES ('fld_1', 'a', 'A', 'local_board', ${groupId}, ${memberId}, 'fld_root', 1)`;
       await t.db.insert(files).values({
         id: "fil_other",
         folderId: "fld_1",
@@ -253,10 +255,15 @@ describeIfDb("files GDPR functions", () => {
       expect(otherFile).toBeDefined();
     });
 
-    it("deletes a chain of now-empty folders the member created, deepest first", async () => {
+    it("deletes a chain of now-empty folders the member created, deepest first, but never the root above them", async () => {
       const { memberId, groupId } = await seedMember(t);
-      await t.client`INSERT INTO folders (id, slug, name, scope, group_id, created_by, depth) VALUES ('fld_parent', 'p', 'P', 'local_board', ${groupId}, ${memberId}, 0)`;
-      await t.client`INSERT INTO folders (id, slug, name, scope, group_id, created_by, parent_id, depth) VALUES ('fld_child', 'c', 'C', 'local_board', ${groupId}, ${memberId}, 'fld_parent', 1)`;
+      // fld_root is a REAL root (parent_id null, depth 0, not created by the
+      // member) — it must survive regardless of how empty the chain below it
+      // gets, matching deleteFolder's D5 invariant (system-provisioned roots
+      // are never a delete candidate).
+      await t.client`INSERT INTO folders (id, slug, name, scope, group_id, depth) VALUES ('fld_root', 'root', 'Root', 'local_board', ${groupId}, 0)`;
+      await t.client`INSERT INTO folders (id, slug, name, scope, group_id, created_by, parent_id, depth) VALUES ('fld_parent', 'p', 'P', 'local_board', ${groupId}, ${memberId}, 'fld_root', 1)`;
+      await t.client`INSERT INTO folders (id, slug, name, scope, group_id, created_by, parent_id, depth) VALUES ('fld_child', 'c', 'C', 'local_board', ${groupId}, ${memberId}, 'fld_parent', 2)`;
       await t.db.insert(files).values({
         id: "fil_1",
         folderId: "fld_child",
@@ -272,6 +279,8 @@ describeIfDb("files GDPR functions", () => {
 
       expect(await t.db.select().from(folders).where(eq(folders.id, "fld_child"))).toEqual([]);
       expect(await t.db.select().from(folders).where(eq(folders.id, "fld_parent"))).toEqual([]);
+      const [root] = await t.db.select().from(folders).where(eq(folders.id, "fld_root"));
+      expect(root).toBeDefined();
     });
 
     it("is a no-op when the user has no resolvable member", async () => {
@@ -286,7 +295,8 @@ describeIfDb("files GDPR functions", () => {
 
     it("is idempotent: a second call after everything is gone is a clean no-op", async () => {
       const { memberId, groupId } = await seedMember(t);
-      await t.client`INSERT INTO folders (id, slug, name, scope, group_id, created_by) VALUES ('fld_1', 'a', 'A', 'local_board', ${groupId}, ${memberId})`;
+      await t.client`INSERT INTO folders (id, slug, name, scope, group_id, depth) VALUES ('fld_root', 'root', 'Root', 'local_board', ${groupId}, 0)`;
+      await t.client`INSERT INTO folders (id, slug, name, scope, group_id, created_by, parent_id, depth) VALUES ('fld_1', 'a', 'A', 'local_board', ${groupId}, ${memberId}, 'fld_root', 1)`;
       await t.db.insert(files).values({
         id: "fil_1",
         folderId: "fld_1",
@@ -299,6 +309,10 @@ describeIfDb("files GDPR functions", () => {
       });
 
       await deleteFilesByMember(t.db, "usr_test_1");
+      // confirms the first call genuinely deleted the folder, so the second
+      // call's no-op is proving idempotency, not just doing nothing twice
+      expect(await t.db.select().from(folders).where(eq(folders.id, "fld_1"))).toEqual([]);
+
       await expect(deleteFilesByMember(t.db, "usr_test_1")).resolves.toBeUndefined();
     });
   });

@@ -5,7 +5,7 @@
  * nor `auth_users` directly), so both functions translate the caller's
  * `userId` via the composed `MemberIdResolver` before touching either table.
  */
-import { and, desc, eq, notExists, sql } from "drizzle-orm";
+import { and, desc, eq, isNotNull, notExists, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import type { Db } from "@bdas/db";
 import { getStorage } from "@bdas/storage";
@@ -71,6 +71,19 @@ export async function exportForUser(db: Db, userId: string): Promise<readonly Fi
  * to resolve, delete, or clean up and returns cleanly — the orchestrator's
  * retry-safe per-step design (spec §5) depends on every step behaving this
  * way, same contract as notifications.deleteLogForMember.
+ *
+ * Root folders are never a cleanup candidate (parent_id IS NOT NULL below),
+ * matching deleteFolder's D5 invariant (folder-writes.ts) — they're
+ * system-provisioned by ensureFolders, not something this purge owns.
+ *
+ * Known limitation (parked, not fixed here): the per-folder cleanup DELETE
+ * below inherits the same race deleteFolder already has — under READ
+ * COMMITTED, a file uploaded into a folder during the exact window this
+ * DELETE is evaluating its NOT EXISTS check can still be destroyed by
+ * files.folder_id's ON DELETE CASCADE, because the check runs against a
+ * stale snapshot. Serializing/locking around a purge run, if that matters in
+ * production, is the calling orchestrator's responsibility, not this
+ * function's.
  */
 export async function deleteFilesByMember(db: Db, userId: string): Promise<void> {
   const memberId = await getMemberIdResolver().resolveMemberId(db, userId);
@@ -80,8 +93,16 @@ export async function deleteFilesByMember(db: Db, userId: string): Promise<void>
   for (const file of owned) {
     try {
       await getStorage().deleteObject(file.storageKey);
-    } catch {
-      // object may already be gone (e.g. a retried sweep); the row must still go
+    } catch (err) {
+      // deleteObject throws the same way for "already gone" as for a real
+      // failure (auth, timeout, 5xx) — the StorageClient interface gives us
+      // no way to tell them apart, so log every failure rather than
+      // swallowing it, and still remove the row: leaving it behind would
+      // just retry a delete that already failed once, forever.
+      console.error(
+        `[files] deleteFilesByMember: failed to delete storage object "${file.storageKey}" for file ${file.id}:`,
+        err,
+      );
     }
     await db.delete(files).where(eq(files.id, file.id));
   }
@@ -91,7 +112,7 @@ export async function deleteFilesByMember(db: Db, userId: string): Promise<void>
   const created = await db
     .select()
     .from(folders)
-    .where(eq(folders.createdBy, memberId))
+    .where(and(eq(folders.createdBy, memberId), isNotNull(folders.parentId)))
     .orderBy(desc(folders.depth));
 
   const child = alias(folders, "child");
