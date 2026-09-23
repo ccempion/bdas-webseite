@@ -54,8 +54,26 @@ export async function exportForUser(db: Db, userId: string): Promise<BlogExport>
  * published: this module's deletion sweep is a direct orchestrator call,
  * not an event-reactive side effect (design spec §2 decision 1), and
  * nothing subscribes to blog.post.deleted today.
+ *
+ * The three DELETEs below are not wrapped in a transaction: each is
+ * independently safe to re-run (a retry after a partial failure just finds
+ * fewer or no matching rows to delete), so the account-deletion
+ * orchestrator's own per-step retry design already covers this — no
+ * transaction is needed.
+ *
+ * Known gap (parked, not fixed here): this function does not delete inline
+ * post images uploaded to the blog-media storage bucket
+ * (`getBlogMediaStorage()` from `@bdas/storage`, see
+ * `apps/web/app/api/blog/upload-url/route.ts`) — those objects remain
+ * publicly reachable after the post row is gone. This must be resolved
+ * (the shared `core/storage` `StorageClient` interface needs bulk/prefix
+ * delete added — today it only exposes single-key `deleteObject`) before
+ * this function is wired into a live deletion sweep.
  */
 export async function deleteContentByAuthor(db: Db, userId: string): Promise<void> {
+  if (!userId) {
+    throw new Error("deleteContentByAuthor requires a non-empty userId");
+  }
   await db.delete(posts).where(eq(posts.createdBy, userId));
   await deleteCommentsByAuthor(db, userId);
   await deleteReportsByReporter(db, userId);

@@ -181,5 +181,9 @@ describeIfDb("blog GDPR functions", () => {
     it("is a no-op for a user with no posts, comments, or reports", async () => {
       await expect(deleteContentByAuthor(t.db, "usr_nobody")).resolves.toBeUndefined();
     });
+
+    it("rejects an empty userId without touching the database", async () => {
+      await expect(deleteContentByAuthor(t.db, "")).rejects.toThrow();
+    });
   });
 });
