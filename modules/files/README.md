@@ -67,15 +67,44 @@ Phase 3 cron).
 `listFiles`, `getDownloadUrl`, `requestUpload`, `confirmUpload`, `deleteFile`,
 `sweepStalePendingUploads`, `ensureFolders`, `registerFilesSubscribers`,
 `grantFolderAccess`, `revokeFolderAccess`, `listFolderAccess`,
-`listAllFolderGrants`, `listFolderTree`, `getFolderRights`, and the pure
-predicates `canReadFolder` and `mayDeleteFile`. Every service enforces permission
-internally.
+`listAllFolderGrants`, `listFolderTree`, `getFolderRights`, the pure
+predicates `canReadFolder` and `mayDeleteFile`, `deleteFilesByMember`,
+`exportForUser`, `type FileExportRow`, `getMemberIdResolver`,
+`setMemberIdResolver`, and `type MemberIdResolver`. Every service enforces
+permission internally.
 
 ## Dependencies
 
 `core/storage` (object I/O), `core/events` (group provisioning), `@bdas/members`
 (role primitives), `@bdas/groups` (group list/lookup). No cross-module table
 reads.
+
+This module reads neither `members` nor `auth_users` directly (rule 1) — the
+GDPR functions below translate a caller-supplied `userId` to this module's
+own `member_id` via the composed `MemberIdResolver`, wired in `apps/web` from
+`members.getMemberByUserId` at boot, the same pattern `@bdas/notifications`
+uses for its own `MemberIdResolver`/`RecipientResolver`.
+
+`file_access_log.member_id` is `ON DELETE SET NULL` (was `CASCADE`,
+`migrations/0006_access_log_retention.sql`), so the 90-day access-log
+retention (spec §2 decision 2) survives a member's account deletion instead
+of being erased along with them.
+
+## GDPR self-service (Art. 15/17)
+
+`exportForUser(db, userId)` and `deleteFilesByMember(db, userId)` are this
+module's contribution to the account-deletion feature
+(`docs/superpowers/specs/2026-09-22-account-deletion-design.md`). Both
+resolve `userId` via the `MemberIdResolver` and return/act on nothing when
+the member can't be resolved. `deleteFilesByMember` deletes the Storage
+object and row for every file the member uploaded, then removes folders they
+created that the deletion leaves empty — a folder with foreign content left
+inside (anywhere in its descendant chain) is never touched. It fails loud: a
+genuine Storage error (auth, timeout, 5xx) keeps that file's row and is
+collected into a single `Error` thrown after the rest of the run completes,
+so the orchestrator sees a rejected promise and a retry only re-attempts
+what actually failed. Idempotent, same contract as
+`notifications.deleteLogForMember`.
 
 ## Tests
 
