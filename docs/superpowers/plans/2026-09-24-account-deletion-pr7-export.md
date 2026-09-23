@@ -36,8 +36,9 @@ Alle fünf Entscheidungen unten sind bestätigt. **D2 geändert:** kein Einzel-P
 - Rule 8: neue Modul-Funktionen nur über das jeweilige `src/index.ts` sichtbar.
 - Kein Feld, das eine **fremde** Person identifiziert oder ein Geheimnis ist, verlässt den Export: nicht `granted_by`/`revoked_by`/`decided_by`/`checked_in_by`, nicht die Session-`id`, nicht `guest_cancel_token`, nicht Datei-`storage_key`.
 - Export ist ausschließlich das eigene Datum der Session-Person. Keine Funktion nimmt eine id aus Request-Parametern.
+- **Identität nur aus der Session (harte Sicherheitsanforderung PR7b, bestätigt 2026-09-24).** `userId` und `memberId` entstehen ausschließlich in `principalFrom(me)` (`apps/web/lib/data-export/assemble.ts`) aus `getCurrentMember(db, readSessionCookie())`. `Principal` ist ein Brand-Typ: ein von Hand gebautes `{ userId, memberId }` besteht den Typecheck nicht. Weder die Route noch die Server Action liest `userId`, `memberId`, `id` oder `email` aus Query, Body oder Formular; die Route liest als einzigen Parameter `format`. Die Mail geht immer an die Adresse des Session-Kontos. Belegt durch: Assembler-Test (jeder Reader nur mit Prinzipal-IDs, Task 5), Route-Angriffstest und Action-Test (Task 6), `@ts-expect-error`-Test (Task 5). Der `/security-review` von PR7b muss genau das bestätigen.
 - Design-Tokens in UI: keine Inline-Hex/Radien/Dauern (CLAUDE.md §7); vorhandene `Card`/`Button`/Dialog-Muster verwenden.
-- Vor jedem Commit `pnpm format` (Prettier-CI schlägt sonst an — Memory-Notiz).
+- Vor jedem Commit Prettier NUR auf die geänderten Dateien (`pnpm exec prettier --write <Dateien>`), nie `pnpm format` in einem Worktree: mit `autocrlf` schreibt es rund 1000 unbeteiligte Dateien um (PR7a-Erfahrung). CI prüft das Format, ein Verstoß schlägt dort an.
 - `/security-review` am Ende, weil ein Export personenbezogener (teils sensibler) Daten ausgeliefert wird. Danach `/review`.
 - Plan und Spec ziehen im letzten Commit des PR nach `docs/archive/superpowers/` (CLAUDE.md §4); vorher ADRs/READMEs nach dem Dateinamen greppen.
 
@@ -50,6 +51,7 @@ Diese Fälle nennt die Spec nicht, sie beißen aber im Betrieb:
 3. **Zellen mit `=`, `+`, `-`, `@` am Anfang und Zeilenumbrüche/Kommata/Anführungszeichen in Freitext** (Blogtext, `vorstellung`, `reasonMessage`): CSV bleibt spaltenkorrekt, Excel führt nichts aus. → Task 4.
 4. **Leere Kategorie**: es entsteht trotzdem eine CSV mit Kopfzeile (bzw. Hinweis-Zeile), damit „keine Daten" von „Kategorie vergessen" unterscheidbar ist. → Task 4/5.
 5. **Ungültige/abgelaufene Session bei der E-Mail-Aktion**: keine Mail, Fehlerstatus „Anmeldung erforderlich.", kein Anhang an eine fremde Adresse; ebenso schlägt ein fehlgeschlagener Versand als Fehler durch statt als stiller Erfolg. → Task 6.
+6. **Anfrage mit fremder `userId`/`memberId`/`id`/`email` in Query oder Body** (Angriff auf die Auskunft): wird ignoriert, es kommen nur die Daten der Session-Person zurück; ohne Session gibt es Redirect und keinen Export. → Angriffstest in Task 6 (Route), Brand-Typ und `principalFrom` in Task 5.
 
 Zusätzlich bewusst **nicht** im Export und im README vermerkt: Gast-Anmeldungen zu Veranstaltungen (`event_registrations.guest_email`) — sie sind an eine E-Mail-Adresse, nicht an ein Konto gebunden und nicht als „dieselbe Person" belegbar. Und: **Religionszugehörigkeit ist im Datenmodell nicht gespeichert** (kein Feld in `members`/`member_profiles`/`auth_users`); die sensibelsten vorhandenen Felder sind `geburtsdatum`, `studiengang`/`studienfachKategorie` (z. B. „Kath. Theologie") und `vorstellung` — sie liegen im `profile`-Export und sind dort korrekt gescopt.
 
@@ -57,28 +59,28 @@ Zusätzlich bewusst **nicht** im Export und im README vermerkt: Gast-Anmeldungen
 
 ## File Structure
 
-| Datei                                                  | Verantwortung                                                                                |
-| ------------------------------------------------------ | -------------------------------------------------------------------------------------------- |
-| `modules/events/src/services/gdpr.ts` (ändern)         | `exportParticipationForMember` + Docstring-Korrektur                                         |
-| `modules/events/src/index.ts` (ändern)                 | Re-Export                                                                                    |
-| `modules/events/src/gdpr.test.ts` (ändern)             | Tests dazu                                                                                   |
-| `modules/members/src/services/export.ts` (neu)         | `exportForUser`: Mitglied, alle Rollen-Grants, Gruppenwechsel-Anträge                        |
-| `modules/members/src/index.ts` (ändern)                | Re-Export                                                                                    |
-| `modules/members/src/export.test.ts` (neu)             | Tests dazu                                                                                   |
-| `modules/auth/src/services/export.ts` (ändern)         | `exportSessionsForUser`                                                                      |
-| `modules/auth/src/index.ts` (ändern)                   | Re-Export                                                                                    |
-| `modules/auth/src/services/export.test.ts` (ändern)    | Tests dazu                                                                                   |
-| `apps/web/lib/data-export/csv.ts` (neu)                | `rowsToCsv` — pure, RFC-4180 + Formel-Guard                                                  |
-| `apps/web/lib/data-export/zip.ts` (neu)                | `buildZip` — dünner Wrapper um `fflate`                                                      |
-| `apps/web/lib/data-export/assemble.ts` (neu)           | `buildDataExport(readers, principal)` → Kategorien + Manifest; `bundleAsZip`                 |
-| `apps/web/lib/data-export/readers.ts` (neu)            | verdrahtet die echten Modul-Funktionen zu `Readers` (einzige Stelle mit allen Modul-Imports) |
-| `apps/web/lib/data-export/*.test.ts` (neu)             | Unit-Tests (kein DB nötig)                                                                   |
-| `apps/web/app/account/datenexport/route.ts` (ändern)   | JSON vollständig; `?format=zip` mit Flag                                                     |
-| `apps/web/app/account/data-export-actions.ts` (neu)    | Server Action `sendDataExportAction`: E-Mail B mit ZIP-Anhang                                |
-| `apps/web/app/account/SendDataExportButton.tsx` (neu)  | Client-Button mit Ergebnisanzeige (Muster: `DeleteAccountCard.tsx`)                          |
-| `apps/web/app/account/einstellungen/page.tsx` (ändern) | Buttons „Als ZIP" / „Per E-Mail"                                                             |
-| `docs/decisions/0054-datenexport-csv-zip.md` (neu)     | ADR: Format, `fflate`, Scoping-Regeln, Ausschlüsse                                           |
-| `modules/{events,members,auth}/README.md` (ändern)     | neue öffentliche Funktionen, Ausschlüsse                                                     |
+| Datei                                                                                                                                            | Verantwortung                                                                                |
+| ------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------- |
+| `modules/events/src/services/gdpr.ts` (ändern)                                                                                                   | `exportParticipationForMember` + Docstring-Korrektur                                         |
+| `modules/events/src/index.ts` (ändern)                                                                                                           | Re-Export                                                                                    |
+| `modules/events/src/gdpr.test.ts` (ändern)                                                                                                       | Tests dazu                                                                                   |
+| `modules/members/src/services/export.ts` (neu)                                                                                                   | `exportForUser`: Mitglied, alle Rollen-Grants, Gruppenwechsel-Anträge                        |
+| `modules/members/src/index.ts` (ändern)                                                                                                          | Re-Export                                                                                    |
+| `modules/members/src/export.test.ts` (neu)                                                                                                       | Tests dazu                                                                                   |
+| `modules/auth/src/services/export.ts` (ändern)                                                                                                   | `exportSessionsForUser`                                                                      |
+| `modules/auth/src/index.ts` (ändern)                                                                                                             | Re-Export                                                                                    |
+| `modules/auth/src/services/export.test.ts` (ändern)                                                                                              | Tests dazu                                                                                   |
+| `apps/web/lib/data-export/csv.ts` (neu)                                                                                                          | `rowsToCsv` — pure, RFC-4180 + Formel-Guard                                                  |
+| `apps/web/lib/data-export/zip.ts` (neu)                                                                                                          | `buildZip` — dünner Wrapper um `fflate`                                                      |
+| `apps/web/lib/data-export/assemble.ts` (neu)                                                                                                     | `buildDataExport(readers, principal)` → Kategorien + Manifest; `bundleAsZip`                 |
+| `apps/web/lib/data-export/readers.ts` (neu)                                                                                                      | verdrahtet die echten Modul-Funktionen zu `Readers` (einzige Stelle mit allen Modul-Imports) |
+| `apps/web/lib/data-export/*.test.ts`, `apps/web/app/account/data-export-actions.test.ts`, `apps/web/app/account/datenexport/route.test.ts` (neu) | Unit- und Angriffstests (kein DB nötig; DB-Wahrheit liegt in den Modul-Tests)                |
+| `apps/web/app/account/datenexport/route.ts` (ändern)                                                                                             | JSON vollständig; `?format=zip` mit Flag                                                     |
+| `apps/web/app/account/data-export-actions.ts` (neu)                                                                                              | Server Action `sendDataExportAction`: E-Mail B mit ZIP-Anhang                                |
+| `apps/web/app/account/SendDataExportButton.tsx` (neu)                                                                                            | Client-Button mit Ergebnisanzeige (Muster: `DeleteAccountCard.tsx`)                          |
+| `apps/web/app/account/einstellungen/page.tsx` (ändern)                                                                                           | Buttons „Als ZIP" / „Per E-Mail"                                                             |
+| `docs/decisions/0054-datenexport-csv-zip.md` (neu)                                                                                               | ADR: Format, `fflate`, Scoping-Regeln, Ausschlüsse                                           |
+| `modules/{events,members,auth}/README.md` (ändern)                                                                                               | neue öffentliche Funktionen, Ausschlüsse                                                     |
 
 ---
 
@@ -736,7 +738,7 @@ Hinweis zum Formel-Guard: er verändert eine Zelle, die mit `-` beginnt (z. B. n
 - [ ] **Step 5: Commit**
 
 ```bash
-pnpm format
+pnpm exec prettier --write <geänderte Dateien>
 git add apps/web/package.json pnpm-lock.yaml apps/web/lib/data-export
 git commit -m "feat(web): CSV and ZIP builders for the data export"
 ```
@@ -756,7 +758,19 @@ git commit -m "feat(web): CSV and ZIP builders for the data export"
 - Produces:
 
 ```ts
-export type Principal = { readonly userId: string; readonly memberId: string | null };
+declare const PRINCIPAL: unique symbol;
+/** Structural subset of `CurrentMember` (`@bdas/members`); a real `CurrentMember` satisfies it. */
+export type SessionIdentity = {
+  readonly user: { readonly id: string };
+  readonly member: { readonly id: string } | null;
+};
+/** Branded: only `principalFrom` can produce one, a hand-built literal does not typecheck. */
+export type Principal = {
+  readonly userId: string;
+  readonly memberId: string | null;
+  readonly [PRINCIPAL]: true;
+};
+export function principalFrom(me: SessionIdentity): Principal;
 export type Category = {
   readonly file: string;
   readonly columns: readonly string[];
@@ -799,8 +813,11 @@ Kategorien und Dateinamen (fest): `konto.csv`, `sitzungen.csv`, `mitgliedschaft.
 
 ```ts
 import { describe, expect, it } from "vitest";
-import { buildDataExport, toJson, toZip, type Readers } from "./assemble";
+import { buildDataExport, principalFrom, toJson, toZip, type Readers } from "./assemble";
 import { unzipSync, strFromU8 } from "fflate";
+
+const session = (userId: string, memberId: string | null) =>
+  principalFrom({ user: { id: userId }, member: memberId === null ? null : { id: memberId } });
 
 function stub(calls: string[], over: Partial<Readers> = {}): Readers {
   const rec =
@@ -826,7 +843,7 @@ function stub(calls: string[], over: Partial<Readers> = {}): Readers {
 describe("buildDataExport", () => {
   it("calls every reader only with the principal's own ids", async () => {
     const calls: string[] = [];
-    await buildDataExport(stub(calls), { userId: "usr_me", memberId: "mem_me" });
+    await buildDataExport(stub(calls), session("usr_me", "mem_me"));
     expect(calls.sort()).toEqual(
       [
         "account:usr_me",
@@ -843,31 +860,49 @@ describe("buildDataExport", () => {
 
   it("skips member-keyed readers when there is no member row and says so", async () => {
     const calls: string[] = [];
-    const out = await buildDataExport(stub(calls), { userId: "usr_bare", memberId: null });
+    const out = await buildDataExport(stub(calls), session("usr_bare", null));
     expect(calls.some((c) => c.startsWith("participation"))).toBe(false);
     expect(out.skipped.map((s) => s.category)).toContain("veranstaltungen");
   });
 
   it("skips modules whose feature flag is off and lists them in the manifest", async () => {
-    const out = await buildDataExport(stub([], { enabled: (f) => f !== "files" }), {
-      userId: "usr_me",
-      memberId: "mem_me",
-    });
+    const out = await buildDataExport(
+      stub([], { enabled: (f) => f !== "files" }),
+      session("usr_me", "mem_me"),
+    );
     expect(out.categories.map((c) => c.file)).not.toContain("dateien.csv");
     expect(out.skipped).toContainEqual({ category: "dateien", reason: "Modul nicht aktiv" });
   });
 
   it("emits a header-only CSV for an empty category (present, not forgotten)", async () => {
-    const out = await buildDataExport(stub([]), { userId: "usr_me", memberId: "mem_me" });
+    const out = await buildDataExport(stub([]), session("usr_me", "mem_me"));
     const zip = unzipSync(toZip(out));
     expect(strFromU8(zip["dateien.csv"]!)).toContain("filename");
     expect(strFromU8(zip["LIESMICH.txt"]!)).toContain("Gast");
   });
 
   it("toJson contains every category and no undeclared keys", async () => {
-    const out = await buildDataExport(stub([]), { userId: "usr_me", memberId: "mem_me" });
+    const out = await buildDataExport(stub([]), session("usr_me", "mem_me"));
     const parsed = JSON.parse(toJson(out)) as Record<string, unknown>;
     expect(Object.keys(parsed).sort()).toEqual(["categories", "exportedAt", "skipped"].sort());
+  });
+
+  it("does not accept a hand-built principal (compile-time guard, checked by `pnpm typecheck`)", async () => {
+    // @ts-expect-error a literal { userId, memberId } lacks the PRINCIPAL brand
+    await buildDataExport(stub([]), { userId: "usr_other", memberId: "mem_other" });
+  });
+});
+
+describe("principalFrom", () => {
+  it("derives both ids from the session identity and from nothing else", () => {
+    expect(principalFrom({ user: { id: "usr_me" }, member: { id: "mem_me" } })).toEqual({
+      userId: "usr_me",
+      memberId: "mem_me",
+    });
+    expect(principalFrom({ user: { id: "usr_bare" }, member: null })).toEqual({
+      userId: "usr_bare",
+      memberId: null,
+    });
   });
 });
 ```
@@ -878,6 +913,23 @@ describe("buildDataExport", () => {
 ```ts
 import { rowsToCsv, type Row } from "./csv";
 import { buildZip } from "./zip";
+
+declare const PRINCIPAL: unique symbol;
+
+export type SessionIdentity = {
+  readonly user: { readonly id: string };
+  readonly member: { readonly id: string } | null;
+};
+
+export type Principal = {
+  readonly userId: string;
+  readonly memberId: string | null;
+  readonly [PRINCIPAL]: true;
+};
+
+export function principalFrom(me: SessionIdentity): Principal {
+  return { userId: me.user.id, memberId: me.member?.id ?? null } as Principal;
+}
 
 type Spec = {
   readonly key: string; // Manifest-/Skip-Name
@@ -1147,11 +1199,11 @@ export function realReaders(): Readers {
 
 `FlagName` und die exakten Paketnamen (`@bdas/blog`, `@bdas/profile`, …) vor dem Tippen mit `grep -n "\"name\"" modules/*/package.json core/feature-flags/package.json` bzw. `core/feature-flags/src/index.ts` gegenprüfen; falls der Typ dort anders heißt, den vorhandenen Namen verwenden. `readers.ts` hat keinen eigenen Test — Verkabelung wird durch `pnpm typecheck` (Typen der Modul-Rückgaben gegen `Readers`) und den Security-Review-Lauf abgedeckt; die Logik steckt in `assemble.ts`.
 
-- [ ] **Step 4:** Tests — Expected: PASS (5 Tests).
+- [ ] **Step 4:** Tests — Expected: PASS (7 Tests). Danach `pnpm --filter @bdas/web exec tsc --noEmit` — Expected: sauber; der `@ts-expect-error` im Brand-Test schlägt dort an, sollte `Principal` je wieder von Hand baubar werden.
 - [ ] **Step 5: Commit**
 
 ```bash
-pnpm format
+pnpm exec prettier --write <geänderte Dateien>
 git add apps/web/lib/data-export
 git commit -m "feat(web): assemble the complete data export across all modules"
 ```
@@ -1165,10 +1217,11 @@ git commit -m "feat(web): assemble the complete data export across all modules"
 - Modify: `apps/web/app/account/datenexport/route.ts`
 - Create: `apps/web/app/account/data-export-actions.ts` (liegt neben `delete-account-actions.ts`, gleiche Konvention)
 - Test: `apps/web/app/account/data-export-actions.test.ts` — gemockter Unit-Test der Action-Verdrahtung, exakt der Stil von `delete-account-actions.test.ts` (die Modul-Funktionen haben ihre eigenen Postgres-Tests aus Tasks 1–3 und dem Assembler-Test)
+- Test: `apps/web/app/account/datenexport/route.test.ts` — Angriffstest der Route: Request mit fremder `userId`/`memberId` liefert nur die Session-Daten (Stil der vorhandenen `apps/web/app/api/**/route.test.ts`, die `GET`/`PUT` direkt mit einem `Request` aufrufen)
 
 **Interfaces:**
 
-- Consumes: `realReaders`, `buildDataExport`, `toJson`, `toZip` (Task 5); `getCurrentMember` (`@bdas/members`); `sendTransactional`, `sendTransactionalToGuest` (`@bdas/notifications`); `requireFlag`/`isFlagOn` (`@bdas/feature-flags`). `attachments`-Feld existiert bereits im Notifier-Pfad (`Extra.attachments`, `send.ts`; Form `{ filename, content: Buffer }` laut `notifications/src/index.test.ts:134`).
+- Consumes: `realReaders`, `buildDataExport`, `principalFrom`, `toJson`, `toZip` (Task 5); `getCurrentMember` (`@bdas/members`); `sendTransactional`, `sendTransactionalToGuest` (`@bdas/notifications`); `requireFlag`/`isFlagOn` (`@bdas/feature-flags`). `attachments`-Feld existiert bereits im Notifier-Pfad (`Extra.attachments`, `send.ts`; Form `{ filename, content: Buffer }` laut `notifications/src/index.test.ts:134`).
 - Produces: `GET /account/datenexport` (JSON, gleicher Pfad wie heute), `GET /account/datenexport?format=zip` (`Content-Disposition: attachment; filename="bdas-datenexport.zip"`, `Cache-Control: no-store`, nur wenn `account_deletion` an, sonst 404 wie andere flag-gesteuerte Routen), und
 
 ```ts
@@ -1198,7 +1251,8 @@ vi.mock("@bdas/notifications", () => ({
 vi.mock("../../lib/notifications-bootstrap", () => ({ bootNotifications: () => {} }));
 vi.mock("../../lib/auth-cookie", () => ({ readSessionCookie: () => undefined }));
 vi.mock("../../lib/data-export/readers", () => ({ realReaders: () => ({}) }));
-vi.mock("../../lib/data-export/assemble", () => ({
+vi.mock("../../lib/data-export/assemble", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../../lib/data-export/assemble")>()),
   buildDataExport: (...a: unknown[]) => buildDataExport(...a),
   toZip: () => new Uint8Array([80, 75, 3, 4]),
 }));
@@ -1296,10 +1350,136 @@ describe("sendDataExportAction", () => {
       error: "Die E-Mail konnte nicht verschickt werden. Bitte versuche es später erneut.",
     });
   });
+
+  it("takes no argument: nothing but the session can choose whose data is exported or mailed", () => {
+    expect(sendDataExportAction).toHaveLength(0);
+  });
 });
 ```
 
-- [ ] **Step 2:** `pnpm exec vitest run apps/web/app/account/data-export-actions.test.ts` — Expected: FAIL (Modul `./data-export-actions` fehlt).
+- [ ] **Step 1b: Failing Angriffstest der Route** — `apps/web/app/account/datenexport/route.test.ts`. `principalFrom` bleibt echt (importOriginal), gemockt werden nur Datenzugriff und Rendering:
+
+```ts
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+import type { CurrentMember } from "@bdas/members";
+
+const buildDataExport = vi.fn();
+const flags = new Set<string>();
+let currentMember: CurrentMember | null = null;
+
+vi.mock("@bdas/db", () => ({ getDb: () => ({}) }));
+vi.mock("@bdas/feature-flags", () => ({ isFlagOn: (f: string) => flags.has(f) }));
+vi.mock("@bdas/members", () => ({ getCurrentMember: async () => currentMember }));
+vi.mock("../../_auth/flag", () => ({ requireAuthFlag: () => {} }));
+vi.mock("../../_members/flag", () => ({ requireMembersFlag: () => {} }));
+vi.mock("../../../lib/auth-cookie", () => ({ readSessionCookie: () => "session-cookie" }));
+vi.mock("../../../lib/data-export/readers", () => ({ realReaders: () => ({}) }));
+vi.mock("../../../lib/data-export/assemble", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../../../lib/data-export/assemble")>()),
+  buildDataExport: (...a: unknown[]) => buildDataExport(...a),
+  toJson: () => '{"ok":true}',
+  toZip: () => new Uint8Array([80, 75, 3, 4]),
+}));
+
+import { GET } from "./route";
+
+const ATTACK = "?userId=usr_other&memberId=mbr_other&id=usr_other&email=evil%40example.org";
+
+function me(overrides: Partial<CurrentMember> = {}): CurrentMember {
+  return {
+    user: {
+      id: "usr_1",
+      email: "mara@example.org",
+      status: "active",
+      roles: [],
+      sessionId: "ses_1",
+    },
+    member: {
+      id: "mbr_1",
+      userId: "usr_1",
+      firstName: "Mara",
+      lastName: "Beispiel",
+      primaryGroupId: null,
+      status: "active",
+      joinedAt: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    },
+    grants: [],
+    primaryGroupKind: null,
+    hasGroupScope: false,
+    isBdasMember: true,
+    ...overrides,
+  };
+}
+
+describe("GET /account/datenexport", () => {
+  beforeEach(() => {
+    buildDataExport.mockReset().mockResolvedValue({ exportedAt: "x", categories: [], skipped: [] });
+    flags.clear();
+    currentMember = me();
+  });
+
+  it("ignores userId/memberId/id/email in the query and exports only the session's own data", async () => {
+    const res = await GET(new Request(`http://x/account/datenexport${ATTACK}`));
+
+    expect(res.status).toBe(200);
+    expect(buildDataExport).toHaveBeenCalledTimes(1);
+    expect(buildDataExport).toHaveBeenCalledWith(expect.anything(), {
+      userId: "usr_1",
+      memberId: "mbr_1",
+    });
+    const seen = JSON.stringify(buildDataExport.mock.calls);
+    expect(seen).not.toContain("usr_other");
+    expect(seen).not.toContain("mbr_other");
+    expect(seen).not.toContain("evil@example.org");
+  });
+
+  it("does the same for the ZIP format", async () => {
+    flags.add("account_deletion");
+
+    const res = await GET(new Request(`http://x/account/datenexport${ATTACK}&format=zip`));
+
+    expect(res.status).toBe(200);
+    expect(buildDataExport).toHaveBeenCalledWith(expect.anything(), {
+      userId: "usr_1",
+      memberId: "mbr_1",
+    });
+    expect(JSON.stringify(buildDataExport.mock.calls)).not.toContain("usr_other");
+  });
+
+  it("redirects an anonymous request and exports nothing, even with foreign ids in the query", async () => {
+    currentMember = null;
+
+    const res = await GET(new Request(`http://x/account/datenexport${ATTACK}`));
+
+    expect(res.status).toBe(307);
+    expect(res.headers.get("location")).toContain("/anmelden");
+    expect(buildDataExport).not.toHaveBeenCalled();
+  });
+
+  it("answers 404 for the ZIP format while account_deletion is off, without building anything", async () => {
+    const res = await GET(new Request("http://x/account/datenexport?format=zip"));
+
+    expect(res.status).toBe(404);
+    expect(buildDataExport).not.toHaveBeenCalled();
+  });
+
+  it("serves the ZIP as a no-store attachment when account_deletion is on", async () => {
+    flags.add("account_deletion");
+
+    const res = await GET(new Request("http://x/account/datenexport?format=zip"));
+
+    expect(res.status).toBe(200);
+    expect(res.headers.get("content-type")).toBe("application/zip");
+    expect(res.headers.get("cache-control")).toBe("no-store");
+    expect(res.headers.get("content-disposition")).toContain("bdas-datenexport.zip");
+  });
+});
+```
+
+- [ ] **Step 2:** `pnpm exec vitest run apps/web/app/account/data-export-actions.test.ts apps/web/app/account/datenexport/route.test.ts` — Expected: FAIL (Modul `./data-export-actions` fehlt; die Route kennt weder `principalFrom` noch `format`-Verzweigung, der Angriffstest schlägt an).
 - [ ] **Step 3: Implementieren** `apps/web/app/account/data-export-actions.ts`:
 
 ```ts
@@ -1311,7 +1491,7 @@ import { getCurrentMember } from "@bdas/members";
 import { sendTransactional, sendTransactionalToGuest } from "@bdas/notifications";
 
 import { readSessionCookie } from "../../lib/auth-cookie";
-import { buildDataExport, toZip } from "../../lib/data-export/assemble";
+import { buildDataExport, principalFrom, toZip } from "../../lib/data-export/assemble";
 import { realReaders } from "../../lib/data-export/readers";
 import { bootNotifications } from "../../lib/notifications-bootstrap";
 
@@ -1330,10 +1510,7 @@ export async function sendDataExportAction(): Promise<SendDataExportState> {
   if (!me) return { error: "Anmeldung erforderlich." };
 
   // The principal comes from the session only — this action takes no argument.
-  const data = await buildDataExport(realReaders(), {
-    userId: me.user.id,
-    memberId: me.member?.id ?? null,
-  });
+  const data = await buildDataExport(realReaders(), principalFrom(me));
   const attachments = [{ filename: "bdas-datenexport.zip", content: Buffer.from(toZip(data)) }];
 
   const result = me.member
@@ -1355,12 +1532,15 @@ export async function sendDataExportAction(): Promise<SendDataExportState> {
 `sendTransactional` liefert `null`, wenn der Empfänger nicht auflösbar ist — auch das wird als Fehler gemeldet. Route `datenexport/route.ts`: bisherige Payload-Felder (`account`, `profile: me.member`, `profileData`, `roleGrants`) durch
 
 ```ts
-const data = await buildDataExport(realReaders(), {
-  userId: me.user.id,
-  memberId: me.member?.id ?? null,
-});
-if (new URL(request.url).searchParams.get("format") === "zip") {
-  if (!isFlagOn("account_deletion")) return new NextResponse("Not found", { status: 404 });
+// The only request detail the route reads is `format`. Whose data is exported
+// comes from the session alone, via `principalFrom` — never from the URL.
+const format = new URL(request.url).searchParams.get("format");
+if (format === "zip" && !isFlagOn("account_deletion")) {
+  return new NextResponse("Not found", { status: 404 });
+}
+
+const data = await buildDataExport(realReaders(), principalFrom(me));
+if (format === "zip") {
   return new NextResponse(toZip(data), {
     status: 200,
     headers: {
@@ -1371,18 +1551,23 @@ if (new URL(request.url).searchParams.get("format") === "zip") {
   });
 }
 return new NextResponse(toJson(data), {
-  /* bisherige JSON-Header unverändert */
+  status: 200,
+  headers: {
+    "Content-Type": "application/json; charset=utf-8",
+    "Content-Disposition": 'attachment; filename="bdas-datenexport.json"',
+    "Cache-Control": "no-store",
+  },
 });
 ```
 
-ersetzen (`GET(request: Request)` — Signatur erweitern; `me`-Herkunft und Redirect auf `/anmelden` bleiben unverändert, ebenso `requireAuthFlag()`/`requireMembersFlag()`), und den Docstring von „Phase-1 stub" auf „alle Module" aktualisieren.
+ersetzen (`GET(request: Request)` — Signatur erweitern; `me` kommt unverändert aus `getCurrentMember(db, readSessionCookie())`, der Redirect auf `/anmelden` bei fehlender Session, `requireAuthFlag()`/`requireMembersFlag()` und die Imports von `getUserExport`/`getProfile`/`isFlagOn`-für-profile entfallen bzw. bleiben nur, soweit noch benutzt; `isFlagOn` bleibt für `account_deletion`), und den Docstring von „Phase-1 stub" auf „alle Module" aktualisieren. Imports der Route: `buildDataExport`, `principalFrom`, `toJson`, `toZip` aus `../../../lib/data-export/assemble`, `realReaders` aus `../../../lib/data-export/readers`.
 
-- [ ] **Step 4:** `pnpm exec vitest run apps/web/app/account/data-export-actions.test.ts` — Expected: PASS (4 Tests). Danach `pnpm --filter @bdas/web build` — Expected: Build ok (fängt Typfehler in Route/Readers).
+- [ ] **Step 4:** `pnpm exec vitest run apps/web/app/account/data-export-actions.test.ts apps/web/app/account/datenexport/route.test.ts` — Expected: PASS (5 + 5 Tests). Danach `pnpm --filter @bdas/web exec tsc --noEmit` und `pnpm --filter @bdas/web build` — Expected: beides sauber (fängt Typfehler in Route/Readers und die Brand-Typ-Nutzung).
 - [ ] **Step 5: Commit**
 
 ```bash
-pnpm format
-git add apps/web/app/account
+pnpm exec prettier --write <geänderte Dateien>
+git add apps/web/app/account/data-export-actions.ts apps/web/app/account/data-export-actions.test.ts apps/web/app/account/datenexport
 git commit -m "feat(web): ZIP download and e-mail B delivery of the data export"
 ```
 
@@ -1401,19 +1586,19 @@ git commit -m "feat(web): ZIP download and e-mail B delivery of the data export"
 - [ ] **Step 3: READMEs** — pro Modul die neue öffentliche Funktion und ihre Ausschlüsse eintragen.
 - [ ] **Step 4: Gesamtlauf**
 
-Run: `pnpm format && pnpm lint && pnpm typecheck && pnpm test`
+Run: `pnpm exec prettier --check <geänderte Dateien> && pnpm lint && pnpm typecheck && pnpm test`
 Expected: alles grün, Docker-Postgres läuft (sonst laufen die `describeIfDb`-Tests nur als `skipped` — dann ausdrücklich Docker starten; ein skipped-Lauf zählt nicht als grün, das war genau die Ursache der PR6-Verwechslung).
 
 - [ ] **Step 5: Plan/Spec archivieren** — `git mv docs/superpowers/plans/2026-09-24-account-deletion-pr7-export.md docs/archive/superpowers/plans/` nach Grep der ADRs/READMEs auf den Dateinamen; Spec bleibt (PR8/9 nutzen sie noch).
 - [ ] **Step 6: Commit**
 
 ```bash
-pnpm format
+pnpm exec prettier --write <geänderte Dateien>
 git add -A
 git commit -m "docs(export): ADR 0054, module READMEs, archive PR7 plan"
 ```
 
-- [ ] **Step 7:** `/security-review` auf dem Branch, danach `/review`. Prüfpunkte für das Security-Review: kein id-Parameter irgendwo im Pfad Route → Assembler → Modul; `me` ausschließlich aus `getCurrentMember(db, readSessionCookie())`; keine fremden Ids/Tokens im JSON und in jeder CSV (Test: `JSON.stringify` der Ausgaben gegen zwei Nutzer); E-Mail-Empfänger ist immer die Adresse des Session-Kontos; ZIP-Download ohne Session → Redirect statt Datei; `Cache-Control: no-store` auch auf der ZIP-Antwort.
+- [ ] **Step 7:** `/security-review` auf dem Branch, danach `/review`. Prüfpunkte für das Security-Review (der Reviewer soll die ersten vier ausdrücklich bestätigen): (1) kein id-/email-Parameter irgendwo im Pfad Route → Assembler → Modul, die Route liest nur `format`; (2) `me` ausschließlich aus `getCurrentMember(db, readSessionCookie())`, `principalFrom` ist der einzige `Principal`-Konstruktor (Brand-Typ, `@ts-expect-error`-Test in `assemble.test.ts`); (3) der Route-Angriffstest (`?userId=`/`?memberId=`/`?id=`/`?email=`) und der Assembler-Test (jeder Reader nur mit Prinzipal-IDs) sind grün und nicht vakuös — Mutation prüfen: `principalFrom` temporär durch ein Lesen aus der Query ersetzen, der Angriffstest muss fehlschlagen; (4) `sendDataExportAction` hat keinen Parameter und mailt nur an die Session-Adresse; keine fremden Ids/Tokens im JSON und in jeder CSV (Test: `JSON.stringify` der Ausgaben gegen zwei Nutzer); E-Mail-Empfänger ist immer die Adresse des Session-Kontos; ZIP-Download ohne Session → Redirect statt Datei; `Cache-Control: no-store` auch auf der ZIP-Antwort.
 
 ---
 
