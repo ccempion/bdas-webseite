@@ -12,8 +12,16 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { createTestDb, type TestDb } from "@bdas/db/test";
 
-import { clearOrganizerForUser, exportForUser } from "./services/gdpr";
-import { createEvent } from "./services/manage";
+import { resetEventBus } from "@bdas/events";
+
+import { eventAttendance } from "./schema";
+import {
+  clearOrganizerForUser,
+  exportForUser,
+  exportParticipationForMember,
+} from "./services/gdpr";
+import { createEvent, publishEvent } from "./services/manage";
+import { cancelRegistration, registerMember } from "./services/registration";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DEFAULT_URL = "postgres://bdas:bdas@localhost:5432/bdas";
@@ -130,6 +138,135 @@ describeIfDb("events GDPR functions", () => {
 
     it("is a no-op for a user who organized nothing", async () => {
       await expect(clearOrganizerForUser(t.db, "usr_nobody")).resolves.toBeUndefined();
+    });
+  });
+
+  describe("exportParticipationForMember", () => {
+    beforeEach(async () => {
+      resetEventBus();
+      for (const id of ["mbr_me", "mbr_other"]) {
+        await t.client`
+          INSERT INTO auth_users (id, email_normalized, email_display, status)
+          VALUES (${"usr_" + id}, ${id + "@e2e.test"}, ${id + "@e2e.test"}, 'active')`;
+        await t.client`
+          INSERT INTO members (id, user_id, first_name, last_name, primary_group_id, status)
+          VALUES (${id}, ${"usr_" + id}, 'Test', ${id}, NULL, 'active')`;
+      }
+    });
+
+    async function published(title: string): Promise<string> {
+      const ev = await createEvent(
+        t.db,
+        { title, startsAt: future(), visibility: "public" },
+        "usr_creator",
+      );
+      await publishEvent(t.db, ev.id);
+      return ev.id;
+    }
+
+    it("returns own registrations incl. cancelled, never another member's", async () => {
+      const a = await published("Stammtisch");
+      const b = await published("Sommerfest");
+      const c = await published("Nur-Fremd");
+      await registerMember(t.db, a, "mbr_me");
+      await registerMember(t.db, b, "mbr_me");
+      await cancelRegistration(t.db, b, "mbr_me");
+      await registerMember(t.db, a, "mbr_other");
+      await registerMember(t.db, c, "mbr_other");
+      const [foreign] = await t.client`
+        SELECT id FROM event_registrations WHERE member_id = 'mbr_other' AND event_id = ${c}`;
+
+      const result = await exportParticipationForMember(t.db, "mbr_me");
+
+      expect(result.registrations.map((r) => r.eventTitle).sort()).toEqual([
+        "Sommerfest",
+        "Stammtisch",
+      ]);
+      const cancelled = result.registrations.find((r) => r.eventTitle === "Sommerfest");
+      expect(cancelled?.cancelledAt).toBeInstanceOf(Date);
+      const all = JSON.stringify(result);
+      expect(all).not.toContain("Nur-Fremd");
+      expect(all).not.toContain(String(foreign?.["id"]));
+      expect(Object.keys(result.registrations[0] ?? {}).sort()).toEqual([
+        "cancelledAt",
+        "eventId",
+        "eventStartsAt",
+        "eventTitle",
+        "registeredAt",
+        "registrationId",
+        "waitlistPosition",
+      ]);
+    });
+
+    it("exposes waitlist position scoped to the member", async () => {
+      const id = await published("Voll");
+      await registerMember(t.db, id, "mbr_me");
+      await registerMember(t.db, id, "mbr_other");
+      await t.client`UPDATE event_registrations SET waitlist_position = 2 WHERE member_id = 'mbr_me' AND event_id = ${id}`;
+      await t.client`UPDATE event_registrations SET waitlist_position = 5 WHERE member_id = 'mbr_other' AND event_id = ${id}`;
+
+      const result = await exportParticipationForMember(t.db, "mbr_me");
+
+      expect(result.registrations).toHaveLength(1);
+      expect(result.registrations[0]?.waitlistPosition).toBe(2);
+    });
+
+    it("returns own attendance rows and omits the checker's identity", async () => {
+      const ev = await createEvent(
+        t.db,
+        { title: "Vergangen", startsAt: future(-3), visibility: "public" },
+        "usr_creator",
+      );
+      await t.db.insert(eventAttendance).values({
+        id: "att_me",
+        eventId: ev.id,
+        memberId: "mbr_me",
+        attended: true,
+        checkedInBy: "mbr_other",
+      });
+      await t.db.insert(eventAttendance).values({
+        id: "att_other",
+        eventId: ev.id,
+        memberId: "mbr_other",
+        attended: true,
+      });
+
+      const noShow = await createEvent(
+        t.db,
+        { title: "Nicht erschienen", startsAt: future(-2), visibility: "public" },
+        "usr_creator",
+      );
+      await t.db.insert(eventAttendance).values({
+        id: "att_me_no",
+        eventId: noShow.id,
+        memberId: "mbr_me",
+        attended: false,
+        checkedInAt: null,
+      });
+
+      const result = await exportParticipationForMember(t.db, "mbr_me");
+
+      expect(result.attendance).toHaveLength(2);
+      const present = result.attendance.find((a) => a.eventTitle === "Vergangen");
+      expect(present?.attended).toBe(true);
+      const absent = result.attendance.find((a) => a.eventTitle === "Nicht erschienen");
+      expect(absent?.attended).toBe(false);
+      expect(absent?.checkedInAt).toBeNull();
+      expect(Object.keys(present ?? {}).sort()).toEqual([
+        "attended",
+        "checkedInAt",
+        "eventId",
+        "eventStartsAt",
+        "eventTitle",
+      ]);
+      expect(JSON.stringify(result)).not.toContain("mbr_other");
+    });
+
+    it("returns empty lists for a member with no participation", async () => {
+      expect(await exportParticipationForMember(t.db, "mbr_me")).toEqual({
+        registrations: [],
+        attendance: [],
+      });
     });
   });
 });

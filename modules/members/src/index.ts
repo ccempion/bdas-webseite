@@ -14,6 +14,7 @@ export {
 export { transitionStatus, approveMember, acceptWithoutGroup, type Actor } from "./services/status";
 export { grantRole, revokeRole } from "./services/roles";
 export { getMember, getMemberByUserId } from "./services/get";
+export { exportForUser, type MemberExport } from "./services/export";
 export { listBoardRecipientsForGroup } from "./services/board-recipients";
 export { listGrouplessMembers, type GrouplessMember } from "./services/pool";
 export {

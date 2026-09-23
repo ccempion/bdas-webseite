@@ -33,7 +33,14 @@ export {
   listRegistrations,
 } from "./services/registration";
 export { countAttendedEvents, listMyUpcomingRegistrations } from "./services/mine";
-export { clearOrganizerForUser, exportForUser } from "./services/gdpr";
+export {
+  clearOrganizerForUser,
+  exportForUser,
+  exportParticipationForMember,
+  type ParticipationExport,
+  type ParticipationRegistration,
+  type ParticipationAttendance,
+} from "./services/gdpr";
 
 export { eventToIcs } from "./ics";
 export { renderEventContentHtml, plainTextToDoc } from "./content";
