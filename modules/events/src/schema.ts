@@ -39,7 +39,7 @@ export const events = pgTable(
     allowGuestRegistration: boolean("allow_guest_registration").notNull().default(false),
     visibility: text("visibility").notNull().default("members_only"),
     status: text("status").notNull().default("draft"),
-    createdBy: text("created_by").notNull(),
+    createdBy: text("created_by"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => ({

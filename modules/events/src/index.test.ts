@@ -96,6 +96,7 @@ describeIfDb("events integration", () => {
       ["..", "migrations", "0001_init.sql"],
       ["..", "migrations", "0002_event_pages.sql"],
       ["..", "migrations", "0003_guest_registration.sql"],
+      ["..", "migrations", "0004_organizer_erasure.sql"],
     ]) {
       const sql = await fs.readFile(path.join(__dirname, ...file), "utf8");
       await t.client.unsafe(sql);
@@ -216,6 +217,15 @@ describeIfDb("events integration", () => {
     await deleteEvent(t.db, pub.id);
     expect(await getEvent(t.db, pub.id, FEDERAL)).toBeNull();
     expect(await getMyRegistration(t.db, pub.id, "mem1")).toBeNull(); // cascaded
+  });
+
+  it("allows created_by to be cleared to NULL", async () => {
+    const ev = await createEvent(t.db, { title: "Wird verwaist", startsAt: future() }, "usr_gone");
+
+    await t.client`UPDATE events SET created_by = NULL WHERE id = ${ev.id}`;
+
+    const rows = await t.client`SELECT created_by FROM events WHERE id = ${ev.id}`;
+    expect(rows[0]?.["created_by"]).toBeNull();
   });
 
   it("listManagedEvents returns per-event confirmed/waitlist counts in one grouped query", async () => {
