@@ -7,12 +7,14 @@ import { CookieNotice } from "../components/CookieNotice";
 import { NavigationProgress } from "../components/NavigationProgress";
 import { SiteFooter } from "../components/SiteFooter";
 import { SiteHeader } from "../components/SiteHeader";
+import { StagingBanner } from "../components/StagingBanner";
 import { PublicHeader } from "./_public/PublicHeader";
 import { PublicFooter } from "./_public/PublicFooter";
 import { FaqHelpMount } from "./_faq/FaqHelpMount";
 import { NewsletterScrollPanelMount } from "./_newsletter/NewsletterScrollPanelMount";
 import { WindowDropGuard } from "./_upload/WindowDropGuard";
 import { legalUrls } from "../lib/legal";
+import { isStaging } from "../lib/staging";
 
 import "./globals.css";
 
@@ -36,6 +38,7 @@ export default function RootLayout({ children, modal }: { children: ReactNode; m
   return (
     <html lang="de">
       <body className="flex min-h-screen flex-col antialiased">
+        {isStaging() ? <StagingBanner /> : null}
         <WindowDropGuard />
         <NavigationProgress />
         <a

@@ -1,0 +1,62 @@
+name: Staging
+
+# Keeps staging (dashboard.bdas.de, ADR 0053) in step with main: once CI has
+# passed on main, apply pending migrations to the staging database, then move
+# the `staging` branch to the same commit so Vercel redeploys it. Migrating
+# first means the new code never runs against the old schema.
+#
+# Run it by hand (Actions → Staging → Run workflow, pick a branch) to migrate
+# the staging database for a preview whose branch adds migrations. That only
+# migrates; the `staging` branch moves only from main.
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: staging
+  cancel-in-progress: false
+
+env:
+  NODE_VERSION: "22"
+  PNPM_VERSION: "11.0.9"
+
+jobs:
+  migrate:
+    name: Apply DB migrations to staging
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Apply migrations
+        run: pnpm db:migrate
+        env:
+          # Session pooler (port 5432) of the staging Supabase project — same
+          # constraint as production: the transaction pooler breaks DDL.
+          DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
+
+  deploy:
+    name: Move the staging branch to main
+    needs: migrate
+    if: ${{ github.event_name == 'workflow_run' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+      - run: git push --force origin HEAD:refs/heads/staging
