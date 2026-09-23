@@ -238,6 +238,19 @@ describeIfDb("files GDPR functions", () => {
         status: "ready",
         uploadedBy: other.memberId,
       });
+      // the deleted member's OWN file, in the same shared folder — proves
+      // the purge selectively deletes theirs while leaving fil_other alone,
+      // not just that nothing happened to the folder
+      await t.db.insert(files).values({
+        id: "fil_mine",
+        folderId: "fld_1",
+        filename: "mine.pdf",
+        storageKey: "k/mine.pdf",
+        mimeType: "application/pdf",
+        sizeBytes: 10,
+        status: "ready",
+        uploadedBy: memberId,
+      });
       // re-wire the resolver back to the member under deletion, since
       // seedMember(t, other) above overwrote it
       setMemberIdResolver({
@@ -251,7 +264,85 @@ describeIfDb("files GDPR functions", () => {
       const [folder] = await t.db.select().from(folders).where(eq(folders.id, "fld_1"));
       expect(folder).toBeDefined();
       expect(folder?.createdBy).toBe(memberId);
+      expect(await t.db.select().from(files).where(eq(files.id, "fil_mine"))).toEqual([]);
       const [otherFile] = await t.db.select().from(files).where(eq(files.id, "fil_other"));
+      expect(otherFile).toBeDefined();
+      expect(otherFile?.uploadedBy).toBe(other.memberId);
+    });
+
+    it("guards root folders from cleanup even when created_by is set on them (defence in depth)", async () => {
+      // ensureFolders never sets created_by on a root in production, but the
+      // isNotNull(folders.parentId) guard in deleteFilesByMember exists for
+      // when it somehow is. Without that guard, fld_rootguard would become
+      // an eligible, empty, member-created candidate the instant fld_rgchild
+      // is purged below — this test fails if that guard is removed.
+      const { memberId, groupId } = await seedMember(t);
+      await t.client`INSERT INTO folders (id, slug, name, scope, group_id, created_by, parent_id, depth) VALUES ('fld_rootguard', 'rootguard', 'Rootguard', 'local_board', ${groupId}, ${memberId}, NULL, 0)`;
+      await t.client`INSERT INTO folders (id, slug, name, scope, group_id, created_by, parent_id, depth) VALUES ('fld_rgchild', 'rgchild', 'RgChild', 'local_board', ${groupId}, ${memberId}, 'fld_rootguard', 1)`;
+      await t.db.insert(files).values({
+        id: "fil_rgchild",
+        folderId: "fld_rgchild",
+        filename: "a.pdf",
+        storageKey: "k/rgchild-a.pdf",
+        mimeType: "application/pdf",
+        sizeBytes: 10,
+        status: "ready",
+        uploadedBy: memberId,
+      });
+
+      await deleteFilesByMember(t.db, "usr_test_1");
+
+      expect(await t.db.select().from(folders).where(eq(folders.id, "fld_rgchild"))).toEqual([]);
+      const [root] = await t.db.select().from(folders).where(eq(folders.id, "fld_rootguard"));
+      expect(root).toBeDefined();
+    });
+
+    it("keeps a member-created folder whose grandchild folder holds another member's file", async () => {
+      // fld_nestparent is created BY the member and holds their own file
+      // (proving the purge ran); fld_nestmid is a deeper, not-member-created
+      // descendant holding a foreign file. The surviving-descendant-chain
+      // protection must hold two levels down, not just for a direct child.
+      const { memberId, groupId } = await seedMember(t);
+      const other = await seedMember(t, { userId: "usr_other2", memberId: "mbr_other2" });
+      await t.client`INSERT INTO folders (id, slug, name, scope, group_id, depth) VALUES ('fld_nestroot', 'nestroot', 'NestRoot', 'local_board', ${groupId}, 0)`;
+      await t.client`INSERT INTO folders (id, slug, name, scope, group_id, created_by, parent_id, depth) VALUES ('fld_nestparent', 'nestparent', 'NestParent', 'local_board', ${groupId}, ${memberId}, 'fld_nestroot', 1)`;
+      await t.client`INSERT INTO folders (id, slug, name, scope, group_id, created_by, parent_id, depth) VALUES ('fld_nestmid', 'nestmid', 'NestMid', 'local_board', ${groupId}, ${other.memberId}, 'fld_nestparent', 2)`;
+      await t.db.insert(files).values({
+        id: "fil_nestmine",
+        folderId: "fld_nestparent",
+        filename: "mine.pdf",
+        storageKey: "k/nest-mine.pdf",
+        mimeType: "application/pdf",
+        sizeBytes: 10,
+        status: "ready",
+        uploadedBy: memberId,
+      });
+      await t.db.insert(files).values({
+        id: "fil_nestother",
+        folderId: "fld_nestmid",
+        filename: "other.pdf",
+        storageKey: "k/nest-other.pdf",
+        mimeType: "application/pdf",
+        sizeBytes: 10,
+        status: "ready",
+        uploadedBy: other.memberId,
+      });
+      // re-wire the resolver back to the member under deletion, since
+      // seedMember(t, other) above overwrote it
+      setMemberIdResolver({
+        async resolveMemberId(_db, uid): Promise<string | null> {
+          return uid === "usr_test_1" ? memberId : null;
+        },
+      });
+
+      await expect(deleteFilesByMember(t.db, "usr_test_1")).resolves.toBeUndefined();
+
+      expect(await t.db.select().from(files).where(eq(files.id, "fil_nestmine"))).toEqual([]);
+      const [parent] = await t.db.select().from(folders).where(eq(folders.id, "fld_nestparent"));
+      expect(parent).toBeDefined();
+      const [mid] = await t.db.select().from(folders).where(eq(folders.id, "fld_nestmid"));
+      expect(mid).toBeDefined();
+      const [otherFile] = await t.db.select().from(files).where(eq(files.id, "fil_nestother"));
       expect(otherFile).toBeDefined();
     });
 
