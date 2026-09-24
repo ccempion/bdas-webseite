@@ -18,6 +18,7 @@ export type SendDataExportState = {
 export async function sendDataExportAction(): Promise<SendDataExportState> {
   requireFlag("auth");
   requireFlag("account_deletion");
+  requireFlag("notifications");
   bootNotifications();
 
   const db = getDb();

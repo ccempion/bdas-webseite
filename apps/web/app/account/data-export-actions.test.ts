@@ -9,7 +9,8 @@ const buildDataExport = vi.fn();
 let currentMember: CurrentMember | null = null;
 
 vi.mock("@bdas/db", () => ({ getDb: () => ({}) }));
-vi.mock("@bdas/feature-flags", () => ({ requireFlag: () => {} }));
+const requireFlag = vi.fn();
+vi.mock("@bdas/feature-flags", () => ({ requireFlag: (...a: unknown[]) => requireFlag(...a) }));
 vi.mock("@bdas/members", () => ({ getCurrentMember: async () => currentMember }));
 vi.mock("@bdas/notifications", () => ({
   sendTransactional: (...a: unknown[]) => sendTransactional(...a),
@@ -56,6 +57,7 @@ function me(overrides: Partial<CurrentMember> = {}): CurrentMember {
 
 describe("sendDataExportAction", () => {
   beforeEach(() => {
+    requireFlag.mockReset();
     sendTransactional.mockReset().mockResolvedValue({ status: "sent", logId: "n1" });
     sendTransactionalToGuest.mockReset().mockResolvedValue({ status: "sent", logId: "n2" });
     buildDataExport.mockReset().mockResolvedValue({ exportedAt: "x", categories: [], skipped: [] });
@@ -112,6 +114,45 @@ describe("sendDataExportAction", () => {
 
   it("reports a failed send instead of claiming success", async () => {
     sendTransactional.mockResolvedValue({ status: "failed", logId: "n3" });
+
+    expect(await sendDataExportAction()).toEqual({
+      error: "Die E-Mail konnte nicht verschickt werden. Bitte versuche es später erneut.",
+    });
+  });
+
+  it.each(["notifications", "account_deletion"])(
+    "throws and builds/sends nothing when the %s flag is off",
+    async (off) => {
+      requireFlag.mockImplementation((f: string) => {
+        if (f === off) throw new Error(`flag ${f} off`);
+      });
+
+      await expect(sendDataExportAction()).rejects.toThrow(`flag ${off} off`);
+      expect(buildDataExport).not.toHaveBeenCalled();
+      expect(sendTransactional).not.toHaveBeenCalled();
+      expect(sendTransactionalToGuest).not.toHaveBeenCalled();
+    },
+  );
+
+  it("gates on auth, account_deletion and notifications", async () => {
+    await sendDataExportAction();
+
+    expect(requireFlag).toHaveBeenCalledWith("auth");
+    expect(requireFlag).toHaveBeenCalledWith("account_deletion");
+    expect(requireFlag).toHaveBeenCalledWith("notifications");
+  });
+
+  it("reports an unresolvable member recipient as a failed send", async () => {
+    sendTransactional.mockResolvedValue(null);
+
+    expect(await sendDataExportAction()).toEqual({
+      error: "Die E-Mail konnte nicht verschickt werden. Bitte versuche es später erneut.",
+    });
+  });
+
+  it("reports a failed guest-path send as an error", async () => {
+    currentMember = me({ member: null });
+    sendTransactionalToGuest.mockResolvedValue({ status: "failed", logId: "n4" });
 
     expect(await sendDataExportAction()).toEqual({
       error: "Die E-Mail konnte nicht verschickt werden. Bitte versuche es später erneut.",

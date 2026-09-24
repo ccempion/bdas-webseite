@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { PASSWORD_RULE_HINT } from "@bdas/auth";
 import { getDb } from "@bdas/db";
 import { Button, Card } from "@bdas/design-system";
+import { isFlagOn } from "@bdas/feature-flags";
 import { getCurrentMember } from "@bdas/members";
 
 import { accountDeletionEnabled } from "../../_account-deletion/flag";
@@ -72,15 +73,15 @@ export default async function AccountSettingsPage() {
           Export aller zu dir gespeicherten Daten (Art. 15/20 DSGVO).
         </p>
         <div className="flex flex-wrap gap-3">
-          <Link href="/account/datenexport">
+          <a href="/account/datenexport">
             <Button variant="secondary">Meine Daten exportieren</Button>
-          </Link>
+          </a>
           {accountDeletionEnabled() ? (
             <>
-              <Link href="/account/datenexport?format=zip">
+              <a href="/account/datenexport?format=zip">
                 <Button variant="secondary">Als CSV-ZIP</Button>
-              </Link>
-              <SendDataExportButton />
+              </a>
+              {isFlagOn("notifications") ? <SendDataExportButton /> : null}
             </>
           ) : null}
         </div>

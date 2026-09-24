@@ -85,7 +85,10 @@ describe("GET /account/datenexport", () => {
       userId: "usr_1",
       memberId: "mbr_1",
     });
-    expect(JSON.stringify(buildDataExport.mock.calls)).not.toContain("usr_other");
+    const seen = JSON.stringify(buildDataExport.mock.calls);
+    expect(seen).not.toContain("usr_other");
+    expect(seen).not.toContain("mbr_other");
+    expect(seen).not.toContain("evil@example.org");
   });
 
   it("redirects an anonymous request and exports nothing, even with foreign ids in the query", async () => {

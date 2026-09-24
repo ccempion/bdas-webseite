@@ -1,3 +1,5 @@
+import type { FlagName } from "@bdas/feature-flags";
+
 import { rowsToCsv, type Row } from "./csv";
 import { buildZip } from "./zip";
 
@@ -9,13 +11,14 @@ export type SessionIdentity = {
   readonly member: { readonly id: string } | null;
 };
 
-/** Branded: only `principalFrom` can produce one, a hand-built literal does not typecheck. */
+/** Branded: proves the value went through `principalFrom`; a hand-built literal does not typecheck. */
 export type Principal = {
   readonly userId: string;
   readonly memberId: string | null;
   readonly [PRINCIPAL]: true;
 };
 
+/** Route and action build the identity from `getCurrentMember(db, readSessionCookie())`; nothing else feeds it. */
 export function principalFrom(me: SessionIdentity): Principal {
   return { userId: me.user.id, memberId: me.member?.id ?? null } as Principal;
 }
@@ -27,7 +30,7 @@ export type Category = {
 };
 
 export type Readers = {
-  readonly enabled: (flag: string) => boolean;
+  readonly enabled: (flag: FlagName) => boolean;
   readonly account: (userId: string) => Promise<Row | null>;
   readonly sessions: (userId: string) => Promise<readonly Row[]>;
   readonly member: (userId: string) => Promise<{
@@ -49,12 +52,28 @@ export type DataExport = {
   readonly exportedAt: string;
   readonly categories: readonly Category[];
   readonly skipped: readonly { readonly category: string; readonly reason: string }[];
+  readonly hinweise: readonly string[];
 };
+
+const HINWEISE: readonly string[] = [
+  "Bewusst nicht enthalten:",
+  "- Gast-Anmeldungen zu Veranstaltungen (an eine E-Mail-Adresse, nicht an dein Konto gebunden)",
+  "- Dateiinhalte (nur Metadaten; die Dateien selbst kannst du im Dateibereich herunterladen)",
+  "- Kennungen anderer Personen (z. B. wer eine Rolle vergeben oder einen Antrag entschieden hat)",
+  "",
+  "Noch nicht enthalten (Folgearbeit):",
+  "- Zugriffsprotokoll der Dateien (file_access_log) und Ordnerfreigaben (folder_member_grants)",
+  "- Newsletter-Anmeldung, Einwilligungsprotokoll (inkl. IP und User-Agent) und Newsletter-Hinweise",
+  "- Onboarding-Angaben",
+  "- FAQ-Rückmeldungen und -Einsendungen",
+  "- Von dir angelegte Projekte",
+  "- Die von dir gemeldeten Blogbeiträge (Meldungen)",
+];
 
 type Spec = {
   readonly key: string;
   readonly file: string;
-  readonly flag: string | null;
+  readonly flag: FlagName | null;
   readonly columns: readonly string[];
 };
 
@@ -252,7 +271,10 @@ export async function buildDataExport(
   if (on(SPECS.anmeldungen)) {
     categories.push(cat(SPECS.organisiert, await r.organizedEvents(p.userId)));
     if (p.memberId === null) {
-      skipped.push({ category: "veranstaltungen", reason: "Kein Mitgliedseintrag" });
+      skipped.push({
+        category: "veranstaltungen (Anmeldungen/Anwesenheit)",
+        reason: "Kein Mitgliedseintrag",
+      });
     } else {
       const part = await r.participation(p.memberId);
       categories.push(cat(SPECS.anmeldungen, part.registrations));
@@ -269,7 +291,7 @@ export async function buildDataExport(
     categories.push(cat(SPECS.benachrichtigungen, await r.notifications(p.userId)));
   }
 
-  return { exportedAt: now.toISOString(), categories, skipped };
+  return { exportedAt: now.toISOString(), categories, skipped, hinweise: HINWEISE };
 }
 
 export function toJson(e: DataExport): string {
@@ -285,10 +307,7 @@ function readme(e: DataExport): string {
     "Übersprungene Kategorien:",
     skipped,
     "",
-    "Bewusst nicht enthalten:",
-    "- Gast-Anmeldungen zu Veranstaltungen (an eine E-Mail-Adresse, nicht an dein Konto gebunden)",
-    "- Dateiinhalte (nur Metadaten; die Dateien selbst kannst du im Dateibereich herunterladen)",
-    "- Kennungen anderer Personen (z. B. wer eine Rolle vergeben oder einen Antrag entschieden hat)",
+    ...e.hinweise,
     "",
   ].join("\r\n");
 }

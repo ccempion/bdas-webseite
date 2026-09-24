@@ -25,7 +25,10 @@ Format, das Betroffene ohne Werkzeuge öffnen können.
    das ZIP-Format (CRC, Header, Zip64-Grenzen, Zeichensatz der Dateinamen) ist fehleranfällig, wenn
    man es selbst schreibt. Verworfen: ein selbst geschriebener STORE-only-Writer.
 4. **Scoping-Regel (Sicherheitsentscheidung).** Wessen Daten exportiert werden, entscheidet
-   allein die Session. `principalFrom(me)` ist der einzige Konstruktor des Brand-Typs `Principal`.
+   allein die Session. `principalFrom(me)` ist der einzige Konstruktor des Brand-Typs `Principal`; der Brand belegt nur,
+   dass ein Wert durch `principalFrom` lief, nicht dass er aus der Session stammt. Die
+   Session-Garantie liegt darin, dass Route und Action die Identität ausschließlich aus
+   `getCurrentMember(db, readSessionCookie())` bilden (Angriffstest der Route, Test der Action).
    Route und Server Action nehmen keine ID und keine E-Mail entgegen; die Route liest nur
    `format`. Die Export-Funktionen der Module filtern nach dem besitzenden Schlüssel.
    Belege: Zwei-Nutzer-Tests je Modul mit exakter Schlüsselmenge, der Assembler-Test, der
@@ -48,7 +51,8 @@ Format, das Betroffene ohne Werkzeuge öffnen können.
 7. **E-Mail auf Anforderung.** Auf `/account/einstellungen` versendet ein Button das ZIP als
    Anhang (E-Mail B), nur mit Flag `account_deletion`. Ohne Mitgliedszeile geht sie über den
    Gastpfad an die Kontoadresse. **Kein Rate-Limiting** vorerst (eigene Daten an die eigene
-   Adresse). Folgearbeit: ein Limiter, etwa über das Zählen von `data_export_ready`-Zeilen in
+   Adresse). Der Button erscheint nur bei `account_deletion` und `notifications`; die Action
+   verlangt beide Flags. Folgearbeit: ein Limiter, etwa über das Zählen von `data_export_ready`-Zeilen in
    `notification_log` oder einen exportierten Auth-Limiter.
 8. **Nicht im Datenmodell / bekannte Lücken.** Religion wird nirgends gespeichert. Die
    sensibelsten gespeicherten Felder sind Geburtsdatum, Studienfach und der freie
@@ -56,6 +60,14 @@ Format, das Betroffene ohne Werkzeuge öffnen können.
    (Folgearbeit, nicht umgesetzt): `exportForUser` des Blogs deckt Beiträge und Kommentare ab,
    nicht aber die von der Person **gemeldeten** Beitragsmeldungen (Melder-ID und Grund). Das
    braucht eine Änderung im Blog-Modul.
+
+   Vollständige Liste der noch nicht exportierten personenbezogenen Daten (in LIESMICH.txt und im
+   JSON unter `hinweise` offengelegt; Folgearbeit in eigenen PRs, ein Modul pro PR):
+   Zugriffsprotokoll der Dateien (`file_access_log`) und Ordnerfreigaben (`folder_member_grants`);
+   Newsletter-Anmeldung, Einwilligungsprotokoll (inkl. IP und User-Agent) und
+   Newsletter-Hinweise; Onboarding-Angaben; FAQ-Rückmeldungen und -Einsendungen; von der Person
+   angelegte Projekte; die von der Person gemeldeten Blogbeiträge (Meldungen). Der UI-Satz
+   ("alle Daten") und die Wortwahl der Mail-Vorlage bleiben unverändert.
 
 ## Konsequenzen
 

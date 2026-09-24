@@ -54,35 +54,61 @@ describe("buildDataExport", () => {
     const calls: string[] = [];
     const out = await buildDataExport(stub(calls), session("usr_bare", null));
     expect(calls.some((c) => c.startsWith("participation"))).toBe(false);
-    expect(out.skipped.map((s) => s.category)).toContain("veranstaltungen");
+    expect(out.skipped.map((s) => s.category)).toContain(
+      "veranstaltungen (Anmeldungen/Anwesenheit)",
+    );
   });
 
-  it("skips modules whose feature flag is off and lists them in the manifest", async () => {
-    const out = await buildDataExport(
-      stub([], { enabled: (f) => f !== "files" }),
-      session("usr_me", "mem_me"),
-    );
-    expect(out.categories.map((c) => c.file)).not.toContain("dateien.csv");
-    expect(out.skipped).toContainEqual({ category: "dateien", reason: "Modul nicht aktiv" });
-  });
-
-  it("skips events entirely when the events flag is off, listing it once", async () => {
-    const calls: string[] = [];
-    const out = await buildDataExport(
-      stub(calls, { enabled: (f) => f !== "events" }),
-      session("usr_me", "mem_me"),
-    );
-    expect(calls.some((c) => c.startsWith("participation") || c.startsWith("organized"))).toBe(
-      false,
-    );
-    expect(out.skipped.filter((s) => s.category === "veranstaltungen")).toHaveLength(1);
-  });
+  it.each([
+    { flag: "files", key: "dateien", files: ["dateien.csv"], readers: ["files"] },
+    {
+      flag: "blog",
+      key: "blog",
+      files: ["blog_beitraege.csv", "blog_kommentare.csv"],
+      readers: ["blog"],
+    },
+    {
+      flag: "notifications",
+      key: "benachrichtigungen",
+      files: ["benachrichtigungen.csv"],
+      readers: ["notifications"],
+    },
+    { flag: "profile", key: "profil", files: ["profil.csv"], readers: ["profile"] },
+    {
+      flag: "events",
+      key: "veranstaltungen",
+      files: [
+        "veranstaltungen_anmeldungen.csv",
+        "veranstaltungen_organisiert.csv",
+        "veranstaltungen_anwesenheit.csv",
+      ],
+      readers: ["participation", "organizedEvents"],
+    },
+  ])(
+    "skips $key when the $flag flag is off: no files, one manifest entry, reader not called",
+    async ({ flag, key, files, readers }) => {
+      const calls: string[] = [];
+      const out = await buildDataExport(
+        stub(calls, { enabled: (f) => f !== flag }),
+        session("usr_me", "mem_me"),
+      );
+      const names = out.categories.map((c) => c.file);
+      for (const f of files) expect(names).not.toContain(f);
+      expect(out.skipped).toEqual([{ category: key, reason: "Modul nicht aktiv" }]);
+      for (const r of readers) expect(calls.some((c) => c.startsWith(`${r}:`))).toBe(false);
+    },
+  );
 
   it("exports organized events even without a member row", async () => {
     const out = await buildDataExport(stub([]), session("usr_bare", null));
     const zip = unzipSync(toZip(out));
     expect(strFromU8(zip["veranstaltungen_organisiert.csv"]!)).toContain("Sommerfest");
-    expect(out.skipped.filter((s) => s.category === "veranstaltungen")).toHaveLength(1);
+    expect(out.skipped).toEqual([
+      {
+        category: "veranstaltungen (Anmeldungen/Anwesenheit)",
+        reason: "Kein Mitgliedseintrag",
+      },
+    ]);
   });
 
   it("projects rows through the column allowlist in both JSON and CSV", async () => {
@@ -100,14 +126,26 @@ describe("buildDataExport", () => {
   it("emits a header-only CSV for an empty category (present, not forgotten)", async () => {
     const out = await buildDataExport(stub([]), session("usr_me", "mem_me"));
     const zip = unzipSync(toZip(out));
-    expect(strFromU8(zip["dateien.csv"]!)).toContain("filename");
+    const dateien = out.categories.find((c) => c.file === "dateien.csv")!;
+    const raw = new TextDecoder("utf-8", { ignoreBOM: true }).decode(zip["dateien.csv"]!);
+    expect(raw).toBe("\uFEFF" + dateien.columns.join(",") + "\r\n");
     expect(strFromU8(zip["LIESMICH.txt"]!)).toContain("Gast");
   });
 
   it("toJson contains every category and no undeclared keys", async () => {
     const out = await buildDataExport(stub([]), session("usr_me", "mem_me"));
     const parsed = JSON.parse(toJson(out)) as Record<string, unknown>;
-    expect(Object.keys(parsed).sort()).toEqual(["categories", "exportedAt", "skipped"].sort());
+    expect(Object.keys(parsed).sort()).toEqual(
+      ["categories", "exportedAt", "hinweise", "skipped"].sort(),
+    );
+  });
+
+  it("discloses the not-yet-exported data in LIESMICH.txt and in the JSON", async () => {
+    const out = await buildDataExport(stub([]), session("usr_me", "mem_me"));
+    const readme = strFromU8(unzipSync(toZip(out))["LIESMICH.txt"]!);
+    expect(readme).toContain("Noch nicht enthalten");
+    expect(readme).toContain("file_access_log");
+    expect(toJson(out)).toContain("file_access_log");
   });
 
   it("does not accept a hand-built principal (compile-time guard, checked by `pnpm typecheck`)", async () => {
