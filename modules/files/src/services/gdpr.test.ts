@@ -40,6 +40,51 @@ async function dbReachable(): Promise<boolean> {
 const reachable = await dbReachable();
 const describeIfDb = reachable ? describe : describe.skip;
 
+type LockWait = {
+  pid: number;
+  state: string;
+  wait_event_type: string;
+  wait_event: string;
+};
+
+/** Polls until a backend (`waiterPid`, or any) is waiting on a heavyweight
+ *  lock held by `blockerPid`; fails instead of sleeping blindly. Matches on
+ *  the wait, never the query text, so the old plain DELETE and the new
+ *  FOR UPDATE both count. */
+async function waitUntilBlocked(
+  monitor: postgres.Sql,
+  blockerPid: number,
+  waiterPid?: number,
+): Promise<LockWait> {
+  const deadline = Date.now() + 2_000;
+  while (Date.now() < deadline) {
+    const [row] = await monitor<LockWait[]>`
+      SELECT pid, state, wait_event_type, wait_event FROM pg_stat_activity
+      WHERE wait_event_type = 'Lock' AND state = 'active'
+        AND ${blockerPid}::int = ANY (pg_blocking_pids(pid))
+        AND (${waiterPid ?? null}::int IS NULL OR pid = ${waiterPid ?? null}::int)`;
+    if (row) return row;
+    await new Promise((r) => setTimeout(r, 20));
+  }
+  throw new Error(`no backend blocked on pid ${blockerPid} within 2s`);
+}
+
+async function backendPid(conn: postgres.Sql): Promise<number> {
+  const [row] = await conn<{ pid: number }[]>`SELECT pg_backend_pid() AS pid`;
+  if (!row) throw new Error("pg_backend_pid() returned no row");
+  return row.pid;
+}
+
+async function settledWithin(p: Promise<unknown>, ms: number): Promise<boolean> {
+  return Promise.race([
+    p.then(
+      () => true,
+      () => true,
+    ),
+    new Promise<boolean>((r) => setTimeout(() => r(false), ms)),
+  ]);
+}
+
 /** A fake storage driver whose behavior each test configures. */
 function fakeStorage(over: Partial<StorageClient> = {}): StorageClient {
   const url: SignedUrl = {
@@ -414,6 +459,105 @@ describeIfDb("files GDPR functions", () => {
       expect(await t.db.select().from(folders).where(eq(folders.id, "fld_1"))).toEqual([]);
 
       await expect(deleteFilesByMember(t.db, "usr_test_1")).resolves.toBeUndefined();
+    });
+
+    describe("concurrent upload into a member-created folder", () => {
+      let monitor: postgres.Sql;
+
+      beforeEach(() => {
+        monitor = postgres(process.env["DATABASE_URL"] ?? DEFAULT_URL, {
+          max: 1,
+          onnotice: () => {},
+        });
+      });
+
+      afterEach(async () => {
+        await monitor.end();
+      });
+
+      async function seedEmptyCreatedFolder(): Promise<{
+        memberId: string;
+        otherMemberId: string;
+      }> {
+        const { memberId, groupId } = await seedMember(t);
+        const other = await seedMember(t, { userId: "usr_other", memberId: "mbr_other" });
+        await t.client`INSERT INTO folders (id, slug, name, scope, group_id, depth) VALUES ('fld_root', 'root', 'Root', 'local_board', ${groupId}, 0)`;
+        await t.client`INSERT INTO folders (id, slug, name, scope, group_id, created_by, parent_id, depth) VALUES ('fld_race', 'race', 'Race', 'local_board', ${groupId}, ${memberId}, 'fld_root', 1)`;
+        setMemberIdResolver({
+          async resolveMemberId(_db, uid): Promise<string | null> {
+            return uid === "usr_test_1" ? memberId : null;
+          },
+        });
+        return { memberId, otherMemberId: other.memberId };
+      }
+
+      it("does not destroy a file inserted into the folder while the purge is deciding", async () => {
+        const { otherMemberId } = await seedEmptyCreatedFolder();
+
+        const inserter = await t.client.reserve();
+        try {
+          const inserterPid = await backendPid(inserter);
+          await inserter`BEGIN`;
+          await inserter`INSERT INTO files (id, folder_id, uploaded_by, filename, mime_type, size_bytes, storage_key, status)
+                         VALUES ('fil_race', 'fld_race', ${otherMemberId}, 'x.pdf', 'application/pdf', 1, 'k/race.pdf', 'ready')`;
+
+          const purge = deleteFilesByMember(t.db, "usr_test_1");
+          const wait = await waitUntilBlocked(monitor, inserterPid);
+          expect(wait).toMatchObject({ state: "active", wait_event_type: "Lock" });
+          expect(await settledWithin(purge, 100)).toBe(false);
+
+          await inserter`COMMIT`;
+          await purge;
+        } finally {
+          inserter.release();
+        }
+
+        const [raced] = await t.db.select().from(files).where(eq(files.id, "fil_race"));
+        expect(raced?.uploadedBy).toBe(otherMemberId);
+        const [folder] = await t.db.select().from(folders).where(eq(folders.id, "fld_race"));
+        expect(folder).toBeDefined();
+      });
+
+      it("makes an upload that arrives after the purge locked the folder fail on the FK instead of vanishing", async () => {
+        const { otherMemberId } = await seedEmptyCreatedFolder();
+        await t.client`INSERT INTO folder_member_grants (id, folder_id, member_id, granted_by) VALUES ('fmg_race', 'fld_race', ${otherMemberId}, ${otherMemberId})`;
+
+        // Holding the grant row pins the purge inside its transaction: it has
+        // locked the folder and is waiting on the ON DELETE CASCADE to grants.
+        const holder = await t.client.reserve();
+        const inserter = await t.client.reserve();
+        try {
+          const holderPid = await backendPid(holder);
+          await holder`BEGIN`;
+          await holder`SELECT id FROM folder_member_grants WHERE id = 'fmg_race' FOR UPDATE`;
+
+          const purge = deleteFilesByMember(t.db, "usr_test_1");
+          const purgeWait = await waitUntilBlocked(monitor, holderPid);
+          expect(purgeWait).toMatchObject({ state: "active", wait_event_type: "Lock" });
+
+          const inserterPid = await backendPid(inserter);
+          await inserter`BEGIN`;
+          const insert =
+            inserter`INSERT INTO files (id, folder_id, uploaded_by, filename, mime_type, size_bytes, storage_key, status)
+                                  VALUES ('fil_late', 'fld_race', ${otherMemberId}, 'x.pdf', 'application/pdf', 1, 'k/late.pdf', 'ready')`.then(
+              () => null,
+              (err: { code?: string }) => err,
+            );
+          const insertWait = await waitUntilBlocked(monitor, purgeWait.pid, inserterPid);
+          expect(insertWait).toMatchObject({ state: "active", wait_event_type: "Lock" });
+
+          await holder`COMMIT`;
+          await purge;
+          expect((await insert)?.code).toBe("23503");
+          await inserter`ROLLBACK`;
+        } finally {
+          holder.release();
+          inserter.release();
+        }
+
+        expect(await t.db.select().from(folders).where(eq(folders.id, "fld_race"))).toEqual([]);
+        expect(await t.db.select().from(files)).toEqual([]);
+      });
     });
   });
 });
