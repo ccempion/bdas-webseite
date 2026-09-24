@@ -92,6 +92,7 @@ describeIfDb("account deletion composition (real modules)", () => {
   let mailDown: boolean;
   let filesBucket: ReturnType<typeof memoryBucket>;
   let blogBucket: ReturnType<typeof memoryBucket>;
+  let profileBucket: ReturnType<typeof memoryBucket>;
 
   const A = { user: "usr_a", member: "mem_a", email: "a@example.de", name: "Anna Aaltje" };
   const B = { user: "usr_b", member: "mem_b", email: "b@example.de" };
@@ -120,6 +121,8 @@ describeIfDb("account deletion composition (real modules)", () => {
     filesBucket = memoryBucket(["files/a/report.pdf", "files/b/notes.pdf"]);
     setStorage(filesBucket as unknown as StorageClient);
     blogBucket = memoryBucket([`${A.user}/pic1.png`, `${A.user}/pic2.png`, `${B.user}/pic.png`]);
+
+    profileBucket = memoryBucket([`${A.user}/a.webp`, `${B.user}/b.webp`]);
 
     const resolver = {
       async resolveMemberId(_db: unknown, userId: string): Promise<string | null> {
@@ -209,7 +212,10 @@ describeIfDb("account deletion composition (real modules)", () => {
 
   const run = (order: string[] = []) =>
     runAccountDeletionSweep(t.db, {
-      steps: buildDeletionSteps(() => blogBucket as never).map((s) => ({
+      steps: buildDeletionSteps({
+        blogMedia: () => blogBucket as never,
+        profileMedia: () => profileBucket as never,
+      }).map((s) => ({
         name: s.name,
         run: async (db, userId) => {
           order.push(s.name);
@@ -223,6 +229,7 @@ describeIfDb("account deletion composition (real modules)", () => {
     expect(buildDeletionSteps().map((s) => s.name)).toEqual([
       "files",
       "blog",
+      "profile_media",
       "events",
       "notifications",
     ]);
@@ -235,7 +242,7 @@ describeIfDb("account deletion composition (real modules)", () => {
     const result = await run(order);
 
     expect(result).toEqual({ processed: 1, completed: 1, failed: [] });
-    expect(order).toEqual(["files", "blog", "events", "notifications"]);
+    expect(order).toEqual(["files", "blog", "profile_media", "events", "notifications"]);
 
     // files: object + row of A gone, B untouched
     expect([...filesBucket.objects]).toEqual(["files/b/notes.pdf"]);
@@ -247,6 +254,8 @@ describeIfDb("account deletion composition (real modules)", () => {
     expect(await count("posts", "created_by = $1", [B.user])).toBe(1);
     expect(await count("post_comments", "author_id = $1", [B.user])).toBe(1);
     expect([...blogBucket.objects]).toEqual([`${B.user}/pic.png`]);
+    // profile photos: A's prefix gone, B's untouched
+    expect([...profileBucket.objects]).toEqual([`${B.user}/b.webp`]);
     // events: the event stays, its organizer is cleared
     expect(await count("events")).toBe(2);
     expect(await count("events", "created_by is null")).toBe(1);
