@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { PASSWORD_RULE_HINT } from "@bdas/auth";
 import { getDb } from "@bdas/db";
 import { Button, Card } from "@bdas/design-system";
+import { isFlagOn } from "@bdas/feature-flags";
 import { getCurrentMember } from "@bdas/members";
 
 import { accountDeletionEnabled } from "../../_account-deletion/flag";
@@ -16,6 +17,7 @@ import { readSessionCookie } from "../../../lib/auth-cookie";
 import { ChangePasswordCard } from "../ChangePasswordCard";
 import { DeleteAccountCard } from "../DeleteAccountCard";
 import { EmailChangeCard } from "../EmailChangeCard";
+import { SendDataExportButton } from "../SendDataExportButton";
 
 export const metadata = { title: "Kontoeinstellungen" };
 
@@ -68,11 +70,21 @@ export default async function AccountSettingsPage() {
       <Card flat className="p-6">
         <h2 className="mb-2 text-lg font-semibold text-bdas-ink">Deine Daten</h2>
         <p className="mb-4 text-sm text-bdas-ink-body">
-          Export aller zu dir gespeicherten Daten als JSON: Art. 20 DSGVO.
+          Export aller zu dir gespeicherten Daten (Art. 15/20 DSGVO).
         </p>
-        <Link href="/account/datenexport">
-          <Button variant="secondary">Meine Daten exportieren</Button>
-        </Link>
+        <div className="flex flex-wrap gap-3">
+          <a href="/account/datenexport">
+            <Button variant="secondary">Meine Daten exportieren</Button>
+          </a>
+          {accountDeletionEnabled() ? (
+            <>
+              <a href="/account/datenexport?format=zip">
+                <Button variant="secondary">Als CSV-ZIP</Button>
+              </a>
+              {isFlagOn("notifications") ? <SendDataExportButton /> : null}
+            </>
+          ) : null}
+        </div>
       </Card>
 
       {accountDeletionEnabled() ? <DeleteAccountCard /> : null}
