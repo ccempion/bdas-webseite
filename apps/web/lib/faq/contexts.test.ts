@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest";
 
-import { FAQ_CONTEXTS, isSignedInSurface, matchContext } from "./contexts";
+import { GLOSSAR } from "../glossar/eintraege";
+import {
+  BEGRIFF_CONTEXTS,
+  FAQ_CONTEXTS,
+  faqContextLabel,
+  isSignedInSurface,
+  matchContext,
+} from "./contexts";
 
 describe("FAQ_CONTEXTS", () => {
   it("has unique, non-empty keys and labels", () => {
@@ -70,6 +77,26 @@ describe("isSignedInSurface", () => {
     // board prefix — the trailing slash in the prefix is what separates them.
     for (const p of ["/", "/gruppen", "/gruppen/berlin", "/blog", "/anmelden", "/datenschutz"]) {
       expect(isSignedInSurface(p)).toBe(false);
+    }
+  });
+});
+
+describe("BEGRIFF_CONTEXTS", () => {
+  it("gives every glossary term one context, disjoint from the page contexts", () => {
+    expect(BEGRIFF_CONTEXTS.map((c) => c.key)).toEqual(GLOSSAR.map((e) => `begriff.${e.key}`));
+    const pageKeys = new Set(FAQ_CONTEXTS.map((c) => c.key));
+    for (const c of BEGRIFF_CONTEXTS) expect(pageKeys.has(c.key)).toBe(false);
+  });
+
+  it("labels both kinds of context", () => {
+    expect(faqContextLabel("dateien")).toBe("Dateien");
+    expect(faqContextLabel("begriff.verteiler")).toBe("Bundesvorstand-Verteiler");
+    expect(faqContextLabel("gibt-es-nicht")).toBeUndefined();
+  });
+
+  it("never resolves a path to a term context", () => {
+    for (const p of ["/begriff", "/faq/begriffe", "/dateien", "/account"]) {
+      expect(matchContext(p) ?? "").not.toMatch(/^begriff\./);
     }
   });
 });

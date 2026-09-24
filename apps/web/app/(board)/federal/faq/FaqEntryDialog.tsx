@@ -13,7 +13,7 @@ import {
 } from "@bdas/faq";
 
 import { SECTION_LABELS, VORSTAND_SUBGROUP_LABELS } from "../../../../lib/faq/assemble";
-import { FAQ_CONTEXTS } from "../../../../lib/faq/contexts";
+import { BEGRIFF_CONTEXTS, FAQ_CONTEXTS } from "../../../../lib/faq/contexts";
 import { parseYoutubeInput, youtubeThumbnailUrl } from "../../../../lib/faq/youtube";
 import { saveEntryAction } from "./actions";
 import { FaqAnswerEditor } from "./FaqAnswerEditor";
@@ -205,6 +205,35 @@ function EntryForm({
           </FilterChip>
         ))}
       </div>
+      <details className="bdas-accordion">
+        <summary>
+          Begriffe
+          {BEGRIFF_CONTEXTS.some((c) => contexts.includes(c.key))
+            ? ` (${BEGRIFF_CONTEXTS.filter((c) => contexts.includes(c.key)).length} ausgewählt)`
+            : ""}
+        </summary>
+        <div>
+          <p className="mb-2 text-sm text-bdas-ink-muted">
+            Ein hier gewählter Begriff zeigt diesen Eintrag als „Mehr dazu“ in seinem Info-Punkt.
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {BEGRIFF_CONTEXTS.map((c) => (
+              <FilterChip
+                key={c.key}
+                active={contexts.includes(c.key)}
+                onClick={() => {
+                  setContexts((cur) =>
+                    cur.includes(c.key) ? cur.filter((k) => k !== c.key) : [...cur, c.key],
+                  );
+                  onDirty();
+                }}
+              >
+                {c.label}
+              </FilterChip>
+            ))}
+          </div>
+        </div>
+      </details>
       <div className="flex gap-2">
         <button
           type="button"

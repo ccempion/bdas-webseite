@@ -1,3 +1,5 @@
+import { GLOSSAR } from "../glossar/eintraege";
+
 /**
  * Stabile Schlüssel für „wo taucht dieser Eintrag als Kontext-Hilfe auf".
  * Das Modul speichert nur die Strings; welche gültig sind und welcher Route
@@ -33,6 +35,24 @@ export const FAQ_CONTEXTS: readonly FaqContext[] = [
   },
   { key: "profil", label: "Profil", routes: [/^\/profil(\/|$)/, /^\/account(\/|$)/] },
 ];
+
+/**
+ * One context per glossary term (Spec 2026-09-24 §5): an FAQ entry pinned to
+ * `begriff.<key>` becomes that term's "Mehr dazu". They hang on a word, not a
+ * path, so they carry no routes and `matchContext` never returns them.
+ */
+export const BEGRIFF_CONTEXT_PREFIX = "begriff.";
+
+export const BEGRIFF_CONTEXTS: ReadonlyArray<{ readonly key: string; readonly label: string }> =
+  GLOSSAR.map((e) => ({ key: `${BEGRIFF_CONTEXT_PREFIX}${e.key}`, label: e.begriff }));
+
+/** Page contexts and term contexts — every key an FAQ entry may carry. */
+export function faqContextLabel(key: string): string | undefined {
+  return (
+    FAQ_CONTEXTS.find((c) => c.key === key)?.label ??
+    BEGRIFF_CONTEXTS.find((c) => c.key === key)?.label
+  );
+}
 
 /** The key whose patterns match this path, or null. First match wins. */
 export function matchContext(pathname: string): string | null {

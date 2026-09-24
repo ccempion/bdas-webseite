@@ -11,6 +11,7 @@ import { StagingBanner } from "../components/StagingBanner";
 import { PublicHeader } from "./_public/PublicHeader";
 import { PublicFooter } from "./_public/PublicFooter";
 import { FaqHelpMount } from "./_faq/FaqHelpMount";
+import { GlossarProvider } from "./_glossar/GlossarProvider";
 import { NewsletterScrollPanelMount } from "./_newsletter/NewsletterScrollPanelMount";
 import { WindowDropGuard } from "./_upload/WindowDropGuard";
 import { legalUrls } from "../lib/legal";
@@ -38,28 +39,30 @@ export default function RootLayout({ children, modal }: { children: ReactNode; m
   return (
     <html lang="de">
       <body className="flex min-h-screen flex-col antialiased">
-        {isStaging() ? <StagingBanner /> : null}
-        <WindowDropGuard />
-        <NavigationProgress />
-        <a
-          href="#inhalt"
-          className="sr-only rounded-bdas px-4 py-2 focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:bg-bdas-surface focus:text-bdas-ink focus:shadow-bdas-card"
-        >
-          Zum Inhalt springen
-        </a>
-        {isFlagOn("public_shell") ? <PublicHeader /> : <SiteHeader />}
-        <div id="inhalt" tabIndex={-1} className="flex-1 outline-none">
-          {children}
-        </div>
-        {isFlagOn("public_shell") ? (
-          <PublicFooter privacyUrl={privacy} imprintUrl={imprint} termsUrl={terms} />
-        ) : (
-          <SiteFooter privacyUrl={privacy} imprintUrl={imprint} termsUrl={terms} />
-        )}
-        <FaqHelpMount />
-        <NewsletterScrollPanelMount />
-        <CookieNotice privacyUrl={privacy} />
-        {modal}
+        <GlossarProvider enabled={isFlagOn("glossar")}>
+          {isStaging() ? <StagingBanner /> : null}
+          <WindowDropGuard />
+          <NavigationProgress />
+          <a
+            href="#inhalt"
+            className="sr-only rounded-bdas px-4 py-2 focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:bg-bdas-surface focus:text-bdas-ink focus:shadow-bdas-card"
+          >
+            Zum Inhalt springen
+          </a>
+          {isFlagOn("public_shell") ? <PublicHeader /> : <SiteHeader />}
+          <div id="inhalt" tabIndex={-1} className="flex-1 outline-none">
+            {children}
+          </div>
+          {isFlagOn("public_shell") ? (
+            <PublicFooter privacyUrl={privacy} imprintUrl={imprint} termsUrl={terms} />
+          ) : (
+            <SiteFooter privacyUrl={privacy} imprintUrl={imprint} termsUrl={terms} />
+          )}
+          <FaqHelpMount />
+          <NewsletterScrollPanelMount />
+          <CookieNotice privacyUrl={privacy} />
+          {modal}
+        </GlossarProvider>
       </body>
     </html>
   );
