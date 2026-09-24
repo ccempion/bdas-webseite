@@ -22,7 +22,7 @@ import { Progress } from "../../_onboarding/ui/Progress";
 import { waitingSentence } from "./sentence";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Bewerbung abgeschickt" };
+export const metadata = { title: "Bewerbung eingereicht" };
 
 const STEP =
   "flex items-center gap-3 text-bdas-ink-body before:block before:h-2.5 before:w-2.5 before:rounded-bdas-full";

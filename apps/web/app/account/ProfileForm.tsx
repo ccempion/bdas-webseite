@@ -103,19 +103,19 @@ export function ProfileForm({
         ) : null}
         {isTransfer ? (
           <Alert variant="info" className="mt-2">
-            Achtung: Der Wechsel zu {targetGroup?.name ?? "der gewählten Gruppe"} muss vom dortigen
-            Vorstand freigegeben werden. Bis zur Freigabe bleibst du vollständig Mitglied deiner
-            aktuellen Gruppe. Erst mit der Freigabe verlierst du deine Rechte in deiner bisherigen
-            Gruppe (z. B. ein Vorstandsamt dort).
+            Achtung: Den Wechsel zu {targetGroup?.name ?? "der gewählten Gruppe"} muss der dortige
+            Vorstand annehmen. Bis dahin bleibst du vollständig Mitglied deiner aktuellen Gruppe.
+            Erst mit der Annahme verlierst du deine Rechte in deiner bisherigen Gruppe (z. B. ein
+            Vorstandsamt dort).
           </Alert>
         ) : null}
         {isExit ? (
           <Alert variant="info" className="mt-2">
             <p>
-              Achtung: Der Austritt aus deiner aktuellen Gruppe erfolgt sofort, ohne Freigabe durch
-              den Vorstand. Du verlierst umgehend deine Mitgliedschaft und deine Rechte in dieser
+              Achtung: Der Austritt aus deiner aktuellen Gruppe erfolgt sofort, ohne Entscheidung
+              des Vorstands. Du verlierst umgehend deine Mitgliedschaft und deine Rechte in dieser
               Gruppe (z. B. ein Vorstandsamt). Das lässt sich nicht rückgängig machen. Ein späterer
-              erneuter Beitritt braucht wieder eine Freigabe.
+              erneuter Beitritt ist wieder eine Bewerbung.
             </p>
             <label className="mt-2 flex items-start gap-2 text-sm text-bdas-ink-body">
               <input

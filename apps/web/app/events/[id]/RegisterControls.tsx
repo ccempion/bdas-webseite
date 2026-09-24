@@ -46,7 +46,7 @@ export function RegisterControls({
           )}
           <form action={cancel}>
             <input type="hidden" name="eventId" value={eventId} />
-            <SubmitButton variant="secondary" label="Abmelden" />
+            <SubmitButton variant="secondary" label="Teilnahme absagen" />
           </form>
         </>
       ) : (

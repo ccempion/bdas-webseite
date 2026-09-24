@@ -59,7 +59,7 @@ test("ein Vorstand mit offener Freigabe sieht Zahl und Hinweis", async ({ page }
     await signIn(page, board);
     await page.goto("/account");
 
-    await expect(page.getByRole("status", { name: /offene Freigaben/ }).first()).toBeVisible();
+    await expect(page.getByRole("status", { name: /offene Anfragen/ }).first()).toBeVisible();
     await expect(page.getByText("Es wartet etwas auf dich")).toBeVisible();
     // Transfers are decided by the destination board (ADR 0022), and the board
     // here is itself still groupless (its own application is open), so this also
@@ -87,6 +87,6 @@ test("ein einfaches Mitglied sieht weder Zahl noch Hinweis", async ({ page }) =>
 
   await page.goto("/account");
 
-  await expect(page.getByRole("status", { name: /offene Freigaben/ })).toHaveCount(0);
+  await expect(page.getByRole("status", { name: /offene Anfragen/ })).toHaveCount(0);
   await expect(page.getByText("Es wartet etwas auf dich")).toHaveCount(0);
 });

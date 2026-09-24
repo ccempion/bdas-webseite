@@ -30,7 +30,7 @@ export default async function GroupOverviewPage({ params }: { params: { slug: st
       <h1 className="text-2xl font-semibold text-bdas-ink">Übersicht</h1>
       <ActionStrip
         items={[
-          { count: counts.pending, label: "Freigaben", href: `/gruppe/${params.slug}/members` },
+          { count: counts.pending, label: "Bewerbungen", href: `/gruppe/${params.slug}/members` },
         ]}
       />
       <div className="flex flex-wrap gap-3">

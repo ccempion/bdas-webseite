@@ -28,9 +28,7 @@ export function FreigabeForm({
 
   if (people.length === 0) {
     return (
-      <p className="text-sm text-bdas-ink-muted">
-        Noch niemand aus einer Partnerorganisation ist aufgenommen.
-      </p>
+      <p className="text-sm text-bdas-ink-muted">Noch niemand aus der BDAJ ist aufgenommen.</p>
     );
   }
 

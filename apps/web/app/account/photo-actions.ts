@@ -40,7 +40,7 @@ export async function savePhotoAction(storageKey: string): Promise<SavePhotoStat
     });
     if (!updated) {
       return {
-        error: "Bitte fülle zuerst das erweiterte Profil aus, dann kannst du ein Bild setzen.",
+        error: "Bitte fülle zuerst deine Angaben aus, dann kannst du ein Bild setzen.",
       };
     }
     // The photo it just replaced is now unreachable — personal data (spec §7)

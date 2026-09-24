@@ -33,7 +33,7 @@ import { WithdrawChangeButton } from "./WithdrawChangeButton";
 export const metadata = { title: "Mein Konto" };
 
 const STATUS_LABEL: Record<string, string> = {
-  pending: "Warte auf Freigabe durch den lokalen Vorstand.",
+  pending: "Warte auf Aufnahme durch den Vorstand deiner Gruppe.",
   active: "Aktives Mitglied.",
 };
 
@@ -149,11 +149,12 @@ export default async function AccountPage({
   const statusAlerts = (
     <>
       {justSubmitted && status === "pending" ? (
-        <Alert variant="success" title="Bewerbung abgeschickt">
-          Deine Bewerbung ist eingegangen und liegt jetzt beim lokalen Vorstand zur Entscheidung.
+        <Alert variant="success" title="Bewerbung eingereicht">
+          Deine Bewerbung ist eingegangen und liegt jetzt beim Vorstand deiner Gruppe zur
+          Entscheidung.
         </Alert>
       ) : status === "pending" ? (
-        <Alert variant="info" title="Profil eingereicht">
+        <Alert variant="info" title="Bewerbung eingereicht">
           {STATUS_LABEL["pending"]}
         </Alert>
       ) : null}
@@ -207,6 +208,7 @@ export default async function AccountPage({
           vorstellung: profile?.vorstellung ?? null,
         })}
         profileForm={{ ...membersFormProps, isNew: !me.member }}
+        bewerbungOffen={status === "pending"}
         extendedForm={
           profileFlagOn && me.member && editableAsStudent ? { initial: extendedInitial } : null
         }

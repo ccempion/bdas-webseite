@@ -87,7 +87,7 @@ export function PublicHeaderView({
                       className={`${PILL} cursor-pointer list-none [&::-webkit-details-marker]:hidden`}
                     >
                       {konto.displayName}
-                      <Badge count={openCount} label="offene Freigaben" className="ml-2" />
+                      <Badge count={openCount} label="offene Anfragen" className="ml-2" />
                       <span
                         aria-hidden
                         className="ml-1 text-bdas-ink-muted transition-transform duration-bdas-quick group-open:rotate-180"
@@ -108,7 +108,7 @@ export function PublicHeaderView({
                             className={`${DROPDOWN_LINK} flex items-center justify-between gap-2`}
                           >
                             <span>Board-Bereich</span>
-                            <Badge count={openCount} label="offene Freigaben" />
+                            <Badge count={openCount} label="offene Anfragen" />
                           </Link>
                         </li>
                       ) : null}
@@ -151,7 +151,7 @@ export function PublicHeaderView({
               className="flex cursor-pointer list-none items-center gap-2 rounded-bdas border border-bdas-strong px-3 py-1.5 text-bdas-ink [&::-webkit-details-marker]:hidden"
             >
               Menü
-              <Badge count={openCount} label="offene Freigaben" />
+              <Badge count={openCount} label="offene Anfragen" />
             </summary>
             <nav
               aria-label="Hauptnavigation mobil"
@@ -210,7 +210,7 @@ export function PublicHeaderView({
                           className={`${DROPDOWN_LINK} flex items-center justify-between gap-2`}
                         >
                           <span>Board-Bereich</span>
-                          <Badge count={openCount} label="offene Freigaben" />
+                          <Badge count={openCount} label="offene Anfragen" />
                         </Link>
                       </li>
                     ) : null}

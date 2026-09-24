@@ -41,7 +41,7 @@ export default async function ProfilPage() {
       <header className="flex flex-col gap-1">
         <h1 className="text-2xl font-semibold text-bdas-ink">Profil vervollständigen</h1>
         <p className="text-bdas-ink-body">
-          Nur noch ein paar Angaben, dann geht deine Bewerbung an deinen lokalen Vorstand.
+          Nur noch ein paar Angaben, dann geht deine Bewerbung an den Vorstand deiner Gruppe.
         </p>
       </header>
       <Wizard groups={groups.map((g) => ({ id: g.id, name: g.name, city: g.city ?? "" }))} />

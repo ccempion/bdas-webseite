@@ -110,7 +110,7 @@ function groupAuthError(
   if (canCreateFor(viewerFrom(me), groupId)) return null;
   return groupId
     ? "Du darfst für diese Gruppe keine Veranstaltung anlegen."
-    : "Nur der Bundesvorstand darf föderationsweite Veranstaltungen anlegen.";
+    : "Nur der Bundesvorstand darf bundesweite Veranstaltungen anlegen.";
 }
 
 /** Create (as draft). Authorization: federal board or organizer/board of the group; federation-wide → federal only. */

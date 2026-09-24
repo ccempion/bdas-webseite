@@ -33,9 +33,9 @@ export default async function FederalOverviewPage() {
       <ActionStrip
         items={
           [
-            { count: counts.pending, label: "Freigaben", href: "/federal/members" },
+            { count: counts.pending, label: "Bewerbungen", href: "/federal/members" },
             // Spec §6: this one appears only when there is work — unlike
-            // "Freigaben", which renders calm at zero.
+            // "Bewerbungen", which renders calm at zero.
             ...(faqOpen > 0
               ? [{ count: faqOpen, label: "Offene FAQ-Fragen", href: "/federal/faq" }]
               : []),

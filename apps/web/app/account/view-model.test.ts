@@ -67,7 +67,7 @@ describe("buildIdentityRows", () => {
     });
 
     expect(rows).toEqual([
-      { label: "Status", value: "Förderer:in" },
+      { label: "Status", value: "Förderer*in" },
       { label: "Dabei seit", value: "14. März 2025" },
     ]);
   });
@@ -84,7 +84,7 @@ describe("buildIdentityRows für eine Partnerorganisation", () => {
     });
 
     expect(rows).toEqual([
-      { label: "Status", value: "Partnerorganisation" },
+      { label: "Status", value: "BDAJ-Mitglied" },
       { label: "Gruppe", value: "BDAJ" },
     ]);
   });
@@ -92,11 +92,11 @@ describe("buildIdentityRows für eine Partnerorganisation", () => {
 
 describe("statusText", () => {
   it("nennt einen aufgenommenen Förderer-Account beim Namen", () => {
-    expect(statusText("active", "netzwerk", false)).toBe("Förderer:in");
+    expect(statusText("active", "netzwerk", false)).toBe("Förderer*in");
   });
 
-  it("nennt einen aufgenommenen BDAJ-Account Partnerorganisation (ADR 0047)", () => {
-    expect(statusText("active", "affiliate", false)).toBe("Partnerorganisation");
+  it("nennt einen aufgenommenen BDAJ-Account BDAJ-Mitglied (ADR 0047, Spec Glossar N9)", () => {
+    expect(statusText("active", "affiliate", false)).toBe("BDAJ-Mitglied");
     expect(statusText("pending", "affiliate", false)).toBe("Bewerbung eingereicht");
   });
 

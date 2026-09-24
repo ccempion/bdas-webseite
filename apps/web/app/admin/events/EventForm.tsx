@@ -33,7 +33,7 @@ export function EventForm({
    *  rather than the placeholder — and only for those allowed to use it. */
   const groupOptions = useMemo(
     () => [
-      ...(allowFederation ? [{ value: "", label: "Föderationsweit" }] : []),
+      ...(allowFederation ? [{ value: "", label: "Bundesweit" }] : []),
       ...groups.map((g) => ({ value: g.id, label: g.name })),
     ],
     [groups, allowFederation],
@@ -99,7 +99,7 @@ export function EventForm({
           id="groupId"
           name="groupId"
           label="Gruppe"
-          placeholder="Föderationsweit"
+          placeholder="Bundesweit"
           options={groupOptions}
           value={groupId}
           onChange={setGroupId}
