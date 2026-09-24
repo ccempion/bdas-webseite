@@ -35,10 +35,13 @@ Format, das Betroffene ohne Werkzeuge öffnen können.
    (`apps/web`), nicht in den Modulen.
 5. **Ausschlüsse.** Nicht exportiert werden: Kennungen anderer Personen (`granted_by`,
    `revoked_by`, `decided_by`, `checked_in_by`, `updatedBy` im Profil), die Session-ID
-   (Bearer-Kennung), Token (`guest_cancel_token`), Storage-Schlüssel (Dateischlüssel,
-   `coverImageKey` der Veranstaltung), Gastanmeldungen (an eine E-Mail-Adresse gebunden, nicht
+   (Bearer-Kennung), Token (`guest_cancel_token`), die Storage-Schlüssel der `files`-Zeilen und der
+   `coverImageKey` der Veranstaltung, Gastanmeldungen (an eine E-Mail-Adresse gebunden, nicht
    an das Konto) und Dateiinhalte (nur Metadaten). Jede Kategorie wird über ihre Spaltenliste
-   projiziert; diese Liste ist die einzige Allowlist für JSON und CSV.
+   projiziert; diese Liste ist die einzige Allowlist für JSON und CSV. Bewusst enthalten: der `photoStorageKey` des eigenen Profilfotos
+   (nur ein Verweis auf das eigene Foto, das Bild selbst wird nicht exportiert) und `empfehlerName`
+   (Freitext, den die Person selbst bei der Anmeldung angegeben hat, "gefunden durch"; nicht aus
+   dem Konto einer anderen Person abgeleitet).
 6. **CSV-Zellen.** ISO-Datumswerte, UTF-8-BOM, CRLF, Quoting nach RFC 4180, Formel-Schutz: Beginnt
    ein Wert mit `= + - @` TAB oder CR, bekommt er ein vorangestelltes `'`. Ein Wert wie `-1`
    wird damit zu `'-1`; akzeptiert, wie beim bestehenden Roster-Export.

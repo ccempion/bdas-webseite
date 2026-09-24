@@ -100,7 +100,8 @@ Anything not re-exported from `src/index.ts` is private (rule 8).
 `exportParticipationForMember(db, memberId)` takes a `members.id` and trusts its caller: the id must
 come from the session, never from request input. It returns the member's registrations (including
 cancelled and waitlisted) and their attendance. It omits `checked_in_by` and all `guest_*` columns,
-including `guest_cancel_token`. `exportForUser` is the sibling for organised events.
+including `guest_cancel_token`. `exportForUser(db, userId)` is the sibling for organised events and takes the auth user id, not the
+`members.id`.
 
 ### `renderEventContentHtml(doc: TiptapDoc | null | undefined): string`
 
