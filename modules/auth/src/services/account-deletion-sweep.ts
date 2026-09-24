@@ -4,7 +4,8 @@
  *
  * Runs on overlapping cron ticks, so every request is claimed with a lease
  * and every finished step is recorded in `account_deletion_steps`; a retried
- * run resumes after the last recorded step instead of repeating it.
+ * run skips recorded steps. A step whose marker was never written (process
+ * died after `run`, or the insert failed) runs again, hence `DeletionStep`.
  *
  * The module steps and the mail are injected: files, blog, events and
  * notifications depend on auth, so importing them here would be a cycle
@@ -25,6 +26,11 @@ import { deleteAccount } from "./delete-account";
 
 export type Db = PostgresJsDatabase<Record<string, never>>;
 
+/**
+ * `run` MUST be idempotent: its marker is written only after it resolves, so
+ * a run that dies (or whose marker insert fails) in between is repeated on
+ * the next tick against a partially purged account.
+ */
 export type DeletionStep = {
   readonly name: string;
   readonly run: (db: Db, userId: string) => Promise<void>;
@@ -84,7 +90,7 @@ export async function runAccountDeletionSweep(db: Db, deps: SweepDeps): Promise<
     result.processed++;
     const progress = { step: "guard" };
     try {
-      await processRequest(db, req, deps, now, progress);
+      await processRequest(db, req, deps, now, lease, progress);
       result.completed++;
     } catch (err) {
       await release(db, id, lease, redact(`${progress.step}: ${messageOf(err)}`, req));
@@ -94,12 +100,22 @@ export async function runAccountDeletionSweep(db: Db, deps: SweepDeps): Promise<
   return result;
 }
 
+/**
+ * A `pending` row is only claimable while its user is still locked for
+ * deletion: claiming flips it to `in_progress`, which kills its reactivation
+ * link, and a stale `in_progress` row of a reactivated user would purge them
+ * the moment they request deletion again — without the new grace period.
+ */
 function claimable(now: Date) {
   return and(
     or(
       and(
         eq(accountDeletionRequests.status, "pending"),
         lte(accountDeletionRequests.scheduledPurgeAt, now),
+        or(
+          isNull(accountDeletionRequests.userId),
+          sql`exists (select 1 from ${authUsers} where ${authUsers.id} = ${accountDeletionRequests.userId} and ${authUsers.status} = 'pending_deletion')`,
+        ),
       ),
       eq(accountDeletionRequests.status, "in_progress"),
     ),
@@ -147,6 +163,7 @@ async function processRequest(
   req: AccountDeletionRequest,
   deps: SweepDeps,
   now: Date,
+  lease: Date,
   progress: { step: string },
 ): Promise<void> {
   const doneRows = await db
@@ -204,7 +221,7 @@ async function processRequest(
       .insert(accountDeletionSteps)
       .values({ id: createId("ads"), requestId: req.id, moduleName: "email_c" })
       .onConflictDoNothing();
-    await tx
+    const completed = await tx
       .update(accountDeletionRequests)
       .set({
         status: "completed",
@@ -218,8 +235,13 @@ async function processRequest(
         and(
           eq(accountDeletionRequests.id, req.id),
           eq(accountDeletionRequests.status, "in_progress"),
+          eq(accountDeletionRequests.claimedUntil, lease),
         ),
-      );
+      )
+      .returning({ id: accountDeletionRequests.id });
+    // Rolls the email_c marker back with it: a request this run no longer
+    // owns must not be recorded or counted as completed by it.
+    if (completed.length === 0) throw new Error("request is no longer held by this run");
   });
 }
 

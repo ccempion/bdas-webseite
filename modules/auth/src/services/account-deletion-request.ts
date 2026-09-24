@@ -9,7 +9,7 @@
  * post-purge confirmation email needs a name snapshot that survives the
  * eventual hard delete of auth_users.
  */
-import { and, eq, isNull } from "drizzle-orm";
+import { and, eq, inArray, isNull } from "drizzle-orm";
 import type { PostgresJsDatabase } from "drizzle-orm/postgres-js";
 
 import { ConflictError, NotFoundError } from "@bdas/errors";
@@ -71,16 +71,22 @@ export async function requestAccountDeletion(
     .limit(1);
   if (!user) throw new NotFoundError("Konto nicht gefunden.");
 
+  // `in_progress` counts too: a second request next to a running purge would
+  // hand the sweep a pending_deletion user to finish immediately, bypassing
+  // the new request's grace period and reactivation link.
   const [existing] = await db
-    .select({ id: accountDeletionRequests.id })
+    .select({ status: accountDeletionRequests.status })
     .from(accountDeletionRequests)
     .where(
       and(
         eq(accountDeletionRequests.userId, input.userId),
-        eq(accountDeletionRequests.status, "pending"),
+        inArray(accountDeletionRequests.status, ["pending", "in_progress"]),
       ),
     )
     .limit(1);
+  if (existing?.status === "in_progress") {
+    throw new ConflictError("Für dieses Konto läuft bereits eine Löschung.");
+  }
   if (existing) {
     throw new ConflictError("Für dieses Konto ist bereits eine Löschung angefragt.");
   }

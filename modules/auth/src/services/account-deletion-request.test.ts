@@ -164,6 +164,30 @@ describeIfDb("requestAccountDeletion / cancelAccountDeletion", () => {
       ).rejects.toThrow(/bereits eine Löschung/);
     });
 
+    it("throws while an earlier deletion of this user is still being carried out", async () => {
+      const reg = await signUpAndLogin("purging@example.de", "4.4.4.5");
+      const first = await requestAccountDeletion(t.db, {
+        userId: reg.userId,
+        displayName: "Erste Anfrage",
+      });
+      await t.db
+        .update(accountDeletionRequests)
+        .set({ status: "in_progress" })
+        .where(eq(accountDeletionRequests.id, first.requestId));
+      await t.db.update(authUsers).set({ status: "active" }).where(eq(authUsers.id, reg.userId));
+
+      await expect(
+        requestAccountDeletion(t.db, { userId: reg.userId, displayName: "Zweite Anfrage" }),
+      ).rejects.toThrow(/läuft bereits eine Löschung/);
+      const rows = await t.db
+        .select({ id: accountDeletionRequests.id })
+        .from(accountDeletionRequests)
+        .where(eq(accountDeletionRequests.userId, reg.userId));
+      expect(rows).toEqual([{ id: first.requestId }]);
+      const [user] = await t.db.select().from(authUsers).where(eq(authUsers.id, reg.userId));
+      expect(user?.status).toBe("active");
+    });
+
     it("throws NotFoundError for an unknown user", async () => {
       await expect(
         requestAccountDeletion(t.db, { userId: "usr_does_not_exist", displayName: "x" }),

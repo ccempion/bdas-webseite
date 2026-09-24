@@ -11,7 +11,7 @@ import { eq } from "drizzle-orm";
 import { afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 
 import { createTestDb, type TestDb } from "@bdas/db/test";
-import { NotFoundError } from "@bdas/errors";
+import { ConflictError, NotFoundError } from "@bdas/errors";
 import { getEventBus, resetEventBus } from "@bdas/events";
 import { createId } from "@bdas/id";
 
@@ -200,6 +200,16 @@ describeIfDb("runAccountDeletionSweep", () => {
     return row?.status;
   }
 
+  async function requestViaService() {
+    const user = await seedUser("active");
+    const requested = await requestAccountDeletion(t.db, {
+      userId: user.id,
+      displayName: "Clara Cancel",
+    });
+    const due = () => new Date(requested.scheduledPurgeAt.getTime() + 60_000);
+    return { userId: user.id, ...requested, due };
+  }
+
   it("runs steps in the given order, then auth, then mail, and completes", async () => {
     const { userId, email, requestId } = await seedPendingRequest({
       dueAt: new Date(NOW.getTime() - DAY_MS),
@@ -335,11 +345,6 @@ describeIfDb("runAccountDeletionSweep", () => {
       dueAt: new Date(NOW.getTime() - DAY_MS),
       status: "in_progress",
     });
-    const activePending = await seedUser("active");
-    const pendingId = await seedRequest({
-      userId: activePending.id,
-      dueAt: new Date(NOW.getTime() - DAY_MS),
-    });
     const calls: Calls = [];
     const { mail, sent } = fakeMail();
 
@@ -349,27 +354,143 @@ describeIfDb("runAccountDeletionSweep", () => {
       now: () => NOW,
     });
 
-    expect(result.processed).toBe(2);
-    expect(result.completed).toBe(0);
-    expect([...result.failed].sort((a, b) => a.requestId.localeCompare(b.requestId))).toEqual(
-      [
-        { requestId: inProgressId, step: "guard" },
-        { requestId: pendingId, step: "guard" },
-      ].sort((a, b) => a.requestId.localeCompare(b.requestId)),
-    );
+    expect(result).toEqual({
+      processed: 1,
+      completed: 0,
+      failed: [{ requestId: inProgressId, step: "guard" }],
+    });
     expect(calls).toEqual([]);
     expect(sent).toEqual([]);
     expect(deletedEvents).toEqual([]);
     expect(await userStatus(activeInProgress.id)).toBe("active");
-    expect(await userStatus(activePending.id)).toBe("active");
     expect(await stepNames(inProgressId)).toEqual([]);
-    expect(await stepNames(pendingId)).toEqual([]);
-    for (const id of [inProgressId, pendingId]) {
-      const row = await request(id);
-      expect(row.status).not.toBe("completed");
-      expect(row.lastError!.startsWith("guard:")).toBe(true);
-      expect(row.emailSnapshot).toBe("snap@example.de");
-    }
+    const row = await request(inProgressId);
+    expect(row.status).toBe("in_progress");
+    expect(row.lastError!.startsWith("guard:")).toBe(true);
+    expect(row.emailSnapshot).toBe("snap@example.de");
+  });
+
+  it("never claims a due pending request whose user is active; its reactivation link keeps working", async () => {
+    const r = await requestViaService();
+    await t.db.update(authUsers).set({ status: "active" }).where(eq(authUsers.id, r.userId));
+    const calls: Calls = [];
+    const { mail, sent } = fakeMail();
+
+    const result = await runAccountDeletionSweep(t.db, {
+      steps: fakeSteps(calls),
+      completionMail: mail,
+      now: r.due,
+    });
+
+    expect(result).toEqual({ processed: 0, completed: 0, failed: [] });
+    expect(calls).toEqual([]);
+    expect(sent).toEqual([]);
+    expect(deletedEvents).toEqual([]);
+    expect(await userStatus(r.userId)).toBe("active");
+    const row = await request(r.requestId);
+    expect(row.status).toBe("pending");
+    expect(row.claimedUntil).toBeNull();
+    expect(row.lastError).toBeNull();
+    await expect(cancelAccountDeletion(t.db, r.reactivationToken)).resolves.toEqual({
+      userId: r.userId,
+    });
+    expect((await request(r.requestId)).status).toBe("cancelled");
+  });
+
+  it("a stale request of a reactivated user can never bypass a new request's grace period", async () => {
+    const r1 = await requestViaService();
+    await t.db.update(authUsers).set({ status: "active" }).where(eq(authUsers.id, r1.userId));
+    const calls: Calls = [];
+    const deps = { steps: fakeSteps(calls), completionMail: fakeMail().mail, now: r1.due };
+
+    expect(await runAccountDeletionSweep(t.db, deps)).toEqual({
+      processed: 0,
+      completed: 0,
+      failed: [],
+    });
+    expect((await request(r1.requestId)).status).toBe("pending");
+
+    // The stale pending row still blocks a second request; the user has to
+    // use its link, which is the only way back to a clean state.
+    await expect(
+      requestAccountDeletion(t.db, { userId: r1.userId, displayName: "Clara Cancel" }),
+    ).rejects.toBeInstanceOf(ConflictError);
+    await cancelAccountDeletion(t.db, r1.reactivationToken);
+    const r2 = await requestAccountDeletion(t.db, {
+      userId: r1.userId,
+      displayName: "Clara Cancel",
+    });
+
+    const beforeR2Due = await runAccountDeletionSweep(t.db, {
+      ...deps,
+      now: () => new Date(r2.scheduledPurgeAt.getTime() - 60_000),
+    });
+
+    expect(beforeR2Due).toEqual({ processed: 0, completed: 0, failed: [] });
+    expect(calls).toEqual([]);
+    expect(deletedEvents).toEqual([]);
+    expect(await userStatus(r1.userId)).toBe("pending_deletion");
+    expect((await request(r1.requestId)).status).toBe("cancelled");
+    expect((await request(r2.requestId)).status).toBe("pending");
+  });
+
+  it("refuses a new request while an older one of the same user is in_progress", async () => {
+    const r1 = await requestViaService();
+    // Operator flips the user back to active after the sweep had claimed R1.
+    await t.db
+      .update(accountDeletionRequests)
+      .set({ status: "in_progress" })
+      .where(eq(accountDeletionRequests.id, r1.requestId));
+    await t.db.update(authUsers).set({ status: "active" }).where(eq(authUsers.id, r1.userId));
+
+    await expect(
+      requestAccountDeletion(t.db, { userId: r1.userId, displayName: "Clara Cancel" }),
+    ).rejects.toBeInstanceOf(ConflictError);
+
+    expect(await userStatus(r1.userId)).toBe("active");
+    const rows = await t.db
+      .select({ id: accountDeletionRequests.id })
+      .from(accountDeletionRequests)
+      .where(eq(accountDeletionRequests.userId, r1.userId));
+    expect(rows).toEqual([{ id: r1.requestId }]);
+    const result = await runAccountDeletionSweep(t.db, {
+      steps: fakeSteps([]),
+      completionMail: fakeMail().mail,
+      now: r1.due,
+    });
+    expect(result.failed).toEqual([{ requestId: r1.requestId, step: "guard" }]);
+    expect(await userExists(r1.userId)).toBe(true);
+  });
+
+  it("does not complete or record mail C when the request was taken over during the mail", async () => {
+    const { userId, requestId } = await seedPendingRequest({
+      dueAt: new Date(NOW.getTime() - DAY_MS),
+    });
+    const foreignLease = new Date(NOW.getTime() + 10 * 60_000);
+    const mail: CompletionMail = {
+      async send() {
+        await t.db
+          .update(accountDeletionRequests)
+          .set({ claimedUntil: foreignLease })
+          .where(eq(accountDeletionRequests.id, requestId));
+        return "sent";
+      },
+    };
+
+    const result = await runAccountDeletionSweep(t.db, {
+      steps: fakeSteps([]),
+      completionMail: mail,
+      now: () => NOW,
+    });
+
+    expect(result.completed).toBe(0);
+    expect(result.failed).toEqual([{ requestId, step: "email_c" }]);
+    expect(await userExists(userId)).toBe(false);
+    expect(await stepNames(requestId)).toEqual([...MODULE_STEPS, "auth"].sort());
+    const row = await request(requestId);
+    expect(row.status).toBe("in_progress");
+    expect(row.claimedUntil).toEqual(foreignLease);
+    expect(row.emailSnapshot).not.toBeNull();
   });
 
   it("only one of two concurrent sweeps executes a request", async () => {
@@ -582,16 +703,6 @@ describeIfDb("runAccountDeletionSweep", () => {
   });
 
   describe("cancel and claim are mutually exclusive", () => {
-    async function requestViaService() {
-      const user = await seedUser("active");
-      const requested = await requestAccountDeletion(t.db, {
-        userId: user.id,
-        displayName: "Clara Cancel",
-      });
-      const due = () => new Date(requested.scheduledPurgeAt.getTime() + 60_000);
-      return { userId: user.id, ...requested, due };
-    }
-
     it("cancel first: the sweep does nothing to the cancelled request", async () => {
       const r = await requestViaService();
       await cancelAccountDeletion(t.db, r.reactivationToken);
