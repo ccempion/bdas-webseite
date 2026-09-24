@@ -12,6 +12,9 @@ import {
   type TextContext,
 } from "@bdas/onboarding/client";
 
+import { BegriffText } from "../../_glossar/BegriffText";
+import { ONBOARDING_WOERTER } from "../../_glossar/woerter";
+
 const HIT =
   "flex w-full flex-col rounded-bdas border border-bdas-soft bg-bdas-surface px-4 py-3 text-left " +
   "transition-colors duration-bdas-quick ease-bdas hover:bg-bdas-surface-hover " +
@@ -49,7 +52,11 @@ export function GruppenwahlScreen({
       <h2 tabIndex={-1} className="text-xl font-semibold text-bdas-ink outline-none">
         {fillText(question.title, ctx)}
       </h2>
-      <Field label="Gruppe suchen" htmlFor="onb-gruppe" hint={fillText(question.help, ctx)}>
+      <Field
+        label="Gruppe suchen"
+        htmlFor="onb-gruppe"
+        hint={<BegriffText text={fillText(question.help, ctx)} begriffe={ONBOARDING_WOERTER} />}
+      >
         <Input
           id="onb-gruppe"
           value={query}

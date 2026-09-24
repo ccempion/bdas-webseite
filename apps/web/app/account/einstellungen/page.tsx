@@ -7,6 +7,7 @@ import { Button, Card } from "@bdas/design-system";
 import { isFlagOn } from "@bdas/feature-flags";
 import { getCurrentMember } from "@bdas/members";
 
+import { Begriff } from "../../_glossar/Begriff";
 import { accountDeletionEnabled } from "../../_account-deletion/flag";
 import { buildAnmeldenUrl } from "../../_auth/return-to";
 import { requireAuthFlag } from "../../_auth/flag";

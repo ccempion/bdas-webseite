@@ -10,6 +10,7 @@ import { getCurrentMember, getOpenGroupChange } from "@bdas/members";
 import { shouldPrompt } from "@bdas/newsletter";
 import { getProfile } from "@bdas/profile";
 
+import { Begriff } from "../_glossar/Begriff";
 import { buildAnmeldenUrl } from "../_auth/return-to";
 import { requireAuthFlag } from "../_auth/flag";
 import { requireMembersFlag } from "../_members/flag";
@@ -158,7 +159,14 @@ export default async function AccountPage({
       ) : null}
 
       {openChange && targetGroupName ? (
-        <Alert variant="info" title="Gruppenwechsel beantragt">
+        <Alert
+          variant="info"
+          title={
+            <>
+              <Begriff k="wechselantrag">Gruppenwechsel</Begriff> beantragt
+            </>
+          }
+        >
           <span className="flex flex-col gap-2">
             <span>
               Du bist Mitglied bei <strong>{currentGroupName ?? "keiner Gruppe"}</strong> und hast

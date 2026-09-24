@@ -5,6 +5,7 @@ import { useState, useTransition } from "react";
 
 import { Alert, Button, Card, Dialog } from "@bdas/design-system";
 
+import { Begriff } from "../_glossar/Begriff";
 import { requestAccountDeletionAction } from "./delete-account-actions";
 
 export function DeleteAccountCard() {
@@ -15,7 +16,9 @@ export function DeleteAccountCard() {
 
   return (
     <Card flat className="p-6">
-      <h2 className="mb-2 text-lg font-semibold text-bdas-ink">Konto löschen</h2>
+      <h2 className="mb-2 text-lg font-semibold text-bdas-ink">
+        <Begriff k="konto-loeschen">Konto löschen</Begriff>
+      </h2>
       <p className="mb-4 text-sm text-bdas-ink-body">
         Dein Konto wird gesperrt und nach 30 Tagen unwiderruflich gelöscht, einschließlich deiner
         Blogbeiträge und Kommentare. Innerhalb dieser Frist kannst du die Löschung über einen Link

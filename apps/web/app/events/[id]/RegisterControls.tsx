@@ -4,6 +4,7 @@ import { useFormState, useFormStatus } from "react-dom";
 
 import { Alert, Button } from "@bdas/design-system";
 
+import { Begriff } from "../../_glossar/Begriff";
 import { cancelAction, registerAction, type RegState } from "./actions";
 
 const initial: RegState = {};
@@ -28,7 +29,14 @@ export function RegisterControls({
       {registered ? (
         <>
           {waitlistPosition !== null ? (
-            <Alert variant="info" title="Auf der Warteliste">
+            <Alert
+              variant="info"
+              title={
+                <>
+                  Auf der <Begriff k="warteliste">Warteliste</Begriff>
+                </>
+              }
+            >
               Du stehst auf Position {waitlistPosition} der Warteliste.
             </Alert>
           ) : (

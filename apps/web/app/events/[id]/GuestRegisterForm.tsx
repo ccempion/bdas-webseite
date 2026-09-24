@@ -4,6 +4,7 @@ import { useFormState, useFormStatus } from "react-dom";
 
 import { Alert, Button, Field, Input } from "@bdas/design-system";
 
+import { Begriff } from "../../_glossar/Begriff";
 import { registerGuestAction, type GuestRegState } from "./actions";
 
 const initial: GuestRegState = {};
@@ -24,9 +25,14 @@ export function GuestRegisterForm({
   if (state.ok) {
     return (
       <Alert variant="success" title="Anmeldung bestätigt">
-        {state.waitlisted
-          ? "Die Veranstaltung ist ausgebucht. Du stehst auf der Warteliste und rückst automatisch nach."
-          : "Deine Anmeldung ist eingegangen."}{" "}
+        {state.waitlisted ? (
+          <>
+            Die Veranstaltung ist ausgebucht. Du stehst auf der{" "}
+            <Begriff k="warteliste">Warteliste</Begriff> und rückst automatisch nach.
+          </>
+        ) : (
+          "Deine Anmeldung ist eingegangen."
+        )}{" "}
         Wir haben dir eine Bestätigung per E-Mail geschickt. Über den Link darin kannst du dich
         jederzeit wieder abmelden. Schau auch in deinen Spam-Ordner.
       </Alert>
@@ -36,6 +42,9 @@ export function GuestRegisterForm({
   return (
     <form action={action} className="flex flex-col gap-3">
       {state.error ? <Alert variant="error">{state.error}</Alert> : null}
+      <p className="text-sm text-bdas-ink-body">
+        Ohne Konto? Melde dich als <Begriff k="gast">Gast</Begriff> mit Name und E-Mail an.
+      </p>
       <input type="hidden" name="eventId" value={eventId} />
 
       <Field label="Name" htmlFor="guest-name">

@@ -6,6 +6,7 @@ import { useFormState, useFormStatus } from "react-dom";
 import { Alert, Button, Field, Form, Input, PasswordInput } from "@bdas/design-system";
 import type { Answers, EntryContext } from "@bdas/onboarding/client";
 
+import { Begriff } from "../../_glossar/Begriff";
 import { ConsentFields } from "../../registrieren/ConsentFields";
 import { createAccountAction, type CreateAccountState } from "../actions";
 
@@ -48,7 +49,11 @@ export function KontoScreen({
       <Field
         label="E-Mail"
         htmlFor="email"
-        hint="Dorthin schicken wir den Bestätigungslink."
+        hint={
+          <>
+            Dorthin schicken wir den <Begriff k="bestaetigungslink">Bestätigungslink</Begriff>.
+          </>
+        }
         {...err("email")}
       >
         <Input

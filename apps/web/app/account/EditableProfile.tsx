@@ -5,6 +5,7 @@ import { useFormState } from "react-dom";
 
 import { Alert, Button } from "@bdas/design-system";
 
+import { Begriff } from "../_glossar/Begriff";
 import { saveProfileAction, type ProfileFormState } from "./actions";
 import { EditProfileForm, type EditProfileFormProps } from "./EditProfileForm";
 import { saveProfileFieldsAction, type EditProfileState } from "./profile-actions";
@@ -102,7 +103,9 @@ export function EditableProfile({
 
       {extendedForm ? (
         <div className="border-t border-bdas-soft pt-6">
-          <h3 className="mb-4 text-lg font-semibold text-bdas-ink">Erweitertes Profil</h3>
+          <h3 className="mb-4 text-lg font-semibold text-bdas-ink">
+            <Begriff k="erweitertes-profil">Erweitertes Profil</Begriff>
+          </h3>
           <EditProfileForm {...extendedForm} state={fieldsState} action={fieldsAction} />
         </div>
       ) : null}

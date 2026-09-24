@@ -3,6 +3,7 @@ import path from "node:path";
 
 import { describe, expect, it } from "vitest";
 
+import { KONTO_WOERTER, ONBOARDING_WOERTER, ORDNER_BEGRIFFE } from "../../app/_glossar/woerter";
 import { GLOSSAR, GLOSSAR_BEREICHE, glossarEintrag } from "./eintraege";
 
 const APP_DIR = path.resolve(__dirname, "../../app");
@@ -57,5 +58,14 @@ describe("GLOSSAR", () => {
     );
     const unknown = used.filter((u) => !glossarEintrag(u.key));
     expect(unknown).toEqual([]);
+  });
+
+  it("knows every key in the <BegriffText> word maps", () => {
+    const keys = [
+      ...Object.values(ONBOARDING_WOERTER),
+      ...Object.values(KONTO_WOERTER),
+      ...Object.values(ORDNER_BEGRIFFE),
+    ];
+    expect(keys.filter((k) => !glossarEintrag(k))).toEqual([]);
   });
 });
