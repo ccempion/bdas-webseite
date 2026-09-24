@@ -16,6 +16,7 @@ import { readSessionCookie } from "../../../lib/auth-cookie";
 import { ChangePasswordCard } from "../ChangePasswordCard";
 import { DeleteAccountCard } from "../DeleteAccountCard";
 import { EmailChangeCard } from "../EmailChangeCard";
+import { SendDataExportButton } from "../SendDataExportButton";
 
 export const metadata = { title: "Kontoeinstellungen" };
 
@@ -68,11 +69,21 @@ export default async function AccountSettingsPage() {
       <Card flat className="p-6">
         <h2 className="mb-2 text-lg font-semibold text-bdas-ink">Deine Daten</h2>
         <p className="mb-4 text-sm text-bdas-ink-body">
-          Export aller zu dir gespeicherten Daten als JSON: Art. 20 DSGVO.
+          Export aller zu dir gespeicherten Daten (Art. 15/20 DSGVO).
         </p>
-        <Link href="/account/datenexport">
-          <Button variant="secondary">Meine Daten exportieren</Button>
-        </Link>
+        <div className="flex flex-wrap gap-3">
+          <Link href="/account/datenexport">
+            <Button variant="secondary">Meine Daten exportieren</Button>
+          </Link>
+          {accountDeletionEnabled() ? (
+            <>
+              <Link href="/account/datenexport?format=zip">
+                <Button variant="secondary">Als CSV-ZIP</Button>
+              </Link>
+              <SendDataExportButton />
+            </>
+          ) : null}
+        </div>
       </Card>
 
       {accountDeletionEnabled() ? <DeleteAccountCard /> : null}

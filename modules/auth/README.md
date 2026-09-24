@@ -71,6 +71,10 @@ import {
 
 Anything not re-exported from `src/index.ts` is private (CLAUDE.md §1 rule 8).
 
+`exportSessionsForUser(db, userId)` (ADR 0054) returns the user's own sessions for the data export,
+without the session id (a bearer identifier). It trusts its `userId`; the caller must take it from
+the session.
+
 ## Events
 
 The module publishes typed events through `core/events`:

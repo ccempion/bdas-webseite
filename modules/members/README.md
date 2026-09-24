@@ -62,6 +62,12 @@ import {
 } from "@bdas/members";
 ```
 
+### Data export (ADR 0054)
+
+`exportForUser(db, userId)` returns the member row, all role grants (including revoked) and the
+user's group-change requests. It omits `granted_by`, `revoked_by` and `decided_by`, which are other
+people's user ids. It trusts its `userId`; the caller must take it from the session.
+
 ## Scoped role grants (ADR 0007)
 
 A `Grant` is `{ role, groupId }`. `groupId === null` ⇔ unscoped
