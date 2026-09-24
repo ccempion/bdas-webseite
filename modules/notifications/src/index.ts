@@ -13,7 +13,12 @@ export {
   type BroadcastResult,
   type BroadcastLogEntry,
 } from "./services/broadcast";
-export { exportForUser, deleteLogForMember, type NotificationLogExportRow } from "./services/gdpr";
+export {
+  exportForUser,
+  deleteLogForMember,
+  deleteLogEntry,
+  type NotificationLogExportRow,
+} from "./services/gdpr";
 export { registerNotificationSubscribers } from "./subscribers";
 
 export {

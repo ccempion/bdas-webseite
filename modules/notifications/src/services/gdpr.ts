@@ -68,3 +68,14 @@ export async function deleteLogForMember(db: Db, userId: string): Promise<void> 
   if (!memberId) return;
   await db.delete(notificationLog).where(eq(notificationLog.memberId, memberId));
 }
+
+/**
+ * Removes one log row by primary key. Exists because a guest send
+ * (`sendTransactionalToGuest`) logs `member_id = NULL` with the recipient's
+ * address, so `deleteLogForMember` cannot reach it and it would otherwise keep
+ * the erased person's e-mail. Idempotent: an unknown or already-deleted id is
+ * a no-op.
+ */
+export async function deleteLogEntry(db: Db, logId: string): Promise<void> {
+  await db.delete(notificationLog).where(eq(notificationLog.id, logId));
+}
