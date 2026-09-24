@@ -104,7 +104,10 @@ genuine Storage error (auth, timeout, 5xx) keeps that file's row and is
 collected into a single `Error` thrown after the rest of the run completes,
 so the orchestrator sees a rejected promise and a retry only re-attempts
 what actually failed. Idempotent, same contract as
-`notifications.deleteLogForMember`.
+`notifications.deleteLogForMember`. Each folder is removed under a `FOR UPDATE`
+lock on its row before the emptiness check, so a file another member is
+uploading at that moment is never cascaded away. `deleteFolder` still has the
+unlocked form of that race (separate follow-up, ADR 0055).
 
 ## Tests
 

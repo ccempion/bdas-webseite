@@ -104,12 +104,15 @@ Transactional mail is non-optional (§16), so there is no preference check.
 `exportForUser(db, userId)` and `deleteLogForMember(db, userId)` are this
 module's contribution to the account-deletion feature
 (`docs/superpowers/specs/2026-09-22-account-deletion-design.md`). Both take
-a `userId`, not a `memberId` — the account-deletion orchestrator (a later
-PR) only ever holds the `auth_users.id`. `MemberIdResolver`, wired in
+a `userId`, not a `memberId` — the account-deletion sweep (ADR 0055)
+only ever holds the `auth_users.id`. `MemberIdResolver`, wired in
 `apps/web` from `members.getMemberByUserId`, bridges that to this module's
 own `member_id` column, the same pattern `RecipientResolver` already uses
 for sending. `deleteLogForMember` is idempotent and safe to call even after
 the member row is already gone (resolves to nothing, deletes nothing).
+`deleteLogEntry(db, logId)` deletes one log row by id: `sendTransactionalToGuest`
+logs the recipient's address with a null member, which `deleteLogForMember`
+cannot reach, so the sweep deletes the e-mail C row right after sending.
 
 `account_deletion_requested`, `data_export_ready`, and
 `account_deletion_completed` are the three templates for that feature's

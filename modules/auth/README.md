@@ -14,11 +14,11 @@ tables and other modules talk to it only through this README's listed surface.
 | `auth_password_resets`      | Single-use reset tokens (1 h)                                                             |
 | `auth_email_changes`        | Single-use login-email-change tokens (1 h)                                                |
 | `auth_rate_limits`          | Fixed-window counters per key                                                             |
-| `account_deletion_requests` | Self-service deletion window: snapshot, 30-day scheduled purge, reactivation token        |
+| `account_deletion_requests` | Self-service deletion window: snapshot, 30-day scheduled purge, reactivation token, lease |
 | `account_deletion_steps`    | Per-module completion markers for a deletion request's cross-module purge fan-out         |
 
 Migrations: `migrations/0001_init.sql`, `0002_consent.sql`, `0003_email_change.sql`,
-`0004_account_deletion.sql`, `0005_verification_token_hash.sql`. Discovered by `infra/migrations` per the manifest order
+`0004_account_deletion.sql`, `0005_verification_token_hash.sql`, `0006_deletion_orchestrator.sql`. Discovered by `infra/migrations` per the manifest order
 (auth runs first; everything FKs into `auth_users`).
 
 ## Public surface
@@ -48,6 +48,12 @@ import {
   getDeletionRequestForUser,
   buildReactivationUrl,
   ACCOUNT_DELETION_GRACE_DAYS,
+  // Hard purge after the grace period (ADR 0055)
+  runAccountDeletionSweep,
+  type DeletionStep,
+  type CompletionMail,
+  type SweepDeps,
+  type SweepResult,
   RequestAccountDeletionInput,
   type RequestAccountDeletionResult,
   type AccountDeletionStatus,
@@ -74,6 +80,17 @@ Anything not re-exported from `src/index.ts` is private (CLAUDE.md §1 rule 8).
 `exportSessionsForUser(db, userId)` (ADR 0054) returns the user's own sessions for the data export,
 without the session id (a bearer identifier). It trusts its `userId`; the caller must take it from
 the session.
+
+## Account-deletion sweep (ADR 0055)
+
+`runAccountDeletionSweep(db, { steps, completionMail })` erases due accounts and resumes interrupted
+ones. It knows no other module: the composition root injects the module steps (`DeletionStep[]`, run in
+order, each idempotent) and the e-mail C sender, because files/blog/events/notifications depend on
+auth. The engine adds the reserved steps `auth` (`deleteAccount`) and `email_c`; using those names
+is rejected. A request is claimed atomically with a 15-minute lease, finished steps are recorded in
+`account_deletion_steps`, and the claim ends the cancellation window. It never deletes a user who is not
+`pending_deletion`. The snapshot is cleared only after e-mail C was sent, or 7 days after
+`scheduled_purge_at`. Operator instructions for stuck rows are in ADR 0055.
 
 ## Events
 
