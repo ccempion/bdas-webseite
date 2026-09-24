@@ -51,6 +51,13 @@ export {
   type RequestAccountDeletionResult,
   type AccountDeletionStatus,
 } from "./services/account-deletion-request";
+export {
+  runAccountDeletionSweep,
+  type DeletionStep,
+  type CompletionMail,
+  type SweepDeps,
+  type SweepResult,
+} from "./services/account-deletion-sweep";
 export { type AccountDeletionRequest } from "./schema";
 
 // Password policy (UI shows the hint; schema is the single source of truth).
