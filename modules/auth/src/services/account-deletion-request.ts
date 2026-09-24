@@ -44,7 +44,7 @@ export type RequestAccountDeletionResult = {
 /** Read-only deletion status; the plaintext reactivation token never leaves the server through this path. */
 export type AccountDeletionStatus = Omit<
   AccountDeletionRequest,
-  "reactivationTokenHash" | "reactivationExpiresAt"
+  "reactivationTokenHash" | "reactivationExpiresAt" | "claimedUntil" | "lastError"
 >;
 
 /**

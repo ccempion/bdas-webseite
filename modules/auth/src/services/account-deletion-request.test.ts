@@ -65,6 +65,7 @@ describeIfDb("requestAccountDeletion / cancelAccountDeletion", () => {
       "0003_email_change.sql",
       "0004_account_deletion.sql",
       "0005_verification_token_hash.sql",
+      "0006_deletion_orchestrator.sql",
     ]) {
       const sql = await fs.readFile(path.join(__dirname, "..", "..", "migrations", file), "utf8");
       await t.client.unsafe(sql);
@@ -292,6 +293,33 @@ describeIfDb("requestAccountDeletion / cancelAccountDeletion", () => {
       expect((rejected[0] as PromiseRejectedResult).reason.message).toMatch(
         /ungültig oder bereits verwendet/,
       );
+    });
+  });
+
+  describe("orchestrator columns", () => {
+    it("allows clearing the snapshots and round-trips the lease and error trail", async () => {
+      const reg = await signUpAndLogin("clara@example.de", "3.3.3.3");
+      await requestAccountDeletion(t.db, { userId: reg.userId, displayName: "Clara Test" });
+
+      const claimedUntil = new Date(Date.now() + 10 * 60 * 1000);
+      await t.db
+        .update(accountDeletionRequests)
+        .set({
+          emailSnapshot: null,
+          nameSnapshot: null,
+          claimedUntil,
+          lastError: "storage: timeout",
+        })
+        .where(eq(accountDeletionRequests.userId, reg.userId));
+
+      const [row] = await t.db
+        .select()
+        .from(accountDeletionRequests)
+        .where(eq(accountDeletionRequests.userId, reg.userId));
+      expect(row?.emailSnapshot).toBeNull();
+      expect(row?.nameSnapshot).toBeNull();
+      expect(row?.claimedUntil?.getTime()).toBe(claimedUntil.getTime());
+      expect(row?.lastError).toBe("storage: timeout");
     });
   });
 });
