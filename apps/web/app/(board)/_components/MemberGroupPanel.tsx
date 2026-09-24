@@ -4,6 +4,7 @@ import { useEffect, useState, useTransition } from "react";
 
 import type { GroupChangeRequest, Member, OpenGroupChange, RejectionCategory } from "@bdas/members";
 
+import { Begriff } from "../../_glossar/Begriff";
 import { decideGroupChangeAction, groupHistoryAction } from "./group-change-actions";
 import { buildGroupTimeline, type TimelineEntry } from "./group-history";
 import { RejectDialog } from "./RejectDialog";
@@ -64,7 +65,9 @@ export function MemberGroupPanel({
     <div className="mt-4 flex flex-col gap-3">
       {open ? (
         <div className="rounded-bdas-sm border border-bdas-soft bg-bdas-surface-hover p-3">
-          <p className="text-sm font-semibold text-bdas-red">Wechsel beantragt</p>
+          <p className="text-sm font-semibold text-bdas-red">
+            <Begriff k="wechselantrag">Wechsel</Begriff> beantragt
+          </p>
           <p className="mt-1 text-sm text-bdas-ink-body">
             {name(open.fromGroupId)} → {name(open.toGroupId)}
           </p>

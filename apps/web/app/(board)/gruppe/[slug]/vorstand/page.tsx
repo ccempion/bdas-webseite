@@ -2,6 +2,7 @@ import { getDb } from "@bdas/db";
 import { getGroupKind } from "@bdas/groups";
 import { ROLE_LABELS, listGrantAudit, listMembers, listRoleHolders } from "@bdas/members";
 
+import { RollenLegende } from "../../../_components/RollenLegende";
 import { requireLeadScope } from "../../../../_dashboard/session";
 import { AuditLog } from "../../../_components/AuditLog";
 import { GrantRoleModal } from "../../../_components/GrantRoleModal";
@@ -46,6 +47,7 @@ export default async function VorstandPage({
           revalidatePath={revalidate}
         />
       </div>
+      <RollenLegende />
       <nav className="flex gap-2 text-sm">
         <a
           href={revalidate}

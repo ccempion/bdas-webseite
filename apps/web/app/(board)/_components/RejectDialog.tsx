@@ -5,6 +5,8 @@ import { useState, useTransition } from "react";
 import { Button, Card } from "@bdas/design-system";
 import type { RejectionCategory, RejectionReason } from "@bdas/members";
 
+import { Begriff } from "../../_glossar/Begriff";
+
 /**
  * The reason a rejection needs (ADR 0031). Every rejection carries one, so this
  * fronts both surfaces that can reject: the applications queue and the transfer
@@ -84,7 +86,7 @@ export function RejectDialog({
       />
 
       <p className="mb-4 text-sm text-bdas-ink-muted">
-        Grund und Nachricht sind für die Bewerberin sichtbar.
+        <Begriff k="ablehnungsgrund">Grund</Begriff> und Nachricht sind für die Bewerberin sichtbar.
       </p>
 
       {error ? <p className="mb-3 text-sm text-bdas-red">{error}</p> : null}

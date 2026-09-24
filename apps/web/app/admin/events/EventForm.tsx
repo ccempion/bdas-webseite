@@ -5,6 +5,7 @@ import { useFormState, useFormStatus } from "react-dom";
 
 import { Alert, Button, Combobox, Field, Form, Input } from "@bdas/design-system";
 
+import { Begriff } from "../../_glossar/Begriff";
 import { createEventAction, type EventFormState } from "./actions";
 
 const SELECT_CLASS =
@@ -76,7 +77,11 @@ export function EventForm({
         <Input id="capacity" name="capacity" type="number" min={1} />
       </Field>
 
-      <Field label="Sichtbarkeit" htmlFor="visibility" {...err("visibility")}>
+      <Field
+        label={<Begriff k="sichtbarkeit">Sichtbarkeit</Begriff>}
+        htmlFor="visibility"
+        {...err("visibility")}
+      >
         <select
           id="visibility"
           name="visibility"

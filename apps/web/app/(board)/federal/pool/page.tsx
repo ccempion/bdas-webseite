@@ -9,6 +9,7 @@ import { listGrouplessMembers, listOpenGroupChanges } from "@bdas/members";
 import { getApplicationIntents, type ApplicationIntent } from "@bdas/onboarding";
 import { getProfile } from "@bdas/profile";
 
+import { Begriff } from "../../../_glossar/Begriff";
 import { requireFederalScope } from "../../../_dashboard/session";
 import { onboardingEnabled } from "../../../_onboarding/flag";
 import { acceptWithoutGroupAction, deleteApplicantAction } from "./actions";
@@ -71,7 +72,9 @@ export default async function PoolPage() {
     <main className="flex flex-col gap-8">
       <section className="flex flex-col gap-3">
         <div>
-          <h1 className="text-2xl font-semibold text-bdas-ink">Ohne Gruppe</h1>
+          <h1 className="text-2xl font-semibold text-bdas-ink">
+            <Begriff k="ohne-gruppe">Ohne Gruppe</Begriff>
+          </h1>
           <p className="text-bdas-ink-body">
             {rows.length} {rows.length === 1 ? "Person" : "Personen"} ohne Gruppenzugehörigkeit.
             Name, Universität und Wartezeit — mehr nicht.
@@ -87,10 +90,19 @@ export default async function PoolPage() {
 
       <section className="flex flex-col gap-3">
         <div>
-          <h2 className="text-xl font-semibold text-bdas-ink">Offene Bewerbungen (alle Gruppen)</h2>
+          <h2 className="text-xl font-semibold text-bdas-ink">
+            Offene <Begriff k="bewerbung">Bewerbungen</Begriff> (alle Gruppen)
+          </h2>
           <p className="text-bdas-ink-body">
             Jede unentschiedene Bewerbung im Verband. Der einzige Weg zur Warteschlange einer
             Gruppe, die nicht mehr aktiv ist.
+            {isFlagOn("glossar") ? (
+              <>
+                {" "}
+                Hat eine Gruppe keinen Vorstand, greift die{" "}
+                <Begriff k="notfall-zustaendigkeit">Notfall-Zuständigkeit</Begriff>.
+              </>
+            ) : null}
           </p>
         </div>
 
