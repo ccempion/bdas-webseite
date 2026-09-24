@@ -141,7 +141,12 @@ vermerken; der nächste Lauf schließt ab.
 - **`cancelled`-Zeilen behalten E-Mail/Name-Snapshot** für immer. Folge-PR: Snapshot beim Abbruch leeren.
 - **`deleteFolder`** (`modules/files/src/services/folder-writes.ts`) hat dasselbe Cascade-Race wie der
   Purge vor dem Fix. Folge-PR; der Helper `deleteFolderIfEmpty` ist dafür geschnitten.
-- **Go-Live-Voraussetzung:** Die echte Storage-Löschung (Blog-Medien, Profilfotos, Files) einmal im
+- **HARTE Go-Live-Voraussetzung (Newsletter):** Das Flag `account_deletion` darf nicht scharf
+  geschaltet werden, bevor der wiederholbare Newsletter-Schritt gebaut ist (eigener Folge-PR, Pflicht vor
+  dem Live-Gang, nicht optional). Er löscht vor `auth` per User-Id **und** E-Mail-Adresse, damit auch
+  anonyme Abos mit derselben Adresse erfasst werden, und wird wie jeder Schritt wiederholt. Bis dahin
+  kann eine gelöschte Person im Verteiler stehen bleiben, was E-Mail C („alle Daten gelöscht") widerspräche.
+- **Go-Live-Voraussetzung (Storage):** Die echte Storage-Löschung (Blog-Medien, Profilfotos, Files) einmal im
   Staging gegen echte Buckets ausführen (echte `remove()`-Semantik bei fehlenden oder verweigerten Pfaden).
   Unit-Tests können das nicht abdecken. Das Flag `account_deletion` bleibt bis PR9 (E2E) und diesem
   Trockenlauf aus.
