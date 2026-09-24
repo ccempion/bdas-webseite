@@ -2,6 +2,7 @@ import { getDb } from "@bdas/db";
 import { listGroups } from "@bdas/groups";
 import { ROLE_LABELS, listGrantAudit, listMembers, listRoleHolders } from "@bdas/members";
 
+import { RollenLegende } from "../../_components/RollenLegende";
 import { loadCurrentMember } from "../../../_dashboard/session";
 import { AuditLog } from "../../_components/AuditLog";
 import { GrantRoleModal, type RoleOption } from "../../_components/GrantRoleModal";
@@ -48,6 +49,7 @@ export default async function FederalRolesPage({
           revalidatePath="/federal/roles"
         />
       </div>
+      <RollenLegende />
       <nav className="flex gap-2 text-sm">
         <a
           href="/federal/roles"

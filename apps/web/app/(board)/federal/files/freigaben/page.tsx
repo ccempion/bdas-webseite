@@ -4,6 +4,7 @@ import { listAllFolderGrants, listFolderTree } from "@bdas/files";
 import { listGroups } from "@bdas/groups";
 import { getMember, listMembers } from "@bdas/members";
 
+import { Begriff } from "../../../../_glossar/Begriff";
 import { requireFederalScope } from "../../../../_dashboard/session";
 import { requireFilesFlag } from "../../../../_files/flag";
 import { folderPathOptions } from "../../../../_files/folder-path";
@@ -62,11 +63,14 @@ export default async function FreigabenPage() {
     <main className="flex flex-col gap-8">
       <section className="flex flex-col gap-3">
         <div>
-          <h1 className="text-2xl font-semibold text-bdas-ink">Ordnerfreigaben</h1>
+          <h1 className="text-2xl font-semibold text-bdas-ink">
+            <Begriff k="ordnerfreigabe">Ordnerfreigaben</Begriff>
+          </h1>
           <p className="text-bdas-ink-body">
-            Einzelne Personen aus Partnerorganisationen, etwa dem BDAJ, bekommen hier Zugang zu
-            einem Ordner. Mit Schreibrecht laden sie Dateien hoch und löschen ihre eigenen. Ordner
-            anlegen oder fremde Dateien löschen können sie nicht.
+            Einzelne Personen aus <Begriff k="partnerorganisation">Partnerorganisationen</Begriff>,
+            etwa dem BDAJ, bekommen hier Zugang zu einem Ordner. Mit Schreibrecht laden sie Dateien
+            hoch und löschen ihre eigenen. Ordner anlegen oder fremde Dateien löschen können sie
+            nicht.
           </p>
         </div>
         <Card flat className="p-4">

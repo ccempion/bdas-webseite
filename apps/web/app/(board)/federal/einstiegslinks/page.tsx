@@ -1,3 +1,4 @@
+import { Begriff } from "../../../_glossar/Begriff";
 import { requireFederalScope } from "../../../_dashboard/session";
 import { CAMPAIGNS } from "../../../_onboarding/campaigns";
 import { requireOnboardingFlag } from "../../../_onboarding/flag";
@@ -13,7 +14,9 @@ export default async function EinstiegslinksPage() {
   return (
     <main className="flex flex-col gap-6">
       <header>
-        <h1 className="text-2xl font-semibold text-bdas-ink">Einstiegslinks</h1>
+        <h1 className="text-2xl font-semibold text-bdas-ink">
+          <Begriff k="einstiegslink">Einstiegslinks</Begriff>
+        </h1>
         <p className="text-bdas-ink-body">
           Links in den Registrierungs-Wizard für Plakate, Flyer und Social Media. Wer über so einen
           Link kommt, wird mit der Kampagne gespeichert.

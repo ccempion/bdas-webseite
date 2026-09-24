@@ -3,6 +3,7 @@ import { isFlagOn } from "@bdas/feature-flags";
 import { getGroupChangeHistory, listIncomingGroupChanges } from "@bdas/members";
 import { ABSCHLUSSART_OPTIONS, GEFUNDEN_DURCH_OPTIONS, getProfile } from "@bdas/profile";
 
+import { Begriff } from "../../../../_glossar/Begriff";
 import { requireGroupScope } from "../../../../_dashboard/session";
 import { signedProfilePhotoUrl } from "../../../../_profile/photo-url";
 import { ApplicationCard } from "../../../_components/ApplicationCard";
@@ -41,7 +42,9 @@ export default async function BewerbungenPage({ params }: { params: { slug: stri
   return (
     <main className="flex flex-col gap-6">
       <header>
-        <h1 className="text-2xl font-semibold text-bdas-ink">Bewerbungen</h1>
+        <h1 className="text-2xl font-semibold text-bdas-ink">
+          <Begriff k="bewerbung">Bewerbungen</Begriff>
+        </h1>
         <p className="text-bdas-ink-body">
           {cards.length === 0
             ? "Zurzeit liegen keine Bewerbungen vor."

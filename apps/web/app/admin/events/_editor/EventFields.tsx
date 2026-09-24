@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 import { Combobox, Field, Input } from "@bdas/design-system";
 import type { EventContent } from "@bdas/events-module";
 
+import { Begriff } from "../../../_glossar/Begriff";
 import { LocationPicker } from "../../../_components/LocationPicker";
 import { DropZone } from "../../../_upload/DropZone";
 import { CONTENT_IMAGE, IMAGE_ACCEPT } from "../../../_upload/accept";
@@ -195,7 +196,11 @@ export function EventFields({ d }: { d: EventDefaults }) {
         />
       </Field>
 
-      <Field label="Sichtbarkeit" htmlFor="visibility" error={d.errors?.["visibility"]}>
+      <Field
+        label={<Begriff k="sichtbarkeit">Sichtbarkeit</Begriff>}
+        htmlFor="visibility"
+        error={d.errors?.["visibility"]}
+      >
         <select
           id="visibility"
           name="visibility"
