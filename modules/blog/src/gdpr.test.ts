@@ -15,7 +15,7 @@ import { createTestDb, type TestDb } from "@bdas/db/test";
 
 import { plainTextToDoc } from "./content";
 import { addComment } from "./services/comments";
-import { deleteContentByAuthor, exportForUser } from "./services/gdpr";
+import { deleteContentByAuthor, deleteMediaByAuthor, exportForUser } from "./services/gdpr";
 import { createPost, deletePost } from "./services/manage";
 import { dismissReport, listOpenReports, reportPost } from "./services/report";
 import { type Viewer } from "./visibility";
@@ -185,5 +185,41 @@ describeIfDb("blog GDPR functions", () => {
     it("rejects an empty userId without touching the database", async () => {
       await expect(deleteContentByAuthor(t.db, "")).rejects.toThrow();
     });
+  });
+});
+
+describe("deleteMediaByAuthor", () => {
+  it("deletes exactly the author's prefix and passes the result through", async () => {
+    const calls: string[] = [];
+    const bucket = {
+      deleteByPrefix: async (prefix: string) => (calls.push(prefix), { deleted: 2 }),
+    };
+
+    await expect(deleteMediaByAuthor(bucket, "usr_abc")).resolves.toEqual({ deleted: 2 });
+    expect(calls).toEqual(["usr_abc/"]);
+  });
+
+  it.each(["", "a/b", "../x", " ", "a\\b", "a b", "..", "a/", "/a"])(
+    "refuses userId %j before touching the bucket",
+    async (id) => {
+      const calls: string[] = [];
+      const bucket = {
+        deleteByPrefix: async (prefix: string) => (calls.push(prefix), { deleted: 0 }),
+      };
+
+      await expect(deleteMediaByAuthor(bucket, id)).rejects.toThrow(/userId/);
+      expect(calls).toEqual([]);
+    },
+  );
+
+  it("propagates storage failures unchanged", async () => {
+    const failure = new Error("storage down");
+    const bucket = {
+      deleteByPrefix: async (): Promise<{ deleted: number }> => {
+        throw failure;
+      },
+    };
+
+    await expect(deleteMediaByAuthor(bucket, "usr_abc")).rejects.toBe(failure);
   });
 });
