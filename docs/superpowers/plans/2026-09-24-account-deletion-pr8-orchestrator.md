@@ -468,4 +468,4 @@ Erwartung: **`skipped: 0`**, alles PASS. Ein grüner Lauf mit `skipped > 0` zäh
 - [ ] **Step 3:** `/code-review` (Effort `high`), Befunde einarbeiten.
 - [ ] **Step 4:** `/security-review` — Prüfpunkte explizit: (a) Bearer-Vergleich und Fail-closed ohne `CRON_SECRET`; (b) Prefix-Validierung (kein Bucket-Wipe); (c) Guard gegen Löschen aktiver Konten; (d) Lease/Race Sweep↔Cancel; (e) PII in Logs, `last_error`, Response, Notification-Log; (f) Reihenfolge — `auth` erst nach allen Vorschritten; (g) Flag-Gating; (h) keine Route ohne Auth.
 - [ ] **Step 5:** Erst danach Push + PR (`gh` fehlt lokal — PR im Browser öffnen oder `gh` installieren). Phasengrenze `/ultrareview` (Nutzer-getriggert) nach PR9.
-- [ ] **Step 6:** Nach dem Merge: Flag bleibt **aus**; Aktivierung erst nach PR9 und Staging-Trockenlauf.
+- [ ] **Step 6:** Nach dem Merge: Flag bleibt **aus**; Aktivierung erst nach PR9 und Staging-Trockenlauf. **Harte Go-Live-Voraussetzung:** die echte Storage-Löschung (Blog-Medien, Profilfotos, Files) einmal im Staging gegen echte Buckets ausführen (echte `remove()`-Semantik bei fehlenden/verweigerten Pfaden) — Unit-Tests können das nicht abdecken.
