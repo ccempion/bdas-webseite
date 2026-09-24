@@ -92,8 +92,8 @@ describe("ProfileForm group-change warnings", () => {
   it("warns about the approval process when a different group is picked, naming it", () => {
     render(<ProfileForm {...baseProps()} />);
     pickByLabel("München");
-    expect(container.textContent).toContain("Der Wechsel zu München");
-    expect(container.textContent).toContain("dortigen Vorstand freigegeben werden");
+    expect(container.textContent).toContain("Den Wechsel zu München");
+    expect(container.textContent).toContain("muss der dortige Vorstand annehmen");
     expect(container.textContent).not.toContain("Der Austritt");
     // A transfer is reversible while pending — no confirmation gate.
     expect(submitButton().disabled).toBe(false);
@@ -111,9 +111,9 @@ describe("ProfileForm group-change warnings", () => {
     render(<ProfileForm {...baseProps()} />);
     pickByLabel("keine Gruppe");
     expect(container.textContent).toContain("Der Austritt");
-    expect(container.textContent).toContain("sofort, ohne Freigabe");
+    expect(container.textContent).toContain("sofort, ohne Entscheidung");
     expect(container.textContent).toContain("nicht rückgängig machen");
-    expect(container.textContent).not.toContain("Der Wechsel zu");
+    expect(container.textContent).not.toContain("Den Wechsel zu");
   });
 
   it("blocks submit on exit until the confirmation checkbox is checked", () => {

@@ -8,7 +8,7 @@ import { requireEventsFlag } from "../../../_events/flag";
 import { formatDateTime } from "../../../../lib/format";
 import { GuestCancelForm } from "./GuestCancelForm";
 
-export const metadata = { title: "Von Veranstaltung abmelden" };
+export const metadata = { title: "Teilnahme absagen" };
 
 export default async function GuestCancelPage({
   params,
@@ -26,7 +26,7 @@ export default async function GuestCancelPage({
 
   return (
     <main className="mx-auto flex max-w-lg flex-col gap-6 px-4 py-12">
-      <h1 className="text-2xl font-semibold text-bdas-ink">Von Veranstaltung abmelden</h1>
+      <h1 className="text-2xl font-semibold text-bdas-ink">Teilnahme absagen</h1>
       <Card flat className="p-6">
         {!token ? (
           <p className="text-sm text-bdas-ink-body">Dieser Abmeldelink ist ungültig.</p>

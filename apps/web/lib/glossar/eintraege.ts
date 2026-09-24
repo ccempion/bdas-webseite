@@ -70,13 +70,13 @@ export const GLOSSAR: readonly GlossarEintrag[] = [
     key: "partnerorganisation",
     begriff: "Partnerorganisation",
     bereich: "verband",
-    text: "Eine Organisation, die mit BDAS zusammenarbeitet und hier einen eigenen Bereich hat, zurzeit die BDAJ. Ihre Mitglieder nimmt der Bundesvorstand auf.",
+    text: "Eine Organisation, die mit BDAS zusammenarbeitet und hier einen eigenen Bereich hat. Zurzeit ist das nur die BDAJ; ihre Mitglieder nimmt der Bundesvorstand auf.",
   },
   {
     key: "bundesweit",
-    begriff: "Föderationsweit / bundesweit",
+    begriff: "Bundesweit",
     bereich: "verband",
-    text: "Betrifft den ganzen Verband, nicht nur eine Hochschulgruppe. Föderationsweite Veranstaltungen legt nur der Bundesvorstand an.",
+    text: "Betrifft den ganzen Verband, nicht nur eine Hochschulgruppe. Bundesweite Veranstaltungen legt nur der Bundesvorstand an.",
   },
   {
     key: "nutzertyp",
@@ -128,7 +128,13 @@ export const GLOSSAR: readonly GlossarEintrag[] = [
   },
   {
     key: "warten-auf-beitritt",
-    begriff: "Warten auf Beitritt / Bewerbung eingereicht",
+    begriff: "Warten auf Beitritt",
+    bereich: "aufnahme",
+    text: "Du bist auf der Plattform aufgenommen, gehörst aber noch zu keiner Hochschulgruppe. Sobald eine Gruppe deine Bewerbung annimmt, bist du dort Mitglied.",
+  },
+  {
+    key: "bewerbung-eingereicht",
+    begriff: "Bewerbung eingereicht",
     bereich: "aufnahme",
     text: "Deine Bewerbung ist angekommen, der Vorstand hat noch nicht entschieden. Du bekommst eine E-Mail, sobald er entschieden hat.",
   },
@@ -170,9 +176,9 @@ export const GLOSSAR: readonly GlossarEintrag[] = [
   },
   {
     key: "erweitertes-profil",
-    begriff: "Erweitertes Profil / Profil vervollständigen",
+    begriff: "Angaben für deine Bewerbung / Über dich",
     bereich: "aufnahme",
-    text: "Die Angaben über dich, die der Vorstand für die Entscheidung braucht, z. B. Hochschule und Fach. Erst wenn sie vollständig sind, geht deine Bewerbung raus.",
+    text: "Die Angaben über dich, z. B. Hochschule und Fach. Solange deine Bewerbung offen ist, entscheidet der Vorstand anhand dieser Angaben; erst wenn sie vollständig sind, geht sie raus.",
   },
   {
     key: "bestaetigungslink",

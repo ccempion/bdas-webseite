@@ -71,7 +71,7 @@ export default async function FederalRolesPage({
           sections={[
             { title: "Bundesvorstand", holders: holders.filter((h) => h.role === "federal_board") },
             {
-              title: "Lokale Vorstands-Leads",
+              title: "Leads",
               holders: holders.filter((h) => h.role === "local_board_lead"),
             },
           ]}

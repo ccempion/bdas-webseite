@@ -21,6 +21,8 @@ export type EditableProfileProps = {
   profileForm: FormSlot<ProfileFormProps>;
   /** Absent when the profile feature flag is off or there is no member row. */
   extendedForm: FormSlot<EditProfileFormProps> | null;
+  /** While the application is open these fields are what the board decides on. */
+  bewerbungOffen: boolean;
 };
 
 const EMPTY_MEMBERS: ProfileFormState = {};
@@ -43,6 +45,7 @@ export function EditableProfile({
   rows,
   profileForm,
   extendedForm,
+  bewerbungOffen,
 }: EditableProfileProps) {
   const [membersState, membersAction] = useFormState(saveProfileAction, EMPTY_MEMBERS);
   const [fieldsState, fieldsAction] = useFormState(saveProfileFieldsAction, EMPTY_FIELDS);
@@ -104,7 +107,9 @@ export function EditableProfile({
       {extendedForm ? (
         <div className="border-t border-bdas-soft pt-6">
           <h3 className="mb-4 text-lg font-semibold text-bdas-ink">
-            <Begriff k="erweitertes-profil">Erweitertes Profil</Begriff>
+            <Begriff k="erweitertes-profil">
+              {bewerbungOffen ? "Angaben für deine Bewerbung" : "Über dich"}
+            </Begriff>
           </h3>
           <EditProfileForm {...extendedForm} state={fieldsState} action={fieldsAction} />
         </div>

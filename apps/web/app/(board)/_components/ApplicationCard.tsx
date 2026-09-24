@@ -99,7 +99,9 @@ export function ApplicationCard({
               ) : null}
             </>
           ) : (
-            <p className="mt-1 text-sm text-bdas-ink-muted">Kein erweitertes Profil hinterlegt.</p>
+            <p className="mt-1 text-sm text-bdas-ink-muted">
+              Keine Angaben zur Bewerbung hinterlegt.
+            </p>
           )}
 
           <p className="mt-1 text-sm text-bdas-ink-muted">Beworben am {fmt(requestedAt)}</p>
@@ -124,7 +126,7 @@ export function ApplicationCard({
             </div>
           ) : (
             <p className="mt-3 text-sm text-bdas-ink-muted">
-              Über diese Bewerbung entscheidet der lokale Vorstand.
+              Über diese Bewerbung entscheidet der Vorstand der Gruppe.
             </p>
           )}
         </div>

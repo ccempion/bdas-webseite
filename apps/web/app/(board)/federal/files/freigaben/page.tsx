@@ -67,10 +67,9 @@ export default async function FreigabenPage() {
             <Begriff k="ordnerfreigabe">Ordnerfreigaben</Begriff>
           </h1>
           <p className="text-bdas-ink-body">
-            Einzelne Personen aus <Begriff k="partnerorganisation">Partnerorganisationen</Begriff>,
-            etwa dem BDAJ, bekommen hier Zugang zu einem Ordner. Mit Schreibrecht laden sie Dateien
-            hoch und löschen ihre eigenen. Ordner anlegen oder fremde Dateien löschen können sie
-            nicht.
+            Einzelne <Begriff k="bdaj-mitglied">BDAJ-Mitglieder</Begriff> bekommen hier Zugang zu
+            einem Ordner. Mit Schreibrecht laden sie Dateien hoch und löschen ihre eigenen. Ordner
+            anlegen oder fremde Dateien löschen können sie nicht.
           </p>
         </div>
         <Card flat className="p-4">

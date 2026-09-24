@@ -176,7 +176,9 @@ test("submitting repeatedly still lands on /account", async ({ page }) => {
   }
 
   await page.waitForURL((u) => u.pathname.startsWith("/account"), { timeout: 20_000 });
-  await expect(page.getByText("Bewerbung abgeschickt")).toBeVisible();
+  // The alert title and the status row both read "Bewerbung eingereicht";
+  // the alert body is the unique part.
+  await expect(page.getByText("Deine Bewerbung ist eingegangen")).toBeVisible();
 });
 
 test("a member edits their extended profile on Mein Konto", async ({ page }) => {

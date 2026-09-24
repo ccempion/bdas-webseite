@@ -33,7 +33,7 @@ test("federal publishes an event; a member registers then deregisters", async ({
   await page.getByLabel("Titel").fill(title);
   await page.getByLabel("Beginn").fill(futureLocal());
   await page.locator("#visibility").selectOption("public");
-  // groupId select defaults to "Föderationsweit" (federal) — leave it.
+  // groupId select defaults to "Bundesweit" (federal) — leave it.
   await page.getByRole("button", { name: "Veranstaltung anlegen" }).click();
   // Create now saves a draft and lands on the edit page (so cover/inline images
   // can be added against the new event id). Publishing lives on the manage page.
@@ -58,9 +58,9 @@ test("federal publishes an event; a member registers then deregisters", async ({
   // an "Abmelden" logout button for the logged-in user.
   const controls = page.getByRole("main");
   await controls.getByRole("button", { name: "Anmelden" }).click();
-  // Registered → the controls switch to the cancel ("Abmelden") button.
-  await expect(controls.getByRole("button", { name: "Abmelden" })).toBeVisible();
+  // Registered → the controls switch to the cancel button.
+  await expect(controls.getByRole("button", { name: "Teilnahme absagen" })).toBeVisible();
 
-  await controls.getByRole("button", { name: "Abmelden" }).click();
+  await controls.getByRole("button", { name: "Teilnahme absagen" }).click();
   await expect(controls.getByRole("button", { name: "Anmelden" })).toBeVisible();
 });

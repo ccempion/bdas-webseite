@@ -52,8 +52,8 @@ export function statusText(
 ): string | null {
   if (status === null) return null;
   if (status === "active" && !isBdasMember) {
-    if (kind === "netzwerk") return "Förderer:in";
-    if (kind === "affiliate") return "Partnerorganisation";
+    if (kind === "netzwerk") return "Förderer*in";
+    if (kind === "affiliate") return "BDAJ-Mitglied";
     return "Warten auf Beitritt";
   }
   return STATUS_TEXT[status];

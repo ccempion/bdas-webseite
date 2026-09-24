@@ -23,9 +23,9 @@ export const ONBOARDING_WOERTER: Readonly<Record<string, string>> = {
 /** Mein Konto: status labels and notices. */
 export const KONTO_WOERTER: Readonly<Record<string, string>> = {
   "Warten auf Beitritt": "warten-auf-beitritt",
-  "Bewerbung eingereicht": "warten-auf-beitritt",
-  "Förderer:in": "foerderer",
-  Partnerorganisation: "partnerorganisation",
+  "Bewerbung eingereicht": "bewerbung-eingereicht",
+  "Förderer*in": "foerderer",
+  "BDAJ-Mitglied": "bdaj-mitglied",
   Gruppe: "hauptgruppe",
   Wechselantrag: "wechselantrag",
   Gruppenwechsel: "wechselantrag",

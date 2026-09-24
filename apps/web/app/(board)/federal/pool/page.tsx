@@ -131,7 +131,7 @@ export default async function PoolPage() {
                       <td className="p-3">{groupName(r.toGroupId)}</td>
                       <td className="p-3">{new Date(r.requestedAt).toLocaleDateString("de-DE")}</td>
                       <td className="p-3 text-bdas-ink-muted">
-                        {r.canDecide ? "durch dich" : "durch den lokalen Vorstand"}
+                        {r.canDecide ? "durch dich" : "durch den Vorstand der Gruppe"}
                       </td>
                       <td className="p-3">
                         {slug ? (
