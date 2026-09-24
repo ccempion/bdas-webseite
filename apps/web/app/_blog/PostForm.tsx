@@ -10,6 +10,7 @@ import {
 } from "@bdas/blog";
 import { Alert, Button, Field, Form, Input } from "@bdas/design-system";
 
+import { Begriff } from "../_glossar/Begriff";
 import { createPostAction, updatePostAction, type PostFormState } from "../blog/actions";
 import { PostEditor } from "./PostEditor";
 
@@ -54,7 +55,11 @@ export function PostForm({
         <PostEditor name="content" defaultDoc={post?.content ?? null} />
       </Field>
 
-      <Field label="Kategorie" htmlFor="category" {...err("category")}>
+      <Field
+        label={<Begriff k="kategorie">Kategorie</Begriff>}
+        htmlFor="category"
+        {...err("category")}
+      >
         <select
           id="category"
           name="category"

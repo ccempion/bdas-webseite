@@ -17,8 +17,10 @@ import { FileList } from "../../_files/FileList";
 import { requireFilesFlag } from "../../_files/flag";
 import { FolderAdminControls } from "../../_files/FolderAdminControls";
 import { FolderIndex } from "../../_files/FolderIndex";
-import { subfolderCounts } from "../../_files/folder-meta";
+import { SCOPE_LABEL, subfolderCounts } from "../../_files/folder-meta";
 import { NewFolderButton } from "../../_files/NewFolderButton";
+import { Begriff } from "../../_glossar/Begriff";
+import { ORDNER_BEGRIFFE } from "../../_glossar/woerter";
 import { readSessionCookie } from "../../../lib/auth-cookie";
 
 export const metadata = { title: "Ordner" };
@@ -65,6 +67,9 @@ export default async function DateiOrdnerPage({ params }: { params: { folderId: 
             />
           ) : null}
         </div>
+        <p className="text-sm text-bdas-ink-muted">
+          Bereich: <Begriff k={ORDNER_BEGRIFFE[folder.scope]}>{SCOPE_LABEL[folder.scope]}</Begriff>
+        </p>
         {folder.description ? <p className="text-bdas-ink-body">{folder.description}</p> : null}
       </header>
 

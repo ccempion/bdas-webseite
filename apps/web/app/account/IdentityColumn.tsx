@@ -2,6 +2,9 @@ import Link from "next/link";
 
 import { Card } from "@bdas/design-system";
 
+import { Begriff } from "../_glossar/Begriff";
+import { BegriffText } from "../_glossar/BegriffText";
+import { KONTO_WOERTER } from "../_glossar/woerter";
 import { AccountAvatar } from "./AccountAvatar";
 import type { IdentityRow, RoleChip } from "./view-model";
 
@@ -32,6 +35,7 @@ export function IdentityColumn({
   chips,
   showAvatar,
 }: IdentityColumnProps) {
+  const seen = new Set<string>();
   return (
     <div className="flex flex-col gap-4">
       <Card className="p-6">
@@ -46,8 +50,12 @@ export function IdentityColumn({
         <dl className="mt-5 grid grid-cols-[minmax(0,6rem)_1fr] gap-x-4 gap-y-2 border-t border-bdas-soft pt-5 text-sm">
           {rows.map((row) => (
             <div key={row.label} className="contents">
-              <dt className="text-bdas-ink-muted">{row.label}</dt>
-              <dd className="text-bdas-ink">{row.value}</dd>
+              <dt className="text-bdas-ink-muted">
+                <BegriffText text={row.label} begriffe={KONTO_WOERTER} seen={seen} />
+              </dt>
+              <dd className="text-bdas-ink">
+                <BegriffText text={row.value} begriffe={KONTO_WOERTER} seen={seen} />
+              </dd>
             </div>
           ))}
         </dl>
@@ -55,7 +63,7 @@ export function IdentityColumn({
         {chips.length > 0 ? (
           <div className="mt-5 border-t border-bdas-soft pt-5">
             <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-bdas-ink-muted">
-              Deine Rollen
+              Deine <Begriff k="rolle">Rollen</Begriff>
             </h3>
             <ul className="flex flex-wrap gap-2">
               {chips.map((chip) => (
@@ -72,7 +80,7 @@ export function IdentityColumn({
               ))}
             </ul>
             <p className="mt-3 text-sm text-bdas-ink-muted">
-              Rollen vergibt der Vorstand deiner Gruppe.
+              Rollen vergibt der <Begriff k="vorstand">Vorstand</Begriff> deiner Gruppe.
             </p>
           </div>
         ) : null}

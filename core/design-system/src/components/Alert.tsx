@@ -4,7 +4,7 @@ import { cx } from "../cx";
 
 export type AlertVariant = "error" | "info" | "success";
 
-export type AlertProps = HTMLAttributes<HTMLDivElement> & {
+export type AlertProps = Omit<HTMLAttributes<HTMLDivElement>, "title"> & {
   variant?: AlertVariant;
   title?: ReactNode;
 };

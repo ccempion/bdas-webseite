@@ -6,6 +6,7 @@ import { getDb } from "@bdas/db";
 import { Button, Card } from "@bdas/design-system";
 import { getCurrentMember } from "@bdas/members";
 
+import { Begriff } from "../../_glossar/Begriff";
 import { accountDeletionEnabled } from "../../_account-deletion/flag";
 import { buildAnmeldenUrl } from "../../_auth/return-to";
 import { requireAuthFlag } from "../../_auth/flag";
@@ -68,7 +69,8 @@ export default async function AccountSettingsPage() {
       <Card flat className="p-6">
         <h2 className="mb-2 text-lg font-semibold text-bdas-ink">Deine Daten</h2>
         <p className="mb-4 text-sm text-bdas-ink-body">
-          Export aller zu dir gespeicherten Daten als JSON: Art. 20 DSGVO.
+          <Begriff k="datenexport">Export</Begriff> aller zu dir gespeicherten Daten als JSON: Art.
+          20 DSGVO.
         </p>
         <Link href="/account/datenexport">
           <Button variant="secondary">Meine Daten exportieren</Button>
