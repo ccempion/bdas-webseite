@@ -30,6 +30,7 @@ export const FLAGS = [
   "podcast",
   "onboarding",
   "account_deletion",
+  "glossar",
 ] as const;
 
 export type FlagName = (typeof FLAGS)[number];

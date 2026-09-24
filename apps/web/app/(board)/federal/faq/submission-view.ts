@@ -1,6 +1,6 @@
 import type { FaqEntry, FaqSubmission } from "@bdas/faq";
 
-import { FAQ_CONTEXTS } from "../../../../lib/faq/contexts";
+import { faqContextLabel } from "../../../../lib/faq/contexts";
 
 export type SubmissionCardView = {
   id: string;
@@ -26,7 +26,7 @@ export type SubmissionCardView = {
  */
 function labelFor(context: string | null): string | null {
   if (context === null) return null;
-  return FAQ_CONTEXTS.find((c) => c.key === context)?.label ?? context;
+  return faqContextLabel(context) ?? context;
 }
 
 export function toSubmissionCards(input: {
