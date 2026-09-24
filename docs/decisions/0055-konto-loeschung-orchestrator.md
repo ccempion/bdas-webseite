@@ -78,8 +78,14 @@ Funktion in `auth`"; `files`, `blog`, `events` und `notifications` hängen aber 
 - Doppelte E-Mail C ist möglich, wenn eine Lease nach dem Versand, aber vor dem Abschluss abläuft
   (Minor, akzeptiert). Ebenso, wenn `deleteLogEntry` nach dem Versand scheitert: Der Retry sendet erneut,
   statt die Adresse im Log stehen zu lassen.
-- Ein Fehler im Newsletter-Handler bleibt unbemerkt (nur `console.error`), `auth` gilt trotzdem als
-  erledigt. Restrisiko; ein eigener Newsletter-Schritt würde es beseitigen und ist ein Folgethema.
+- Der Newsletter-Cleanup hängt an einem einmaligen Bus-Event und hat zwei Lücken: Ein Fehler im
+  Handler wird nur mit `console.error` geloggt und nicht wiederholt (`auth` gilt trotzdem als erledigt),
+  und stürzt ein Lauf zwischen `deleteAccount` und dem `auth`-Vermerk ab, veröffentlicht der Retry
+  `auth.user.deleted` nicht erneut, weil das Konto schon fehlt. In beiden Fällen bleibt das Abo samt
+  Adresse stehen, ohne dass der Sweep es merkt. Restrisiko; ein eigener, wiederholbarer
+  Newsletter-Schritt vor `auth` würde beides beseitigen und ist ein Folgethema. Bis dahin bei
+  Verdacht: `select * from newsletter_subscribers where user_id = '<gelöschte id>' or email = '<adresse>'`
+  und die Zeile von Hand löschen (das Consent-Log geht per Cascade mit).
 - Die Engine kennt keine Reihenfolge außerhalb der übergebenen Liste; wer einen Schritt ergänzt,
   ergänzt ihn in `buildDeletionSteps` und im Test der Composition.
 
