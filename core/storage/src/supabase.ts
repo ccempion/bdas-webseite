@@ -4,6 +4,9 @@ import type { SignedUrl, StorageClient } from "./index";
 
 const DEFAULT_UPLOAD_TTL = 7200; // Supabase signed upload URLs default to ~2h
 const DEFAULT_DOWNLOAD_TTL = 300;
+const PREFIX_RE = /^(?:[A-Za-z0-9._-]+\/)+$/;
+const PAGE = 100;
+const MAX_ROUNDS = 10_000;
 
 export type SupabaseStorageOptions = {
   readonly url: string;
@@ -68,6 +71,34 @@ export class SupabaseStorageClient implements StorageClient {
   async deleteObject(storageKey: string): Promise<void> {
     const { error } = await this.client.storage.from(this.bucket).remove([storageKey]);
     if (error) throw new Error(error.message);
+  }
+
+  async deleteByPrefix(prefix: string): Promise<{ deleted: number }> {
+    if (!PREFIX_RE.test(prefix) || prefix.split("/").some((s) => s === "." || s === "..")) {
+      throw new Error("deleteByPrefix: invalid prefix");
+    }
+    return { deleted: await this.purgeDir(prefix.slice(0, -1)) };
+  }
+
+  private async purgeDir(dir: string): Promise<number> {
+    let deleted = 0;
+    for (let round = 0; round < MAX_ROUNDS; round++) {
+      const { data, error } = await this.client.storage
+        .from(this.bucket)
+        .list(dir, { limit: PAGE, offset: 0 });
+      if (error) throw new Error(error.message);
+      if (!data || data.length === 0) return deleted;
+      const files = data.filter((o) => o.id !== null).map((o) => `${dir}/${o.name}`);
+      for (const sub of data.filter((o) => o.id === null)) {
+        deleted += await this.purgeDir(`${dir}/${sub.name}`);
+      }
+      if (files.length > 0) {
+        const { error: rmErr } = await this.client.storage.from(this.bucket).remove(files);
+        if (rmErr) throw new Error(rmErr.message);
+        deleted += files.length;
+      }
+    }
+    throw new Error("deleteByPrefix: exceeded round limit");
   }
 
   publicUrl(storageKey: string): string {

@@ -157,6 +157,7 @@ describeIfDb("Ordnerfreigabe pro Person", () => {
       signedDownloadUrl: async () => SIGNED,
       statObject: async () => ({ sizeBytes: 10 }),
       deleteObject: async () => undefined,
+      deleteByPrefix: async () => ({ deleted: 0 }),
     });
     t = await createTestDb();
     folderId = await seed(t);
