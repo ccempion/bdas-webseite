@@ -71,7 +71,8 @@ export default async function AccountSettingsPage() {
       <Card flat className="p-6">
         <h2 className="mb-2 text-lg font-semibold text-bdas-ink">Deine Daten</h2>
         <p className="mb-4 text-sm text-bdas-ink-body">
-          Export aller zu dir gespeicherten Daten (Art. 15/20 DSGVO).
+          <Begriff k="datenexport">Export</Begriff> aller zu dir gespeicherten Daten (Art. 15/20
+          DSGVO).
         </p>
         <div className="flex flex-wrap gap-3">
           <a href="/account/datenexport">
