@@ -146,6 +146,78 @@ export async function memberIdByEmail(email: string): Promise<string | null> {
   return rows[0]?.id ?? null;
 }
 
+/** The auth_users id for a login email, or null. Needed because
+ *  memberIdByEmail() above returns the members row, not the auth_users row
+ *  the deletion request and sweep key off. */
+export async function userIdByEmail(email: string): Promise<string | null> {
+  const rows = await sql<{ id: string }[]>`
+    SELECT id FROM auth_users WHERE email_normalized = lower(${email}) LIMIT 1`;
+  return rows[0]?.id ?? null;
+}
+
+/** Whether an auth_users row still exists for this email — the direct proof
+ *  that a purge really removed the account, not just marked it pending. */
+export async function authUserExists(email: string): Promise<boolean> {
+  const rows = await sql<{ n: number }[]>`
+    SELECT count(*)::int AS n FROM auth_users WHERE email_normalized = lower(${email})`;
+  return (rows[0]?.n ?? 0) > 0;
+}
+
+/** Move a pending deletion request's due date into the past, standing in for
+ *  the real 30-day wait. Scoped to this exact user and status='pending' so it
+ *  can never reach another request row on the shared e2e database. */
+export async function backdateDeletionRequest(userId: string, daysOverdue = 1): Promise<void> {
+  await sql`
+    UPDATE account_deletion_requests
+    SET scheduled_purge_at = now() - make_interval(days => ${daysOverdue})
+    WHERE user_id = ${userId} AND status = 'pending'`;
+}
+
+/**
+ * Plant one row of real, attributable data in each module the sweep purges,
+ * directly via SQL rather than through each module's own (already separately
+ * tested) UI flow — this test's job is the purge orchestration, not
+ * re-proving blog/files/events authoring. Returns the storage keys the
+ * fake buckets in the test need to start with, so the profile_media and blog
+ * steps have something real to delete.
+ */
+export async function seedAccountDeletionFixture(
+  userId: string,
+  memberId: string,
+): Promise<{
+  fileStorageKey: string;
+  blogMediaKey: string;
+  profileMediaKey: string;
+  eventId: string;
+}> {
+  const folderId = `fld_e2e_${rand()}`;
+  const fileId = `fil_e2e_${rand()}`;
+  const postId = `pst_e2e_${rand()}`;
+  const eventId = `evt_e2e_${rand()}`;
+  const notifId = `ntf_e2e_${rand()}`;
+  const fileStorageKey = `files/${userId}/e2e-report.pdf`;
+  const blogMediaKey = `${userId}/e2e-pic.png`;
+  const profileMediaKey = `${userId}/e2e-photo.webp`;
+
+  await sql`
+    INSERT INTO folders (id, slug, name, scope)
+    VALUES (${folderId}, ${"e2e-" + rand()}, 'E2E Ordner', 'members_all')`;
+  await sql`
+    INSERT INTO files (id, folder_id, filename, storage_key, mime_type, size_bytes, status, uploaded_by)
+    VALUES (${fileId}, ${folderId}, 'e2e-report.pdf', ${fileStorageKey}, 'application/pdf', 1, 'ready', ${memberId})`;
+  await sql`
+    INSERT INTO posts (id, slug, title, content, created_by)
+    VALUES (${postId}, ${"e2e-" + rand()}, 'E2E Beitrag', '{}', ${userId})`;
+  await sql`
+    INSERT INTO events (id, title, starts_at, created_by)
+    VALUES (${eventId}, 'E2E Veranstaltung', now(), ${userId})`;
+  await sql`
+    INSERT INTO notification_log (id, member_id, template, to_email, subject, status)
+    VALUES (${notifId}, ${memberId}, 'e2e', 'e2e@example.de', 'E2E', 'sent')`;
+
+  return { fileStorageKey, blogMediaKey, profileMediaKey, eventId };
+}
+
 /** Grant a group-scoped role to the member with this email (immediate, DB-side). */
 async function grantGroupRole(email: string, groupId: string, role: string): Promise<void> {
   // The member row is created by the /account Server Action just before this;
