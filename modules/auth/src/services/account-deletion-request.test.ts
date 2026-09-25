@@ -65,6 +65,7 @@ describeIfDb("requestAccountDeletion / cancelAccountDeletion", () => {
       "0003_email_change.sql",
       "0004_account_deletion.sql",
       "0005_verification_token_hash.sql",
+      "0006_deletion_orchestrator.sql",
     ]) {
       const sql = await fs.readFile(path.join(__dirname, "..", "..", "migrations", file), "utf8");
       await t.client.unsafe(sql);
@@ -161,6 +162,30 @@ describeIfDb("requestAccountDeletion / cancelAccountDeletion", () => {
       await expect(
         requestAccountDeletion(t.db, { userId: reg.userId, displayName: "Zweite Anfrage" }),
       ).rejects.toThrow(/bereits eine Löschung/);
+    });
+
+    it("throws while an earlier deletion of this user is still being carried out", async () => {
+      const reg = await signUpAndLogin("purging@example.de", "4.4.4.5");
+      const first = await requestAccountDeletion(t.db, {
+        userId: reg.userId,
+        displayName: "Erste Anfrage",
+      });
+      await t.db
+        .update(accountDeletionRequests)
+        .set({ status: "in_progress" })
+        .where(eq(accountDeletionRequests.id, first.requestId));
+      await t.db.update(authUsers).set({ status: "active" }).where(eq(authUsers.id, reg.userId));
+
+      await expect(
+        requestAccountDeletion(t.db, { userId: reg.userId, displayName: "Zweite Anfrage" }),
+      ).rejects.toThrow(/läuft bereits eine Löschung/);
+      const rows = await t.db
+        .select({ id: accountDeletionRequests.id })
+        .from(accountDeletionRequests)
+        .where(eq(accountDeletionRequests.userId, reg.userId));
+      expect(rows).toEqual([{ id: first.requestId }]);
+      const [user] = await t.db.select().from(authUsers).where(eq(authUsers.id, reg.userId));
+      expect(user?.status).toBe("active");
     });
 
     it("throws NotFoundError for an unknown user", async () => {
@@ -292,6 +317,33 @@ describeIfDb("requestAccountDeletion / cancelAccountDeletion", () => {
       expect((rejected[0] as PromiseRejectedResult).reason.message).toMatch(
         /ungültig oder bereits verwendet/,
       );
+    });
+  });
+
+  describe("orchestrator columns", () => {
+    it("allows clearing the snapshots and round-trips the lease and error trail", async () => {
+      const reg = await signUpAndLogin("clara@example.de", "3.3.3.3");
+      await requestAccountDeletion(t.db, { userId: reg.userId, displayName: "Clara Test" });
+
+      const claimedUntil = new Date(Date.now() + 10 * 60 * 1000);
+      await t.db
+        .update(accountDeletionRequests)
+        .set({
+          emailSnapshot: null,
+          nameSnapshot: null,
+          claimedUntil,
+          lastError: "storage: timeout",
+        })
+        .where(eq(accountDeletionRequests.userId, reg.userId));
+
+      const [row] = await t.db
+        .select()
+        .from(accountDeletionRequests)
+        .where(eq(accountDeletionRequests.userId, reg.userId));
+      expect(row?.emailSnapshot).toBeNull();
+      expect(row?.nameSnapshot).toBeNull();
+      expect(row?.claimedUntil?.getTime()).toBe(claimedUntil.getTime());
+      expect(row?.lastError).toBe("storage: timeout");
     });
   });
 });

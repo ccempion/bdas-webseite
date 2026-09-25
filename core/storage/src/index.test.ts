@@ -40,6 +40,7 @@ describe("getStorage lazy env init", () => {
       signedDownloadUrl: vi.fn(),
       statObject: vi.fn(),
       deleteObject: vi.fn(),
+      deleteByPrefix: vi.fn(),
     };
     setStorage(fake);
     expect(getStorage()).toBe(fake);

@@ -101,8 +101,8 @@ export const accountDeletionRequests = pgTable(
   {
     id: text("id").primaryKey(),
     userId: text("user_id").references(() => authUsers.id, { onDelete: "set null" }),
-    emailSnapshot: text("email_snapshot").notNull(),
-    nameSnapshot: text("name_snapshot").notNull(),
+    emailSnapshot: text("email_snapshot"),
+    nameSnapshot: text("name_snapshot"),
     requestedAt: timestamp("requested_at", { withTimezone: true }).notNull().defaultNow(),
     scheduledPurgeAt: timestamp("scheduled_purge_at", { withTimezone: true }).notNull(),
     status: text("status").notNull().default("pending"),
@@ -110,6 +110,8 @@ export const accountDeletionRequests = pgTable(
     reactivationExpiresAt: timestamp("reactivation_expires_at", { withTimezone: true }),
     cancelledAt: timestamp("cancelled_at", { withTimezone: true }),
     completedAt: timestamp("completed_at", { withTimezone: true }),
+    claimedUntil: timestamp("claimed_until", { withTimezone: true }),
+    lastError: text("last_error"),
   },
   (t) => ({
     userIdx: index("account_deletion_requests_user_idx").on(t.userId),

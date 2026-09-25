@@ -133,7 +133,7 @@ Wert, keine Schemaänderung nötig. Der bestehende Login-Check `status !== 'acti
 ## 5. Ablauf Tag 30 — Sweep (Cron)
 
 Neue Route `/api/cron/account-deletion-sweep`, gleiches Muster wie `files-sweep` (Bearer-Secret, Flag-Check,
-idempotenter Bootstrap). Orchestrator-Funktion in `auth` (Entscheidung 1):
+idempotenter Bootstrap). Orchestrator-Funktion in `auth` (Entscheidung 1; die Modul-Schritte werden aus `apps/web` injiziert, Lease, Wiederaufnahme, Schritt `profile_media` und E-Mail-C-Regeln stehen in ADR 0055, der bei Abweichungen gewinnt):
 
 ```
 für jede account_deletion_requests-Zeile mit status='pending' und scheduled_purge_at <= now():
@@ -144,8 +144,8 @@ für jede account_deletion_requests-Zeile mit status='pending' und scheduled_pur
     2. blog.deleteContentByAuthor(db, userId)      — eigene Beiträge (kaskadiert deren Kommentare)
                                                       + eigene Kommentare unter fremden Beiträgen
     3. events.clearOrganizerForUser(db, userId)    — organisierte Events bleiben, Organisator-Bezug geleert
-    4. notifications.deleteLogForMember(db, userId) — Versandprotokoll (oder: bestehende FK deckt es
-                                                      bereits ab — wird in der Umsetzungs-PR geprüft)
+    4. notifications.deleteLogForMember(db, userId) — Versandprotokoll (bleibt als Schritt, idempotent;
+                                                      ADR 0055)
     5. auth.deleteAccount(db, userId)              — bestehende Funktion; FK-Kaskaden räumen jetzt
                                                       members/profile/Event-Anmeldungen/Rollen-Grants/
                                                       Gruppenwechsel-Anträge/verbliebene Datei-Zeilen und

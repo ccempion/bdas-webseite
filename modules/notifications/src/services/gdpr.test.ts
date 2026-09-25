@@ -11,9 +11,11 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { createTestDb, type TestDb } from "@bdas/db/test";
 
+import { setNotifier } from "../notifier";
 import { setMemberIdResolver } from "../resolver";
 import { notificationLog } from "../schema";
-import { deleteLogForMember, exportForUser } from "./gdpr";
+import { deleteLogEntry, deleteLogForMember, exportForUser } from "./gdpr";
+import { sendTransactionalToGuest } from "./send";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DEFAULT_URL = "postgres://bdas:bdas@localhost:5432/bdas";
@@ -144,6 +146,57 @@ describeIfDb("notifications GDPR functions", () => {
       });
 
       await expect(deleteLogForMember(t.db, "usr_unknown")).resolves.toBeUndefined();
+    });
+  });
+
+  describe("deleteLogEntry", () => {
+    beforeEach(() => {
+      setNotifier({ async send(): Promise<void> {} });
+    });
+
+    async function sendTwoGuestRows(): Promise<{ first: string; second: string }> {
+      const a = await sendTransactionalToGuest(
+        t.db,
+        "event_registration_confirmed",
+        { email: "erased@example.org", name: "Erased" },
+        { eventTitle: "Fest" },
+      );
+      const b = await sendTransactionalToGuest(
+        t.db,
+        "event_registration_confirmed",
+        { email: "other@example.org", name: "Other" },
+        { eventTitle: "Fest" },
+      );
+      return { first: a.logId, second: b.logId };
+    }
+
+    it("deletes exactly the row with the given id and leaves the others", async () => {
+      const { first, second } = await sendTwoGuestRows();
+
+      await deleteLogEntry(t.db, first);
+
+      const rows = await t.db.select().from(notificationLog);
+      expect(rows.map((r) => r.id)).toEqual([second]);
+      expect(rows.some((r) => r.toEmail === "erased@example.org")).toBe(false);
+    });
+
+    it("is idempotent for the same id", async () => {
+      const { first, second } = await sendTwoGuestRows();
+
+      await deleteLogEntry(t.db, first);
+      await expect(deleteLogEntry(t.db, first)).resolves.toBeUndefined();
+
+      const rows = await t.db.select().from(notificationLog);
+      expect(rows.map((r) => r.id)).toEqual([second]);
+    });
+
+    it("resolves and deletes nothing for an unknown id", async () => {
+      await sendTwoGuestRows();
+
+      await expect(deleteLogEntry(t.db, "ntfy_does_not_exist")).resolves.toBeUndefined();
+
+      const rows = await t.db.select().from(notificationLog);
+      expect(rows).toHaveLength(2);
     });
   });
 });

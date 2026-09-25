@@ -88,6 +88,7 @@ function fakeStorage(over: Partial<StorageClient> = {}): StorageClient {
     signedDownloadUrl: async () => ({ ...url, url: "https://signed.example/get" }),
     statObject: async () => ({ sizeBytes: 0 }),
     deleteObject: async () => undefined,
+    deleteByPrefix: async () => ({ deleted: 0 }),
     ...over,
   };
 }

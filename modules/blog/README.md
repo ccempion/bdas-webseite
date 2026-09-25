@@ -111,9 +111,12 @@ each other — there is no threading, and a posted comment cannot be edited.
   writing 20 and deleting all 20 still blocks further comments for 24 hours.
   This is deliberate anti-evasion, not a bug.
 - **Deletion:** `deleteComment` is a soft delete (`deleted_at`), excluded from
-  every read path. `deleteCommentsByAuthor` is a hard delete — it exists as the
-  seam a future account-deletion feature will call, so nothing outside this
-  module ever touches `post_comments` (rule 1).
+  every read path. `deleteCommentsByAuthor` is a hard delete for account
+  deletion (`deleteContentByAuthor` calls it), so nothing outside this module
+  ever touches `post_comments` (rule 1). `deleteMediaByAuthor(bucket, userId)`
+  removes the author's inline images (`${userId}/…` in the blog-media bucket)
+  through a bucket that only needs `deleteByPrefix`; the sweep calls both,
+  database first (ADR 0055).
 - **Events:** `blog.comment.created` is published on every add. It has no
   subscriber yet; the author-notification email is deferred.
 

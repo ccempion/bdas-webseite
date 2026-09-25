@@ -61,14 +61,9 @@ export async function exportForUser(db: Db, userId: string): Promise<BlogExport>
  * orchestrator's own per-step retry design already covers this — no
  * transaction is needed.
  *
- * Known gap (parked, not fixed here): this function does not delete inline
- * post images uploaded to the blog-media storage bucket
- * (`getBlogMediaStorage()` from `@bdas/storage`, see
- * `apps/web/app/api/blog/upload-url/route.ts`) — those objects remain
- * publicly reachable after the post row is gone. This must be resolved
- * (the shared `core/storage` `StorageClient` interface needs bulk/prefix
- * delete added — today it only exposes single-key `deleteObject`) before
- * this function is wired into a live deletion sweep.
+ * Inline post images in the blog-media bucket are not touched here; see
+ * `deleteMediaByAuthor`. The composition root calls both — DB first, then
+ * media — and both are idempotent.
  */
 export async function deleteContentByAuthor(db: Db, userId: string): Promise<void> {
   if (!userId) {
@@ -77,4 +72,26 @@ export async function deleteContentByAuthor(db: Db, userId: string): Promise<voi
   await db.delete(posts).where(eq(posts.createdBy, userId));
   await deleteCommentsByAuthor(db, userId);
   await deleteReportsByReporter(db, userId);
+}
+
+export type PrefixDeletableBucket = {
+  deleteByPrefix(prefix: string): Promise<{ deleted: number }>;
+};
+
+/**
+ * Art. 17 purge step for inline post images, keyed `${userId}/<uuid>.<ext>`
+ * (see `apps/web/app/api/blog/upload-url/route.ts`). The bucket is a
+ * structural interface so this module takes no dependency on `@bdas/storage`;
+ * the composition root passes the real blog-media bucket. The userId is
+ * validated before the bucket is called so a malformed id can never widen the
+ * prefix beyond one author's folder.
+ */
+export async function deleteMediaByAuthor(
+  bucket: PrefixDeletableBucket,
+  userId: string,
+): Promise<{ deleted: number }> {
+  if (!userId || /[/\\\s]|\.\./.test(userId)) {
+    throw new Error("deleteMediaByAuthor requires a plain userId");
+  }
+  return bucket.deleteByPrefix(`${userId}/`);
 }

@@ -88,14 +88,11 @@ export async function exportForUser(db: Db, userId: string): Promise<readonly Fi
  * matching deleteFolder's D5 invariant (folder-writes.ts) — they're
  * system-provisioned by ensureFolders, not something this purge owns.
  *
- * Known limitation (parked, not fixed here): the per-folder cleanup DELETE
- * below inherits the same race deleteFolder already has — under READ
- * COMMITTED, a file uploaded into a folder during the exact window this
- * DELETE is evaluating its NOT EXISTS check can still be destroyed by
- * files.folder_id's ON DELETE CASCADE, because the check runs against a
- * stale snapshot. Serializing/locking around a purge run, if that matters in
- * production, is the calling orchestrator's responsibility, not this
- * function's.
+ * Concurrent uploads: each folder is removed via deleteFolderIfEmpty, which
+ * locks the folder row before checking emptiness, so a file another member
+ * is uploading into it at that moment is never cascaded away. deleteFolder
+ * (folder-writes.ts) still has the unlocked form of this race; fixing it is
+ * a separate follow-up PR.
  */
 export async function deleteFilesByMember(db: Db, userId: string): Promise<void> {
   const memberId = await getMemberIdResolver().resolveMemberId(db, userId);
@@ -125,25 +122,8 @@ export async function deleteFilesByMember(db: Db, userId: string): Promise<void>
     .where(and(eq(folders.createdBy, memberId), isNotNull(folders.parentId)))
     .orderBy(desc(folders.depth));
 
-  const child = alias(folders, "child");
   for (const folder of created) {
-    await db.delete(folders).where(
-      and(
-        eq(folders.id, folder.id),
-        notExists(
-          db
-            .select({ one: sql`1` })
-            .from(files)
-            .where(eq(files.folderId, folder.id)),
-        ),
-        notExists(
-          db
-            .select({ one: sql`1` })
-            .from(child)
-            .where(eq(child.parentId, folder.id)),
-        ),
-      ),
-    );
+    await deleteFolderIfEmpty(db, folder.id);
   }
 
   if (failures.length > 0) {
@@ -151,4 +131,48 @@ export async function deleteFilesByMember(db: Db, userId: string): Promise<void>
       `deleteFilesByMember: failed to delete ${failures.length} storage object(s) for member ${memberId}: ${failures.join(", ")}`,
     );
   }
+}
+
+/**
+ * Deletes the folder only if it holds no files and no subfolders; true when
+ * it was deleted. A single `DELETE ... WHERE NOT EXISTS` is not enough under
+ * READ COMMITTED: a concurrent `INSERT INTO files` holds only FOR KEY SHARE
+ * on the folder row, the DELETE waits for it but does not re-evaluate its
+ * NOT EXISTS afterwards, and files.folder_id's ON DELETE CASCADE then takes
+ * the just-committed file with it. Locking the row FOR UPDATE first waits
+ * out in-flight inserts and blocks new ones (they fail on the FK once the
+ * folder is gone); the DELETE, as a separate statement, then checks
+ * emptiness against a fresh snapshot.
+ */
+async function deleteFolderIfEmpty(db: Db, folderId: string): Promise<boolean> {
+  return db.transaction(async (tx) => {
+    const [locked] = await tx
+      .select({ id: folders.id })
+      .from(folders)
+      .where(eq(folders.id, folderId))
+      .for("update");
+    if (!locked) return false;
+    const child = alias(folders, "child");
+    const gone = await tx
+      .delete(folders)
+      .where(
+        and(
+          eq(folders.id, folderId),
+          notExists(
+            tx
+              .select({ one: sql`1` })
+              .from(files)
+              .where(eq(files.folderId, folderId)),
+          ),
+          notExists(
+            tx
+              .select({ one: sql`1` })
+              .from(child)
+              .where(eq(child.parentId, folderId)),
+          ),
+        ),
+      )
+      .returning({ id: folders.id });
+    return gone.length > 0;
+  });
 }

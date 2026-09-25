@@ -23,7 +23,13 @@ export {
   countCommentsByPost,
   deleteCommentsByAuthor,
 } from "./services/comments";
-export { deleteContentByAuthor, exportForUser, type BlogExport } from "./services/gdpr";
+export {
+  deleteContentByAuthor,
+  deleteMediaByAuthor,
+  exportForUser,
+  type BlogExport,
+  type PrefixDeletableBucket,
+} from "./services/gdpr";
 
 // Rendering (server-side Tiptap → sanitized HTML)
 export { renderPostContentHtml, plainTextToDoc } from "./content";

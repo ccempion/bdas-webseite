@@ -39,6 +39,9 @@ export interface StorageClient {
   statObject(storageKey: string): Promise<{ sizeBytes: number } | null>;
 
   deleteObject(storageKey: string): Promise<void>;
+
+  /** Removes every object under `<segment>/` (recursively). Rejects any other prefix shape. */
+  deleteByPrefix(prefix: string): Promise<{ deleted: number }>;
 }
 
 class NotConfiguredStorageClient implements StorageClient {
@@ -58,6 +61,9 @@ class NotConfiguredStorageClient implements StorageClient {
     return this.fail();
   }
   async deleteObject(): Promise<void> {
+    return this.fail();
+  }
+  async deleteByPrefix(): Promise<{ deleted: number }> {
     return this.fail();
   }
 }
