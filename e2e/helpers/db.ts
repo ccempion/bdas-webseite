@@ -146,6 +146,120 @@ export async function memberIdByEmail(email: string): Promise<string | null> {
   return rows[0]?.id ?? null;
 }
 
+/** The auth_users id for a login email, or null. Needed because
+ *  memberIdByEmail() above returns the members row, not the auth_users row
+ *  the deletion request and sweep key off. */
+export async function userIdByEmail(email: string): Promise<string | null> {
+  const rows = await sql<{ id: string }[]>`
+    SELECT id FROM auth_users WHERE email_normalized = lower(${email}) LIMIT 1`;
+  return rows[0]?.id ?? null;
+}
+
+/** Whether an auth_users row still exists for this email — the direct proof
+ *  that a purge really removed the account, not just marked it pending. */
+export async function authUserExists(email: string): Promise<boolean> {
+  const rows = await sql<{ n: number }[]>`
+    SELECT count(*)::int AS n FROM auth_users WHERE email_normalized = lower(${email})`;
+  return (rows[0]?.n ?? 0) > 0;
+}
+
+/** Move a pending deletion request's due date into the past, standing in for
+ *  the real 30-day wait. Scoped to this exact user and status='pending' so it
+ *  can never reach another request row on the shared e2e database. */
+export async function backdateDeletionRequest(userId: string, daysOverdue = 1): Promise<void> {
+  await sql`
+    UPDATE account_deletion_requests
+    SET scheduled_purge_at = now() - make_interval(days => ${daysOverdue})
+    WHERE user_id = ${userId} AND status = 'pending'`;
+}
+
+/** The deletion request row for a user, or null. Lets a sweep-completion spec
+ *  assert on its own request by id instead of the sweep's aggregate counts,
+ *  which cover every due row and would flake on a reused local database that
+ *  still has a stale row from an earlier interrupted run. */
+export async function deletionRequestByUser(
+  userId: string,
+): Promise<{ id: string; status: string } | null> {
+  const rows = await sql<{ id: string; status: string }[]>`
+    SELECT id, status FROM account_deletion_requests WHERE user_id = ${userId} LIMIT 1`;
+  return rows[0] ?? null;
+}
+
+/** The status of a deletion request by its own id — needed to check a
+ *  request AFTER a purge completes, since `account_deletion_requests.user_id`
+ *  is ON DELETE SET NULL: once auth.deleteAccount removes the auth_users row,
+ *  the request no longer matches a lookup by user_id even though the row
+ *  itself (by design) survives the purge. */
+export async function deletionRequestStatus(requestId: string): Promise<string | null> {
+  const rows = await sql<{ status: string }[]>`
+    SELECT status FROM account_deletion_requests WHERE id = ${requestId} LIMIT 1`;
+  return rows[0]?.status ?? null;
+}
+
+/** Whether a blog post row still exists — proof the blog purge step ran (posts
+ *  has no FK to auth_users, so this doesn't cascade automatically). */
+export async function postExists(postId: string): Promise<boolean> {
+  const rows = await sql<
+    { n: number }[]
+  >`SELECT count(*)::int AS n FROM posts WHERE id = ${postId}`;
+  return (rows[0]?.n ?? 0) > 0;
+}
+
+/** An event's organizer (created_by), or null — proof the events purge step
+ *  cleared it (events has no FK to auth_users either, and the event itself
+ *  must survive; only the organizer reference is cleared). */
+export async function eventCreatedBy(eventId: string): Promise<string | null> {
+  const rows = await sql<{ created_by: string | null }[]>`
+    SELECT created_by FROM events WHERE id = ${eventId}`;
+  return rows[0]?.created_by ?? null;
+}
+
+/**
+ * Plant one row of real, attributable data in each module the sweep purges,
+ * directly via SQL rather than through each module's own (already separately
+ * tested) UI flow — this test's job is the purge orchestration, not
+ * re-proving blog/files/events authoring. Returns the storage keys the
+ * fake buckets in the test need to start with, so the profile_media and blog
+ * steps have something real to delete.
+ */
+export async function seedAccountDeletionFixture(
+  userId: string,
+  memberId: string,
+): Promise<{
+  fileStorageKey: string;
+  blogMediaKey: string;
+  profileMediaKey: string;
+  eventId: string;
+  postId: string;
+}> {
+  const folderId = `fld_e2e_${rand()}`;
+  const fileId = `fil_e2e_${rand()}`;
+  const postId = `pst_e2e_${rand()}`;
+  const eventId = `evt_e2e_${rand()}`;
+  const notifId = `ntf_e2e_${rand()}`;
+  const fileStorageKey = `files/${userId}/e2e-report.pdf`;
+  const blogMediaKey = `${userId}/e2e-pic.png`;
+  const profileMediaKey = `${userId}/e2e-photo.webp`;
+
+  await sql`
+    INSERT INTO folders (id, slug, name, scope)
+    VALUES (${folderId}, ${"e2e-" + rand()}, 'E2E Ordner', 'members_all')`;
+  await sql`
+    INSERT INTO files (id, folder_id, filename, storage_key, mime_type, size_bytes, status, uploaded_by)
+    VALUES (${fileId}, ${folderId}, 'e2e-report.pdf', ${fileStorageKey}, 'application/pdf', 1, 'ready', ${memberId})`;
+  await sql`
+    INSERT INTO posts (id, slug, title, content, created_by)
+    VALUES (${postId}, ${"e2e-" + rand()}, 'E2E Beitrag', '{}', ${userId})`;
+  await sql`
+    INSERT INTO events (id, title, starts_at, created_by)
+    VALUES (${eventId}, 'E2E Veranstaltung', now(), ${userId})`;
+  await sql`
+    INSERT INTO notification_log (id, member_id, template, to_email, subject, status)
+    VALUES (${notifId}, ${memberId}, 'e2e', 'e2e@example.de', 'E2E', 'sent')`;
+
+  return { fileStorageKey, blogMediaKey, profileMediaKey, eventId, postId };
+}
+
 /** Grant a group-scoped role to the member with this email (immediate, DB-side). */
 async function grantGroupRole(email: string, groupId: string, role: string): Promise<void> {
   // The member row is created by the /account Server Action just before this;
