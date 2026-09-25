@@ -76,8 +76,7 @@ Funktion in `auth`"; `files`, `blog`, `events` und `notifications` hängen aber 
 - Löschungen laufen erst, wenn `account_deletion`, `files`, `notifications` und `newsletter` an sind.
   Das ist gewollt: Vor dem Scharfschalten müssen alle beteiligten Module aktiv sein.
 - Doppelte E-Mail C ist möglich, wenn eine Lease nach dem Versand, aber vor dem Abschluss abläuft
-  (Minor, akzeptiert). Ebenso, wenn `deleteLogEntry` nach dem Versand scheitert: Der Retry sendet erneut,
-  statt die Adresse im Log stehen zu lassen.
+  (Minor, akzeptiert).
 - Der Newsletter-Cleanup hängt an einem einmaligen Bus-Event und hat zwei Lücken: Ein Fehler im
   Handler wird nur mit `console.error` geloggt und nicht wiederholt (`auth` gilt trotzdem als erledigt),
   und stürzt ein Lauf zwischen `deleteAccount` und dem `auth`-Vermerk ab, veröffentlicht der Retry
@@ -141,11 +140,22 @@ vermerken; der nächste Lauf schließt ab.
 - **`cancelled`-Zeilen behalten E-Mail/Name-Snapshot** für immer. Folge-PR: Snapshot beim Abbruch leeren.
 - **`deleteFolder`** (`modules/files/src/services/folder-writes.ts`) hat dasselbe Cascade-Race wie der
   Purge vor dem Fix. Folge-PR; der Helper `deleteFolderIfEmpty` ist dafür geschnitten.
-- **HARTE Go-Live-Voraussetzung (Newsletter):** Das Flag `account_deletion` darf nicht scharf
-  geschaltet werden, bevor der wiederholbare Newsletter-Schritt gebaut ist (eigener Folge-PR, Pflicht vor
-  dem Live-Gang, nicht optional). Er löscht vor `auth` per User-Id **und** E-Mail-Adresse, damit auch
-  anonyme Abos mit derselben Adresse erfasst werden, und wird wie jeder Schritt wiederholt. Bis dahin
-  kann eine gelöschte Person im Verteiler stehen bleiben, was E-Mail C („alle Daten gelöscht") widerspräche.
+- **HARTE Go-Live-Voraussetzung — zwei PII-Retention-Restfälle, ein gemeinsamer Folge-PR:** Das Flag
+  `account_deletion` darf nicht scharf geschaltet werden, bevor beide Punkte geschlossen sind. Pflicht
+  vor dem Live-Gang, nicht optional — kein optionaler Minor wie die übrigen Punkte in diesem Abschnitt.
+  1. **Newsletter:** der wiederholbare Newsletter-Schritt fehlt noch. Er löscht vor `auth` per User-Id
+     **und** E-Mail-Adresse, damit auch anonyme Abos mit derselben Adresse erfasst werden, und wird wie
+     jeder Schritt wiederholt. Bis dahin kann eine gelöschte Person im Verteiler stehen bleiben, was
+     E-Mail C („alle Daten gelöscht") widerspräche.
+  2. **Log-Zeile E-Mail C:** Scheitert `deleteLogEntry` in `completionMail.send`
+     (`apps/web/lib/account-deletion-composition.ts`) nachdem der Guest-Versand bereits rausgegangen ist,
+     wirft `send()` trotzdem, der `email_c`-Schritt gilt als nicht erledigt, und der nächste Sweep-Lauf
+     wiederholt ihn — jeder Retry versendet erneut (siehe Doppel-Mail oben) und legt bei erneutem
+     `deleteLogEntry`-Fehler eine weitere `to_email`-Zeile im Notifications-Log an. Bleibt die Ursache
+     bestehen, sammeln sich Adresszeilen, die der 7-Tage-Fallback nicht erfasst — der leert nur
+     `email_snapshot`/`name_snapshot` auf dem Request, nicht das Notifications-Log. Braucht denselben Fix
+     wie der Newsletter-Schritt: eine wiederholbare, vom Mailversand entkoppelte Aufräumaktion statt der
+     heutigen Einmal-Löschung im selben Aufruf.
 - **Go-Live-Voraussetzung (Storage):** Die echte Storage-Löschung (Blog-Medien, Profilfotos, Files) einmal im
   Staging gegen echte Buckets ausführen (echte `remove()`-Semantik bei fehlenden oder verweigerten Pfaden).
   Unit-Tests können das nicht abdecken. Das Flag `account_deletion` bleibt bis PR9 (E2E) und diesem
