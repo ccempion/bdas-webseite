@@ -6,11 +6,12 @@
  * out (PR8). The sweep step can't run through the real HTTP cron route in
  * this e2e environment (no object storage is provisioned — see
  * files.e2e.ts's header), so it calls the same real engine directly; see
- * docs/superpowers/plans/2026-09-25-account-deletion-pr9-e2e.md.
+ * docs/archive/superpowers/plans/2026-09-25-account-deletion-pr9-e2e.md.
  */
 import { expect, test } from "@playwright/test";
 
 import { setMemberIdResolver as setFilesMemberIdResolver } from "@bdas/files";
+import { registerNewsletterSubscribers } from "@bdas/newsletter";
 import {
   setMemberIdResolver as setNotificationsMemberIdResolver,
   setNotifier,
@@ -22,7 +23,12 @@ import { getDb } from "@bdas/db";
 import {
   authUserExists,
   backdateDeletionRequest,
+  deletionRequestByUser,
+  deletionRequestStatus,
+  eventCreatedBy,
   memberIdByEmail,
+  newsletterStatus,
+  postExists,
   seedAccountDeletionFixture,
   userIdByEmail,
 } from "./helpers/db";
@@ -90,7 +96,7 @@ test("requesting deletion, then letting the sweep run, purges the account across
 }) => {
   const email = `del-sweep-${Date.now()}@example.de`;
 
-  await register(page, { email });
+  await register(page, { email, newsletter: true });
   await verify(page);
   await login(page, email);
 
@@ -98,6 +104,11 @@ test("requesting deletion, then letting the sweep run, purges the account across
   if (!userId) throw new Error("no auth_users row after registration");
   const memberId = await memberIdByEmail(email);
   if (!memberId) throw new Error("no members row after registration");
+  // Registration's newsletter checkbox subscribes immediately (finish.ts) —
+  // proof the newsletter purge (auth.user.deleted → bootNewsletter) has
+  // something real to erase, not just an absent row that would pass either way.
+  if (!(await newsletterStatus(email)))
+    throw new Error("no newsletter_subscribers row after registration");
 
   // Real, attributable data in every module the sweep purges — seeded
   // directly (each module's own authoring UI is already covered by its own
@@ -112,6 +123,10 @@ test("requesting deletion, then letting the sweep run, purges the account across
   // The lock takes effect — same assertion shape as the reactivation test.
   await page.goto("/account/einstellungen");
   await expect(page).toHaveURL(/\/anmelden/);
+
+  const request = await deletionRequestByUser(userId);
+  if (!request) throw new Error("no account_deletion_requests row after locking");
+  const requestId = request.id;
 
   // Stand in for the real 30-day wait.
   await backdateDeletionRequest(userId, 1);
@@ -143,9 +158,21 @@ test("requesting deletion, then letting the sweep run, purges the account across
   const profileBucket = memoryBucket([fixture.profileMediaKey]);
   setStorage(filesBucket as unknown as StorageClient);
 
-  const resolver = { resolveMemberId: async () => memberId };
+  // Guarded by userId, not a bare constant: a resolver that returns this
+  // test's memberId for ANY user would still pass if a regression sent the
+  // wrong userId into a step (e.g. against a stale row left by an earlier
+  // interrupted local run) — the real resolvers (bootFiles/bootNotifications)
+  // look the member up per user, and this must fail the same way theirs would.
+  const resolver = {
+    resolveMemberId: async (_db: unknown, uid: string) => (uid === userId ? memberId : null),
+  };
   setFilesMemberIdResolver(resolver as never);
   setNotificationsMemberIdResolver(resolver as never);
+  // The newsletter step has no entry in buildDeletionSteps — it erases itself
+  // off the auth.user.deleted event auth.deleteAccount publishes, which needs
+  // a subscriber registered in this calling process (mirrors bootNewsletter()
+  // in the real cron route).
+  registerNewsletterSubscribers(getDb());
 
   const sent: OutboundEmail[] = [];
   setNotifier({
@@ -163,15 +190,21 @@ test("requesting deletion, then letting the sweep run, purges the account across
   });
 
   // Assert on this request specifically, not the sweep's aggregate counts —
-  // a stale row from an earlier interrupted local run could otherwise flake
-  // an aggregate-count assertion (see the plan's Review Focus).
-  expect(result.failed).toEqual([]);
+  // those cover every due row, and a stale one left by an earlier interrupted
+  // local run would otherwise flake these assertions (see the plan's Review
+  // Focus).
+  expect(result.failed.filter((f) => f.requestId === requestId)).toEqual([]);
+  // account_deletion_requests.user_id is ON DELETE SET NULL, so the row must
+  // now be found by its own id, not by userId.
+  expect(await deletionRequestStatus(requestId)).toBe("completed");
   expect(await authUserExists(email)).toBe(false);
+  expect(await postExists(fixture.postId)).toBe(false);
+  expect(await eventCreatedBy(fixture.eventId)).toBeNull();
+  expect(await newsletterStatus(email)).toBeNull();
   expect([...filesBucket.objects]).toEqual([]);
   expect([...blogBucket.objects]).toEqual([]);
   expect([...profileBucket.objects]).toEqual([]);
-  expect(sent).toHaveLength(1);
-  expect(sent[0]?.to).toBe(email);
+  expect(sent.filter((m) => m.to === email)).toHaveLength(1);
 
   // Genuinely gone, not merely still pending — the generic message, not the
   // pending-deletion-specific one (login.ts:74-87).
